@@ -6,7 +6,7 @@
    Flip [data-theme] on <html> → the whole product re-skins.
    ============================================================ */
 @theme {
-  --font-sans: "Outfit", "Tajawal", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Tajawal", "Noto Sans Arabic", "Outfit", ui-sans-serif, system-ui, sans-serif;
 
   /* ---- Anchors that never change with the theme ---- */
   --color-navy: #0a1931;

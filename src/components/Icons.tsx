@@ -370,3 +370,20 @@ export const IconLayers = (p: IconProps) => (
     <path d="m4.5 16.5 7.5 4.2 7.5-4.2" />
   </Svg>
 );
+
+export const IconLock = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="5" y="11" width="14" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+  </Svg>
+);
+
+export const IconAlertCircle = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v4" />
+    <path d="M12 16h.01" />
+  </Svg>
+);
+
+

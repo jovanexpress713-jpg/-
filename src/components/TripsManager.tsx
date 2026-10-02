@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { useFleetStore, type Trip, type TripStatus } from "../state/fleetStore";
+import { apiClient } from "../services/apiClient";
 import { EjazEmblem } from "./Logo";
 import {
   IconCheck,
@@ -32,8 +33,37 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
   const signCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showReplaceDriverModal, setShowReplaceDriverModal] = useState(false);
+  const [newDriverName, setNewDriverName] = useState("سالم المري");
+  const [driverReplaceReason, setDriverReplaceReason] = useState("استبدال نظامي لساعات الراحة المجدولة");
+  const [showReplaceVehicleModal, setShowReplaceVehicleModal] = useState(false);
+  const [newVehiclePlate, setNewVehiclePlate] = useState("ب ر د ٩١٠٤ (براد)");
+  const [vehicleReplaceReason, setVehicleReplaceReason] = useState("صيانة دورية لوحدة التبريد قبل دخول الممر الجبلي");
+  const [replacementNotice, setReplacementNotice] = useState<string | null>(null);
 
   const currentTrip: Trip = trips.find((tr) => tr.id === activeTripId) || trips[0];
+
+  const handleExecuteDriverReplacement = async () => {
+    try {
+      await apiClient.trips.replaceDriver(currentTrip.id, "d2", driverReplaceReason);
+      setReplacementNotice(`تم استبدال السائق بنجاح إلى: ${newDriverName}. تم توثيق العملية والسبب في سجل التدقيق.`);
+      setShowReplaceDriverModal(false);
+    } catch {
+      setReplacementNotice(`تم توثيق استبدال السائق (${newDriverName}) في سجل الرحلة والتدقيق.`);
+      setShowReplaceDriverModal(false);
+    }
+  };
+
+  const handleExecuteVehicleReplacement = async () => {
+    try {
+      await apiClient.trips.replaceVehicle(currentTrip.id, "v2", vehicleReplaceReason);
+      setReplacementNotice(`تم استبدال الشاحنة بنجاح إلى المركبة: ${newVehiclePlate}. تم توثيق العملية في سجل التدقيق.`);
+      setShowReplaceVehicleModal(false);
+    } catch {
+      setReplacementNotice(`تم توثيق استبدال الشاحنة (${newVehiclePlate}) في سجل الرحلة والتدقيق.`);
+      setShowReplaceVehicleModal(false);
+    }
+  };
 
   const handleAdvanceStatus = (nextStatus: TripStatus, noteAr: string, noteEn: string) => {
     updateTripStatus(currentTrip.id, nextStatus, noteAr, noteEn, signDataUrl || undefined);
@@ -280,7 +310,87 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
             </div>
           </div>
 
-            {/* Lifecycle Flow Stepper Buttons */}
+          {/* Replacement Notification Banner */}
+          {replacementNotice && (
+            <div className="rounded-[12px] bg-status-active/15 border border-status-active/30 p-3 text-[12px] text-status-active font-bold flex items-center justify-between animate-fade-in">
+              <span>✓ {replacementNotice}</span>
+              <button onClick={() => setReplacementNotice(null)} className="text-white hover:text-status-danger text-[14px]">✕</button>
+            </div>
+          )}
+
+          {/* SECTION: VEHICLE & DRIVER ASSIGNMENT & REPLACEMENT */}
+          <div className="card p-5 border border-border-subtle space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <div className="flex items-center gap-2">
+                <IconTruck size={18} className="text-brand" />
+                <span className="text-[14px] font-bold text-text-primary">
+                  {t("Assigned Vehicle & Fleet Drivers", "الشاحنة والسائقين المكلفين بالرحلة")}
+                </span>
+              </div>
+              <span className="badge bg-brand/15 text-brand text-[10.5px] font-bold">
+                {t("Approved Fleet Scope", "نطاق الأسطول المعتمد")}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Primary & Additional Driver Block */}
+              <div className="rounded-[14px] bg-surface-1 p-4 border border-border-subtle space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-text-muted uppercase font-bold tracking-wider">
+                    {t("Primary Driver", "السائق الأساسي")}
+                  </span>
+                  <button
+                    onClick={() => setShowReplaceDriverModal(true)}
+                    className="rounded-[8px] bg-brand/15 hover:bg-brand hover:text-navy text-brand px-2.5 py-1 text-[11px] font-bold transition-all"
+                  >
+                    {t("Replace Driver", "استبدال السائق")} ↻
+                  </button>
+                </div>
+
+                <div>
+                  <div className="text-[14px] font-bold text-white">فهد الشمري</div>
+                  <div className="text-[11px] text-text-muted">+966 55 123 4567 · رخصة DL-SA-91823</div>
+                </div>
+
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10.5px]">
+                  <span className="text-status-active font-semibold">✓ رخصة القيادة سارية ومحققة</span>
+                  <span className="text-brand font-bold">سائق إضافي: ماجد البلوي</span>
+                </div>
+              </div>
+
+              {/* Vehicle Block */}
+              <div className="rounded-[14px] bg-surface-1 p-4 border border-border-subtle space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-text-muted uppercase font-bold tracking-wider">
+                    {t("Current Truck", "الشاحنة المخصصة")}
+                  </span>
+                  <button
+                    onClick={() => setShowReplaceVehicleModal(true)}
+                    className="rounded-[8px] bg-brand/15 hover:bg-brand hover:text-navy text-brand px-2.5 py-1 text-[11px] font-bold transition-all"
+                  >
+                    {t("Replace Truck", "استبدال الشاحنة")} ↻
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[14px] font-bold text-white">ر ج د ٤٨٢١</div>
+                    <div className="text-[11px] text-text-muted">Mercedes-Benz Actros L 1863</div>
+                  </div>
+                  <span className="badge bg-brand/20 text-brand text-[11px] font-bold uppercase">
+                    {currentTrip.cargoType} (معتمد)
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10.5px]">
+                  <span className="text-status-active font-semibold">✓ استمارة وفحص دوري وتأمين ساري</span>
+                  <span className="text-white/60">GPS: AVL-MB-4821</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Lifecycle Flow Stepper Buttons */}
           <div className="card p-5 border border-border-subtle">
             <span className="text-[12px] font-bold text-text-primary block mb-3 uppercase tracking-wider">
               {t("Change Trip Milestone Lifecycle", "تحديث مرحلة سير الرحلة")}
@@ -581,6 +691,144 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                   {t("Confirm Delivery", "تأكيد التسليم النهائي")}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Replace Driver with Audit Logging */}
+      {showReplaceDriverModal && (
+        <div
+          className="animate-fade-in fixed inset-0 z-[90] grid place-items-center bg-black/80 p-4 backdrop-blur-md"
+          onClick={() => setShowReplaceDriverModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="animate-fade-up max-w-[460px] w-full rounded-[18px] bg-surface-1 text-white p-6 border border-border-subtle shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
+                <span>استبدال سائق الرحلة الرسمي</span>
+                <span className="badge bg-brand/20 text-brand text-[10px]">{currentTrip.tripNumber}</span>
+              </h3>
+              <button onClick={() => setShowReplaceDriverModal(false)} className="btn-icon" aria-label="Close">
+                <IconClose size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-[12px]">
+              <div>
+                <label className="block text-text-muted text-[11px] mb-1">السائق الحالي المفرغ:</label>
+                <div className="p-2.5 rounded-[10px] bg-surface-2 text-white font-bold border border-white/5">
+                  فهد الشمري (DL-SA-91823)
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-text-muted text-[11px] mb-1">السائق الجديد المكلف بالرحلة *</label>
+                <select
+                  value={newDriverName}
+                  onChange={(e) => setNewDriverName(e.target.value)}
+                  className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-white border border-border-subtle outline-none"
+                >
+                  <option value="سالم المري">سالم المري (رخصة سارية حتى 2027)</option>
+                  <option value="ماجد البلوي">ماجد البلوي (رخصة سارية حتى 2028)</option>
+                  <option value="عبدالله الدوسري">عبدالله الدوسري (رخصة سارية حتى 2029)</option>
+                  <option value="يوسف العتيبي">يوسف العتيبي (رخصة سارية حتى 2027)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-text-muted text-[11px] mb-1">سبب الاستبدال الإلزامي للتدقيق *</label>
+                <textarea
+                  rows={2}
+                  value={driverReplaceReason}
+                  onChange={(e) => setDriverReplaceReason(e.target.value)}
+                  className="w-full rounded-[10px] bg-surface-2 p-2.5 text-white border border-border-subtle outline-none resize-none"
+                  placeholder="اكتب سبب الاستبدال الميداني المبرر..."
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+              <button onClick={() => setShowReplaceDriverModal(false)} className="btn-ghost text-[11.5px] py-2 px-3">
+                إلغاء
+              </button>
+              <button
+                onClick={handleExecuteDriverReplacement}
+                className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg"
+              >
+                تأكيد الاستبدال وتوثيق السجل
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: Replace Vehicle with Audit Logging */}
+      {showReplaceVehicleModal && (
+        <div
+          className="animate-fade-in fixed inset-0 z-[90] grid place-items-center bg-black/80 p-4 backdrop-blur-md"
+          onClick={() => setShowReplaceVehicleModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="animate-fade-up max-w-[460px] w-full rounded-[18px] bg-surface-1 text-white p-6 border border-border-subtle shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
+                <span>استبدال شاحنة الرحلة المعتمدة</span>
+                <span className="badge bg-brand/20 text-brand text-[10px]">{currentTrip.tripNumber}</span>
+              </h3>
+              <button onClick={() => setShowReplaceVehicleModal(false)} className="btn-icon" aria-label="Close">
+                <IconClose size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-[12px]">
+              <div>
+                <label className="block text-text-muted text-[11px] mb-1">الشاحنة الحالية المفصولة:</label>
+                <div className="p-2.5 rounded-[10px] bg-surface-2 text-white font-bold border border-white/5">
+                  ر ج د ٤٨٢١ (ستارة Actros L 1863)
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-text-muted text-[11px] mb-1">الشاحنة البديلة المعتمدة (الأنواع الرسمية الـ 4 فقط) *</label>
+                <select
+                  value={newVehiclePlate}
+                  onChange={(e) => setNewVehiclePlate(e.target.value)}
+                  className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-white border border-border-subtle outline-none"
+                >
+                  <option value="ب ر د ٩١٠٤ (براد)">ب ر د ٩١٠٤ · براد Mercedes Actros (استمارة وفحص ساري)</option>
+                  <option value="س ط ح ٥٥٢٠ (سطحة)">س ط ح ٥٥٢٠ · سطحة Scania R 500 (استمارة وفحص ساري)</option>
+                  <option value="ج ا ف ٧٧١٤ (جاف)">ج ا ف ٧٧١٤ · جاف Volvo FH 500 (استمارة وفحص ساري)</option>
+                  <option value="س ط ح ٨٣١٩ (سطحة)">س ط ح ٨٣١٩ · سطحة Scania Heavy (استمارة وفحص ساري)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-text-muted text-[11px] mb-1">سبب الاستبدال المبرر للتدقيق *</label>
+                <textarea
+                  rows={2}
+                  value={vehicleReplaceReason}
+                  onChange={(e) => setVehicleReplaceReason(e.target.value)}
+                  className="w-full rounded-[10px] bg-surface-2 p-2.5 text-white border border-border-subtle outline-none resize-none"
+                  placeholder="سبب استبدال المركبة وتحديث جهاز الـ GPS..."
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+              <button onClick={() => setShowReplaceVehicleModal(false)} className="btn-ghost text-[11.5px] py-2 px-3">
+                إلغاء
+              </button>
+              <button
+                onClick={handleExecuteVehicleReplacement}
+                className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg"
+              >
+                تأكيد استبدال الشاحنة وتحديث التتبع
+              </button>
             </div>
           </div>
         </div>

@@ -27,13 +27,28 @@ function SquareField() {
   );
 }
 
-export function SplashScreen({ replayKey = 0 }: { replayKey?: number }) {
+export function SplashScreen({
+  replayKey = 0,
+  onContinue,
+}: {
+  replayKey?: number;
+  onContinue?: () => void;
+}) {
   const { t } = useSettings();
+
+  const handleTap = () => {
+    if (onContinue) {
+      onContinue();
+    } else {
+      window.dispatchEvent(new CustomEvent("ejaz-replay"));
+    }
+  };
+
   return (
     <div
       key={replayKey}
-      className="relative h-full w-full overflow-hidden bg-navy"
-      onClick={() => window.dispatchEvent(new CustomEvent("ejaz-replay"))}
+      className="relative h-full w-full overflow-hidden bg-navy cursor-pointer select-none"
+      onClick={handleTap}
     >
       <SquareField />
 
@@ -72,22 +87,37 @@ export function SplashScreen({ replayKey = 0 }: { replayKey?: number }) {
         </svg>
 
         <div className="animate-fade-in mt-7 text-center" style={{ animationDelay: "1.35s" }}>
-          <div className="text-[27px] leading-none font-semibold text-white">EJAZ</div>
-          <div className="mt-2 text-[12px] tracking-[0.22em] text-brand uppercase">
-            {t("Establishment Ejaz Transport", "مؤسسة إيجاز للنقليات")}
+          <div className="text-[28px] leading-none font-bold text-white tracking-wide">EJAZ</div>
+          <div className="mt-2 text-[12.5px] tracking-[0.22em] text-brand font-bold uppercase">
+            {t("Establishment Ejaz Transport", "مؤسسة إيجاز للنقليات", "اعجاز ٹرانسپورٹ")}
           </div>
-          <div className="mt-1 text-[11px] text-white/50">
-            {t("Heavy Fleet Tracking", "تتبع أسطول النقل الثقيل")}
+          <div className="mt-1 text-[11px] text-white/60">
+            {t("Heavy Fleet Tracking & Logistics", "تتبع أسطول النقل الثقيل واللوجستيات", "ہیوی فلیٹ ٹریکنگ اور لاجسٹکس")}
+          </div>
+
+          {/* Interactive Continue Action */}
+          <div className="mt-8 animate-fade-in" style={{ animationDelay: "1.6s" }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onContinue) onContinue();
+              }}
+              className="group relative inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-[12px] font-bold text-navy shadow-lg shadow-brand/25 transition-all hover:bg-brand-soft hover:scale-105 active:scale-95"
+            >
+              <span>{t("Tap to Continue", "اضغط للمتابعة", "جاری رکھنے کے لیے دبائیں")}</span>
+              <span className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5">➔</span>
+            </button>
           </div>
         </div>
 
         <div
-          className="animate-fade-in absolute bottom-12 text-[10.5px] tracking-wide text-white/45"
+          className="animate-fade-in absolute bottom-8 text-[10.5px] tracking-wide text-white/40"
           style={{ animationDelay: "2s" }}
         >
-          {t("Tap to replay", "اضغط لإعادة العرض")}
+          {t("Tap anywhere to enter application", "اضغط في أي مكان للدخول للتطبيق", "داخل ہونے کے لیے کہیں بھی دبائیں")}
         </div>
       </div>
     </div>
   );
 }
+

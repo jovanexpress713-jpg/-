@@ -7,7 +7,7 @@ import {
 } from "react";
 import { getDictionary, type Translations } from "./localization/translations";
 
-export type Lang = "ar" | "en";
+export type Lang = "ar" | "en" | "ur";
 export type Theme = "dark" | "light";
 
 interface Settings {
@@ -16,7 +16,7 @@ interface Settings {
   dir: "rtl" | "ltr";
   setLang: (l: Lang) => void;
   setTheme: (t: Theme) => void;
-  t: (en: string, ar: string) => string;
+  t: (en: string, ar: string, ur?: string) => string;
   tr: Translations;
 }
 
@@ -38,14 +38,16 @@ function write(key: string, value: string) {
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>(() =>
-    read("ejaz-lang", "ar") === "en" ? "en" : "ar",
-  );
+  const [lang, setLang] = useState<Lang>(() => {
+    const saved = read("ejaz-lang", "ar");
+    if (saved === "en" || saved === "ur") return saved;
+    return "ar";
+  });
   const [theme, setTheme] = useState<Theme>(() =>
     read("ejaz-theme", "dark") === "light" ? "light" : "dark",
   );
 
-  const dir: "rtl" | "ltr" = lang === "ar" ? "rtl" : "ltr";
+  const dir: "rtl" | "ltr" = lang === "en" ? "ltr" : "rtl";
   const tr = getDictionary(lang);
 
   useEffect(() => {
@@ -57,7 +59,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     write("ejaz-theme", theme);
   }, [lang, theme, dir]);
 
-  const t = (en: string, ar: string) => (lang === "ar" ? ar : en);
+  const t = (en: string, ar: string, ur?: string) => {
+    if (lang === "ur") return ur || ar;
+    if (lang === "ar") return ar;
+    return en;
+  };
 
   return (
     <Ctx.Provider value={{ lang, theme, dir, setLang, setTheme, t, tr }}>

@@ -64,7 +64,7 @@ export function PhoneFrame({
           : style
       }
     >
-      <div className="relative h-[600px] w-[286px] overflow-hidden rounded-[48px] bg-surface-0">
+      <div className="relative h-full w-full min-h-[600px] min-w-[286px] overflow-hidden rounded-[46px] bg-surface-0">
         {children}
 
         {/* dynamic island */}

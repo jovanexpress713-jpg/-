@@ -3,6 +3,7 @@ import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { SAUDI_CORRIDORS } from "../services/gpsSimulation";
 import type { Trip } from "../state/fleetStore";
+import { Operational3DScene } from "./Operational3DScene";
 import {
   IconLayers,
   IconZoomIn,
@@ -36,7 +37,7 @@ export function InteractiveMap({
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [mapLayer, setMapLayer] = useState<"logistics" | "satellite" | "google">("logistics");
+  const [mapLayer, setMapLayer] = useState<"logistics" | "satellite" | "google" | "3d_scene">("logistics");
   const [hoveredWaypoint] = useState<string | null>(null);
   const [selectedPin] = useState<{ name: string; lat: number; lng: number } | null>(null);
 
@@ -355,8 +356,10 @@ export function InteractiveMap({
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
-      {/* 1) Canvas Map View */}
-      {mapLayer !== "google" ? (
+      {/* 1) Canvas Map View or 3D Operational Stage or Google Maps */}
+      {mapLayer === "3d_scene" ? (
+        <Operational3DScene trip={trip} className="h-full w-full" />
+      ) : mapLayer !== "google" ? (
         <canvas ref={canvasRef} className="h-full w-full block" />
       ) : (
         <div className="relative h-full w-full bg-surface-2">
@@ -424,6 +427,22 @@ export function InteractiveMap({
             </button>
           </>
         )}
+
+        {/* 3D Scene View Toggle */}
+        <button
+          onClick={() =>
+            setMapLayer((cur) => (cur === "3d_scene" ? "logistics" : "3d_scene"))
+          }
+          className={cn(
+            "btn-icon-sm shadow-lg backdrop-blur-md hover:scale-105 border transition-all",
+            mapLayer === "3d_scene"
+              ? "bg-brand text-on-brand border-brand"
+              : "bg-navy/85 text-white/80 border-white/10"
+          )}
+          title={t("Toggle 3D Operational Stage Scene", "عرض المشهد التشغيلي ثلاثي الأبعاد")}
+        >
+          <span className="text-[10px] font-extrabold">3D</span>
+        </button>
 
         {/* Map Layers Dropdown Button */}
         <button

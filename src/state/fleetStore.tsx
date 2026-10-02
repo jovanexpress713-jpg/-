@@ -9,6 +9,7 @@ import {
 import type { BodyType, Driver, Vehicle } from "../data/types";
 import { FLEET } from "../data/fleet";
 import { interpolateRoute } from "../services/gpsSimulation";
+import { apiClient } from "../services/apiClient";
 
 export type Role = "admin" | "driver" | "shipper" | "owner";
 
@@ -607,6 +608,76 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Synchronize with Authoritative Backend API
+  useEffect(() => {
+    let isMounted = true;
+    async function syncBackendData() {
+      try {
+        const [tripsRes] = await Promise.all([
+          apiClient.trips.getAll(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (tripsRes?.trips?.length) {
+          const mappedTrips: Trip[] = tripsRes.trips.map((bt: any) => ({
+            id: bt.id,
+            tripNumber: bt.tripNumber,
+            truckId: bt.vehicleId || "v1",
+            driverId: bt.driverId || "d1",
+            shipper: bt.customerName || "شركة سدافكو للأغذية والمشروبات",
+            consignee: bt.deliveryAddress || "ميناء جدة الإسلامي",
+            originCity: bt.originCity,
+            originTerminal: bt.pickupAddress,
+            destinationCity: bt.destinationCity,
+            destinationTerminal: bt.deliveryAddress,
+            corridorKey: bt.corridorKey || "riyadh-jeddah",
+            cargoType: (bt.cargoType === "براد" ? "reefer" : bt.cargoType === "سطحة" ? "flatbed" : bt.cargoType === "جاف" ? "container" : "curtain") as BodyType,
+            cargoWeightTons: Number(bt.cargoWeightTons),
+            maxCapacityTons: Number(bt.maxCapacityTons || 25),
+            status: (bt.status === "IN_TRANSIT" ? "on_road" : bt.status === "DELIVERED" ? "delivered" : "ready") as TripStatus,
+            progressPct: bt.status === "IN_TRANSIT" ? 45 : 0,
+            speedKmH: Number(bt.currentSpeed || 0),
+            headingDeg: Number(bt.currentHeading || 0),
+            currentLat: Number(bt.currentLat || 24.7136),
+            currentLng: Number(bt.currentLng || 46.6753),
+            distanceTotalKm: 948,
+            distanceCoveredKm: bt.status === "IN_TRANSIT" ? 417 : 0,
+            distanceRemainingKm: bt.status === "IN_TRANSIT" ? 531 : 948,
+            etaMinutes: 210,
+            nextWaypointAr: "محطة ميزان القويعية",
+            nextWaypointEn: "Al Quwayiyah Weighbridge",
+            createdAt: bt.createdAt,
+            qrCodeToken: `EJAZ-${bt.tripNumber}`,
+            timeline: [
+              {
+                id: `e-init-${bt.id}`,
+                timestamp: "مسجلة في الخادم",
+                titleAr: `تم إنشاء الرحلة برقم موحد ${bt.tripNumber}`,
+                titleEn: `Authoritative Trip Created: ${bt.tripNumber}`,
+                status: "ready" as TripStatus,
+                actor: "النظام المركزي",
+              },
+            ],
+          }));
+
+          setTrips((prev) => {
+            const existingIds = new Set(mappedTrips.map((t) => t.id));
+            const remainingPrev = prev.filter((p) => !existingIds.has(p.id));
+            return [...mappedTrips, ...remainingPrev];
+          });
+        }
+      } catch (err) {
+        console.warn("[FleetStore] Operating with baseline data cache", err);
+      }
+    }
+
+    syncBackendData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Sync to localStorage
   useEffect(() => {
     try {
@@ -746,6 +817,45 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
       tripId,
       noteAr
     );
+
+    // Map UI status to Canonical Backend State
+    const CANONICAL_MAP: Record<TripStatus, string> = {
+      new: "DRAFT_CREATED",
+      planning: "PENDING_APPROVAL",
+      ready: "CONFIRMED",
+      loading: "ARRIVED_LOADING",
+      on_road: "IN_TRANSIT",
+      stopped: "IN_TRANSIT",
+      arrived: "ARRIVED_DESTINATION",
+      delivered: "DELIVERED",
+      completed: "COMPLETED",
+      cancelled: "CANCELLED",
+    };
+
+    const targetCanonical = CANONICAL_MAP[newStatus];
+    if (targetCanonical) {
+      apiClient.trips
+        .transition(tripId, {
+          targetStatus: targetCanonical,
+          notes: noteAr,
+          reason: noteAr,
+        })
+        .catch((err) => {
+          console.warn("[FleetStore] Backend transition sync:", err);
+        });
+
+      // If delivered and signature present, record authoritative POD
+      if (newStatus === "delivered" && signature) {
+        apiClient.pod
+          .create({
+            tripId,
+            recipientName: "العميل المستلم",
+            signatureUrl: signature,
+            notes: noteAr || "تم الاستلام والتوقيع عبر التطبيق",
+          })
+          .catch((e) => console.warn("[FleetStore] POD sync:", e));
+      }
+    }
   };
 
   const updateCargoWeight = (tripId: string, tons: number) => {
@@ -762,14 +872,16 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const createNewTrip = (tripData: Partial<Trip>): Trip => {
-    const num = `EZ-${Math.floor(10000 + Math.random() * 89999)}`;
+    const year = new Date().getFullYear();
+    const tempNum = `EJ-${year}-${Math.floor(100000 + Math.random() * 900000)}`;
+    const tripId = `trip-${Date.now()}`;
     const newTrip: Trip = {
-      id: `trip-${Date.now()}`,
-      tripNumber: num,
+      id: tripId,
+      tripNumber: tempNum,
       truckId: tripData.truckId || "v1",
       driverId: tripData.driverId || "d1",
-      shipper: tripData.shipper || "الراجحي للنقليات",
-      consignee: tripData.consignee || "مستودع الوجهة",
+      shipper: tripData.shipper || "شركة سدافكو للأغذية",
+      consignee: tripData.consignee || "مستودع الوجهة المركزي",
       originCity: tripData.originCity || "الرياض",
       originTerminal: tripData.originTerminal || "الرياض - الميناء الجاف",
       destinationCity: tripData.destinationCity || "جدة",
@@ -791,12 +903,12 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
       nextWaypointAr: "محطة ميزان القويعية",
       nextWaypointEn: "Al Quwayiyah Weighbridge",
       createdAt: "الآن",
-      qrCodeToken: `EJAZ-${num}`,
+      qrCodeToken: `EJAZ-${tempNum}`,
       timeline: [
         {
           id: `e-${Date.now()}`,
           timestamp: "الآن",
-          titleAr: "إنشاء الرحلة وحجز الشاحنة",
+          titleAr: "إنشاء الرحلة وحجز الشاحنة بالخادم",
           titleEn: "Trip order created and truck reserved",
           status: "ready",
           actor: "غرفة العمليات",
@@ -806,7 +918,49 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
     };
 
     setTrips((prev) => [newTrip, ...prev]);
-    recordAuditLog(`إنشاء رحلة شحن جديدة ${num}`, `Created new freight trip ${num}`, num);
+
+    // Send asynchronous request to backend to persist with official trip sequence
+    apiClient.trips
+      .create({
+        originCity: newTrip.originCity,
+        destinationCity: newTrip.destinationCity,
+        pickupAddress: newTrip.originTerminal,
+        deliveryAddress: newTrip.destinationTerminal,
+        cargoDescription: `شحنة ${newTrip.cargoType} حمولة ${newTrip.cargoWeightTons} طن`,
+        cargoType:
+          newTrip.cargoType === "reefer"
+            ? "براد"
+            : newTrip.cargoType === "flatbed"
+            ? "سطحة"
+            : newTrip.cargoType === "container"
+            ? "جاف"
+            : "ستارة",
+        cargoWeightTons: newTrip.cargoWeightTons,
+        maxCapacityTons: newTrip.maxCapacityTons,
+        corridorKey: newTrip.corridorKey,
+        vehicleId: newTrip.truckId,
+        driverId: newTrip.driverId,
+      })
+      .then((res) => {
+        if (res?.trip?.tripNumber) {
+          setTrips((prev) =>
+            prev.map((t) =>
+              t.id === tripId
+                ? {
+                    ...t,
+                    tripNumber: res.trip.tripNumber,
+                    id: res.trip.id,
+                  }
+                : t
+            )
+          );
+        }
+      })
+      .catch((err) => {
+        console.warn("[FleetStore] Trip created locally, pending backend sync:", err);
+      });
+
+    recordAuditLog(`إنشاء رحلة شحن جديدة ${tempNum}`, `Created new freight trip ${tempNum}`, tempNum);
     return newTrip;
   };
 

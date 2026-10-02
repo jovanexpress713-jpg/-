@@ -39,6 +39,7 @@ function TopBar() {
   const [project, setProject] = useState<Project>("web");
   const [showAI, setShowAI] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
 
   const unreadAlerts = alerts.filter((a) => !a.resolved).length;
   const activeTripsCount = trips.filter((tr) => tr.status === "on_road").length;
@@ -103,15 +104,72 @@ function TopBar() {
             )}
           </button>
 
-          {/* Language Switcher */}
-          <button
-            onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-            className="btn-icon gap-1 px-2.5"
-            title={t("Switch language", "تغيير اللغة")}
-          >
-            <IconGlobe />
-            <span className="text-[11px] font-bold">{lang === "ar" ? "EN" : "عربي"}</span>
-          </button>
+          {/* 3-Language Switcher (العربية · English · اردو) */}
+          <div className="relative">
+            <button
+              onClick={() => setShowLangMenu((v) => !v)}
+              className="btn-icon gap-1 px-2.5"
+              title={t("Switch language (العربية / English / اردو)", "تغيير اللغة (العربية / English / اردو)", "زبان تبدیل کریں")}
+            >
+              <IconGlobe />
+              <span className="text-[11px] font-bold">
+                {lang === "ar" ? "عربي" : lang === "ur" ? "اردو" : "EN"}
+              </span>
+            </button>
+
+            {showLangMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowLangMenu(false)}
+                />
+                <div className="absolute end-0 top-full mt-1.5 z-50 min-w-[130px] rounded-[10px] bg-surface-2 p-1.5 shadow-xl border border-border-subtle animate-fade-in text-[12px]">
+                  <div className="px-2 py-1 text-[10px] font-semibold text-text-muted border-b border-white/5 uppercase">
+                    {t("Select Language", "اختر اللغة", "زبان منتخب کریں")}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setLang("ar");
+                      setShowLangMenu(false);
+                    }}
+                    className={cn(
+                      "w-full text-start px-2.5 py-1.5 rounded-[6px] transition-colors flex items-center justify-between mt-1",
+                      lang === "ar" ? "bg-brand text-on-brand font-bold" : "text-text-primary hover:bg-surface-3"
+                    )}
+                  >
+                    <span>العربية</span>
+                    {lang === "ar" && <span className="text-[10px]">✓</span>}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLang("en");
+                      setShowLangMenu(false);
+                    }}
+                    className={cn(
+                      "w-full text-start px-2.5 py-1.5 rounded-[6px] transition-colors flex items-center justify-between",
+                      lang === "en" ? "bg-brand text-on-brand font-bold" : "text-text-primary hover:bg-surface-3"
+                    )}
+                  >
+                    <span>English</span>
+                    {lang === "en" && <span className="text-[10px]">✓</span>}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLang("ur");
+                      setShowLangMenu(false);
+                    }}
+                    className={cn(
+                      "w-full text-start px-2.5 py-1.5 rounded-[6px] transition-colors flex items-center justify-between",
+                      lang === "ur" ? "bg-brand text-on-brand font-bold" : "text-text-primary hover:bg-surface-3"
+                    )}
+                  >
+                    <span>اردو</span>
+                    {lang === "ur" && <span className="text-[10px]">✓</span>}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Theme Switcher */}
           <button
