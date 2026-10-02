@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+/* ============================================================
+   مؤسسة إيجاز للنقليات · EJAZ TRANSPORT — Design System
+   Navy + Orange. Every role is defined here and nowhere else.
+   Flip [data-theme] on <html> → the whole product re-skins.
+   ============================================================ */
+@theme {
+  --font-sans: "Outfit", "Tajawal", ui-sans-serif, system-ui, sans-serif;
+
+  /* ---- Anchors that never change with the theme ---- */
+  --color-navy: #0a1931;
+  --color-paper: #ffffff;
+  --color-on-brand: #0a1931;
+
+  /* ---- Surfaces 0 (deepest) → 7 (highest) ---- */
+  --color-surface-0: #050c1a;
+  --color-surface-1: #091527;
+  --color-surface-2: #0d1b2f;
+  --color-surface-3: #122238;
+  --color-surface-4: #182b44;
+  --color-surface-5: #1f3450;
+  --color-surface-6: #294160;
+  --color-surface-7: #334e70;
+
+  /* ---- Brand (orange) + soft tint ---- */
+  --color-brand: #ff7a00;
+  --color-brand-soft: #ffa24d;
+
+  /* ---- Secondary accent — mobile app only ---- */
+  --color-accent-2: #2f80ff;
+
+  /* ---- Status roles ---- */
+  --color-status-active: #2fd08a;
+  --color-status-waiting: #f5b73c;
+  --color-status-inactive: #7e8da8;
+  --color-status-danger: #ff5a6e;
+
+  /* ---- Text roles ---- */
+  --color-text-primary: #eaf0fa;
+  --color-text-secondary: #a7b4c9;
+  --color-text-muted: #6e7e96;
+
+  /* ---- Hairlines ---- */
+  --color-border-subtle: #1b2b42;
+
+  /* ---- Motion ---- */
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.4s ease both;
+  --animate-pulse-dot: pulse-dot 1.8s ease-in-out infinite;
+  --animate-stripes: stripes-move 0.9s linear infinite;
+  --animate-scan: scan-line 2.4s ease-in-out infinite;
+  --animate-draw: draw 1.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 55%, transparent); }
+    70% { box-shadow: 0 0 0 6px color-mix(in oklab, currentColor 0%, transparent); }
+  }
+  @keyframes stripes-move {
+    from { background-position: 0 0; }
+    to { background-position: 22px 0; }
+  }
+  @keyframes scan-line {
+    0%, 100% { transform: translateY(-38%); opacity: 0.25; }
+    50% { transform: translateY(38%); opacity: 1; }
+  }
+  @keyframes draw {
+    from { stroke-dashoffset: var(--dash, 300); }
+    to { stroke-dashoffset: 0; }
+  }
+}
+
+/* ============================================================
+   DAY THEME — same roles, paper + navy ink
+   ============================================================ */
+:root[data-theme="light"] {
+  --color-surface-0: #e9edf5;
+  --color-surface-1: #f2f5fa;
+  --color-surface-2: #f8fafd;
+  --color-surface-3: #ffffff;
+  --color-surface-4: #edf1f8;
+  --color-surface-5: #e2e8f2;
+  --color-surface-6: #d2dbe9;
+  --color-surface-7: #bfcadb;
+
+  --color-brand: #ff7a00;
+  --color-brand-soft: #ffb271;
+  --color-accent-2: #1c63e0;
+
+  --color-status-active: #12a05f;
+  --color-status-waiting: #b98210;
+  --color-status-inactive: #7c8aa3;
+  --color-status-danger: #d9263c;
+
+  --color-text-primary: #0a1931;
+  --color-text-secondary: #46566f;
+  --color-text-muted: #7c8aa3;
+
+  --color-border-subtle: #dce3ee;
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    background-color: var(--color-surface-0);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.35s ease, color 0.35s ease;
+  }
+  ::selection { background: color-mix(in oklab, var(--color-brand) 35%, transparent); }
+  button { cursor: pointer; }
+  input, select, textarea { font: inherit; color: inherit; }
+  input::placeholder, textarea::placeholder { color: var(--color-text-muted); }
+  h1, h2, h3 { letter-spacing: -0.02em; }
+  [dir="rtl"] body { letter-spacing: 0; }
+}
+
+@layer components {
+  .card { background-color: var(--color-surface-3); border-radius: 8px; }
+
+  .btn, .btn-primary, .btn-ghost, .btn-icon, .btn-icon-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background-color: var(--color-brand);
+    color: var(--color-on-brand);
+    padding: 0.5rem 1rem;
+    font-weight: 700;
+    box-shadow: 0 6px 22px -6px color-mix(in oklab, var(--color-brand) 70%, transparent);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 8px 30px -6px color-mix(in oklab, var(--color-brand) 90%, transparent);
+  }
+  .btn-ghost {
+    background-color: var(--color-surface-4);
+    color: var(--color-text-secondary);
+    padding: 0.5rem 1rem;
+  }
+  .btn-ghost:hover { background-color: var(--color-surface-5); color: var(--color-text-primary); }
+  .btn-icon {
+    height: 2.25rem; width: 2.25rem;
+    background-color: var(--color-surface-4); color: var(--color-text-secondary);
+  }
+  .btn-icon:hover { background-color: var(--color-surface-5); color: var(--color-text-primary); }
+  .btn-icon-sm {
+    height: 1.75rem; width: 1.75rem;
+    background-color: var(--color-surface-4); color: var(--color-text-secondary);
+  }
+  .btn-icon-sm:hover { background-color: var(--color-surface-5); color: var(--color-text-primary); }
+  .btn-icon:hover, .btn-icon-sm:hover, .btn-ghost:hover { transform: scale(1.06); }
+  .btn:active, .btn-primary:active, .btn-ghost:active, .btn-icon:active, .btn-icon-sm:active {
+    transform: scale(0.95);
+  }
+
+  .chip, .chip-on {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    border-radius: 5px; background-color: var(--color-surface-3);
+    padding: 7px 10px; font-size: 12px; color: var(--color-text-secondary);
+    transition: all 0.2s ease;
+  }
+  .chip:hover { background-color: var(--color-surface-4); color: var(--color-text-primary); }
+  .chip:active { transform: scale(0.95); }
+  .chip-on, .chip-on:hover {
+    background-color: var(--color-brand); color: var(--color-on-brand); font-weight: 700;
+    box-shadow: 0 4px 16px -4px color-mix(in oklab, var(--color-brand) 65%, transparent);
+  }
+  .chip-count {
+    display: inline-flex; height: 18px; min-width: 18px; align-items: center; justify-content: center;
+    border-radius: 5px; background-color: var(--color-surface-5); padding: 0 4px;
+    font-size: 10.5px; font-variant-numeric: tabular-nums; color: var(--color-text-secondary);
+  }
+  .chip-on .chip-count {
+    background-color: color-mix(in oklab, var(--color-on-brand) 22%, transparent);
+    color: var(--color-on-brand);
+  }
+
+  .badge {
+    display: inline-flex; height: 18px; min-width: 18px; align-items: center; justify-content: center;
+    border-radius: 5px; padding: 0 4px; font-size: 10.5px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .field {
+    width: 100%; border-radius: 12px; background-color: var(--color-surface-2);
+    padding: 0.625rem 0.875rem; font-size: 13px; color: var(--color-text-primary);
+    outline: none; transition: all 0.2s ease;
+    box-shadow: inset 0 0 0 1px var(--color-border-subtle);
+  }
+  .field:focus {
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, var(--color-brand) 70%, transparent),
+      0 0 0 4px color-mix(in oklab, var(--color-brand) 12%, transparent);
+  }
+
+  .nav-item {
+    position: relative; display: flex; align-items: center; gap: 0.75rem;
+    border-radius: 8px; padding: 9px 12px; font-size: 13px;
+    color: var(--color-text-secondary); transition: all 0.2s ease;
+  }
+  .nav-item:hover { background-color: var(--color-surface-3); color: var(--color-text-primary); }
+
+  .selected-ring {
+    box-shadow:
+      inset 0 0 0 2px var(--color-brand),
+      0 10px 30px -12px color-mix(in oklab, var(--color-brand) 55%, transparent);
+  }
+
+  .stripes {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      color-mix(in oklab, var(--color-brand) 85%, transparent) 0 6px,
+      color-mix(in oklab, var(--color-brand) 45%, transparent) 6px 12px
+    );
+    background-size: 34px 100%;
+  }
+
+  .glow-brand { box-shadow: 0 0 24px -2px color-mix(in oklab, var(--color-brand) 60%, transparent); }
+
+  .scroll-thin { scrollbar-width: thin; scrollbar-color: var(--color-surface-6) transparent; }
+  .scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: var(--color-surface-6); border-radius: 99px; }
+  .scroll-thin::-webkit-scrollbar-track { background: transparent; }
+
+  .range {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+    border-radius: 99px; background: var(--color-surface-5); outline: none;
+  }
+  .range::-webkit-slider-thumb {
+    -webkit-appearance: none; height: 16px; width: 16px; border-radius: 99px;
+    background: var(--color-brand); cursor: pointer;
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-brand) 22%, transparent);
+  }
+  .range::-moz-range-thumb {
+    height: 16px; width: 16px; border: none; border-radius: 99px;
+    background: var(--color-brand); cursor: pointer;
+  }
+
+  .truck-plate { mix-blend-mode: lighten; filter: contrast(1.3); }
+  .truck-plate-light { mix-blend-mode: multiply; filter: contrast(1.15); }
+}
+
+@layer utilities {
+  .dotted-light {
+    background-image: radial-gradient(rgba(10, 25, 49, 0.14) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+  /* Arabic keeps captions pinned to the start edge */
+  [dir="rtl"] .text-left { text-align: right; }
+  [dir="rtl"] .text-right { text-align: left; }
+  [dir="rtl"] .rotate-8 { transform: rotate(-8deg); }
+}

@@ -1,0 +1,548 @@
+import { cn } from "../utils/cn";
+import { useSettings } from "../settings";
+import { BODY_TYPES, PHOTO_REPORTS, imageFor } from "../data/catalog";
+import type { Vehicle } from "../data/types";
+import {
+  IconArrowRight,
+  IconCheck,
+  IconPin,
+  IconRepair,
+  IconStar,
+  IconTruck,
+} from "./Icons";
+import { StatusChip } from "./StatusChip";
+import { TruckImage } from "./TruckImage";
+
+interface ViewProps {
+  vehicles: Vehicle[];
+  onSelect: (id: string) => void;
+  onPartner: (p: string) => void;
+  onToast: (text: string, sub?: string) => void;
+}
+
+function Panel({
+  title,
+  hint,
+  children,
+  action,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="animate-fade-up card p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-[17px] font-medium text-text-primary">{title}</h3>
+          {hint && <p className="mt-0.5 text-[11px] text-text-muted">{hint}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+export function DashboardView({ vehicles, onSelect, onToast }: ViewProps) {
+  const { t } = useSettings();
+  const active = vehicles.filter((v) => v.status === "active");
+  const waiting = vehicles.filter((v) => v.status === "waiting");
+  const util =
+    vehicles.reduce((s, v) => s + (v.load / v.maxLoad) * 100, 0) / (vehicles.length || 1);
+  const miles = vehicles.reduce((s, v) => s + v.milesLeft, 0);
+
+  const stats: [string, string, string | number, string][] = [
+    [t("Total shipments", "إجمالي الشحنات"), t("across 6 brands", "ضمن ٦ ماركات"), vehicles.length, ""],
+    [t("On Route", "على الطريق"), t("live telemetry", "بيانات مباشرة"), active.length, ""],
+    [t("Waiting", "في الانتظار"), t("yard & paperwork", "الساحة والإجراءات"), waiting.length, ""],
+    [t("Fleet utilisation", "استغلال الأسطول"), t("payload average", "متوسط الحمولة"), `${util.toFixed(0)}%`, ""],
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {stats.map(([k, s, v], i) => (
+          <button
+            key={k}
+            onClick={() => onToast(k, `${v} · ${s}`)}
+            style={{ animationDelay: `${i * 45}ms` }}
+            className="animate-fade-up card p-4 text-start transition-all duration-200 hover:bg-surface-4 active:scale-[0.98]"
+          >
+            <div className="text-[10.5px] tracking-wide text-text-muted uppercase">{k}</div>
+            <div className="mt-2 text-[26px] leading-none font-medium tabular-nums text-text-primary">
+              {v}
+            </div>
+            <div className="mt-2 text-[11px] text-text-secondary">{s}</div>
+          </button>
+        ))}
+      </div>
+
+      <Panel
+        title={t("Latest activity", "آخر الأنشطة")}
+        hint={t(
+          `${miles.toLocaleString()} miles still to run`,
+          `ما زال يتبقى ${miles.toLocaleString()} ميل`,
+        )}
+      >
+        <div className="space-y-1">
+          {vehicles.slice(0, 5).map((v) => (
+            <button
+              key={v.id}
+              onClick={() => onSelect(v.id)}
+              className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2.5 text-start transition-colors duration-200 hover:bg-surface-4"
+            >
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[8px] bg-surface-4 text-text-secondary">
+                <IconTruck size={15} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12.5px] tabular-nums text-text-primary">
+                  {v.shipment}
+                </span>
+                <span className="block truncate text-[10.5px] text-text-muted">
+                  {v.from} → {v.to} · {v.partner}
+                </span>
+              </span>
+              <StatusChip status={v.status} />
+            </button>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+export function ChatsView({ vehicles, onSelect, onToast }: ViewProps) {
+  const { t } = useSettings();
+  const threads = vehicles.filter((v) => v.comments.length > 0).slice(0, 8);
+  return (
+    <Panel
+      title={t("Chats", "المحادثات")}
+      hint={t("Driver channels · replies under 2 minutes", "قنوات السائقين · الرد خلال دقيقتين")}
+    >
+      <div className="space-y-1">
+        {threads.map((v) => {
+          const last = v.comments[v.comments.length - 1];
+          return (
+            <button
+              key={v.id}
+              onClick={() => {
+                onSelect(v.id);
+                onToast(t("Opened thread", "تم فتح المحادثة"), v.driver.name);
+              }}
+              className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2.5 text-start transition-colors duration-200 hover:bg-surface-4"
+            >
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-5 text-[11px] font-semibold text-text-primary">
+                {v.driver.initials}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  <span className="truncate text-[12.5px] font-medium text-text-primary">
+                    {v.driver.name}
+                  </span>
+                  <span className="text-[10.5px] tabular-nums text-text-muted">{last.time}</span>
+                </span>
+                <span className="block truncate text-[11px] text-text-muted">{last.text}</span>
+              </span>
+              <span className="badge bg-brand/15 text-brand">{v.shipment.slice(0, 2)}</span>
+            </button>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
+
+export function PartnersView({ vehicles, onPartner, onToast }: ViewProps) {
+  const { t } = useSettings();
+  const groups = new Map<string, Vehicle[]>();
+  vehicles.forEach((v) => {
+    const list = groups.get(v.partner) ?? [];
+    list.push(v);
+    groups.set(v.partner, list);
+  });
+
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {[...groups.entries()].map(([name, list], i) => (
+        <button
+          key={name}
+          onClick={() => {
+            onPartner(name);
+            onToast(t("Filtered by partner", "تمت الفلترة حسب الشريك"), name);
+          }}
+          style={{ animationDelay: `${i * 45}ms` }}
+          className="animate-fade-up card p-4 text-start transition-all duration-200 hover:bg-surface-4 active:scale-[0.98]"
+        >
+          <div className="flex items-start justify-between">
+            <span className="grid h-9 w-9 place-items-center rounded-[8px] bg-surface-4 text-[11px] font-semibold text-brand">
+              {name.slice(0, 2).toUpperCase()}
+            </span>
+            <span className="badge bg-surface-5 text-text-secondary">{list.length}</span>
+          </div>
+          <div className="mt-3 text-[13.5px] font-medium text-text-primary">{name}</div>
+          <div className="mt-1 text-[11px] tabular-nums text-text-muted">
+            {list.reduce((s, v) => s + v.load, 0).toFixed(1)} {t("t payload", "طن حمولة")} ·{" "}
+            {list.filter((v) => v.status === "active").length} {t("on route", "على الطريق")}
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function AnalysisView({ vehicles }: ViewProps) {
+  const { t } = useSettings();
+  const rows = BODY_TYPES.map((b) => {
+    const list = vehicles.filter((v) => v.body === b.id);
+    const util = list.length
+      ? list.reduce((s, v) => s + (v.load / v.maxLoad) * 100, 0) / list.length
+      : 0;
+    return { ...b, count: list.length, util };
+  });
+  const max = Math.max(...rows.map((r) => r.util), 1);
+
+  return (
+    <div className="space-y-3">
+      <Panel
+        title={t("Utilisation by body type", "الاستغلال حسب نوع الهيكل")}
+        hint={t("Average payload fill across the fleet", "متوسط تعبئة الحمولة عبر الأسطول")}
+      >
+        <div className="space-y-3">
+          {rows.map((r) => (
+            <div key={r.id} className="flex items-center gap-3">
+              <span className="w-[124px] shrink-0 truncate text-[11.5px] text-text-secondary">
+                {t(r.label[0], r.label[1])}
+              </span>
+              <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-4">
+                <span
+                  className="stripes block h-full rounded-full transition-[width] duration-1000 ease-out"
+                  style={{ width: `${(r.util / max) * 100}%` }}
+                />
+              </span>
+              <span className="w-14 text-end text-[11.5px] tabular-nums text-text-primary">
+                {r.util.toFixed(0)}%
+              </span>
+              <span className="w-8 text-end text-[10.5px] tabular-nums text-text-muted">
+                {r.count}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          [t("On-time rate", "نسبة الالتزام"), "92%"],
+          [
+            t("Avg. fuel", "متوسط الوقود"),
+            `${(vehicles.reduce((s, v) => s + v.fuel, 0) / vehicles.length).toFixed(0)}%`,
+          ],
+          [t("Fleet size", "حجم الأسطول"), vehicles.length],
+        ].map(([k, v]) => (
+          <div key={k} className="card p-4">
+            <div className="text-[10.5px] tracking-wide text-text-muted uppercase">{k}</div>
+            <div className="mt-2 text-[22px] font-medium tabular-nums text-text-primary">{v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function HistoryView({ vehicles, onSelect }: ViewProps) {
+  const { t } = useSettings();
+  const events = vehicles.slice(0, 9).map((v, i) => ({
+    id: v.id,
+    time: `${String(7 + i).padStart(2, "0")}:${String((i * 11) % 60).padStart(2, "0")}`,
+    title: v.stops[0].name,
+    state: v.status,
+    sub: `${v.from} → ${v.to} · ${v.partner}`,
+  }));
+
+  return (
+    <Panel
+      title={t("History", "السجل")}
+      hint={t("Last 24 hours of fleet events", "أحداث الأسطول خلال ٢٤ ساعة")}
+    >
+      <div className="relative space-y-4 ps-5">
+        <span className="absolute top-1 bottom-1 start-[5px] w-px bg-border-subtle" />
+        {events.map((e) => (
+          <button
+            key={e.id}
+            onClick={() => onSelect(e.id)}
+            className="relative block w-full text-start transition-opacity duration-200 hover:opacity-80"
+          >
+            <span className="absolute top-1.5 -start-5 h-[11px] w-[11px] rounded-full border-2 border-surface-3 bg-brand" />
+            <div className="flex items-baseline gap-2">
+              <span className="text-[10.5px] tabular-nums text-text-muted">{e.time}</span>
+              <span className="text-[12.5px] text-text-primary">
+                {t(
+                  e.state === "active"
+                    ? `${e.title} · departed`
+                    : e.state === "waiting"
+                      ? `${e.title} · waiting`
+                      : `${e.title} · parked`,
+                  e.state === "active"
+                    ? `${e.title} · غادرت`
+                    : e.state === "waiting"
+                      ? `${e.title} · في الانتظار`
+                      : `${e.title} · متوقفة`,
+                )}
+              </span>
+            </div>
+            <div className="text-[10.5px] text-text-muted">{e.sub}</div>
+          </button>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+export function TrucksView({ vehicles, onSelect }: ViewProps) {
+  const { t } = useSettings();
+  return (
+    <Panel title={t("Trucks", "الشاحنات")} hint={t(`${vehicles.length} vehicles in the fleet`, `${vehicles.length} مركبة في الأسطول`)}>
+      <div className="space-y-1">
+        {vehicles.map((v) => (
+          <button
+            key={v.id}
+            onClick={() => onSelect(v.id)}
+            className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-start transition-colors duration-200 hover:bg-surface-4"
+          >
+            <span className="w-[92px] shrink-0 text-[11.5px] tabular-nums text-text-primary">
+              {v.plate}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[12px] text-text-secondary">
+              {v.brand} {v.model}
+            </span>
+            <span className="hidden w-[110px] shrink-0 text-[11px] text-text-muted sm:block">
+              {(() => {
+                const b = BODY_TYPES.find((x) => x.id === v.body);
+                return b ? t(b.label[0], b.label[1]) : v.body;
+              })()}
+            </span>
+            <StatusChip status={v.status} />
+          </button>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+export function CargosView({ vehicles, onSelect }: ViewProps) {
+  const { t } = useSettings();
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {vehicles.map((v, i) => {
+        const b = BODY_TYPES.find((x) => x.id === v.body);
+        return (
+          <button
+            key={v.id}
+            onClick={() => onSelect(v.id)}
+            style={{ animationDelay: `${i * 45}ms` }}
+            className="animate-fade-up card p-4 text-start transition-all duration-200 hover:bg-surface-4 active:scale-[0.98]"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[12.5px] tabular-nums text-text-primary">{v.shipment}</span>
+              <StatusChip status={v.status} />
+            </div>
+            <div className="mt-1 text-[11px] text-text-muted">
+              {v.partner} · {b ? t(b.label[0], b.label[1]) : v.body}
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[11px] tabular-nums text-text-secondary">
+              <span>
+                {v.load} / {v.maxLoad} {t("t", "طن")}
+              </span>
+              <span className="text-brand">{((v.load / v.maxLoad) * 100).toFixed(0)}%</span>
+            </div>
+            <span className="mt-1.5 block h-2 overflow-hidden rounded-full bg-surface-4">
+              <span
+                className="stripes block h-full rounded-full"
+                style={{ width: `${(v.load / v.maxLoad) * 100}%` }}
+              />
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function RepairView({ vehicles, onSelect, onToast }: ViewProps) {
+  const { t } = useSettings();
+  const list = vehicles.filter((v) => v.status !== "active");
+  return (
+    <Panel
+      title={t("Repair", "الصيانة")}
+      hint={t(`${list.length} vehicles off the road`, `${list.length} مركبة خارج الخدمة`)}
+      action={
+        <button
+          onClick={() => onToast(t("Service request sent", "تم إرسال طلب الصيانة"), t("Workshop · Riyadh Yard", "الورشة · ساحة الرياض"))}
+          className="btn-ghost"
+        >
+          <IconRepair size={15} />
+          {t("Schedule", "جدولة")}
+        </button>
+      }
+    >
+      <div className="space-y-1">
+        {list.map((v) => (
+          <button
+            key={v.id}
+            onClick={() => onSelect(v.id)}
+            className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2.5 text-start transition-colors duration-200 hover:bg-surface-4"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] bg-status-waiting/15 text-status-waiting">
+              <IconRepair size={16} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[12.5px] tabular-nums text-text-primary">
+                {v.shipment}
+              </span>
+              <span className="block truncate text-[10.5px] text-text-muted">
+                {v.stops[v.stops.length - 1].place} · {v.plate}
+              </span>
+            </span>
+            <StatusChip status={v.status} />
+          </button>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+export function DriversView({ vehicles, onSelect }: ViewProps) {
+  const { t } = useSettings();
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {vehicles.map((v, i) => (
+        <button
+          key={v.id}
+          onClick={() => onSelect(v.id)}
+          style={{ animationDelay: `${i * 45}ms` }}
+          className="animate-fade-up card flex items-center gap-3 p-4 text-start transition-all duration-200 hover:bg-surface-4 active:scale-[0.98]"
+        >
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-5 text-[12px] font-semibold text-text-primary">
+            {v.driver.initials}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-medium text-text-primary">
+              {v.driver.name}
+            </span>
+            <span className="block truncate text-[10.5px] tabular-nums text-text-muted">
+              {v.driver.phone}
+            </span>
+            <span className="mt-1 flex items-center gap-1 text-[10.5px] tabular-nums text-status-waiting">
+              <IconStar size={11} />
+              {v.driver.rating} · {v.driver.trips} {t("trips", "رحلة")}
+            </span>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function ReportsView({ onToast }: ViewProps) {
+  const { t } = useSettings();
+  return (
+    <Panel
+      title={t("Reports", "التقارير")}
+      hint={t("Cargo photo reports from the field", "تقارير صور الشحنات من الميدان")}
+      action={
+        <button
+          onClick={() => onToast(t("Report exported", "تم تصدير التقرير"), "PDF · 2.4 MB")}
+          className="btn-ghost"
+        >
+          {t("Export", "تصدير")}
+        </button>
+      }
+    >
+      <div className="grid grid-cols-3 gap-2">
+        {PHOTO_REPORTS.map((p) => (
+          <div
+            key={p.src}
+            className="relative aspect-[4/3] overflow-hidden rounded-[8px] bg-surface-2"
+          >
+            <img src={p.src} alt={p.ar} className="h-full w-full object-cover" />
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
+            <span className="pointer-events-none absolute inset-x-1.5 bottom-1.5 text-start text-[10.5px] leading-tight text-white">
+              {t(p.en, p.ar)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+export function FleetStrip({
+  vehicles,
+  onSelect,
+}: {
+  vehicles: Vehicle[];
+  onSelect: (id: string) => void;
+}) {
+  const { t } = useSettings();
+  return (
+    <div className="card overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-border-subtle px-4 py-3">
+        <IconPin size={15} className="text-brand" />
+        <span className="text-[11px] tracking-wide text-text-muted uppercase">
+          {t(`Live fleet · ${vehicles.length} units`, `الأسطول الحي · ${vehicles.length} وحدة`)}
+        </span>
+      </div>
+      <div className="scroll-thin flex gap-3 overflow-x-auto p-3">
+        {vehicles.map((v) => (
+          <button
+            key={v.id}
+            onClick={() => onSelect(v.id)}
+            className="group w-[150px] shrink-0 rounded-[8px] bg-surface-2 p-2.5 text-start transition-all duration-200 hover:bg-surface-4 active:scale-95"
+          >
+            <span className="block overflow-hidden rounded-[6px] bg-black px-1">
+              <TruckImage
+                src={imageFor(v.brand, v.body)}
+                alt=""
+                className="h-10 w-full object-contain transition-transform duration-500 group-hover:scale-105"
+              />
+            </span>
+            <div className="mt-1 truncate text-[10.5px] tabular-nums text-text-primary">
+              {v.shipment}
+            </div>
+            <div className="truncate text-[10px] text-text-muted">{v.model}</div>
+            <div className="mt-1.5">
+              <StatusChip status={v.status} />
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function RowLink({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 text-[11.5px] text-brand transition-opacity duration-200 hover:opacity-80"
+    >
+      {label}
+      <IconArrowRight size={13} />
+    </button>
+  );
+}
+
+export function MiniCheck({ ok }: { ok: boolean }) {
+  return (
+    <span
+      className={cn(
+        "grid h-5 w-5 place-items-center rounded-full",
+        ok ? "bg-status-active/15 text-status-active" : "bg-surface-5 text-text-muted",
+      )}
+    >
+      <IconCheck size={12} />
+    </span>
+  );
+}
