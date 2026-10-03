@@ -49,13 +49,10 @@ export const PARTNERS = [
 
 /**
  * Legacy per-brand studio renders (`mb-curtain.jpg`, `scania-flatbed.jpg`, …)
- * were removed from the visual pipeline: they showed trucks that are not part of
- * the EJAZ fleet. Vehicle imagery now resolves exclusively through the approved
- * category asset in `data/vehicleTypes.ts` / the Vehicle Asset Registry.
- * The original files remain on disk for the legacy file paths only.
+ * were removed from the visual pipeline and disk: they showed trucks that are
+ * not part of the EJAZ fleet. Vehicle imagery now resolves exclusively through
+ * the approved category asset in `data/vehicleTypes.ts` / the Vehicle Asset Registry.
  */
-
-export const AERIAL_NIGHT = "images/trucks/aerial-night.jpg";
 
 /**
  * Login screen backdrop (mobile app).

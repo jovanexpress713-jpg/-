@@ -62,6 +62,10 @@ export function Vehicle3DViewer({
   }, [vehicleType]);
 
   const [autoRotate, setAutoRotate] = useState(true);
+  const autoRotateRef = useRef(autoRotate);
+  useEffect(() => {
+    autoRotateRef.current = autoRotate;
+  }, [autoRotate]);
   const [glSupported, setGlSupported] = useState(true);
 
   /**
@@ -75,6 +79,8 @@ export function Vehicle3DViewer({
   const { typeModel, vehicleImage, typeImage } = useVehicleAssets();
   const [assetMode, setAssetMode] = useState<"OFFICIAL_MODEL" | "REFERENCE_ONLY" | "ILLUSTRATIVE">("REFERENCE_ONLY");
   const [allowIllustrative, setAllowIllustrative] = useState(false);
+  const officialModel = typeModel(activeType);
+  const shouldRender3D = Boolean(officialModel?.url) || allowIllustrative;
 
   // Three.js scene refs
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -598,8 +604,13 @@ export function Vehicle3DViewer({
     return truck;
   }, []);
 
-  // Initialize Three.js scene
+  // Initialize Three.js scene only when 3D geometry is actually active
   useEffect(() => {
+    if (!shouldRender3D) {
+      setAssetMode("REFERENCE_ONLY");
+      return;
+    }
+
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
@@ -641,22 +652,18 @@ export function Vehicle3DViewer({
     rendererRef.current = renderer;
 
     // 4. Lighting: Three-Point Studio Lighting
-    // Warm Key Light
     const keyLight = new THREE.DirectionalLight(0xfff4e5, 2.2);
     keyLight.position.set(16, 20, 16);
     scene.add(keyLight);
 
-    // Cool Soft Fill Light
     const fillLight = new THREE.DirectionalLight(0xb4d3fe, 1.1);
     fillLight.position.set(-16, 12, -12);
     scene.add(fillLight);
 
-    // Sharp Rim / Kick Light from behind
     const rimLight = new THREE.DirectionalLight(0xffaa44, 1.8);
     rimLight.position.set(-20, 16, 12);
     scene.add(rimLight);
 
-    // Soft Ambient Light
     const ambientLight = new THREE.AmbientLight(0x182436, 1.6);
     scene.add(ambientLight);
 
@@ -672,7 +679,6 @@ export function Vehicle3DViewer({
     stage.position.y = 0;
     scene.add(stage);
 
-    // Concentric Ring Markings
     const ringGeo = new THREE.RingGeometry(15.8, 16.0, 48);
     ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({
@@ -685,11 +691,6 @@ export function Vehicle3DViewer({
     ring.position.y = 0.01;
     scene.add(ring);
 
-    // Initial Truck Assembly
-    const initialTruck = buildTruckModel(activeType);
-    truckGroupRef.current = initialTruck;
-    scene.add(initialTruck);
-
     // Animation Loop
     let lastTime = performance.now();
     const animate = (time: number) => {
@@ -698,7 +699,7 @@ export function Vehicle3DViewer({
       lastTime = time;
 
       // Auto rotation when not interacting
-      if (autoRotate && !isPointerDownRef.current) {
+      if (autoRotateRef.current && !isPointerDownRef.current) {
         sphericalRef.current.theta += delta * 0.35;
       }
 
@@ -731,9 +732,15 @@ export function Vehicle3DViewer({
     return () => {
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
       resizeObserver.disconnect();
+      stageGeo.dispose();
+      stageMat.dispose();
+      ringGeo.dispose();
+      ringMat.dispose();
       renderer.dispose();
+      sceneRef.current = null;
+      rendererRef.current = null;
     };
-  }, [buildTruckModel, resetCamera]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shouldRender3D, resetCamera]);
 
   const gltfLoaderRef = useRef<GLTFLoader | null>(null);
   const touchStartDistRef = useRef<number | null>(null);
@@ -741,9 +748,12 @@ export function Vehicle3DViewer({
   const lastTapRef = useRef<number>(0);
 
   // Resolve and mount the authoritative asset for the active category
-  const officialModel = typeModel(activeType);
-
   useEffect(() => {
+    if (!shouldRender3D) {
+      setAssetMode("REFERENCE_ONLY");
+      return;
+    }
+
     const scene = sceneRef.current;
     if (!scene) return;
 
@@ -755,6 +765,14 @@ export function Vehicle3DViewer({
 
     const clearCurrent = () => {
       if (truckGroupRef.current && sceneRef.current) {
+        truckGroupRef.current.traverse((obj) => {
+          const mesh = obj as THREE.Mesh;
+          if (mesh.isMesh) {
+            mesh.geometry?.dispose();
+            if (Array.isArray(mesh.material)) mesh.material.forEach((m) => m.dispose());
+            else mesh.material?.dispose();
+          }
+        });
         sceneRef.current.remove(truckGroupRef.current);
         truckGroupRef.current = null;
       }
@@ -839,7 +857,7 @@ export function Vehicle3DViewer({
     return () => {
       isCancelled = true;
     };
-  }, [activeType, officialModel?.url, officialModel?.scale, officialModel?.rotationY, officialModel?.yOffset, officialModel?.cameraRadius, allowIllustrative, buildTruckModel]);
+  }, [shouldRender3D, activeType, officialModel?.url, officialModel?.scale, officialModel?.rotationY, officialModel?.yOffset, officialModel?.cameraRadius, allowIllustrative, buildTruckModel]);
 
   // Pointer Interaction Handlers (Mouse & Touch Orbiting)
   const handlePointerDown = (e: React.PointerEvent) => {

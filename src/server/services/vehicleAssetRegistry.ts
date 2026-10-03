@@ -176,7 +176,10 @@ function readManifest(): VehicleAssetRegistry {
 }
 
 function assetExists(url: string): boolean {
-  if (!url.startsWith(PUBLIC_PREFIX)) return true; // baseline assets live under /images
+  if (!url.startsWith(PUBLIC_PREFIX)) {
+    const publicPath = path.resolve(process.cwd(), "public", url.replace(/^\//, ""));
+    return fs.existsSync(publicPath);
+  }
   const rel = url.slice(PUBLIC_PREFIX.length).replace(/^\//, "");
   return fs.existsSync(path.join(resolveUploadRoot(), rel));
 }

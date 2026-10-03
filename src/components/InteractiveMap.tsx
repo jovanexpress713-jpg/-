@@ -87,8 +87,10 @@ export function InteractiveMap({
     let animFrame: number;
 
     const render = () => {
-      const width = (canvas.width = canvas.parentElement?.clientWidth || 600);
-      const height = (canvas.height = canvas.parentElement?.clientHeight || 400);
+      const width = canvas.parentElement?.clientWidth || 600;
+      const height = canvas.parentElement?.clientHeight || 400;
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
 
       // 1) Background canvas
       ctx.fillStyle = mapLayer === "satellite" ? "#060f1b" : "#091527";

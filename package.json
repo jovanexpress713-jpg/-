@@ -15,9 +15,7 @@
     "verify:registration": "node scripts/verify-registration-flow.mjs"
   },
   "dependencies": {
-    "@types/canvas-confetti": "^1.9.0",
     "bcryptjs": "^3.0.3",
-    "canvas-confetti": "^1.9.4",
     "clsx": "2.1.1",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
@@ -31,7 +29,6 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.17",
-    "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -44,7 +41,6 @@
     "tailwindcss": "4.1.17",
     "tsx": "^4.23.15",
     "typescript": "5.9.3",
-    "vite": "^7.3.6",
-    "vite-plugin-singlefile": "2.3.0"
+    "vite": "^7.3.6"
   }
 }

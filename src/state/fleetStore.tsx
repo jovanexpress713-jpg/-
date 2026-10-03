@@ -10,7 +10,7 @@ import type { BodyType, Driver, Vehicle } from "../data/types";
 import { normalizeVehicleType } from "../data/vehicleTypes";
 import { FLEET } from "../data/fleet";
 import { interpolateRoute } from "../services/gpsSimulation";
-import { apiClient } from "../services/apiClient";
+import { apiClient, getAuthToken } from "../services/apiClient";
 
 export type Role = "admin" | "driver" | "shipper" | "owner";
 
@@ -615,6 +615,7 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     async function syncBackendData() {
+      if (!getAuthToken()) return;
       try {
         const [tripsRes] = await Promise.all([
           apiClient.trips.getAll(),
@@ -623,65 +624,97 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
         if (!isMounted) return;
 
         if (tripsRes?.trips?.length) {
-          const mappedTrips: Trip[] = tripsRes.trips.map((bt: any) => ({
-            id: bt.id,
-            tripNumber: bt.tripNumber,
-            truckId: bt.vehicleId || "v1",
-            driverId: bt.driverId || "d1",
-            shipper: bt.customerName || "شركة سدافكو للأغذية والمشروبات",
-            consignee: bt.deliveryAddress || "ميناء جدة الإسلامي",
-            originCity: bt.originCity,
-            originTerminal: bt.pickupAddress,
-            destinationCity: bt.destinationCity,
-            destinationTerminal: bt.deliveryAddress,
-            corridorKey: bt.corridorKey || "riyadh-jeddah",
-            cargoType: normalizeVehicleType(bt.cargoType),
-            cargoWeightTons: Number(bt.cargoWeightTons),
-            maxCapacityTons: Number(bt.maxCapacityTons || 25),
-            status: (bt.status === "IN_TRANSIT" ? "on_road" : bt.status === "DELIVERED" ? "delivered" : bt.status === "COMPLETED" ? "completed" : "ready") as TripStatus,
-            progressPct: bt.status === "IN_TRANSIT" ? 48 : (bt.status === "DELIVERED" || bt.status === "COMPLETED" ? 100 : 0),
-            speedKmH: Number(bt.currentSpeed || 0),
-            headingDeg: Number(bt.currentHeading || 0),
-            currentLat: Number(bt.currentLat || 24.7136),
-            currentLng: Number(bt.currentLng || 46.6753),
-            distanceTotalKm: 948,
-            distanceCoveredKm: bt.status === "IN_TRANSIT" ? 417 : 0,
-            distanceRemainingKm: bt.status === "IN_TRANSIT" ? 531 : 948,
-            etaMinutes: 210,
-            nextWaypointAr: "محطة ميزان القويعية",
-            nextWaypointEn: "Al Quwayiyah Weighbridge",
-            createdAt: bt.createdAt,
-            qrCodeToken: `EJAZ-${bt.tripNumber}`,
-            timeline: [
-              {
-                id: `e-init-${bt.id}`,
-                timestamp: "مسجلة في الخادم",
-                titleAr: `تم إنشاء الرحلة برقم موحد ${bt.tripNumber}`,
-                titleEn: `Authoritative Trip Created: ${bt.tripNumber}`,
-                status: "ready" as TripStatus,
-                actor: "النظام المركزي",
-              },
-            ],
-            // Authoritative server-side properties preserved
-            requestedByDriverId: bt.requestedByDriverId,
-            requestedByDriverName: bt.requestedByDriverName,
-            driverRequestStatus: bt.driverRequestStatus,
-            driverRequestNotes: bt.driverRequestNotes,
-            driverHistory: bt.driverHistory,
-            vehicleHistory: bt.vehicleHistory,
-            additionalDriverId: bt.additionalDriverId,
-            additionalDriverName: bt.additionalDriverName,
-          }));
+          setTrips((prev) => {
+            const prevById = new Map(prev.map((t) => [t.id, t]));
+            return tripsRes.trips.map((bt: any) => {
+              const existing = prevById.get(bt.id);
+              const mappedStatus = (
+                bt.status === "IN_TRANSIT"
+                  ? "on_road"
+                  : bt.status === "DELIVERED"
+                    ? "delivered"
+                    : bt.status === "COMPLETED"
+                      ? "completed"
+                      : "ready"
+              ) as TripStatus;
+              const keepLiveSimulation =
+                existing && existing.status === "on_road" && mappedStatus === "on_road";
 
-          setTrips(mappedTrips);
+              return {
+                id: bt.id,
+                tripNumber: bt.tripNumber,
+                truckId: bt.vehicleId || "v1",
+                driverId: bt.driverId || "d1",
+                shipper: bt.customerName || "شركة سدافكو للأغذية والمشروبات",
+                consignee: bt.deliveryAddress || "ميناء جدة الإسلامي",
+                originCity: bt.originCity,
+                originTerminal: bt.pickupAddress,
+                destinationCity: bt.destinationCity,
+                destinationTerminal: bt.deliveryAddress,
+                corridorKey: bt.corridorKey || "riyadh-jeddah",
+                cargoType: normalizeVehicleType(bt.cargoType),
+                cargoWeightTons: Number(bt.cargoWeightTons),
+                maxCapacityTons: Number(bt.maxCapacityTons || 25),
+                status: mappedStatus,
+                progressPct: keepLiveSimulation
+                  ? existing.progressPct
+                  : bt.status === "IN_TRANSIT"
+                    ? 48
+                    : bt.status === "DELIVERED" || bt.status === "COMPLETED"
+                      ? 100
+                      : 0,
+                speedKmH: keepLiveSimulation ? existing.speedKmH : Number(bt.currentSpeed || 0),
+                headingDeg: keepLiveSimulation ? existing.headingDeg : Number(bt.currentHeading || 0),
+                currentLat: keepLiveSimulation ? existing.currentLat : Number(bt.currentLat || 24.7136),
+                currentLng: keepLiveSimulation ? existing.currentLng : Number(bt.currentLng || 46.6753),
+                distanceTotalKm: 948,
+                distanceCoveredKm: keepLiveSimulation
+                  ? existing.distanceCoveredKm
+                  : bt.status === "IN_TRANSIT"
+                    ? 417
+                    : 0,
+                distanceRemainingKm: keepLiveSimulation
+                  ? existing.distanceRemainingKm
+                  : bt.status === "IN_TRANSIT"
+                    ? 531
+                    : 948,
+                etaMinutes: keepLiveSimulation ? existing.etaMinutes : 210,
+                nextWaypointAr: keepLiveSimulation ? existing.nextWaypointAr : "محطة ميزان القويعية",
+                nextWaypointEn: "Al Quwayiyah Weighbridge",
+                createdAt: bt.createdAt,
+                qrCodeToken: `EJAZ-${bt.tripNumber}`,
+                timeline: existing?.timeline?.length
+                  ? existing.timeline
+                  : [
+                      {
+                        id: `e-init-${bt.id}`,
+                        timestamp: "مسجلة في الخادم",
+                        titleAr: `تم إنشاء الرحلة برقم موحد ${bt.tripNumber}`,
+                        titleEn: `Authoritative Trip Created: ${bt.tripNumber}`,
+                        status: "ready" as TripStatus,
+                        actor: "النظام المركزي",
+                      },
+                    ],
+                // Authoritative server-side properties preserved
+                requestedByDriverId: bt.requestedByDriverId,
+                requestedByDriverName: bt.requestedByDriverName,
+                driverRequestStatus: bt.driverRequestStatus,
+                driverRequestNotes: bt.driverRequestNotes,
+                driverHistory: bt.driverHistory,
+                vehicleHistory: bt.vehicleHistory,
+                additionalDriverId: bt.additionalDriverId,
+                additionalDriverName: bt.additionalDriverName,
+              };
+            });
+          });
         }
-      } catch (err) {
-        console.warn("[FleetStore] Operating with baseline data cache", err);
+      } catch {
+        /* baseline cache remains active when offline or unprivileged */
       }
     }
 
     syncBackendData();
-    const syncTimer = setInterval(syncBackendData, 4000);
+    const syncTimer = setInterval(syncBackendData, 6000);
     return () => {
       isMounted = false;
       clearInterval(syncTimer);

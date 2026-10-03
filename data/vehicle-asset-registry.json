@@ -4,7 +4,7 @@
   "types": {
     "flatbed": {
       "type": "flatbed",
-      "officialImage": "/uploads/vehicle-assets/flatbed/official.png",
+      "officialImage": "/images/trucks/official/official-flatbed.png",
       "imageSource": "OFFICIAL_UPLOAD",
       "model": {
         "url": null,
@@ -14,13 +14,13 @@
         "rotationY": 0,
         "yOffset": 0
       },
-      "originalImage": "/uploads/vehicle-assets/flatbed/original.png",
+      "originalImage": "/images/trucks/official/official-flatbed.png",
       "imageFileName": "official-flatbed.png",
       "imageUpdatedAt": "2026-10-03T14:37:35.881Z"
     },
     "reefer": {
       "type": "reefer",
-      "officialImage": "/uploads/vehicle-assets/reefer/official.png",
+      "officialImage": "/images/trucks/official/official-reefer.png",
       "imageSource": "OFFICIAL_UPLOAD",
       "model": {
         "url": null,
@@ -30,13 +30,13 @@
         "rotationY": 0,
         "yOffset": 0
       },
-      "originalImage": "/uploads/vehicle-assets/reefer/original.png",
+      "originalImage": "/images/trucks/official/official-reefer.png",
       "imageFileName": "official-reefer.png",
       "imageUpdatedAt": "2026-10-03T14:37:36.149Z"
     },
     "dry": {
       "type": "dry",
-      "officialImage": "/uploads/vehicle-assets/dry/official.png",
+      "officialImage": "/images/trucks/official/official-dry.png",
       "imageSource": "OFFICIAL_UPLOAD",
       "model": {
         "url": null,
@@ -46,13 +46,13 @@
         "rotationY": 0,
         "yOffset": 0
       },
-      "originalImage": "/uploads/vehicle-assets/dry/original.png",
+      "originalImage": "/images/trucks/official/official-dry.png",
       "imageFileName": "official-dry.png",
       "imageUpdatedAt": "2026-10-03T14:37:36.419Z"
     },
     "curtain": {
       "type": "curtain",
-      "officialImage": "/uploads/vehicle-assets/curtain/official.png",
+      "officialImage": "/images/trucks/official/official-curtain.png",
       "imageSource": "OFFICIAL_UPLOAD",
       "model": {
         "url": null,
@@ -62,7 +62,7 @@
         "rotationY": 0,
         "yOffset": 0
       },
-      "originalImage": "/uploads/vehicle-assets/curtain/original.png",
+      "originalImage": "/images/trucks/official/official-curtain.png",
       "imageFileName": "official-curtain.png",
       "imageUpdatedAt": "2026-10-03T14:37:36.703Z"
     }
