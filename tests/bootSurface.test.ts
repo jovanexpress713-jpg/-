@@ -18,6 +18,7 @@ import path from "path";
 
 const root = process.cwd();
 const indexHtml = fs.readFileSync(path.join(root, "index.html"), "utf8");
+const serverTs = fs.readFileSync(path.join(root, "server.ts"), "utf8");
 const mainTsx = fs.readFileSync(path.join(root, "src", "main.tsx"), "utf8");
 const errorBoundaryTsx = fs.readFileSync(
   path.join(root, "src", "components", "ErrorBoundary.tsx"),
@@ -84,6 +85,16 @@ export function runBootSurfaceTests() {
     /detail && detail\.stack \? detail\.stack : detail/,
     "the overlay must render the underlying error detail"
   );
+
+  /* 7. Runtime HMR disconnects must not be reported as a fatal boot failure,
+        and Vite's websocket shares the proxied app server. */
+  assert.match(
+    indexHtml,
+    /if \(!boot \|\| !panel \|\| panel\.style\.display === "block"\) return;/,
+    "the boot overlay must ignore runtime errors after React removes the boot surface"
+  );
+  assert.match(indexHtml, /if \(panel\) panel\.style\.display = "none";/, "a successful mount must clear a transient startup overlay");
+  assert.match(serverTs, /hmr:\s*\{\s*server\s*\}/, "Vite HMR must share the proxied HTTP server instead of a fallback port");
 
   console.log("  ✓ Boot Surface / Blank-Screen Guard Tests Passed Successfully!");
 }

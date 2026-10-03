@@ -12,6 +12,9 @@ async function start() {
 
   // In AI Studio dev environment, the dev server must bind to port 3000.
   const LISTEN_PORT = process.env.NODE_ENV === "production" ? (TARGET_PORT || 3000) : 3000;
+  // Share the app's HTTP server with Vite HMR so proxied previews use the same
+  // external WebSocket endpoint instead of Vite's separate fallback port.
+  const server = http.createServer(app);
 
   if (process.env.NODE_ENV !== "production") {
     // Mount Vite middlewares in development
@@ -20,6 +23,7 @@ async function start() {
         middlewareMode: true,
         host: HOST,
         port: LISTEN_PORT,
+        hmr: { server },
       },
       appType: "spa",
     });
@@ -32,8 +36,6 @@ async function start() {
       res.sendFile(path.resolve(distPath, "index.html"));
     });
   }
-
-  const server = http.createServer(app);
 
   server.on("error", (err: any) => {
     if (err.code === "EADDRINUSE" && LISTEN_PORT !== 3000) {
