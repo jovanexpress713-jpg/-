@@ -53,6 +53,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const token = resolveToken();
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
+    // Some preview proxies strip Authorization; mirror the token in a custom
+    // header the server also accepts.
+    headers.set("X-Ejaz-Token", token);
   }
 
   const response = await fetch(endpoint, {
@@ -83,7 +86,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 async function requestBlob(endpoint: string): Promise<Blob> {
   const headers = new Headers();
   const token = resolveToken();
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+    headers.set("X-Ejaz-Token", token);
+  }
   const response = await fetch(endpoint, { headers, cache: "no-store" });
   if (!response.ok) {
     let errorMsg = `HTTP ${response.status}: ${response.statusText}`;
