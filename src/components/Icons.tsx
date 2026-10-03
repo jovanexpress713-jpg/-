@@ -421,56 +421,73 @@ export const IconKey = (p: IconProps) => (
    rest of this set; no decorative or generic substitutes.
    ============================================================ */
 
-/** سطحة · Flatbed — open deck slab with stake pockets, no enclosed box. */
+/** سطحة · Flatbed — open flat deck platform with cab headache rack and tie-down rails. */
 export const IconTruckFlatbed = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M13 10h4.2l2.8 3v2H13z" />
-    <path d="M2 12.6h11v2.4H2z" />
-    <path d="M3.6 12.6v-2.4" />
-    <path d="M7.5 12.6v-2.4" />
-    <path d="M11.4 12.6v-2.4" />
-    <circle cx="6.5" cy="17.4" r="1.7" />
-    <circle cx="17" cy="17.4" r="1.7" />
+    <path d="M14 9h3.2l2.8 3v3h-6z" />
+    <path d="M17 9.5l2.2 2.5H14" />
+    <path d="M14 7.5v7.5" />
+    <path d="M1.5 13.5h12.5v1.5H1.5z" />
+    <path d="M3.5 13.5v-3.5" />
+    <path d="M7 13.5v-3.5" />
+    <path d="M10.5 13.5v-3.5" />
+    <path d="M3.5 10h7" />
+    <path d="M1.5 15l-0.5-1.5" />
+    <circle cx="6" cy="17.5" r="1.7" />
+    <circle cx="17.5" cy="17.5" r="1.7" />
   </Svg>
 );
 
-/** براد · Refrigerated — insulated box with the nose cooling unit + snowflake. */
+/** براد · Refrigerated — insulated thermo-box with front cooling compressor unit & snowflake. */
 export const IconTruckReefer = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M13 10h4.2l2.8 3v2H13z" />
-    <rect x="2" y="6.4" width="11" height="8.6" rx="1.2" />
-    <path d="M10.1 6.4V4.4h2.6v2" />
-    <path d="M6.4 8.9v4" />
-    <path d="M4.7 9.9l3.4 2" />
-    <path d="M8.1 9.9l-3.4 2" />
-    <circle cx="6.5" cy="17.4" r="1.7" />
-    <circle cx="17" cy="17.4" r="1.7" />
+    <path d="M14 9h3.2l2.8 3v3h-6z" />
+    <path d="M17 9.5l2.2 2.5H14" />
+    <rect x="2" y="6" width="12" height="9" rx="1.2" />
+    <path d="M11 6V3.8h3V6" />
+    <path d="M11.8 4.9h1.4" />
+    <path d="M6.5 8v5" />
+    <path d="M4 10.5h5" />
+    <path d="M4.7 8.7l3.6 3.6" />
+    <path d="M8.3 8.7l-3.6 3.6" />
+    <circle cx="6" cy="17.5" r="1.7" />
+    <circle cx="17.5" cy="17.5" r="1.7" />
   </Svg>
 );
 
-/** جاف · Dry Van — fully enclosed box with rear double doors + handle. */
+/** جاف · Dry Van — fully enclosed solid container box with rear cargo doors & roof wind-deflector. */
 export const IconTruckDry = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M13 10h4.2l2.8 3v2H13z" />
-    <rect x="2" y="6.4" width="11" height="8.6" rx="1.2" />
-    <path d="M4.6 6.6v8.2" />
-    <path d="M3.3 10.5h.9" />
-    <circle cx="6.5" cy="17.4" r="1.7" />
-    <circle cx="17" cy="17.4" r="1.7" />
+    <path d="M14 9h3.2l2.8 3v3h-6z" />
+    <path d="M17 9.5l2.2 2.5H14" />
+    <path d="M14 6.8c1.8-.6 3.2.2 3.6 2.2" />
+    <rect x="2" y="6" width="12" height="9" rx="1.2" />
+    <path d="M4.5 6v9" />
+    <path d="M3.2 9.2h1.3" />
+    <path d="M3.2 11.8h1.3" />
+    <path d="M6.5 9h5.5" />
+    <path d="M6.5 12h5.5" />
+    <circle cx="6" cy="17.5" r="1.7" />
+    <circle cx="17.5" cy="17.5" r="1.7" />
   </Svg>
 );
 
-/** ستارة · Curtainsider — box with the roller top rail and curtain folds. */
+/** ستارة · Curtainsider — flexible tarpaulin side curtains with top roller track & vertical straps. */
 export const IconTruckCurtain = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M13 10h4.2l2.8 3v2H13z" />
-    <rect x="2" y="6.4" width="11" height="8.6" rx="1.2" />
-    <path d="M2 8.2h11" />
-    <path d="M4.9 8.4v6.4" />
-    <path d="M7.5 8.4v6.4" />
-    <path d="M10.1 8.4v6.4" />
-    <circle cx="6.5" cy="17.4" r="1.7" />
-    <circle cx="17" cy="17.4" r="1.7" />
+    <path d="M14 9h3.2l2.8 3v3h-6z" />
+    <path d="M17 9.5l2.2 2.5H14" />
+    <rect x="2" y="6" width="12" height="9" rx="1.2" />
+    <path d="M2 7.8h12" />
+    <path d="M2 13.5h12" />
+    <path d="M5 7.8v5.7" />
+    <path d="M8 7.8v5.7" />
+    <path d="M11 7.8v5.7" />
+    <circle cx="5" cy="10.8" r="0.6" fill="currentColor" />
+    <circle cx="8" cy="10.8" r="0.6" fill="currentColor" />
+    <circle cx="11" cy="10.8" r="0.6" fill="currentColor" />
+    <circle cx="6" cy="17.5" r="1.7" />
+    <circle cx="17.5" cy="17.5" r="1.7" />
   </Svg>
 );
 

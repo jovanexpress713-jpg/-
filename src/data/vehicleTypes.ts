@@ -177,12 +177,16 @@ export function normalizeVehicleType(raw: string | null | undefined): CanonicalV
   if (
     s === "reefer" ||
     s === "براد" ||
+    s === "ثلاجة" ||
+    s === "ثلاجه" ||
     s === "مبرّد" ||
     s === "تبريد" ||
     s === "refrigerated" ||
     s === "chilled" ||
     s.includes("reef") ||
-    s.includes("برد")
+    s.includes("برد") ||
+    s.includes("ثلاج") ||
+    s.includes("ثلج")
   ) {
     return "reefer";
   }

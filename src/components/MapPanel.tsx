@@ -10,11 +10,14 @@ import {
   project,
 } from "../data/routes";
 import { IconLayers, IconZoomIn, IconZoomOut } from "./Icons";
+import { normalizeVehicleType, getVehicleTypeMeta } from "../data/vehicleTypes";
+import { TruckTypeIcon } from "./TruckTypeIcon";
 
 interface Props {
   from: string;
   to: string;
   progress: number;
+  truckType?: string | null;
   accent?: boolean;
   className?: string;
   compact?: boolean;
@@ -37,6 +40,7 @@ export function MapPanel({
   from,
   to,
   progress,
+  truckType,
   accent = false,
   className,
   compact = false,
@@ -45,6 +49,9 @@ export function MapPanel({
   const [zoom, setZoom] = useState(1);
   const [layer, setLayer] = useState<"vector" | "google">("vector");
   const [googleReady, setGoogleReady] = useState(false);
+
+  const canonicalType = truckType ? normalizeVehicleType(truckType) : "curtain";
+  const typeMeta = getVehicleTypeMeta(canonicalType);
 
   const a = CITIES[from] ?? CITIES.Riyadh;
   const b = CITIES[to] ?? CITIES.Jeddah;
@@ -161,38 +168,87 @@ export function MapPanel({
             style={{ filter: `drop-shadow(0 0 6px ${stroke})` }}
           />
 
-          {/* live unit */}
+          {/* live unit with category silhouette */}
           <g transform={`translate(${marker.x} ${marker.y})`}>
-            <circle r="13" fill={stroke} opacity="0.22" />
-            <circle r="8.5" fill={stroke} />
-            <g transform="translate(-5 -3.2) scale(0.42)">
-              <path
-                d="M2 7h11v8H2z M13 10h4.2l2.8 3v2H13z"
-                stroke="var(--color-on-brand)"
-                strokeWidth="3.4"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="6.5" cy="17.4" r="1.9" fill="var(--color-on-brand)" />
-              <circle cx="17" cy="17.4" r="1.9" fill="var(--color-on-brand)" />
+            <circle r="14" fill={stroke} opacity="0.22" />
+            <circle r="9.5" fill={stroke} />
+            <g transform="translate(-5.5 -3.8) scale(0.46)">
+              {canonicalType === "flatbed" ? (
+                <>
+                  <path
+                    d="M14 9h3.2l2.8 3v3h-6z M14 7.5v7.5 M1.5 13.5h12.5v1.5H1.5z M3.5 13.5v-3.5 M7 13.5v-3.5 M10.5 13.5v-3.5 M3.5 10h7"
+                    stroke="var(--color-on-brand)"
+                    strokeWidth="3.2"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="6" cy="17.5" r="1.9" fill="var(--color-on-brand)" />
+                  <circle cx="17.5" cy="17.5" r="1.9" fill="var(--color-on-brand)" />
+                </>
+              ) : canonicalType === "reefer" ? (
+                <>
+                  <rect x="2" y="6" width="12" height="9" rx="1.2" stroke="var(--color-on-brand)" strokeWidth="3.2" fill="none" />
+                  <path
+                    d="M14 9h3.2l2.8 3v3h-6z M11 6V3.8h3V6 M6.5 8v5 M4 10.5h5"
+                    stroke="var(--color-on-brand)"
+                    strokeWidth="3.2"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="6" cy="17.5" r="1.9" fill="var(--color-on-brand)" />
+                  <circle cx="17.5" cy="17.5" r="1.9" fill="var(--color-on-brand)" />
+                </>
+              ) : canonicalType === "dry" ? (
+                <>
+                  <rect x="2" y="6" width="12" height="9" rx="1.2" stroke="var(--color-on-brand)" strokeWidth="3.2" fill="none" />
+                  <path
+                    d="M14 9h3.2l2.8 3v3h-6z M4.5 6v9 M6.5 9h5.5 M6.5 12h5.5"
+                    stroke="var(--color-on-brand)"
+                    strokeWidth="3.2"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="6" cy="17.5" r="1.9" fill="var(--color-on-brand)" />
+                  <circle cx="17.5" cy="17.5" r="1.9" fill="var(--color-on-brand)" />
+                </>
+              ) : (
+                <>
+                  <rect x="2" y="6" width="12" height="9" rx="1.2" stroke="var(--color-on-brand)" strokeWidth="3.2" fill="none" />
+                  <path
+                    d="M14 9h3.2l2.8 3v3h-6z M2 7.8h12 M2 13.5h12 M5 7.8v5.7 M8 7.8v5.7 M11 7.8v5.7"
+                    stroke="var(--color-on-brand)"
+                    strokeWidth="3.2"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="6" cy="17.5" r="1.9" fill="var(--color-on-brand)" />
+                  <circle cx="17.5" cy="17.5" r="1.9" fill="var(--color-on-brand)" />
+                </>
+              )}
             </g>
           </g>
         </svg>
       )}
 
-      {/* route chip */}
+      {/* route chip with canonical vehicle type */}
       <div
         className={cn(
-          "pointer-events-none absolute top-3 flex items-center gap-2 rounded-full bg-navy/70 px-3 py-1.5 text-[10.5px] text-white backdrop-blur-md",
+          "pointer-events-none absolute top-3 flex items-center gap-2 rounded-full bg-navy/85 px-3 py-1.5 text-[10.5px] text-white backdrop-blur-md border border-white/10 shadow-sm",
           dir === "rtl" ? "right-3" : "left-3",
         )}
       >
-        <span className="text-white/70">{from}</span>
+        <TruckTypeIcon truckType={canonicalType} size={14} className="text-brand shrink-0" />
+        <span className="font-semibold text-brand">{typeMeta.arabicName}</span>
+        <span className="text-white/40">·</span>
+        <span className="text-white/90">{from}</span>
         <span style={{ color: stroke }}>→</span>
         <span className="font-medium">{to}</span>
         <span className="text-white/50 tabular-nums">
-          · {Math.round(km).toLocaleString()} km / {Math.round(mi).toLocaleString()} mi
+          · {Math.round(km).toLocaleString()} km
         </span>
       </div>
 

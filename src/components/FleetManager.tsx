@@ -11,7 +11,7 @@ import {
   type CanonicalVehicleTypeId,
 } from "../data/vehicleTypes";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
-import { TruckTypeIcon } from "./TruckTypeIcon";
+import { TruckTypeIcon, TruckTypeAvatar } from "./TruckTypeIcon";
 import { SpecTile } from "./TruckSpecs";
 import { TruckImage } from "./TruckImage";
 import { apiClient } from "../services/apiClient";
@@ -174,7 +174,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
   const handleCreateVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formPlate.trim()) {
-      alert(t("Please provide a vehicle plate number", "يرجى كتابة رقم لوحة الشاحنة"));
+      toast(t("Please provide a vehicle plate number", "يرجى كتابة رقم لوحة الشاحنة"), t("Required Field", "حقل إلزامي"));
       return;
     }
 
@@ -241,7 +241,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
       setFormPlate("");
       setFormCustomImage("");
     } catch (err: any) {
-      alert(err.message || "Failed to create vehicle");
+      toast(t("Failed to create vehicle", "تعذرت إضافة الشاحنة"), err.message || "Error");
     } finally {
       setIsSubmitting(false);
     }
@@ -531,15 +531,18 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
 
                 {/* Card Body */}
                 <div className="p-4 space-y-3">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[14px] font-bold text-text-primary">
-                        {v.plate}
-                      </span>
-                      <span className="text-[11px] text-text-muted font-mono">{v.year}</span>
-                    </div>
-                    <div className="text-[12.5px] font-semibold text-text-secondary mt-0.5 truncate">
-                      {v.brand} {v.model}
+                  <div className="flex items-center gap-3">
+                    <TruckTypeAvatar truckType={normType} size={42} iconSize={22} showBadge />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[14px] font-bold text-text-primary">
+                          {v.plate}
+                        </span>
+                        <span className="text-[11px] text-text-muted font-mono">{v.year}</span>
+                      </div>
+                      <div className="text-[12.5px] font-semibold text-text-secondary mt-0.5 truncate">
+                        {v.brand} {v.model}
+                      </div>
                     </div>
                   </div>
 

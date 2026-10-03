@@ -1,6 +1,7 @@
 import { cn } from "../../utils/cn";
 import { useSettings } from "../../settings";
 import type { Trip } from "../../state/fleetStore";
+import { TruckTypeAvatar, TruckTypeBadge } from "../TruckTypeIcon";
 import { formatEta, GROUP_TONE, STATUS_LABEL, statusGroup } from "./shared";
 
 interface Props {
@@ -44,9 +45,15 @@ export function TrackingPanel({ trip, trips, onSelect, onOpenDetails }: Props) {
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2 rounded-[12px] bg-surface-4 px-3 py-2">
-        <div className="min-w-0">
-          <div className="text-[10.5px] text-text-muted">{t("Tracking ID", "رقم التتبع")}</div>
-          <div className="truncate text-[13px] font-semibold tabular-nums text-text-primary">#{trip.tripNumber}</div>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <TruckTypeAvatar truckType={trip.cargoType} size={34} iconSize={18} showBadge />
+          <div className="min-w-0">
+            <div className="text-[10.5px] text-text-muted flex items-center gap-1.5">
+              <span>{t("Tracking ID", "رقم التتبع")}</span>
+              <TruckTypeBadge truckType={trip.cargoType} size={11} withLabel={false} />
+            </div>
+            <div className="truncate text-[13px] font-semibold tabular-nums text-text-primary">#{trip.tripNumber}</div>
+          </div>
         </div>
         <label className="sr-only" htmlFor="tracking-change">{t("Change shipment", "تغيير الشحنة")}</label>
         <select

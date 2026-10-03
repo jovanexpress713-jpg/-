@@ -12,6 +12,8 @@ import {
 } from "./Icons";
 import { StatusChip } from "./StatusChip";
 import { TruckImage } from "./TruckImage";
+import { TruckTypeAvatar } from "./TruckTypeIcon";
+import { getVehicleTypeMeta } from "../data/vehicleTypes";
 
 interface ViewProps {
   vehicles: Vehicle[];
@@ -93,12 +95,10 @@ export function DashboardView({ vehicles, onSelect, onToast }: ViewProps) {
               onClick={() => onSelect(v.id)}
               className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2.5 text-start transition-colors duration-200 hover:bg-surface-4"
             >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[8px] bg-surface-4 text-text-secondary">
-                <IconTruck size={15} />
-              </span>
+              <TruckTypeAvatar truckType={v.body} size={36} iconSize={18} showBadge />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[12.5px] tabular-nums text-text-primary">
-                  {v.shipment}
+                  {v.shipment} · {getVehicleTypeMeta(v.body).arabicName}
                 </span>
                 <span className="block truncate text-[10.5px] text-text-muted">
                   {v.from} → {v.to} · {v.partner}
@@ -304,28 +304,38 @@ export function TrucksView({ vehicles, onSelect }: ViewProps) {
   const { t } = useSettings();
   return (
     <Panel title={t("Trucks", "الشاحنات")} hint={t(`${vehicles.length} vehicles in the fleet`, `${vehicles.length} مركبة في الأسطول`)}>
-      <div className="space-y-1">
-        {vehicles.map((v) => (
-          <button
-            key={v.id}
-            onClick={() => onSelect(v.id)}
-            className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-start transition-colors duration-200 hover:bg-surface-4"
-          >
-            <span className="w-[92px] shrink-0 text-[11.5px] tabular-nums text-text-primary">
-              {v.plate}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-[12px] text-text-secondary">
-              {v.brand} {v.model}
-            </span>
-            <span className="hidden w-[110px] shrink-0 text-[11px] text-text-muted sm:block">
-              {(() => {
-                const b = BODY_TYPES.find((x) => x.id === v.body);
-                return b ? t(b.label[0], b.label[1]) : v.body;
-              })()}
-            </span>
-            <StatusChip status={v.status} />
-          </button>
-        ))}
+      <div className="space-y-1.5">
+        {vehicles.map((v) => {
+          const meta = getVehicleTypeMeta(v.body);
+          return (
+            <button
+              key={v.id}
+              onClick={() => onSelect(v.id)}
+              className="flex w-full items-center gap-3.5 rounded-[12px] p-2.5 text-start transition-colors duration-200 hover:bg-surface-4 border border-border-subtle/40 bg-surface-2/40"
+            >
+              {/* Circular Avatar matching user's reference */}
+              <TruckTypeAvatar truckType={v.body} size={44} iconSize={22} showBadge />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-[13.5px] text-text-primary truncate">
+                    {v.brand} {v.model}
+                  </span>
+                  <span className="font-mono text-[12px] font-bold text-brand tabular-nums shrink-0">
+                    {v.plate}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 text-[11px] text-text-muted">
+                  <span className="font-semibold text-text-secondary">{meta.arabicName} ({meta.englishName})</span>
+                  <span>·</span>
+                  <span className="truncate">{v.partner}</span>
+                  <span>·</span>
+                  <span className="tabular-nums font-mono">{v.load} / {v.maxLoad} {t("tons", "طن")}</span>
+                </div>
+              </div>
+              <StatusChip status={v.status} />
+            </button>
+          );
+        })}
       </div>
     </Panel>
   );
@@ -334,35 +344,48 @@ export function TrucksView({ vehicles, onSelect }: ViewProps) {
 export function CargosView({ vehicles, onSelect }: ViewProps) {
   const { t } = useSettings();
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {vehicles.map((v, i) => {
-        const b = BODY_TYPES.find((x) => x.id === v.body);
+        const meta = getVehicleTypeMeta(v.body);
         return (
           <button
             key={v.id}
             onClick={() => onSelect(v.id)}
             style={{ animationDelay: `${i * 45}ms` }}
-            className="animate-fade-up card p-4 text-start transition-all duration-200 hover:bg-surface-4 active:scale-[0.98]"
+            className="animate-fade-up card p-3.5 text-start transition-all duration-200 hover:bg-surface-4 active:scale-[0.98] flex flex-col justify-between"
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[12.5px] tabular-nums text-text-primary">{v.shipment}</span>
-              <StatusChip status={v.status} />
+            <div className="flex items-start gap-3">
+              {/* Circular Truck Type Avatar */}
+              <TruckTypeAvatar truckType={v.body} size={42} iconSize={22} showBadge />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13px] font-mono font-bold text-text-primary tabular-nums">
+                    {v.shipment}
+                  </span>
+                  <StatusChip status={v.status} />
+                </div>
+                <div className="mt-0.5 text-[11.5px] text-text-muted font-medium truncate">
+                  {v.partner} · <span style={{ color: meta.accentColor }}>{meta.arabicName}</span>
+                </div>
+              </div>
             </div>
-            <div className="mt-1 text-[11px] text-text-muted">
-              {v.partner} · {b ? t(b.label[0], b.label[1]) : v.body}
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[11px] tabular-nums text-text-secondary">
-              <span>
-                {v.load} / {v.maxLoad} {t("t", "طن")}
+
+            <div className="mt-3 border-t border-border-subtle pt-2">
+              <div className="flex items-center justify-between text-[11px] tabular-nums text-text-secondary">
+                <span>
+                  {v.load} / {v.maxLoad} {t("t", "طن")}
+                </span>
+                <span className="font-bold font-mono" style={{ color: meta.accentColor }}>
+                  {((v.load / v.maxLoad) * 100).toFixed(0)}%
+                </span>
+              </div>
+              <span className="mt-1.5 block h-2 overflow-hidden rounded-full bg-surface-4">
+                <span
+                  className="stripes block h-full rounded-full"
+                  style={{ width: `${(v.load / v.maxLoad) * 100}%`, backgroundColor: meta.accentColor }}
+                />
               </span>
-              <span className="text-brand">{((v.load / v.maxLoad) * 100).toFixed(0)}%</span>
             </div>
-            <span className="mt-1.5 block h-2 overflow-hidden rounded-full bg-surface-4">
-              <span
-                className="stripes block h-full rounded-full"
-                style={{ width: `${(v.load / v.maxLoad) * 100}%` }}
-              />
-            </span>
           </button>
         );
       })}
@@ -375,7 +398,7 @@ export function RepairView({ vehicles, onSelect, onToast }: ViewProps) {
   const list = vehicles.filter((v) => v.status !== "active");
   return (
     <Panel
-      title={t("Repair", "الصيانة")}
+      title={t("Repair & Maintenance", "الصيانة والورشة")}
       hint={t(`${list.length} vehicles off the road`, `${list.length} مركبة خارج الخدمة`)}
       action={
         <button
@@ -387,27 +410,33 @@ export function RepairView({ vehicles, onSelect, onToast }: ViewProps) {
         </button>
       }
     >
-      <div className="space-y-1">
-        {list.map((v) => (
-          <button
-            key={v.id}
-            onClick={() => onSelect(v.id)}
-            className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2.5 text-start transition-colors duration-200 hover:bg-surface-4"
-          >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] bg-status-waiting/15 text-status-waiting">
-              <IconRepair size={16} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[12.5px] tabular-nums text-text-primary">
-                {v.shipment}
-              </span>
-              <span className="block truncate text-[10.5px] text-text-muted">
-                {v.stops[v.stops.length - 1].place} · {v.plate}
-              </span>
-            </span>
-            <StatusChip status={v.status} />
-          </button>
-        ))}
+      <div className="space-y-1.5">
+        {list.map((v) => {
+          const meta = getVehicleTypeMeta(v.body);
+          return (
+            <button
+              key={v.id}
+              onClick={() => onSelect(v.id)}
+              className="flex w-full items-center gap-3.5 rounded-[12px] p-2.5 text-start transition-colors duration-200 hover:bg-surface-4 border border-border-subtle/40 bg-surface-2/40"
+            >
+              <TruckTypeAvatar truckType={v.body} size={42} iconSize={22} showBadge />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="block truncate text-[13px] font-bold text-text-primary">
+                    {v.shipment} · {v.plate}
+                  </span>
+                  <span className="font-semibold text-[11px]" style={{ color: meta.accentColor }}>
+                    {meta.arabicName}
+                  </span>
+                </div>
+                <span className="block truncate text-[11px] text-text-muted mt-0.5">
+                  {v.stops[v.stops.length - 1]?.place || "الورشة المركزية"} · {v.model}
+                </span>
+              </div>
+              <StatusChip status={v.status} />
+            </button>
+          );
+        })}
       </div>
     </Panel>
   );

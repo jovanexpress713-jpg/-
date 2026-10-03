@@ -234,11 +234,11 @@ function TopBar({
             </button>
           </div>
 
-          {/* Live Fleet Counter Pill */}
-          <span className="hidden items-center gap-1.5 rounded-full bg-status-active/12 px-3 py-1.5 text-[11px] font-semibold text-status-active lg:inline-flex border border-status-active/20">
-            <span className="h-2 w-2 animate-pulse-dot rounded-full bg-current" />
-            {activeTripsCount} {t("trucks on road", "شاحنة على الطريق")}
-          </span>
+          {/* Live Fleet Counter */}
+          <div className="hidden items-center gap-2 text-[12px] text-text-secondary font-medium lg:flex font-mono tabular-nums">
+            <span className="h-2 w-2 animate-pulse-dot rounded-full bg-status-active" />
+            <span>{activeTripsCount} {t("active trucks on road", "شاحنة نشطة على الطريق")}</span>
+          </div>
         </div>
       </header>
 

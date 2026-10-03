@@ -5,6 +5,7 @@ import type { Live } from "../hooks";
 import { formatCountdown } from "../hooks";
 import { StatusChip } from "./StatusChip";
 import { TruckImage } from "./TruckImage";
+import { TruckTypeAvatar } from "./TruckTypeIcon";
 import { IconPin } from "./Icons";
 
 interface Props {
@@ -29,10 +30,13 @@ export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
       )}
     >
       <div className="relative z-10 flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="truncate text-[15px] font-medium tabular-nums text-text-primary">{v.shipment}</div>
-          <div className="mt-1 truncate text-[11px] text-text-muted">
-            {v.model} · {v.cab}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <TruckTypeAvatar truckType={v.body} size={36} iconSize={18} showBadge />
+          <div className="min-w-0">
+            <div className="truncate text-[15px] font-medium tabular-nums text-text-primary">{v.shipment}</div>
+            <div className="mt-0.5 truncate text-[11px] text-text-muted">
+              {v.model} · {v.cab}
+            </div>
           </div>
         </div>
         <StatusChip status={v.status} />

@@ -11,6 +11,7 @@ import {
   IconPin,
   IconTruck,
 } from "./Icons";
+import { TruckTypeIcon, TruckTypeBadge } from "./TruckTypeIcon";
 
 interface InteractiveMapProps {
   trip: Trip;
@@ -479,7 +480,7 @@ export function InteractiveMap({
         )}
       >
         <div className="flex items-center gap-2 truncate">
-          <IconTruck size={15} className="text-brand shrink-0" />
+          <TruckTypeIcon truckType={trip.cargoType} size={16} className="text-brand shrink-0" />
           <span className="truncate text-white/90">
             {t("Next Waypoint:", "المحطة القادمة:")}{" "}
             <strong className="text-brand font-semibold">{trip.nextWaypointAr}</strong>

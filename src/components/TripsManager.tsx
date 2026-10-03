@@ -3,10 +3,11 @@ import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { useFleetStore, type Trip, type TripStatus } from "../state/fleetStore";
 import { apiClient } from "../services/apiClient";
+import { useToast } from "./Toast";
 import { EjazEmblem } from "./Logo";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { getVehicleTypeMeta } from "../data/vehicleTypes";
-import { TruckTypeIcon } from "./TruckTypeIcon";
+import { TruckTypeIcon, TruckTypeAvatar } from "./TruckTypeIcon";
 import {
   IconCheck,
   IconClose,
@@ -22,6 +23,7 @@ interface TripsManagerProps {
 
 export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps) {
   const { t } = useSettings();
+  const toast = useToast();
   const {
     trips,
     selectedTripId,
@@ -60,18 +62,22 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
   const handleApproveDriverRequest = async (tripId: string) => {
     try {
       await apiClient.trips.approveRequest(tripId);
-      setReplacementNotice(t("Driver trip request approved successfully! Trip is now confirmed.", "تمت الموافقة على طلب السائق وإسناد الرحلة رسمياً بنجاح!"));
+      const msg = t("Driver trip request approved successfully! Trip is now confirmed.", "تمت الموافقة على طلب السائق وإسناد الرحلة رسمياً بنجاح!");
+      setReplacementNotice(msg);
+      toast(msg);
     } catch (err: any) {
-      alert(err.message || "فشلت الموافقة على طلب السائق");
+      toast(t("Failed to approve driver request", "فشلت الموافقة على طلب السائق"), err.message || "Error");
     }
   };
 
   const handleRejectDriverRequest = async (tripId: string) => {
     try {
       await apiClient.trips.rejectRequest(tripId, "عدم تطابق نوع المركبة أو جدول الراحة");
-      setReplacementNotice(t("Driver trip request rejected.", "تم رفض طلب الرحلة وإعادتها لقائمة الرحلات المتاحة."));
+      const msg = t("Driver trip request rejected.", "تم رفض طلب الرحلة وإعادتها لقائمة الرحلات المتاحة.");
+      setReplacementNotice(msg);
+      toast(msg);
     } catch (err: any) {
-      alert(err.message || "فشل رفض طلب السائق");
+      toast(t("Failed to reject driver request", "فشل رفض طلب السائق"), err.message || "Error");
     }
   };
 
@@ -214,13 +220,14 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex min-w-0 items-center gap-2">
-                    {/* Dynamic truck-type glyph — resolves from the trip's own
-                        cargoType, so each card shows its real category. */}
-                    <TruckTypeIcon
+                    {/* Dynamic truck-type circular avatar — resolves from the trip's own
+                        cargoType, so each card shows its real category in a distinct colored circle. */}
+                    <TruckTypeAvatar
                       truckType={tr.cargoType}
-                      size={17}
+                      size={32}
+                      iconSize={16}
+                      showBadge
                       className="shrink-0"
-                      title={`${getVehicleTypeMeta(tr.cargoType).arabicName} — ${getVehicleTypeMeta(tr.cargoType).englishName}`}
                     />
                     <span className="truncate font-bold text-[14px] text-text-primary tracking-wide">
                       {tr.tripNumber}
@@ -271,28 +278,31 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
           {/* Active Trip Header Card */}
           <div className="card p-5 border border-border-subtle">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <span className="text-[22px] font-extrabold text-text-primary tracking-tight sm:text-[26px]">
-                    {currentTrip.tripNumber}
-                  </span>
-                  <span
-                    className="badge text-[11.5px] px-2.5 py-1"
-                    style={{
-                      backgroundColor: getVehicleTypeMeta(currentTrip.cargoType).badgeBg,
-                      color: getVehicleTypeMeta(currentTrip.cargoType).accentColor,
-                    }}
-                  >
-                    <TruckTypeIcon truckType={currentTrip.cargoType} size={14} />
-                    <span className="ms-1">{currentTrip.cargoType}</span>
-                  </span>
-                  <span className="badge bg-status-active/20 text-status-active text-[11.5px] px-2.5 py-1 font-bold">
-                    {currentTrip.status === "on_road" ? t("Live On Route", "نشطة على الطريق") : currentTrip.status}
-                  </span>
+              <div className="flex items-start gap-3.5">
+                <TruckTypeAvatar truckType={currentTrip.cargoType} size={46} iconSize={24} showBadge />
+                <div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <span className="text-[22px] font-extrabold text-text-primary tracking-tight sm:text-[26px]">
+                      {currentTrip.tripNumber}
+                    </span>
+                    <span
+                      className="badge text-[11.5px] px-2.5 py-1"
+                      style={{
+                        backgroundColor: getVehicleTypeMeta(currentTrip.cargoType).badgeBg,
+                        color: getVehicleTypeMeta(currentTrip.cargoType).accentColor,
+                      }}
+                    >
+                      <TruckTypeIcon truckType={currentTrip.cargoType} size={14} />
+                      <span className="ms-1">{currentTrip.cargoType}</span>
+                    </span>
+                    <span className="badge bg-status-active/20 text-status-active text-[11.5px] px-2.5 py-1 font-bold">
+                      {currentTrip.status === "on_road" ? t("Live On Route", "نشطة على الطريق") : currentTrip.status}
+                    </span>
+                  </div>
+                  <p className="text-[12.5px] text-text-secondary mt-1">
+                    {currentTrip.shipper} ← {t("Consignee:", "المرسل إليه:")} {currentTrip.consignee}
+                  </p>
                 </div>
-                <p className="text-[12.5px] text-text-secondary mt-1">
-                  {currentTrip.shipper} ← {t("Consignee:", "المرسل إليه:")} {currentTrip.consignee}
-                </p>
               </div>
 
               {/* Action buttons */}
@@ -302,7 +312,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                     onClick={() => onOpenLiveTracking(currentTrip.id)}
                     className="btn-primary text-[12px] py-2 px-4 shadow-md"
                   >
-                    <IconTruck size={16} />
+                    <TruckTypeIcon truckType={currentTrip.cargoType} size={16} />
                     {t("Track on Live Map", "فتح في التتبع الحي")}
                   </button>
                 )}
@@ -400,14 +410,12 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
           <div className="card p-5 border border-border-subtle space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
               <div className="flex items-center gap-2">
-                <IconTruck size={18} className="text-brand" />
+                <TruckTypeIcon truckType={currentTrip.cargoType} size={20} className="text-brand" />
                 <span className="text-[14px] font-bold text-text-primary">
                   {t("Assigned Vehicle & Fleet Drivers", "الشاحنة والسائقين المكلفين بالرحلة")}
                 </span>
               </div>
-              <span className="badge bg-brand/15 text-brand text-[10.5px] font-bold">
-                {t("Approved Fleet Scope", "نطاق الأسطول المعتمد")}
-              </span>
+              <TruckTypeBadge truckType={currentTrip.cargoType} size={14} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -9,7 +9,7 @@ import {
   type CanonicalVehicleTypeId,
 } from "../data/vehicleTypes";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
-import { TruckTypeIcon } from "./TruckTypeIcon";
+import { TruckTypeIcon, TruckTypeAvatar } from "./TruckTypeIcon";
 import {
   IconSearch,
   IconClose,
@@ -245,30 +245,33 @@ export function ShipmentsManager({
                   key={tr.id}
                   className="bg-surface-1 rounded-[12px] border border-border-subtle hover:border-brand/40 transition-all duration-200 shadow-sm flex flex-col justify-between overflow-hidden"
                 >
-                  {/* Card Header */}
-                  <div className="p-4 border-b border-white/5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-[13px] text-brand">
-                          {tr.qrCodeToken || `SH-${tr.tripNumber}`}
-                        </span>
-                        <span className="text-text-muted text-[11px]">·</span>
-                        <span className="font-mono text-[11px] text-text-secondary">
-                          {tr.tripNumber}
+                  {/* Card Header with prominent Truck Type Avatar */}
+                  <div className="p-4 border-b border-white/5 flex items-start gap-3">
+                    <TruckTypeAvatar truckType={tr.cargoType} size={42} iconSize={22} showBadge />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-[13px] text-brand">
+                            {tr.qrCodeToken || `SH-${tr.tripNumber}`}
+                          </span>
+                          <span className="text-text-muted text-[11px]">·</span>
+                          <span className="font-mono text-[11px] text-text-secondary">
+                            {tr.tripNumber}
+                          </span>
+                        </div>
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[10px] font-bold border",
+                            statusBadge.color
+                          )}
+                        >
+                          {statusBadge.labelAr}
                         </span>
                       </div>
-                      <span
-                        className={cn(
-                          "rounded-full px-2.5 py-0.5 text-[10px] font-bold border",
-                          statusBadge.color
-                        )}
-                      >
-                        {statusBadge.labelAr}
-                      </span>
-                    </div>
 
-                    <div className="mt-2 text-[13px] font-semibold text-text-primary truncate">
-                      {tr.shipper}
+                      <div className="mt-1 text-[13px] font-semibold text-text-primary truncate">
+                        {tr.shipper}
+                      </div>
                     </div>
                   </div>
 

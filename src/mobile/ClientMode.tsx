@@ -4,7 +4,8 @@ import { useSettings } from "../settings";
 import { useFleetStore, type Trip } from "../state/fleetStore";
 import { apiClient } from "../services/apiClient";
 import { InteractiveMap } from "../components/InteractiveMap";
-import { normalizeVehicleType } from "../data/vehicleTypes";
+import { normalizeVehicleType, getVehicleTypeMeta } from "../data/vehicleTypes";
+import { TruckTypeIcon, TruckTypeAvatar, TruckTypeBadge } from "../components/TruckTypeIcon";
 import {
   IconHome,
   IconOrders,
@@ -186,10 +187,13 @@ export function ClientMode({ user, onLogout }: ClientModeProps) {
                 {/* Carrier Truck & Driver */}
                 <div className="mt-3 flex items-center justify-between text-[11px] text-text-secondary">
                   <div className="flex items-center gap-1.5 truncate">
-                    <IconTruck size={14} className="text-brand shrink-0" />
+                    <TruckTypeIcon truckType={activeTrip.cargoType} size={15} className="text-brand shrink-0" />
                     <span className="truncate">{activeTrip.driverName || "فهد الشمري"}</span>
                   </div>
-                  <div className="font-mono text-white/80">{activeTrip.vehiclePlate || "ر ج د ٤٨٢١"}</div>
+                  <div className="flex items-center gap-1.5">
+                    <TruckTypeBadge truckType={activeTrip.cargoType} size={11} />
+                    <span className="font-mono text-white/80">{activeTrip.vehiclePlate || "ر ج د ٤٨٢١"}</span>
+                  </div>
                 </div>
 
                 {/* Action button */}
@@ -227,7 +231,10 @@ export function ClientMode({ user, onLogout }: ClientModeProps) {
                   className="rounded-[14px] bg-surface-1 p-3.5 border border-border-subtle hover:border-brand/50 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between text-[11.5px]">
-                    <span className="font-bold text-brand">{tr.tripNumber}</span>
+                    <div className="flex items-center gap-2">
+                      <TruckTypeAvatar truckType={tr.cargoType} size={28} iconSize={14} showBadge />
+                      <span className="font-bold text-brand">{tr.tripNumber}</span>
+                    </div>
                     <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-text-secondary">
                       {tr.status}
                     </span>
@@ -236,7 +243,10 @@ export function ClientMode({ user, onLogout }: ClientModeProps) {
                     {tr.originCity} → {tr.destinationCity}
                   </div>
                   <div className="mt-1 text-[10px] text-text-muted flex items-center justify-between">
-                    <span>{tr.cargoType} · {tr.cargoWeightTons} طن</span>
+                    <span className="flex items-center gap-1.5">
+                      <TruckTypeBadge truckType={tr.cargoType} size={11} />
+                      <span>{tr.cargoWeightTons} طن</span>
+                    </span>
                     <span className="text-accent-2 font-medium">{t("Track", "تتبع")} ↗</span>
                   </div>
                 </div>
@@ -259,10 +269,16 @@ export function ClientMode({ user, onLogout }: ClientModeProps) {
                 className="rounded-[14px] bg-surface-1 p-3.5 border border-border-subtle hover:border-brand/40 transition-all"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-[12px] text-brand tracking-wide">{tr.tripNumber}</span>
-                  <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-[10px] font-bold text-brand">
-                    {tr.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <TruckTypeAvatar truckType={tr.cargoType} size={30} iconSize={16} showBadge />
+                    <span className="font-bold text-[12px] text-brand tracking-wide">{tr.tripNumber}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <TruckTypeBadge truckType={tr.cargoType} size={11} />
+                    <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-[10px] font-bold text-brand">
+                      {tr.status}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-2 text-[12px] font-semibold text-white">

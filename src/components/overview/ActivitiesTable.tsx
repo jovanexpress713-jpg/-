@@ -4,6 +4,7 @@ import { useSettings } from "../../settings";
 import type { Driver } from "../../data/types";
 import type { Trip } from "../../state/fleetStore";
 import { IconSearch, IconUpload } from "../Icons";
+import { TruckTypeAvatar, TruckTypeBadge } from "../TruckTypeIcon";
 import { CARGO_LABEL, GROUP_TONE, STATUS_LABEL, formatEta, statusGroup, type StatusGroup } from "./shared";
 
 interface Props {
@@ -140,7 +141,8 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
                   <td className="px-5 py-3">
                     <span className="flex items-center gap-2 font-semibold tabular-nums text-text-primary">
                       {sel && <span className="h-1.5 w-1.5 rounded-full bg-brand" />}
-                      {tr.tripNumber}
+                      <TruckTypeAvatar truckType={tr.cargoType} size={28} iconSize={15} showBadge />
+                      <span>{tr.tripNumber}</span>
                     </span>
                   </td>
                   <td className="px-5 py-3 text-text-secondary">
@@ -150,7 +152,12 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
                   <td className="px-5 py-3 whitespace-nowrap text-text-secondary">
                     {tr.originCity} → {tr.destinationCity}
                   </td>
-                  <td className="px-5 py-3 tabular-nums text-text-secondary">{tr.cargoWeightTons.toFixed(1)} t</td>
+                  <td className="px-5 py-3 tabular-nums text-text-secondary whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <TruckTypeBadge truckType={tr.cargoType} size={12} />
+                      <span className="text-[11px] text-text-muted">{tr.cargoWeightTons.toFixed(1)} t</span>
+                    </div>
+                  </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-20 overflow-hidden rounded-full bg-surface-5">

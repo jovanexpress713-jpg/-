@@ -20,6 +20,9 @@ import { RegistrationRequestsManager } from "./RegistrationRequestsManager";
 import { LiveOperationsCenter } from "./LiveOperationsCenter";
 import { ExecutiveOverview } from "./ExecutiveOverview";
 import { AnalyticsReports } from "./AnalyticsReports";
+import { DriversManager } from "./DriversManager";
+import { DispatchChatCenter } from "./DispatchChatCenter";
+import { TripHistoryAudit } from "./TripHistoryAudit";
 import { AIAssistant } from "./AIAssistant";
 import { AlertsCenter } from "./AlertsCenter";
 import { BrandingSettings } from "./BrandingSettings";
@@ -36,15 +39,16 @@ const SECTION_TITLES: Record<string, [string, string]> = {
   shipments: ["Shipments", "الشحنات"],
   fleet: ["Fleet (4 Types)", "الأسطول (٤ أنواع)"],
   "vehicle-assets": ["Vehicle Assets", "أصول المركبات"],
-  drivers: ["Drivers", "السائقون"],
+  drivers: ["Fleet Drivers", "كباتن الأسطول"],
+  chats: ["Dispatch & Highway Communications", "مركز التوجيه والاتصال"],
   registrations: ["Registration Requests", "طلبات التسجيل"],
   tracking: ["Live Map", "الخريطة المباشرة"],
-  reports: ["Reports & Audit", "التقارير والتدقيق"],
-  history: ["History", "السجل"],
-  analysis: ["Analysis", "التحليلات"],
-  trucks: ["Trucks", "الشاحنات"],
-  cargos: ["Cargos", "الشحنات"],
-  repair: ["Repair", "الصيانة"],
+  reports: ["Reports & Analytics", "التقارير والتحليلات"],
+  history: ["Trip Archive & Audit", "أرشيف الرحلات والتدقيق"],
+  analysis: ["Fleet Analytics", "التحليلات التشغيلية"],
+  trucks: ["Fleet (4 Types)", "الأسطول (٤ أنواع)"],
+  cargos: ["Shipments", "الشحنات"],
+  repair: ["Fleet Maintenance", "صيانة الأسطول"],
 };
 
 export function WebConsole() {
@@ -246,7 +250,7 @@ export function WebConsole() {
                 setNav("shipments");
               }}
             />
-          ) : nav === "shipments" ? (
+          ) : nav === "shipments" || nav === "cargos" ? (
             <ShipmentsManager
               onOpenTrip={(tripId) => {
                 selectTrip(tripId);
@@ -263,11 +267,42 @@ export function WebConsole() {
                 setNav("tracking");
               }}
             />
-          ) : nav === "fleet" ? (
+          ) : nav === "fleet" || nav === "trucks" || nav === "repair" ? (
             <FleetManager
               onOpenLiveTracking={(tripId) => {
                 selectTrip(tripId);
                 setNav("tracking");
+              }}
+            />
+          ) : nav === "drivers" ? (
+            <DriversManager
+              onOpenTrip={(tripId) => {
+                selectTrip(tripId);
+                const tr = trips.find((t) => t.id === tripId);
+                if (tr) selectTruck(tr.truckId);
+                setNav("trips");
+              }}
+              onOpenTruck={(truckId) => {
+                selectTruck(truckId);
+                setNav("fleet");
+              }}
+            />
+          ) : nav === "chats" ? (
+            <DispatchChatCenter
+              onOpenTrip={(tripId) => {
+                selectTrip(tripId);
+                const tr = trips.find((t) => t.id === tripId);
+                if (tr) selectTruck(tr.truckId);
+                setNav("trips");
+              }}
+            />
+          ) : nav === "history" ? (
+            <TripHistoryAudit
+              onOpenTrip={(tripId) => {
+                selectTrip(tripId);
+                const tr = trips.find((t) => t.id === tripId);
+                if (tr) selectTruck(tr.truckId);
+                setNav("trips");
               }}
             />
           ) : nav === "registrations" ? (
@@ -283,7 +318,7 @@ export function WebConsole() {
                 setNav("tracking");
               }}
             />
-          ) : nav === "reports" ? (
+          ) : nav === "reports" || nav === "analysis" ? (
             <AnalyticsReports />
           ) : (
             <Dashboard

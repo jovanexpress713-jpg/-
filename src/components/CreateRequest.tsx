@@ -4,6 +4,7 @@ import { useSettings } from "../settings";
 import { BODY_TYPES, BRANDS, PARTNERS, docsFor } from "../data/catalog";
 import type { BodyType, Brand, RequestKind, Vehicle } from "../data/types";
 import { IconClose, IconTruck } from "./Icons";
+import { TruckTypeIcon } from "./TruckTypeIcon";
 
 export const DRIVER_POOL = [
   { name: "Ali Al-Shammari", phone: "+966 55 901 4472", initials: "AS", rating: 4.8, trips: 212 },
@@ -188,9 +189,10 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
                 <button
                   key={b.id}
                   onClick={() => setBody(b.id)}
-                  className={cn("chip", body === b.id && "chip-on")}
+                  className={cn("chip flex items-center gap-1.5", body === b.id && "chip-on")}
                 >
-                  {t(b.label[0], b.label[1])}
+                  <TruckTypeIcon truckType={b.id} size={15} />
+                  <span>{t(b.label[0], b.label[1])}</span>
                 </button>
               ))}
             </div>
@@ -252,9 +254,9 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
           <button onClick={onClose} className="btn-ghost">
             {t("Cancel", "إلغاء")}
           </button>
-          <button onClick={submit} className="btn-primary px-5">
-            <IconTruck size={16} />
-            {t("Create request", "إنشاء الطلب")}
+          <button onClick={submit} className="btn-primary px-5 flex items-center gap-2">
+            <TruckTypeIcon truckType={body} size={16} />
+            <span>{t("Create request", "إنشاء الطلب")}</span>
           </button>
         </div>
       </div>

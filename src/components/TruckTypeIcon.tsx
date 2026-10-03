@@ -157,3 +157,154 @@ export function TruckTypeInline({
  * the fleet as a whole rather than one category.
  */
 export const FleetGlyph: TruckTypeGlyph = IconTruck;
+
+export interface TruckTypeAvatarProps {
+  /** Raw category string or canonical id (flatbed, reefer, dry, curtain, or Arabic equivalents) */
+  truckType?: string | null;
+  /** Outer circle diameter in pixels, defaults to 40 */
+  size?: number;
+  /** Inner vector icon size in pixels, defaults to 20 */
+  iconSize?: number;
+  /** Optional class overrides */
+  className?: string;
+  /** Shows the category initial badge on the corner (س for سطحة, ب for براد, ج for جاف, ت for ستارة) */
+  showBadge?: boolean;
+}
+
+/**
+ * Circular avatar icon representing the 4 heavy truck categories:
+ * - سطحة (Flatbed): Amber badge with flatbed trailer icon
+ * - براد (Reefer): Ice Blue badge with insulated refrigerated box & snowflake icon
+ * - جاف (Dry Van): Emerald Green badge with enclosed dry cargo box icon
+ * - ستارة (Curtainsider): Deep Orange badge with side curtain rail icon
+ *
+ * Modeled directly on the user-requested circular avatar badge pattern.
+ */
+export function TruckTypeAvatar({
+  truckType,
+  size = 40,
+  iconSize = 20,
+  className,
+  showBadge = false,
+}: TruckTypeAvatarProps) {
+  const normType = normalizeVehicleType(truckType);
+  const meta = getVehicleTypeMeta(normType);
+
+  // Dedicated solid vibrant backgrounds matching user's reference avatars
+  const BG_COLORS: Record<CanonicalVehicleTypeId, string> = {
+    flatbed: "#D97706", // Amber / سطحة
+    reefer: "#0284C7",  // Ice Blue / براد
+    dry: "#059669",     // Emerald Teal / جاف
+    curtain: "#EA580C", // Deep Orange / ستارة
+  };
+
+  const INITIALS: Record<CanonicalVehicleTypeId, string> = {
+    flatbed: "س", // سطحة
+    reefer: "ب",  // براد
+    dry: "ج",     // جاف
+    curtain: "ت", // ستارة
+  };
+
+  const bg = BG_COLORS[normType] || BG_COLORS.curtain;
+  const initial = INITIALS[normType] || "ش";
+
+  return (
+    <div
+      className={cn(
+        "relative shrink-0 rounded-full flex items-center justify-center text-white shadow-sm transition-transform duration-200 select-none",
+        className,
+      )}
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: bg,
+      }}
+      title={`${meta.arabicName} — ${meta.englishName}`}
+    >
+      <TruckTypeIcon truckType={truckType} size={iconSize} className="text-white" />
+      {showBadge && (
+        <span
+          className="absolute -bottom-0.5 -end-0.5 grid h-4 w-4 place-items-center rounded-full bg-surface-1 text-[9px] font-extrabold text-white border border-surface-0 shadow-sm"
+          style={{ color: bg }}
+        >
+          {initial}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export interface TruckTypeLegendProps {
+  selected?: CanonicalVehicleTypeId | "ALL";
+  onSelect?: (type: CanonicalVehicleTypeId | "ALL") => void;
+  showAllOption?: boolean;
+  className?: string;
+  size?: "sm" | "md";
+}
+
+/**
+ * Visual 4-truck-type category bar with official icons and Saudi logistics colors:
+ * سطحة (Flatbed) · براد (Reefer) · جاف (Dry) · ستارة (Curtain)
+ */
+export function TruckTypeLegend({
+  selected,
+  onSelect,
+  showAllOption = true,
+  className,
+  size = "md",
+}: TruckTypeLegendProps) {
+  const types: CanonicalVehicleTypeId[] = ["flatbed", "reefer", "dry", "curtain"];
+  const isSm = size === "sm";
+
+  return (
+    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+      {showAllOption && (
+        <button
+          type="button"
+          onClick={() => onSelect?.("ALL")}
+          className={cn(
+            "rounded-full font-bold transition-all flex items-center gap-1.5 border",
+            isSm ? "px-2.5 py-1 text-[11px]" : "px-3 py-1.5 text-[12px]",
+            selected === "ALL" || !selected
+              ? "bg-brand text-on-brand border-brand shadow-sm"
+              : "bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary hover:border-brand/40"
+          )}
+        >
+          <FleetGlyph size={isSm ? 13 : 15} />
+          <span>الكل (٤ فئات)</span>
+        </button>
+      )}
+
+      {types.map((t) => {
+        const isSelected = selected === t;
+        const meta = getVehicleTypeMeta(t);
+        return (
+          <button
+            key={t}
+            type="button"
+            onClick={() => onSelect?.(t)}
+            className={cn(
+              "rounded-full font-bold transition-all flex items-center gap-1.5 border select-none",
+              isSm ? "px-2.5 py-1 text-[11px]" : "px-3 py-1.5 text-[12px]",
+              isSelected
+                ? "bg-brand text-on-brand border-brand shadow-sm scale-102"
+                : "bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary hover:border-brand/40"
+            )}
+            style={
+              !isSelected
+                ? {
+                    color: meta.accentColor,
+                    borderColor: `${meta.accentColor}33`,
+                  }
+                : undefined
+            }
+          >
+            <TruckTypeIcon truckType={t} size={isSm ? 14 : 16} className="shrink-0" />
+            <span className="shrink-0">{meta.arabicName}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+

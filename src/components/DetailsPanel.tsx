@@ -12,7 +12,7 @@ import { Gallery } from "./Gallery";
 import { useToast } from "./Toast";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { getVehicleTypeMeta } from "../data/vehicleTypes";
-import { TruckTypeIcon } from "./TruckTypeIcon";
+import { TruckTypeIcon, TruckTypeAvatar, TruckTypeBadge } from "./TruckTypeIcon";
 import { SpecRow, TruckTypeSpecRow } from "./TruckSpecs";
 import {
   IconArrowRight,
@@ -177,16 +177,22 @@ export function DetailsPanel({
     <div className="flex h-full flex-col bg-surface-2">
       <div className="border-b border-border-subtle px-5 pt-5 pb-0">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-[26px] leading-tight font-medium tabular-nums text-text-primary">
-                {v.shipment}
-              </h2>
-              <StatusChip status={v.status} />
+          <div className="flex items-start gap-3.5">
+            <TruckTypeAvatar truckType={v.body} size={46} iconSize={24} showBadge />
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-[26px] leading-tight font-medium tabular-nums text-text-primary">
+                  {v.shipment}
+                </h2>
+                <StatusChip status={v.status} />
+              </div>
+              <div className="mt-1 flex items-center gap-2 flex-wrap">
+                <TruckTypeBadge truckType={v.body} size={13} />
+                <span className="text-[12px] text-text-muted">
+                  {v.brand} {v.model} · {v.hp} {t("hp", "حصان")}
+                </span>
+              </div>
             </div>
-            <p className="mt-1 text-[12px] text-text-muted">
-              {v.brand} {v.model} · {bodyLabel} · {v.hp} {t("hp", "حصان")}
-            </p>
           </div>
           {onClose && (
             <button onClick={onClose} className="btn-icon xl:hidden" aria-label="Close">
@@ -250,6 +256,7 @@ export function DetailsPanel({
               from={v.from}
               to={v.to}
               progress={live.progress}
+              truckType={v.body}
               className="h-[248px]"
             />
 

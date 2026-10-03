@@ -4,7 +4,8 @@ import { useSettings } from "../settings";
 import { useFleetStore, type Trip } from "../state/fleetStore";
 import { apiClient } from "../services/apiClient";
 import { InteractiveMap } from "../components/InteractiveMap";
-import { normalizeVehicleType } from "../data/vehicleTypes";
+import { normalizeVehicleType, getVehicleTypeMeta } from "../data/vehicleTypes";
+import { TruckTypeIcon, TruckTypeAvatar, TruckTypeBadge } from "../components/TruckTypeIcon";
 import {
   IconHome,
   IconPin,
@@ -30,6 +31,7 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
   const [currentTrip, setCurrentTrip] = useState<any | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+  const [actionErrorMsg, setActionErrorMsg] = useState<string | null>(null);
 
   // Real Device GPS Telemetry state
   const [isGpsBroadcasting, setIsGpsBroadcasting] = useState(false);
@@ -81,13 +83,14 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
   const handleRequestTrip = async (tripId: string) => {
     setIsSubmitting(true);
     setActionSuccessMsg(null);
+    setActionErrorMsg(null);
     try {
       await apiClient.trips.requestTrip(tripId, `طلب الرحلة بواسطة السائق ${user?.fullName || "فهد الشمري"}`);
       setActionSuccessMsg(t("Trip requested successfully! Sent to Operations for approval.", "تم إرسال طلب الرحلة لغرفة العمليات للموافقة بنجاح!"));
       const res = await apiClient.trips.getDriverTrips(tripsSubTab);
       if (res?.trips) setDriverTrips(res.trips);
     } catch (err: any) {
-      alert(err.message || "فشل إرسال طلب الرحلة");
+      setActionErrorMsg(err.message || "فشل إرسال طلب الرحلة");
     } finally {
       setIsSubmitting(false);
     }
@@ -220,7 +223,7 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
         setActionSuccessMsg(`تم تحديث حالة الرحلة بنجاح إلى: ${actionLabelAr}`);
       }
     } catch (err: any) {
-      alert(err.message || "فشل تنفيذ انتقال الحالة");
+      setActionErrorMsg(err.message || "فشل تنفيذ انتقال الحالة");
     } finally {
       setIsSubmitting(false);
     }
@@ -229,8 +232,9 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
   // Submit Proof of Delivery (POD)
   const handleSubmitPOD = async (e: React.FormEvent) => {
     e.preventDefault();
+    setActionErrorMsg(null);
     if (!active?.id || !recipientName) {
-      alert("يرجى إدخال اسم المستلم وتأكيد التوقيع");
+      setActionErrorMsg("يرجى إدخال اسم المستلم وتأكيد التوقيع");
       return;
     }
 
@@ -251,7 +255,7 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
       setActionSuccessMsg("تم توثيق إثبات التسليم (POD) وإغلاق الرحلة بنجاح!");
       setActiveTab("home");
     } catch (err: any) {
-      alert(err.message || "فشل تسجيل إثبات التسليم");
+      setActionErrorMsg(err.message || "فشل تسجيل إثبات التسليم");
     } finally {
       setIsSubmitting(false);
     }
@@ -286,16 +290,22 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
           </div>
 
           {/* Assigned Truck Badge */}
-          <div className="mt-3.5 flex items-center justify-between rounded-[12px] bg-surface-2 p-2.5 border border-border-subtle text-[11px]">
-            <div className="flex items-center gap-2 truncate">
-              <IconTruck size={16} className="text-brand shrink-0" />
-              <span className="text-text-muted">{t("Assigned Vehicle:", "الشاحنة المكلفة:")}</span>
-              <span className="font-bold text-white truncate">ر ج د ٤٨٢١ (براد ألماني)</span>
-            </div>
-            <span className="rounded-full bg-brand/15 px-2 py-0.5 text-[9.5px] font-bold text-brand uppercase">
-              {active?.cargoType || "براد"}
-            </span>
-          </div>
+          {(() => {
+            const assignedType = active?.cargoType || (user?.driverId ? "flatbed" : "reefer");
+            const assignedMeta = getVehicleTypeMeta(assignedType);
+            return (
+              <div className="mt-3.5 flex items-center justify-between rounded-[12px] bg-surface-2 p-2.5 border border-border-subtle text-[11px]">
+                <div className="flex items-center gap-2.5 truncate">
+                  <TruckTypeAvatar truckType={assignedType} size={30} iconSize={16} showBadge />
+                  <div className="truncate">
+                    <span className="text-text-muted me-1">{t("Assigned Vehicle:", "الشاحنة المكلفة:")}</span>
+                    <strong className="text-white truncate">ر ج د ٤٨٢١ ({assignedMeta.arabicName})</strong>
+                  </div>
+                </div>
+                <TruckTypeBadge truckType={assignedType} size={11} />
+              </div>
+            );
+          })()}
         </div>
 
         {/* Action feedback message */}
@@ -303,6 +313,13 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
           <div className="mx-5 mt-3 rounded-[12px] bg-status-active/15 border border-status-active/30 p-3 text-[11.5px] text-status-active font-semibold text-center animate-fade-in flex items-center justify-center gap-2">
             <IconCheck size={16} />
             <span>{actionSuccessMsg}</span>
+          </div>
+        )}
+
+        {actionErrorMsg && (
+          <div className="mx-5 mt-3 rounded-[12px] bg-status-danger/15 border border-status-danger/30 p-3 text-[11.5px] text-status-danger font-semibold text-center animate-fade-in flex items-center justify-center gap-2">
+            <span className="font-bold">!</span>
+            <span>{actionErrorMsg}</span>
           </div>
         )}
 
@@ -479,10 +496,9 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
                       {/* Top Bar */}
                       <div className="flex items-center justify-between pb-2 border-b border-white/5">
                         <div className="flex items-center gap-2">
+                          <TruckTypeAvatar truckType={tr.cargoType} size={30} iconSize={16} showBadge />
                           <span className="text-[13.5px] font-bold text-brand">{tr.tripNumber}</span>
-                          <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[9.5px] font-bold text-text-muted uppercase">
-                            {tr.cargoType || "ستارة"}
-                          </span>
+                          <TruckTypeBadge truckType={tr.cargoType} size={11} />
                         </div>
                         <span
                           className={cn(
