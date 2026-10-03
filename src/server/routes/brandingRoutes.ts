@@ -47,6 +47,35 @@ let activeBranding: BrandingConfig = {
   updatedBy: "System Default",
 };
 
+/**
+ * The central identity is persisted to `data/branding.json` so a published logo
+ * and identity survive server restarts and redeploys (the uploaded logo file
+ * itself lives under `public/uploads/branding/`).
+ */
+const BRANDING_CONFIG_PATH = path.resolve(process.cwd(), "data/branding.json");
+
+function loadBranding(): void {
+  try {
+    if (fs.existsSync(BRANDING_CONFIG_PATH)) {
+      const saved = JSON.parse(fs.readFileSync(BRANDING_CONFIG_PATH, "utf8")) as Partial<BrandingConfig>;
+      activeBranding = { ...activeBranding, ...saved };
+    }
+  } catch (err) {
+    console.warn("[Branding] could not load saved branding config:", err);
+  }
+}
+
+function persistBranding(): void {
+  try {
+    fs.mkdirSync(path.dirname(BRANDING_CONFIG_PATH), { recursive: true });
+    fs.writeFileSync(BRANDING_CONFIG_PATH, JSON.stringify(activeBranding, null, 2), "utf8");
+  } catch (err) {
+    console.warn("[Branding] could not persist branding config:", err);
+  }
+}
+
+loadBranding();
+
 // GET /api/branding - Public / Authenticated fetch of central branding
 router.get("/", (_req, res: Response) => {
   return res.json({ branding: activeBranding });
@@ -100,6 +129,7 @@ router.put("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
     updatedAt: new Date().toISOString(),
     updatedBy: req.user?.fullName || "Administrator",
   };
+  persistBranding();
 
   logAuditEvent({
     actorId: req.user?.userId,
@@ -192,6 +222,7 @@ router.put("/logo", authenticate, (req: AuthenticatedRequest, res: Response) => 
   const prev = { ...activeBranding };
   (activeBranding as any)[field] = url;
   activeBranding = { ...activeBranding, updatedAt: new Date().toISOString(), updatedBy: req.user?.fullName || "Administrator" };
+  persistBranding();
 
   logAuditEvent({
     actorId: req.user?.userId,
