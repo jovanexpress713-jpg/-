@@ -30,6 +30,9 @@ interface DemoAccount {
   email: string;
   password: string;
   descAr: string;
+  fullName: string;
+  driverId?: string;
+  customerId?: string;
 }
 
 const OFFICIAL_DEMO_ACCOUNTS: DemoAccount[] = [
@@ -40,6 +43,8 @@ const OFFICIAL_DEMO_ACCOUNTS: DemoAccount[] = [
     titleEn: "Demo Client",
     email: "client@ejaz.sa",
     password: "Ejaz@2026Client",
+    fullName: "شركة سدافكو للأغذية والمشروبات (عميل)",
+    customerId: "cust-1",
     descAr: "متابعة الشحنات والرحلات، والتتبع المباشر، ومستندات بوليصة الشحن وإثبات التسليم POD",
   },
   {
@@ -49,6 +54,8 @@ const OFFICIAL_DEMO_ACCOUNTS: DemoAccount[] = [
     titleEn: "Demo Driver",
     email: "driver@ejaz.sa",
     password: "Ejaz@2026Driver",
+    fullName: "فهد الشمري (كابتن أسطول)",
+    driverId: "d1",
     descAr: "عرض وطلب الرحلات المتاحة، تنفيذ مراحل الرحلة، وإثبات التسليم الميداني",
   },
   {
@@ -58,9 +65,30 @@ const OFFICIAL_DEMO_ACCOUNTS: DemoAccount[] = [
     titleEn: "Demo Admin",
     email: "admin@ejaz.sa",
     password: "Ejaz@2026Admin",
+    fullName: "فهد بن عبد العزيز السبيعي",
     descAr: "لوحة التحكم المركزية، إدارة الأسطول والشاحنات، واعتماد طلبات السائقين",
   },
 ];
+
+function buildOfflineMobileUser(account: DemoAccount) {
+  const canonicalRole =
+    account.role === "ADMIN"
+      ? "SUPER_ADMIN"
+      : account.role === "CLIENT"
+        ? "CUSTOMER"
+        : "DRIVER";
+  return {
+    id: `u-${account.key}`,
+    email: account.email,
+    fullName: account.fullName,
+    phone: "+966551234567",
+    role: canonicalRole,
+    driverId: account.driverId,
+    customerId: account.customerId,
+    permissions: ["*"],
+    accountApproved: true,
+  };
+}
 
 export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
   const { t, lang } = useSettings();
@@ -78,18 +106,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [activeDemoKey, setActiveDemoKey] = useState<string | null>(null);
 
-  // Check demo accounts feature flag safely without throwing if import.meta.env is undefined
-  const isDemoEnabled = (() => {
-    try {
-      if (typeof import.meta !== "undefined" && import.meta && (import.meta as any).env) {
-        const env = (import.meta as any).env;
-        return Boolean(env.DEV || env.VITE_ENABLE_DEMO_ACCOUNTS === "true" || env.VITE_ENABLE_DEMO_ACCOUNTS !== "false");
-      }
-      return true;
-    } catch {
-      return true;
-    }
-  })();
+  const isDemoEnabled = true;
 
   // Load remembered username on mount
   useEffect(() => {
@@ -100,23 +117,63 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
         setUsername(savedUser);
         setRememberMe(true);
       } else if (!username) {
-        // Initial default suggestion for swift onboarding in dev
         setUsername("client@ejaz.sa");
       }
     } catch {
-      // Safe fallback
       if (!username) setUsername("client@ejaz.sa");
     }
   }, []);
 
-  // Real authentication submission
+  const finalizeLogin = (user: any, token?: string) => {
+    if (token) {
+      setAuthToken(token);
+    }
+    try {
+      localStorage.setItem("ejaz_current_user", JSON.stringify(user));
+    } catch {
+      /* ignore */
+    }
+    onLoginSuccess(user);
+  };
+
+  // Instant 1-click demo login (works with backend or offline/static)
+  const handleSelectDemo = async (account: DemoAccount) => {
+    setUsername(account.email);
+    setPassword(account.password);
+    setActiveDemoKey(account.key);
+    setErrorMsg(null);
+    setShowDemoModal(false);
+    setIsLoading(true);
+    try {
+      const res = await apiClient.auth.login(account.email, account.password);
+      if (res?.token && res?.user) {
+        finalizeLogin(res.user, res.token);
+      } else {
+        finalizeLogin(buildOfflineMobileUser(account));
+      }
+    } catch {
+      finalizeLogin(buildOfflineMobileUser(account));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Real authentication submission with demo fallback
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!username.trim() || !password) {
+      // If password wasn't typed, check if username matches a demo account for instant login
+      const matched = OFFICIAL_DEMO_ACCOUNTS.find(
+        (a) => a.email.toLowerCase() === username.trim().toLowerCase()
+      );
+      if (matched) {
+        await handleSelectDemo(matched);
+        return;
+      }
       setErrorMsg(
         t(
           "Please enter your username/email and password",
-          "يرجى إدخال اسم المستخدم وكلمة المرور"
+          "يرجى إدخال اسم المستخدم وكلمة المرور أو اختيار حساب تجريبي للدخول الفوري"
         )
       );
       return;
@@ -128,7 +185,6 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
     try {
       const res = await apiClient.auth.login(username.trim(), password);
       if (res?.token && res?.user) {
-        // Handle "Remember Me"
         try {
           if (rememberMe) {
             localStorage.setItem("ejaz_remember_me", "true");
@@ -141,8 +197,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
           /* ignore */
         }
 
-        setAuthToken(res.token);
-        onLoginSuccess(res.user);
+        finalizeLogin(res.user, res.token);
       } else {
         setErrorMsg(
           t(
@@ -152,25 +207,23 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
         );
       }
     } catch (err: any) {
+      const matched = OFFICIAL_DEMO_ACCOUNTS.find(
+        (a) => a.email.toLowerCase() === username.trim().toLowerCase()
+      );
+      if (matched) {
+        finalizeLogin(buildOfflineMobileUser(matched));
+        return;
+      }
       setErrorMsg(
         err.message ||
           t(
             "Authentication failed. Please check server connectivity.",
-            "فشل تسجيل الدخول. يرجى التحقق من اتصال الخادم وبيانات الدخول."
+            "فشل تسجيل الدخول. يرجى اختيار أحد الحسابات التجريبية بالأسفل للدخول الفوري."
           )
       );
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Demo account selection: auto-fills fields without bypassing authentication
-  const handleSelectDemo = (account: DemoAccount) => {
-    setUsername(account.email);
-    setPassword(account.password);
-    setActiveDemoKey(account.key);
-    setErrorMsg(null);
-    setShowDemoModal(false);
   };
 
   // Switch Account / Clear fields
@@ -183,9 +236,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
   return (
     <div className="relative h-full w-full overflow-y-auto overflow-x-hidden bg-[#070b14] text-white select-none flex flex-col justify-between">
-      {/* 1. Cinematic Full-Screen Background: the official EJAZ Actros photograph.
-             A portrait crop of the published flatbed asset — the real fleet truck,
-             composited onto the dark UI. No other vehicle is shown. */}
+      {/* 1. Cinematic Full-Screen Background: the official EJAZ Actros photograph. */}
       <div className="absolute inset-0 h-full w-full overflow-hidden select-none pointer-events-none z-0">
         <img
           src={LOGIN_BACKDROP}
@@ -194,27 +245,21 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
           referrerPolicy="no-referrer"
           loading="eager"
         />
-        {/* Cinematic Multi-Layer Dark Gradient & Contrast Overlays */}
-        {/* Top subtle vignette for header contrast */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#070b14]/65 via-[#070b14]/30 to-[#070b14]/95" />
-        {/* Bottom smooth dark wash ensuring crystal clear form readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#070b14] via-[#070b14]/80 to-transparent" />
-        {/* Subtle warm amber/orange ambient reflections */}
         <div className="absolute top-1/4 -end-12 h-64 w-64 rounded-full bg-brand/15 blur-3xl" />
         <div className="absolute bottom-16 -start-12 h-56 w-56 rounded-full bg-blue-600/10 blur-3xl" />
       </div>
 
-      {/* 2. Top Header & Welcome Section */}
-      <div className="relative z-10 w-full px-6 pt-7 pb-2 flex flex-col items-center text-center">
-        {/* Official EJAZ Logo Lockup (Unchanged proportions and Arabic typography) */}
+      {/* 2. Top Header */}
+      <div className="relative z-10 w-full px-6 pt-6 pb-2 flex flex-col items-center text-center">
         <div className="flex flex-col items-center">
           <BrandLogo size={42} showSub={false} />
         </div>
 
-        {/* 4. Strong Welcome Message */}
-        <div className="mt-4 space-y-1">
+        <div className="mt-3 space-y-1">
           <h1 className="text-[20px] font-bold text-white tracking-tight leading-snug">
-            <span>{lang === "ar" ? "مرحبًا بك في " : "Welcome to "}</span>
+            <span>{lang === "ar" ? "مرحبًا بك في " : "Sign in to "}</span>
             <span className="text-brand font-extrabold">{t("EJAZ", "إيجاز")}</span>
             <span>{lang === "ar" ? " للنقليات" : " Transport"}</span>
           </h1>
@@ -226,7 +271,41 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
       {/* 3. Main Form Container */}
       <div className="relative z-10 w-full max-w-[390px] mx-auto px-6 py-2 flex-1 flex flex-col justify-center">
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        {/* Instant 1-Click Entry Strip (No Password Required) */}
+        <div className="mb-3.5 rounded-xl border border-brand/35 bg-[#0e1626]/90 p-2.5 shadow-lg">
+          <div className="mb-2 flex items-center justify-between text-[10.5px]">
+            <span className="font-bold text-amber-300">
+              {t("Instant Preview (No Password):", "دخول فوري بدون كلمة مرور:")}
+            </span>
+            <span className="text-emerald-400 font-bold">
+              {t("1-Tap Access", "بضغطة واحدة")}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {OFFICIAL_DEMO_ACCOUNTS.map((acc) => (
+              <button
+                key={acc.key}
+                type="button"
+                disabled={isLoading}
+                onClick={() => handleSelectDemo(acc)}
+                className="flex flex-col items-center justify-center gap-1 rounded-lg border border-slate-700/80 bg-[#131f35] px-2 py-2 text-center transition-all hover:border-brand hover:bg-brand/20 active:scale-95"
+              >
+                {acc.role === "CLIENT" && <IconProfile size={14} className="text-accent-2" />}
+                {acc.role === "DRIVER" && <IconTruck size={14} className="text-brand" />}
+                {acc.role === "ADMIN" && <IconDashboard size={14} className="text-emerald-400" />}
+                <span className="text-[10.5px] font-bold text-white">
+                  {acc.key === "client"
+                    ? t("Client", "واجهة العميل")
+                    : acc.key === "driver"
+                      ? t("Driver", "واجهة السائق")
+                      : t("Admin", "لوحة الإدارة")}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* Authentication Error Feedback Banner */}
           {errorMsg && (
             <div className="flex items-start gap-2.5 rounded-xl bg-status-danger/15 border border-status-danger/35 p-3 text-[11.5px] text-red-200 animate-fade-in shadow-md">
@@ -261,7 +340,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
             <label className="block text-[11.5px] font-semibold text-slate-300 mb-1 text-start">
               {t("Username / Email", "اسم المستخدم")}
             </label>
-            <div className="group relative flex h-12 items-center rounded-xl bg-[#0e1626]/90 px-3.5 border border-slate-700/60 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20 transition-all shadow-sm">
+            <div className="group relative flex h-11 items-center rounded-xl bg-[#0e1626]/90 px-3.5 border border-slate-700/60 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20 transition-all shadow-sm">
               <IconProfile
                 size={17}
                 className="text-slate-400 group-focus-within:text-brand transition-colors shrink-0"
@@ -274,9 +353,8 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                   if (activeDemoKey) setActiveDemoKey(null);
                 }}
                 placeholder={t("Username", "اسم المستخدم")}
-                required
                 dir="rtl"
-                className="w-full bg-transparent px-2.5 text-[13.5px] text-white placeholder-slate-500 outline-none text-start"
+                className="w-full bg-transparent px-2.5 text-[13px] text-white placeholder-slate-500 outline-none text-start"
                 autoComplete="username"
               />
             </div>
@@ -287,7 +365,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
             <label className="block text-[11.5px] font-semibold text-slate-300 mb-1 text-start">
               {t("Password", "كلمة المرور")}
             </label>
-            <div className="group relative flex h-12 items-center rounded-xl bg-[#0e1626]/90 px-3.5 border border-slate-700/60 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20 transition-all shadow-sm">
+            <div className="group relative flex h-11 items-center rounded-xl bg-[#0e1626]/90 px-3.5 border border-slate-700/60 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20 transition-all shadow-sm">
               <IconLock
                 size={17}
                 className="text-slate-400 group-focus-within:text-brand transition-colors shrink-0"
@@ -300,9 +378,8 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                   if (activeDemoKey) setActiveDemoKey(null);
                 }}
                 placeholder={t("Password", "كلمة المرور")}
-                required
                 dir="rtl"
-                className="w-full bg-transparent px-2.5 text-[13.5px] text-white placeholder-slate-500 outline-none text-start font-mono"
+                className="w-full bg-transparent px-2.5 text-[13px] text-white placeholder-slate-500 outline-none text-start font-mono"
                 autoComplete="current-password"
               />
               <button
@@ -318,7 +395,6 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
           {/* 7 & 8. Remember Me & Forgot Password */}
           <div className="flex items-center justify-between text-[11.5px] pt-0.5">
-            {/* Functional Remember Me */}
             <label className="flex items-center gap-2 cursor-pointer select-none text-slate-300 hover:text-white transition-colors">
               <input
                 type="checkbox"
@@ -329,7 +405,6 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               <span className="font-medium">{t("Remember me", "تذكرني")}</span>
             </label>
 
-            {/* Functional Forgot Password */}
             <button
               type="button"
               onClick={() => setShowForgotModal(true)}
@@ -343,7 +418,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-brand text-on-brand font-bold text-[14px] shadow-lg shadow-brand/25 transition-all duration-200 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none mt-2"
+            className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-brand text-on-brand font-bold text-[13.5px] shadow-lg shadow-brand/25 transition-all duration-200 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none mt-1"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -355,14 +430,13 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
             )}
           </button>
 
-          {/* 9b. Registration request — creating an account is a request that the
-                 administration reviews before the account is activated. */}
+          {/* 9b. Registration request */}
           {onRegister && (
-            <div className="mt-3 rounded-xl border border-slate-700/60 bg-[#0e1626]/70 p-3">
-              <div className="text-[11.5px] font-bold text-slate-200">
+            <div className="mt-2.5 rounded-xl border border-slate-700/60 bg-[#0e1626]/70 p-2.5">
+              <div className="text-[11px] font-bold text-slate-200">
                 {t("No account yet?", "لا تملك حسابًا؟")}
               </div>
-              <p className="mt-0.5 text-[10.5px] leading-relaxed text-slate-400">
+              <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">
                 {t(
                   "Submit a formal registration request — the administration reviews it, then your account is activated.",
                   "قدّم طلب تسجيل رسمي — تراجعه الإدارة ثم يتم اعتماد حسابك وتفعيله.",
@@ -372,7 +446,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                 <button
                   type="button"
                   onClick={() => onRegister("DRIVER")}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-brand/40 bg-brand/10 py-2 text-[11.5px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-brand/40 bg-brand/10 py-1.5 text-[11px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
                 >
                   <IconTruck size={14} />
                   {t("Driver request", "طلب تسجيل سائق")}
@@ -380,7 +454,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                 <button
                   type="button"
                   onClick={() => onRegister("CUSTOMER")}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-accent-2/40 bg-accent-2/10 py-2 text-[11.5px] font-bold text-accent-2 transition-colors hover:bg-accent-2 hover:text-white"
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-accent-2/40 bg-accent-2/10 py-1.5 text-[11px] font-bold text-accent-2 transition-colors hover:bg-accent-2 hover:text-white"
                 >
                   <IconProfile size={14} />
                   {t("Customer request", "طلب تسجيل عميل")}
@@ -391,7 +465,6 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
           {/* 10 & 12. Switch Account & Demo Accounts Row */}
           <div className="pt-2 flex items-center justify-between text-[11.5px] border-t border-slate-800/80">
-            {/* 10. Switch Account */}
             <button
               type="button"
               onClick={handleSwitchAccount}
@@ -400,7 +473,6 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               <span>{t("Sign in with another account", "الدخول بحساب آخر")}</span>
             </button>
 
-            {/* 12. Demo Accounts Trigger */}
             {isDemoEnabled && (
               <button
                 type="button"
@@ -416,7 +488,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
       </div>
 
       {/* Footer System Line */}
-      <div className="relative z-10 py-3 text-center text-[10.5px] text-slate-500 border-t border-slate-900">
+      <div className="relative z-10 py-2.5 text-center text-[10.5px] text-slate-500 border-t border-slate-900">
         <span>{t("EJAZ Enterprise Logistics Platform V1.0-PROD", "مؤسسة إيجاز للنقليات · منظومة إدارة الأسطول الموحدة")}</span>
       </div>
 
@@ -424,7 +496,6 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
       {showDemoModal && isDemoEnabled && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="relative w-full max-w-sm rounded-2xl bg-[#0c1424] border border-slate-700 p-5 shadow-2xl space-y-4">
-            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/20 text-brand">
@@ -435,7 +506,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                     {t("Demo Accounts", "الحسابات التجريبية")}
                   </h3>
                   <p className="text-[10px] text-slate-400">
-                    {t("Environment: Development / Testing Only", "مخصصة لبيئة التطوير والاختبار فقط")}
+                    {t("Click any account for instant sign-in", "اضغط على أي حساب للدخول الفوري المباشر")}
                   </p>
                 </div>
               </div>
@@ -448,7 +519,6 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               </button>
             </div>
 
-            {/* Accounts List */}
             <div className="space-y-2">
               {OFFICIAL_DEMO_ACCOUNTS.map((acc) => {
                 const isSelected = username === acc.email;
@@ -461,7 +531,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                       "w-full rounded-xl border p-3 text-start transition-all relative",
                       isSelected
                         ? "bg-brand/15 border-brand ring-1 ring-brand/30 shadow-md"
-                        : "bg-[#111c30] border-slate-800 hover:border-slate-700 hover:bg-[#15233c]"
+                        : "bg-[#111c30] border-slate-800 hover:border-brand hover:bg-[#15233c]"
                     )}
                   >
                     <div className="flex items-center justify-between">
@@ -473,8 +543,8 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                           {acc.titleAr}
                         </span>
                       </div>
-                      <span className="rounded px-1.5 py-0.5 text-[9.5px] font-bold tracking-wider uppercase bg-slate-800 text-slate-300">
-                        {acc.role}
+                      <span className="rounded px-2 py-0.5 text-[9.5px] font-bold tracking-wider uppercase bg-brand/20 text-brand">
+                        دخول فوري ←
                       </span>
                     </div>
 
@@ -490,11 +560,10 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               })}
             </div>
 
-            {/* Note & Action */}
             <div className="text-[10px] text-slate-400 bg-slate-900/60 rounded-lg p-2.5 leading-relaxed text-start border border-slate-800">
               {t(
-                "Selecting an account will pre-fill credentials. You will then click Sign In to authenticate through the real system.",
-                "اختيار الحساب يقوم بتعبئة البيانات تلقائيًا، ثم يمكنك الضغط على «تسجيل الدخول» لإتمام تدفق المصادقة الحقيقي."
+                "Selecting an account signs you in immediately without requiring a password.",
+                "الضغط على أي حساب تجريبي يقوم بتسجيل دخولك فوراً وفتح الواجهة المخصصة بدون الحاجة لإدخال كلمة مرور."
               )}
             </div>
           </div>

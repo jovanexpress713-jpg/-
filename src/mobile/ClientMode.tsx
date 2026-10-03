@@ -4,14 +4,13 @@ import { useSettings } from "../settings";
 import { useFleetStore, type Trip } from "../state/fleetStore";
 import { apiClient } from "../services/apiClient";
 import { InteractiveMap } from "../components/InteractiveMap";
-import { normalizeVehicleType, getVehicleTypeMeta } from "../data/vehicleTypes";
+import { normalizeVehicleType } from "../data/vehicleTypes";
 import { TruckTypeIcon, TruckTypeAvatar, TruckTypeBadge } from "../components/TruckTypeIcon";
 import {
   IconHome,
   IconOrders,
   IconPin,
   IconProfile,
-  IconTruck,
   IconSearch,
   IconDoc,
 } from "../components/Icons";

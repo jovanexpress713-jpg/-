@@ -3,7 +3,7 @@ import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { BODY_TYPES, BRANDS, PARTNERS, docsFor } from "../data/catalog";
 import type { BodyType, Brand, RequestKind, Vehicle } from "../data/types";
-import { IconClose, IconTruck } from "./Icons";
+import { IconClose } from "./Icons";
 import { TruckTypeIcon } from "./TruckTypeIcon";
 
 export const DRIVER_POOL = [

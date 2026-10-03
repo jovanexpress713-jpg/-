@@ -8,7 +8,6 @@ import {
   IconPin,
   IconRepair,
   IconStar,
-  IconTruck,
 } from "./Icons";
 import { StatusChip } from "./StatusChip";
 import { TruckImage } from "./TruckImage";

@@ -73,7 +73,6 @@ export function MapPanel({
   const marker = sample(Math.max(0.01, Math.min(0.99, progress / 100)));
 
   const km = haversineKm(a, b);
-  const mi = km * 0.621371;
   const stroke = accent ? "var(--color-accent-2)" : "var(--color-brand)";
 
   return (
