@@ -110,6 +110,46 @@ export const APPROVED_VEHICLE_TYPES_LIST: VehicleTypeMeta[] = [
 ];
 
 /**
+ * Baseline official imagery for the 4 approved categories.
+ * These are the shipped defaults; the server-side Vehicle Asset Registry
+ * supersedes them the moment an official asset is published, and every screen
+ * resolves through that registry so the app and the console stay identical.
+ */
+export const DEFAULT_VEHICLE_IMAGES: Record<
+  CanonicalVehicleTypeId,
+  { ar: string; en: string; code: string; image: string; modelPath: string }
+> = {
+  flatbed: {
+    ar: "سطحة",
+    en: "Flatbed",
+    code: "EJ-FLAT",
+    image: "/images/trucks/scania-flatbed.jpg",
+    modelPath: "/models/trucks/flatbed.glb",
+  },
+  reefer: {
+    ar: "براد",
+    en: "Refrigerated",
+    code: "EJ-REEF",
+    image: "/images/trucks/mb-reefer.jpg",
+    modelPath: "/models/trucks/refrigerated.glb",
+  },
+  dry: {
+    ar: "جاف",
+    en: "Dry Van",
+    code: "EJ-DRY",
+    image: "/images/trucks/volvo-container.jpg",
+    modelPath: "/models/trucks/dry.glb",
+  },
+  curtain: {
+    ar: "ستارة",
+    en: "Curtainsider",
+    code: "EJ-CURT",
+    image: "/images/trucks/mb-curtain.jpg",
+    modelPath: "/models/trucks/curtainsider.glb",
+  },
+};
+
+/**
  * Safe Migration and Normalizer
  * Guarantees that any legacy or external vehicle type string
  * safely maps to one of the 4 canonical types without data loss.

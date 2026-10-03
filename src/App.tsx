@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { cn } from "./utils/cn";
 import { SettingsProvider, useSettings } from "./settings";
 import { FleetStoreProvider, useFleetStore } from "./state/fleetStore";
+import { VehicleAssetProvider } from "./state/vehicleAssetStore";
 import { ToastProvider } from "./components/Toast";
 import { WebConsole } from "./components/WebConsole";
 import { ConsoleAuthGate } from "./components/ConsoleAuthGate";
@@ -376,7 +377,9 @@ function Shell() {
 export default function App() {
   return (
     <SettingsProvider>
-      <Shell />
+      <VehicleAssetProvider>
+        <Shell />
+      </VehicleAssetProvider>
     </SettingsProvider>
   );
 }

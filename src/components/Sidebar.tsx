@@ -77,6 +77,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
         {row("trips", t("Trips", "الرحلات"), IconTruck)}
         {row("shipments", t("Shipments", "الشحنات"), IconCargo)}
         {row("fleet", t("Fleet (4 Types)", "الأسطول (٤ أنواع)"), IconTruck)}
+        {row("vehicle-assets", t("Vehicle Assets", "أصول المركبات"), IconLayers)}
         {row("drivers", t("Drivers", "السائقون"), IconDriver)}
         {row("tracking", t("Live Map", "الخريطة المباشرة"), IconTracking)}
         {row("reports", t("Reports & Audit", "التقارير والتدقيق"), IconReport)}

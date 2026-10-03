@@ -17,12 +17,23 @@ import reportRoutes from "./routes/reportRoutes";
 import systemRoutes from "./routes/systemRoutes";
 import brandingRoutes from "./routes/brandingRoutes";
 import devGpsRoutes from "./routes/devGpsRoutes";
+import vehicleAssetRoutes from "./routes/vehicleAssetRoutes";
+import { getUploadsServeRoot } from "./services/vehicleAssetRegistry";
 
 export function createServerApp() {
   const app = express();
 
   // Basic Middlewares
   app.use(cors());
+
+  // Vehicle asset ingestion carries base64 GLB/GLTF payloads, so it gets a
+  // dedicated (larger) body parser mounted ahead of the global one.
+  app.use("/api/vehicle-assets", express.json({ limit: "48mb" }), vehicleAssetRoutes);
+
+  // Published official vehicle binaries (images + 3D models) are served straight
+  // from the upload root so they resolve identically in dev and production.
+  app.use("/uploads", express.static(getUploadsServeRoot(), { maxAge: "1h" }));
+
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 

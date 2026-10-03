@@ -28,8 +28,12 @@ export interface VehicleEntity {
   plate: string;
   type: "براد" | "سطحة" | "جاف" | "ستارة";
   model: string;
+  brand?: string;
+  hp?: number;
   year: number;
   cab: string;
+  /** Optional per-vehicle photograph published through the central Vehicle Asset Registry. */
+  customImage?: string;
   status: "active" | "in_trip" | "maintenance" | "idle";
   maxLoadTons: number;
   currentLoadTons: number;
