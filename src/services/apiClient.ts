@@ -27,12 +27,32 @@ export function getAuthToken(): string | null {
   return authToken;
 }
 
+/**
+ * Resolve the token for a request. Prefers the in-memory value, but falls back to
+ * localStorage so a hot-reloaded module (or one evaluated before the token was
+ * persisted) never sends an unauthenticated request.
+ */
+function resolveToken(): string | null {
+  if (authToken) return authToken;
+  try {
+    const stored = localStorage.getItem("ejaz_auth_token");
+    if (stored) {
+      authToken = stored;
+      return stored;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers || {});
   headers.set("Content-Type", "application/json");
 
-  if (authToken) {
-    headers.set("Authorization", `Bearer ${authToken}`);
+  const token = resolveToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(endpoint, {
@@ -57,7 +77,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 /** Authenticated binary fetch for private registration documents. */
 async function requestBlob(endpoint: string): Promise<Blob> {
   const headers = new Headers();
-  if (authToken) headers.set("Authorization", `Bearer ${authToken}`);
+  const token = resolveToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
   const response = await fetch(endpoint, { headers, cache: "no-store" });
   if (!response.ok) {
     let errorMsg = `HTTP ${response.status}: ${response.statusText}`;
