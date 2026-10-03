@@ -25,12 +25,10 @@ export const BODY_TYPES: {
   label: [string, string];
   note: [string, string];
 }[] = [
-  { id: "curtain", label: ["Curtain-sider", "ستائر جانبية"], note: ["General cargo", "بضائع عامة"] },
-  { id: "reefer", label: ["Reefer", "مبرّد"], note: ["Temperature controlled", "تحكّم بدرجة الحرارة"] },
-  { id: "tanker", label: ["Tanker", "صهريج"], note: ["Fuel & liquids", "وقود وسوائل"] },
-  { id: "container", label: ["Container carrier", "حاملة حاويات"], note: ["20ft / 40ft", "٢٠ / ٤٠ قدماً"] },
-  { id: "flatbed", label: ["Flatbed", "مسطّحة"], note: ["Steel & equipment", "حديد ومعدات"] },
-  { id: "tipper", label: ["Tipper", "قلّاب"], note: ["Bulk construction", "مواد بناء"] },
+  { id: "flatbed", label: ["Flatbed", "سطحة"], note: ["Heavy steel & equipment", "حديد ثقيل ومعدات"] },
+  { id: "reefer", label: ["Reefer", "براد"], note: ["Temperature controlled cold-chain", "سلسلة التبريد وضبط الحرارة"] },
+  { id: "dry", label: ["Dry", "جاف"], note: ["Enclosed dry merchandise", "بضائع جافة ومغلقة"] },
+  { id: "curtain", label: ["Curtainsider", "ستارة"], note: ["Palletised fast loading", "بضائع عامة وباليتات"] },
 ];
 
 export const PARTNERS = [
@@ -60,15 +58,10 @@ export const TRUCK_IMAGES: Record<string, string> = {
 
 export const AERIAL_NIGHT = "images/trucks/aerial-night.jpg";
 
-export function imageFor(brand: Brand, body: BodyType): string {
-  if (brand === "Mercedes-Benz" && body === "curtain") return TRUCK_IMAGES["mb-curtain"];
-  if (brand === "Mercedes-Benz" && body === "reefer") return TRUCK_IMAGES["mb-reefer"];
-  if (brand === "Volvo" && body === "tanker") return TRUCK_IMAGES["volvo-tanker"];
-  if (brand === "Volvo" && body === "container") return TRUCK_IMAGES["volvo-container"];
-  if (body === "flatbed") return TRUCK_IMAGES["scania-flatbed"];
-  if (body === "tipper") return TRUCK_IMAGES["scania-tipper"];
+export function imageFor(_brand: Brand, body: BodyType): string {
   if (body === "reefer") return TRUCK_IMAGES["mb-reefer"];
-  if (body === "container") return TRUCK_IMAGES["volvo-container"];
+  if (body === "flatbed") return TRUCK_IMAGES["scania-flatbed"];
+  if (body === "dry") return TRUCK_IMAGES["volvo-container"];
   return TRUCK_IMAGES["mb-curtain"];
 }
 
@@ -81,8 +74,7 @@ export const STATUS_LABEL: Record<string, [string, string]> = {
 export function docsFor(body: BodyType): string[] {
   const base = ["Bill of Lading", "Commercial Invoice", "Cargo Insurance"];
   if (body === "reefer") return [...base, "Temperature Log"];
-  if (body === "tanker") return [...base, "ADR Certificate"];
-  if (body === "container") return [...base, "Container Manifest"];
+  if (body === "dry") return [...base, "Container Manifest"];
   return base;
 }
 

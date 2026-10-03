@@ -4,6 +4,8 @@ import { useSettings } from "../settings";
 import { useFleetStore, type Trip, type TripStatus } from "../state/fleetStore";
 import { apiClient } from "../services/apiClient";
 import { EjazEmblem } from "./Logo";
+import { Vehicle3DViewer } from "./Vehicle3DViewer";
+import { getVehicleTypeMeta } from "../data/vehicleTypes";
 import {
   IconCheck,
   IconClose,
@@ -411,8 +413,8 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 </div>
               </div>
 
-              {/* Vehicle Block */}
-              <div className="rounded-[14px] bg-surface-1 p-4 border border-border-subtle space-y-3">
+              {/* Vehicle Block with 3D Viewer */}
+              <div className="rounded-[14px] bg-surface-1 p-4 border border-border-subtle space-y-3 overflow-hidden">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-text-muted uppercase font-bold tracking-wider">
                     {t("Current Truck", "الشاحنة المخصصة")}
@@ -425,13 +427,24 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                   </button>
                 </div>
 
+                {/* Real 3D Rotatable Vehicle */}
+                <div className="h-[140px] w-full rounded-[10px] overflow-hidden bg-surface-2 border border-white/5">
+                  <Vehicle3DViewer
+                    vehicleType={currentTrip.cargoType}
+                    previewMode={false}
+                    height="100%"
+                    compact={true}
+                    showControls={false}
+                  />
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-[14px] font-bold text-white">ر ج د ٤٨٢١</div>
                     <div className="text-[11px] text-text-muted">Mercedes-Benz Actros L 1863</div>
                   </div>
                   <span className="badge bg-brand/20 text-brand text-[11px] font-bold uppercase">
-                    {currentTrip.cargoType} (معتمد)
+                    {getVehicleTypeMeta(currentTrip.cargoType).arabicName} ({getVehicleTypeMeta(currentTrip.cargoType).englishName})
                   </span>
                 </div>
 

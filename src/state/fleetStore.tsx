@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { BodyType, Driver, Vehicle } from "../data/types";
+import { normalizeVehicleType } from "../data/vehicleTypes";
 import { FLEET } from "../data/fleet";
 import { interpolateRoute } from "../services/gpsSimulation";
 import { apiClient } from "../services/apiClient";
@@ -143,6 +144,8 @@ interface FleetStoreContextType {
   updateCargoWeight: (tripId: string, tons: number) => void;
   assignDriverAndTruck: (tripId: string, driverId: string, truckId: string) => void;
   createNewTrip: (tripData: Partial<Trip>) => Trip;
+  addVehicle: (vehicle: Vehicle) => void;
+  updateVehicle: (vehicleId: string, updates: Partial<Vehicle>) => void;
   resolveAlert: (alertId: string) => void;
   sendChatMessage: (tripId: string, text: string) => void;
   recordAuditLog: (actionAr: string, actionEn: string, tripNumber?: string, details?: string) => void;
@@ -258,7 +261,7 @@ const INITIAL_TRIPS: Trip[] = [
     destinationCity: "الرياض",
     destinationTerminal: "مستودع الكيماويات - جنوب الرياض",
     corridorKey: "jubail-riyadh",
-    cargoType: "tanker",
+    cargoType: "dry",
     cargoWeightTons: 28.6,
     maxCapacityTons: 32.0,
     status: "on_road",
@@ -294,7 +297,7 @@ const INITIAL_TRIPS: Trip[] = [
     destinationCity: "المدينة المنورة",
     destinationTerminal: "مركز المدينة اللوجستي - مستودع ب",
     corridorKey: "jeddah-madinah",
-    cargoType: "container",
+    cargoType: "dry",
     cargoWeightTons: 24.1,
     maxCapacityTons: 28.0,
     status: "on_road",
@@ -366,7 +369,7 @@ const INITIAL_TRIPS: Trip[] = [
     destinationCity: "مكة",
     destinationTerminal: "موقع الصب الخرساني أ",
     corridorKey: "riyadh-jeddah",
-    cargoType: "tipper",
+    cargoType: "flatbed",
     cargoWeightTons: 26.8,
     maxCapacityTons: 30.0,
     status: "loading",
@@ -384,7 +387,7 @@ const INITIAL_TRIPS: Trip[] = [
     createdAt: "اليوم ٠٩:٣٠ ص",
     qrCodeToken: "EJAZ-WB-482912778",
     timeline: [
-      { id: "e1", timestamp: "٠٩:٣٠ ص", titleAr: "وصول القلاب للساحة وجاري التحميل", titleEn: "Tipper arrived, bulk loading in progress", status: "loading", actor: "غرفة التحميل" },
+      { id: "e1", timestamp: "٠٩:٣٠ ص", titleAr: "وصول الشاحنة للساحة وجاري التحميل", titleEn: "Flatbed arrived, loading in progress", status: "loading", actor: "غرفة التحميل" },
     ],
   },
   {
@@ -399,7 +402,7 @@ const INITIAL_TRIPS: Trip[] = [
     destinationCity: "الطائف",
     destinationTerminal: "ساحة التفريغ أ - الهدا",
     corridorKey: "riyadh-jeddah",
-    cargoType: "tipper",
+    cargoType: "flatbed",
     cargoWeightTons: 27.4,
     maxCapacityTons: 30.0,
     status: "arrived",
@@ -632,7 +635,7 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
             destinationCity: bt.destinationCity,
             destinationTerminal: bt.deliveryAddress,
             corridorKey: bt.corridorKey || "riyadh-jeddah",
-            cargoType: (bt.cargoType === "براد" ? "reefer" : bt.cargoType === "سطحة" ? "flatbed" : bt.cargoType === "جاف" ? "container" : "curtain") as BodyType,
+            cargoType: normalizeVehicleType(bt.cargoType),
             cargoWeightTons: Number(bt.cargoWeightTons),
             maxCapacityTons: Number(bt.maxCapacityTons || 25),
             status: (bt.status === "IN_TRANSIT" ? "on_road" : bt.status === "DELIVERED" ? "delivered" : bt.status === "COMPLETED" ? "completed" : "ready") as TripStatus,
@@ -939,7 +942,7 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
             ? "براد"
             : newTrip.cargoType === "flatbed"
             ? "سطحة"
-            : newTrip.cargoType === "container"
+            : newTrip.cargoType === "dry"
             ? "جاف"
             : "ستارة",
         cargoWeightTons: newTrip.cargoWeightTons,
@@ -969,6 +972,26 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
 
     recordAuditLog(`إنشاء رحلة شحن جديدة ${tempNum}`, `Created new freight trip ${tempNum}`, tempNum);
     return newTrip;
+  };
+
+  const addVehicle = (newVehicle: Vehicle) => {
+    setTrucks((prev) => [newVehicle, ...prev]);
+    recordAuditLog(
+      `إضافة شاحنة جديدة للأسطول (${newVehicle.plate})`,
+      `Added new fleet truck (${newVehicle.plate})`,
+      newVehicle.shipment
+    );
+  };
+
+  const updateVehicle = (vehicleId: string, updates: Partial<Vehicle>) => {
+    setTrucks((prev) =>
+      prev.map((v) => (v.id === vehicleId ? { ...v, ...updates } : v))
+    );
+    recordAuditLog(
+      `تحديث بيانات الشاحنة (${vehicleId})`,
+      `Updated vehicle data (${vehicleId})`,
+      vehicleId
+    );
   };
 
   const resolveAlert = (alertId: string) => {
@@ -1076,6 +1099,8 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
         updateCargoWeight,
         assignDriverAndTruck,
         createNewTrip,
+        addVehicle,
+        updateVehicle,
         resolveAlert,
         sendChatMessage,
         recordAuditLog,

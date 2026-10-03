@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
-import { BODY_TYPES, PHOTO_REPORTS, imageFor } from "../data/catalog";
+import { BODY_TYPES, PHOTO_REPORTS } from "../data/catalog";
 import type { Comment, DocState, Vehicle } from "../data/types";
 import type { Live } from "../hooks";
 import { formatCountdown, useCountUp } from "../hooks";
 import { StatusChip } from "./StatusChip";
-import { TruckImage } from "./TruckImage";
 import { CapacityGauge } from "./CapacityGauge";
 import { MapPanel } from "./MapPanel";
 import { Gallery } from "./Gallery";
 import { useToast } from "./Toast";
+import { Vehicle3DViewer } from "./Vehicle3DViewer";
+import { getVehicleTypeMeta } from "../data/vehicleTypes";
 import {
   IconArrowRight,
   IconCheck,
@@ -283,18 +284,21 @@ export function DetailsPanel({
 
         {tab === "vehicle" && (
           <>
-            <div className="relative overflow-hidden rounded-[8px] bg-black p-4">
-              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black to-transparent" />
-              <TruckImage
-                src={imageFor(v.brand, v.body)}
-                alt={`${v.brand} ${v.model}`}
-                className="relative mx-auto h-[150px] w-full object-contain"
-              />
-              <div className="relative flex items-end justify-between">
+            <div className="relative overflow-hidden rounded-[12px] bg-surface-1 border border-border-subtle p-3">
+              <div className="h-[210px] w-full rounded-[8px] overflow-hidden bg-surface-2 border border-white/5">
+                <Vehicle3DViewer
+                  vehicleType={v.body}
+                  vehiclePlate={v.plate}
+                  previewMode={false}
+                  height="100%"
+                  compact={true}
+                />
+              </div>
+              <div className="relative flex items-end justify-between mt-3 px-1">
                 <div>
-                  <div className="text-[17px] font-medium text-text-primary">{v.model}</div>
-                  <div className="text-[11px] text-text-muted">
-                    {v.brand} · {v.cab}
+                  <div className="text-[17px] font-bold text-text-primary">{v.model}</div>
+                  <div className="text-[11px] text-text-muted mt-0.5">
+                    {v.brand} · {v.cab} · <span className="text-brand font-semibold">{getVehicleTypeMeta(v.body).arabicName}</span>
                   </div>
                 </div>
                 <span className="badge bg-brand/15 text-brand">{v.year}</span>

@@ -4,6 +4,7 @@ import { useSettings } from "../settings";
 import { useFleetStore, type Trip } from "../state/fleetStore";
 import { apiClient } from "../services/apiClient";
 import { InteractiveMap } from "../components/InteractiveMap";
+import { normalizeVehicleType } from "../data/vehicleTypes";
 import {
   IconHome,
   IconPin,
@@ -107,7 +108,7 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
     destinationCity: active?.destinationCity || "جدة",
     destinationTerminal: active?.deliveryAddress || "ميناء جدة رصيف ٧",
     corridorKey: active?.corridorKey || "riyadh-jeddah",
-    cargoType: active?.cargoType === "براد" ? "reefer" : active?.cargoType === "سطحة" ? "flatbed" : active?.cargoType === "جاف" ? "container" : "curtain",
+    cargoType: normalizeVehicleType(active?.cargoType),
     cargoWeightTons: Number(active?.cargoWeightTons || 19.8),
     maxCapacityTons: Number(active?.maxCapacityTons || 25),
     status: active?.status === "IN_TRANSIT" ? "on_road" : active?.status === "DELIVERED" ? "delivered" : "ready",

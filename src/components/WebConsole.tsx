@@ -11,6 +11,9 @@ import { DriverPortal } from "./DriverPortal";
 import { ShipperPortal } from "./ShipperPortal";
 import { OwnerPortal } from "./OwnerPortal";
 import { TripsManager } from "./TripsManager";
+import { ShipmentsManager } from "./ShipmentsManager";
+import { FleetManager } from "./FleetManager";
+import { LiveOperationsCenter } from "./LiveOperationsCenter";
 import { AnalyticsReports } from "./AnalyticsReports";
 import { AIAssistant } from "./AIAssistant";
 import { AlertsCenter } from "./AlertsCenter";
@@ -29,7 +32,7 @@ export function WebConsole() {
     selectTruck,
   } = useFleetStore();
 
-  const [nav, setNav] = useState("tracking");
+  const [nav, setNav] = useState("operations");
   const [modalKind, setModalKind] = useState<RequestKind | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -163,7 +166,46 @@ export function WebConsole() {
 
         {/* Dynamic Center Work Area */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-          {nav === "trips" ? (
+          {nav === "operations" || nav === "tracking" ? (
+            <LiveOperationsCenter
+              onOpenTripDetails={(tripId) => {
+                selectTrip(tripId);
+                const tr = trips.find((t) => t.id === tripId);
+                if (tr) selectTruck(tr.truckId);
+                setNav("trips");
+              }}
+              onOpenShipmentDetails={(tripId) => {
+                selectTrip(tripId);
+                const tr = trips.find((t) => t.id === tripId);
+                if (tr) selectTruck(tr.truckId);
+                setNav("shipments");
+              }}
+            />
+          ) : nav === "shipments" ? (
+            <ShipmentsManager
+              onOpenTrip={(tripId) => {
+                selectTrip(tripId);
+                const tr = trips.find((t) => t.id === tripId);
+                if (tr) selectTruck(tr.truckId);
+                setNav("trips");
+              }}
+              onOpenTruck={(truckId) => {
+                selectTruck(truckId);
+                setNav("fleet");
+              }}
+              onOpenLiveMap={(tripId) => {
+                selectTrip(tripId);
+                setNav("tracking");
+              }}
+            />
+          ) : nav === "fleet" ? (
+            <FleetManager
+              onOpenLiveTracking={(tripId) => {
+                selectTrip(tripId);
+                setNav("tracking");
+              }}
+            />
+          ) : nav === "trips" ? (
             <TripsManager
               onOpenLiveTracking={(tripId) => {
                 selectTrip(tripId);
@@ -188,8 +230,8 @@ export function WebConsole() {
           )}
         </div>
 
-        {/* Desktop Details Panel (visible on tracking / overview) */}
-        {nav !== "trips" && nav !== "reports" && (
+        {/* Desktop Details Panel (visible only on traditional dashboard view) */}
+        {nav === "dashboard" && (
           <div className="hidden w-[440px] shrink-0 border-s border-border-subtle xl:block 2xl:w-[500px]">
             <DetailsPanel v={selectedVehicle} live={liveOf(selectedVehicle, elapsed)} />
           </div>

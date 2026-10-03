@@ -10,7 +10,6 @@ import {
   IconDashboard,
   IconDriver,
   IconHistory,
-  IconPartners,
   IconPlus,
   IconRepair,
   IconReport,
@@ -74,14 +73,17 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
       </div>
 
       <nav className="scroll-thin mt-7 flex-1 space-y-1 overflow-y-auto px-1">
-        {row("dashboard", t("Dashboard", "اللوحة الرئيسية"), IconDashboard)}
-        {row("trips", t("Trips Management", "إدارة الرحلات"), IconTruck)}
-        {row("tracking", t("Tracking", "التتبع المباشر"), IconTracking)}
-        {row("chats", t("Chats", "المحادثات"), IconChat)}
-        {row("partners", t("Partners", "الشركاء"), IconPartners)}
-        {row("ai", t("AI Logistics Assistant", "مساعد إيجاز الذكي"), IconBolt)}
+        {row("operations", t("Operations Center", "الرئيسية (مركز العمليات)"), IconDashboard)}
+        {row("trips", t("Trips", "الرحلات"), IconTruck)}
+        {row("shipments", t("Shipments", "الشحنات"), IconCargo)}
+        {row("fleet", t("Fleet (4 Types)", "الأسطول (٤ أنواع)"), IconTruck)}
+        {row("drivers", t("Drivers", "السائقون"), IconDriver)}
+        {row("tracking", t("Live Map", "الخريطة المباشرة"), IconTracking)}
+        {row("reports", t("Reports & Audit", "التقارير والتدقيق"), IconReport)}
         {row("alerts", t("Live Smart Alerts", "التنبيهات المباشرة"), IconBolt)}
-        {row("branding", t("Branding & Identity", "الهوية والعلامة التجارية"), IconLayers)}
+        {row("chats", t("Chats & Dispatch", "المحادثات والتوجيه"), IconChat)}
+        {row("branding", t("Settings & Identity", "الإعدادات والهوية"), IconLayers)}
+        {row("ai", t("AI Logistics Assistant", "مساعد إيجاز الذكي"), IconBolt)}
 
         <div>
           <button

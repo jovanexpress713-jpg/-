@@ -1,3 +1,5 @@
+import type { CanonicalVehicleTypeId } from "./vehicleTypes";
+
 export type Brand =
   | "Mercedes-Benz"
   | "Volvo"
@@ -6,13 +8,7 @@ export type Brand =
   | "DAF"
   | "Iveco";
 
-export type BodyType =
-  | "curtain"
-  | "reefer"
-  | "tanker"
-  | "container"
-  | "flatbed"
-  | "tipper";
+export type BodyType = CanonicalVehicleTypeId;
 
 export type Status = "active" | "waiting" | "inactive";
 
@@ -25,6 +21,7 @@ export interface Stop {
 }
 
 export interface Driver {
+  id?: string;
   name: string;
   phone: string;
   initials: string;
@@ -50,6 +47,7 @@ export interface Vehicle {
   model: string;
   cab: string;
   body: BodyType;
+  customImage?: string;
   status: Status;
   hp: number;
   odometer: number;

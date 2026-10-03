@@ -8,6 +8,7 @@ import { MobileApp } from "./mobile/MobileApp";
 import { BrandLogo } from "./components/Logo";
 import { AIAssistant } from "./components/AIAssistant";
 import { AlertsCenter } from "./components/AlertsCenter";
+import { GlobalSearch } from "./components/GlobalSearch";
 import { IconBolt, IconBell } from "./components/Icons";
 
 type Project = "web" | "mobile";
@@ -51,6 +52,15 @@ function TopBar() {
           size={36}
           sub={t("Heavy Fleet & Logistics Control", "إدارة أسطول النقل الثقيل والرحلات")}
         />
+
+        {/* Global Search Bar (Section 25) */}
+        <div className="hidden md:flex flex-1 max-w-xs xl:max-w-md mx-2">
+          <GlobalSearch
+            onNavigate={(_targetView) => {
+              if (project !== "web") setProject("web");
+            }}
+          />
+        </div>
 
         {/* Project Switcher: Web Console vs Mobile App */}
         <div className="order-3 flex items-center gap-1 rounded-full bg-surface-2 p-1 md:order-2 border border-border-subtle">

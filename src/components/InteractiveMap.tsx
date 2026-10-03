@@ -235,31 +235,38 @@ export function InteractiveMap({
       ctx.ellipse(0, 3, 24, 10, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Trailer (matching cargo type)
+      // Trailer (matching 4 canonical cargo types)
       const trailerColor =
-        trip.cargoType === "tanker"
-          ? "#A7B4C9" // Stainless steel
-          : trip.cargoType === "reefer"
+        trip.cargoType === "reefer"
           ? "#EAF0FA" // White thermal box
-          : trip.cargoType === "container"
-          ? "#2F80FF" // Blue container
-          : strokeColor; // Curtain / Flatbed
+          : trip.cargoType === "dry"
+          ? "#2F80FF" // Blue container / dry box
+          : trip.cargoType === "flatbed"
+          ? "#FF7A00" // Flatbed industrial orange
+          : strokeColor; // Curtain / standard
 
       // Draw Trailer chassis & body
       ctx.fillStyle = trailerColor;
       ctx.strokeStyle = "#0A1931";
       ctx.lineWidth = 1.5;
 
-      // Trailer Box (-20 to 4 px)
+      // Trailer Box (-22 to 2 px)
       ctx.fillRect(-22, -7, 24, 14);
       ctx.strokeRect(-22, -7, 24, 14);
 
-      // If Tanker, draw cylinder cap
-      if (trip.cargoType === "tanker") {
+      // Detail accents for trailer types
+      if (trip.cargoType === "flatbed") {
+        // Flatbed steel straps
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
         ctx.beginPath();
-        ctx.arc(-22, 0, 7, Math.PI / 2, (3 * Math.PI) / 2);
-        ctx.fill();
+        ctx.moveTo(-16, -7); ctx.lineTo(-16, 7);
+        ctx.moveTo(-8, -7); ctx.lineTo(-8, 7);
+        ctx.moveTo(0, -7); ctx.lineTo(0, 7);
         ctx.stroke();
+      } else if (trip.cargoType === "reefer") {
+        // Reefer unit on front
+        ctx.fillStyle = "#A7B4C9";
+        ctx.fillRect(-2, -4, 4, 8);
       }
 
       // Truck Tractor Cabin (5 to 16 px)
