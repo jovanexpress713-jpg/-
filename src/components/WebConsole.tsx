@@ -18,6 +18,7 @@ import { FleetManager } from "./FleetManager";
 import { VehicleAssetsManager } from "./VehicleAssetsManager";
 import { RegistrationRequestsManager } from "./RegistrationRequestsManager";
 import { LiveOperationsCenter } from "./LiveOperationsCenter";
+import { ExecutiveOverview } from "./ExecutiveOverview";
 import { AnalyticsReports } from "./AnalyticsReports";
 import { AIAssistant } from "./AIAssistant";
 import { AlertsCenter } from "./AlertsCenter";
@@ -29,6 +30,7 @@ import { useToast } from "./Toast";
  * own header (with its own menu button), so it is deliberately absent here.
  */
 const SECTION_TITLES: Record<string, [string, string]> = {
+  overview: ["Logistics Dashboard", "لوحة المؤشرات"],
   operations: ["Operations Center", "مركز العمليات"],
   trips: ["Trips", "الرحلات"],
   shipments: ["Shipments", "الشحنات"],
@@ -58,7 +60,7 @@ export function WebConsole() {
     selectTruck,
   } = useFleetStore();
 
-  const [nav, setNav] = useState("operations");
+  const [nav, setNav] = useState("overview");
   const [modalKind, setModalKind] = useState<RequestKind | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -220,7 +222,16 @@ export function WebConsole() {
 
         {/* Dynamic Center Work Area */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-          {nav === "operations" || nav === "tracking" ? (
+          {nav === "overview" ? (
+            <ExecutiveOverview
+              onOpenTripDetails={(tripId) => {
+                selectTrip(tripId);
+                const tr = trips.find((t) => t.id === tripId);
+                if (tr) selectTruck(tr.truckId);
+                setNav("trips");
+              }}
+            />
+          ) : nav === "operations" || nav === "tracking" ? (
             <LiveOperationsCenter
               onOpenTripDetails={(tripId) => {
                 selectTrip(tripId);
