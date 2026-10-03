@@ -300,11 +300,18 @@ export function runUiInteractionTests() {
     React.createElement(SettingsProvider, null, React.createElement(SplashScreen, {}))
   );
   assert.match(splashHtml, /اضغط للمتابعة/, "the welcome screen must keep its continue button");
-  assert.match(splashHtml, /EJAZ/, "the welcome screen must keep the EJAZ identity");
-  assert.match(splashHtml, /مؤسسة إيجاز للنقليات/, "the welcome screen must keep the Arabic identity");
   assert.ok(
     !/الترحيب/.test(splashHtml),
     "the welcome screen must not contain a الترحيب control"
+  );
+  // The welcome screen no longer hardcodes the EJAZ wordmark; the published brand
+  // logo (loginLogo) carries the identity and is animated in.
+  const splashSrc = read("src", "mobile", "SplashScreen.tsx");
+  assert.match(splashSrc, /loginLogo/, "the welcome screen must render the published brand logo");
+  assert.match(splashSrc, /logo-float/, "the welcome logo must carry an animated touch");
+  assert.ok(
+    !/>EJAZ</.test(splashSrc) && !/مؤسسة إيجاز للنقليات/.test(splashSrc),
+    "the welcome screen must not hardcode the EJAZ wordmark text"
   );
 
   /* ── 5. Responsive guards ──────────────────────────────────────────────── */
