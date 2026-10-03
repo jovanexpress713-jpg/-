@@ -3,6 +3,7 @@ import { cn } from "./utils/cn";
 import { SettingsProvider, useSettings } from "./settings";
 import { FleetStoreProvider, useFleetStore } from "./state/fleetStore";
 import { VehicleAssetProvider, useVehicleAssets } from "./state/vehicleAssetStore";
+import { BrandingProvider } from "./state/brandingStore";
 import { ToastProvider } from "./components/Toast";
 import { WebConsole } from "./components/WebConsole";
 import { ConsoleAuthGate } from "./components/ConsoleAuthGate";
@@ -387,9 +388,11 @@ function Shell() {
 export default function App() {
   return (
     <SettingsProvider>
-      <VehicleAssetProvider>
-        <Shell />
-      </VehicleAssetProvider>
+      <BrandingProvider>
+        <VehicleAssetProvider>
+          <Shell />
+        </VehicleAssetProvider>
+      </BrandingProvider>
     </SettingsProvider>
   );
 }

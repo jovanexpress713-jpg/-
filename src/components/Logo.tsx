@@ -1,4 +1,34 @@
 import { cn } from "../utils/cn";
+import { useBranding } from "../state/brandingStore";
+
+/**
+ * Renders the brand emblem. When the operator has published a custom logo in
+ * `Settings & Identity`, that image is shown; otherwise the official vector
+ * recreation is used. One call site, both behaviours.
+ */
+export function BrandEmblem({
+  size = 36,
+  variant = "header",
+  className,
+}: {
+  size?: number;
+  variant?: "header" | "login";
+  className?: string;
+}) {
+  const { headerLogo, loginLogo, branding } = useBranding();
+  const src = variant === "login" ? loginLogo : headerLogo;
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={branding.officialNameAr}
+        style={{ height: size }}
+        className={cn("w-auto max-w-[140px] select-none object-contain", className)}
+      />
+    );
+  }
+  return <EjazEmblem size={size} color="var(--color-brand)" className={className} />;
+}
 
 /**
  * Official vector recreation of the Ejaz Transport (مؤسسة إيجاز للنقليات) logo
@@ -137,6 +167,7 @@ export function BrandLogo({
   className?: string;
   onClick?: () => void;
 }) {
+  const { branding } = useBranding();
   return (
     <div
       onClick={onClick}
@@ -147,9 +178,9 @@ export function BrandLogo({
       )}
     >
       <div className="relative flex items-center justify-center">
-        <EjazEmblem size={size} color="var(--color-brand)" />
+        <BrandEmblem size={size} variant="header" />
       </div>
-      <div className="flex flex-col leading-tight">
+      <div className="flex min-w-0 flex-col leading-tight">
         <div className="flex items-baseline gap-2">
           <span className="font-extrabold text-[18px] tracking-tight text-text-primary">
             إيجاز
@@ -159,8 +190,8 @@ export function BrandLogo({
           </span>
         </div>
         {showSub && (
-          <span className="text-[10.5px] font-medium text-text-muted tracking-wide">
-            {sub || "مؤسسة إيجاز للنقليات · Since 2022"}
+          <span className="truncate text-[10.5px] font-medium text-text-muted tracking-wide">
+            {sub || `${branding.officialNameAr} · Since 2022`}
           </span>
         )}
       </div>

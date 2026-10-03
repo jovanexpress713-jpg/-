@@ -1,4 +1,5 @@
 import { useSettings } from "../settings";
+import { useBranding } from "../state/brandingStore";
 
 function SquareField() {
   return (
@@ -37,6 +38,8 @@ export function SplashScreen({
   onContinue?: () => void;
 }) {
   const { t } = useSettings();
+  /** A published login logo replaces the vector mark; default keeps the design. */
+  const { loginLogo, branding } = useBranding();
 
   const handleTap = () => {
     onContinue?.();
@@ -51,6 +54,13 @@ export function SplashScreen({
       <SquareField />
 
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-8">
+        {loginLogo ? (
+          <img
+            src={loginLogo}
+            alt={branding.officialNameAr}
+            className="h-[96px] w-auto max-w-[240px] object-contain"
+          />
+        ) : (
         <svg width="86" height="86" viewBox="0 0 86 86" fill="none">
           <rect
             x="6"
@@ -83,6 +93,7 @@ export function SplashScreen({
             <circle cx="51" cy="55.5" r="3" stroke="var(--color-brand)" strokeWidth="2.6" />
           </g>
         </svg>
+        )}
 
         <div className="animate-fade-in mt-7 text-center" style={{ animationDelay: "1.35s" }}>
           <div className="text-[28px] leading-none font-bold text-white tracking-wide">EJAZ</div>

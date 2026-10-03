@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSettings } from "../settings";
 import { apiClient } from "../services/apiClient";
 import { BrandLogo, EjazEmblem } from "./Logo";
+import { useBranding } from "../state/brandingStore";
 import { IconClose, IconCheck } from "./Icons";
 
 interface BrandingSettingsProps {
@@ -11,6 +12,7 @@ interface BrandingSettingsProps {
 
 export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
   const { t } = useSettings();
+  const { refresh: refreshBranding } = useBranding();
   const [loading, setLoading] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -69,6 +71,8 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
         reportLogoUrl: branding.reportLogoUrl.trim() || null,
       });
 
+      // Push the new identity to the live header / sidebar / welcome surfaces.
+      await refreshBranding();
       setSavedSuccess(true);
       setTimeout(() => {
         setSavedSuccess(false);
