@@ -28,7 +28,7 @@ Thumbs.db
 
 # Runtime data: uploaded registration documents, runtime vehicle asset uploads,
 # and the request store contain runtime/personal data — never commit them.
-public/uploads/
+public/uploads/*
 data/registration-uploads/
 data/registration-requests.json
 
