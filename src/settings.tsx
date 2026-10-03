@@ -43,9 +43,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (saved === "en" || saved === "ur") return saved;
     return "ar";
   });
-  const [theme, setTheme] = useState<Theme>(() =>
-    read("ejaz-theme", "dark") === "light" ? "light" : "dark",
-  );
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = read("ejaz-theme", "");
+    if (saved === "light" || saved === "dark") return saved;
+    const prefersLight =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-color-scheme: light)").matches;
+    return prefersLight ? "light" : "dark";
+  });
 
   const dir: "rtl" | "ltr" = lang === "en" ? "ltr" : "rtl";
   const tr = getDictionary(lang);
