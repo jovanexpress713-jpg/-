@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
 import { db, type DriverEntity } from "../db";
-import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
 
 const router = Router();
 
@@ -14,7 +14,7 @@ function checkLicenseExpiry(dateStr: string) {
 }
 
 // GET /api/drivers
-router.get("/", optionalAuthenticate, (_req: AuthenticatedRequest, res: Response) => {
+router.get("/", authenticate, requirePermission("drivers.view"), (_req: AuthenticatedRequest, res: Response) => {
   const list = Array.from(db.drivers.values()).map((d) => {
     const licCheck = checkLicenseExpiry(d.licenseExpiry);
     const vehicle = d.assignedVehicleId ? db.vehicles.get(d.assignedVehicleId) : undefined;
@@ -33,7 +33,7 @@ router.get("/", optionalAuthenticate, (_req: AuthenticatedRequest, res: Response
 });
 
 // GET /api/drivers/:id
-router.get("/:id", (req: AuthenticatedRequest, res: Response) => {
+router.get("/:id", authenticate, requirePermission("drivers.view"), (req: AuthenticatedRequest, res: Response) => {
   const driverId = String(req.params.id);
   const driver = db.drivers.get(driverId);
   if (!driver) {
@@ -57,7 +57,7 @@ router.get("/:id", (req: AuthenticatedRequest, res: Response) => {
 });
 
 // POST /api/drivers
-router.post("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/", authenticate, requirePermission("drivers.create", "drivers.edit"), (req: AuthenticatedRequest, res: Response) => {
   const { fullName, phone, nationalId, licenseNumber, licenseExpiry, assignedVehicleId } = req.body;
   if (!fullName || !phone || !nationalId || !licenseNumber || !licenseExpiry) {
     return res.status(400).json({ error: "Missing required driver profile fields" });

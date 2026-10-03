@@ -8,12 +8,14 @@ export interface AuthenticatedRequest extends Request {
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ["*"],
   GENERAL_MANAGER: [
-    "trips.view", "trips.approve", "trips.cancel", "trips.reopen",
-    "finance.view", "finance.approve", "finance.settle",
+    "trips.view", "trips.approve", "trips.cancel", "trips.reopen", "trips.assign",
+    "finance.view", "finance.approve", "finance.settle", "claims.view", "claims.manage",
+    "customers.view", "customers.manage", "notifications.view", "pod.view",
     "vehicles.view", "drivers.view", "reports.view", "reports.export", "audit.view", "settings.manage"
   ],
   OPERATIONS_MANAGER: [
-    "trips.view", "trips.create", "trips.assign", "trips.transition", "trips.cancel",
+    "trips.view", "trips.create", "trips.assign", "trips.transition", "trips.cancel", "trips.approve",
+    "claims.view", "claims.manage", "customers.view", "customers.manage", "notifications.view", "pod.view",
     "vehicles.view", "vehicles.create", "vehicles.edit", "vehicles.assign",
     "drivers.view", "drivers.create", "drivers.edit",
     "gps.view", "gps.configure", "documents.view", "documents.upload",
@@ -22,29 +24,32 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   DISPATCHER: [
     "trips.view", "trips.create", "trips.assign", "trips.transition",
     "vehicles.view", "vehicles.assign", "drivers.view", "gps.view",
-    "documents.view", "documents.upload"
+    "documents.view", "documents.upload", "customers.view", "notifications.view", "pod.view"
   ],
   ACCOUNTANT: [
     "finance.view", "finance.create", "finance.approve", "finance.settle",
-    "trips.view", "invoices.create", "payments.record", "reports.view", "reports.export"
+    "trips.view", "claims.view", "customers.view", "notifications.view", "pod.view",
+    "invoices.create", "payments.record", "reports.view", "reports.export"
   ],
   DRIVER: [
-    "trips.view", "trips.transition", "pod.create", "documents.upload", "documents.view", "gps.view"
+    "trips.view", "trips.transition", "trips.request", "pod.create", "pod.view",
+    "documents.upload", "documents.view", "gps.view", "notifications.view"
   ],
   CUSTOMER: [
-    "trips.view", "trips.create", "documents.view", "claims.create", "invoices.view"
+    "trips.view", "trips.create", "documents.view", "claims.create", "claims.view",
+    "invoices.view", "notifications.view", "pod.view"
   ],
   WAREHOUSE: [
-    "trips.view", "loading.record", "documents.view", "documents.upload"
+    "trips.view", "loading.record", "documents.view", "documents.upload", "notifications.view", "pod.view"
   ],
   BROKER: [
-    "trips.view", "trips.create", "documents.view"
+    "trips.view", "trips.create", "documents.view", "customers.view", "notifications.view"
   ],
   CUSTOMS_BROKER: [
-    "trips.view", "documents.upload", "documents.view"
+    "trips.view", "documents.upload", "documents.view", "notifications.view"
   ],
   REPRESENTATIVE: [
-    "trips.view", "documents.view"
+    "trips.view", "documents.view", "notifications.view"
   ],
 };
 
@@ -93,7 +98,14 @@ export function requireRole(...roles: string[]) {
   };
 }
 
-export function requirePermission(permission: string) {
+export function hasPermission(role: string | undefined, permission: string): boolean {
+  if (!role) return false;
+  if (role === "SUPER_ADMIN") return true;
+  const userPerms = ROLE_PERMISSIONS[role] || [];
+  return userPerms.includes("*") || userPerms.includes(permission);
+}
+
+export function requirePermission(...permissions: string[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
@@ -103,14 +115,80 @@ export function requirePermission(permission: string) {
       return next();
     }
 
-    const userPerms = ROLE_PERMISSIONS[req.user.role] || [];
-    if (userPerms.includes("*") || userPerms.includes(permission)) {
+    // Wildcard from the role matrix, or any of the accepted permissions for this endpoint
+    const granted = permissions.some((p) => hasPermission(req.user?.role, p));
+    if (granted) {
       return next();
     }
 
     return res.status(403).json({
-      error: `Access denied. Missing permission: ${permission}`,
+      error: `Access denied. Missing permission: ${permissions.join(" | ")}`,
       code: "INSUFFICIENT_PERMISSIONS",
     });
   };
+}
+
+/**
+ * Shared API key guard for machine-to-machine ingestion endpoints
+ * (AVL telemetry gateways). Falls back to an authenticated staff role
+ * carrying the `gps.configure` permission when no key is configured yet.
+ */
+export function requireProviderKey(configuredKey: string, fallbackPermission = "gps.configure") {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const provided = req.headers["x-api-key"] || req.headers["x-provider-key"];
+    const providedKey = Array.isArray(provided) ? provided[0] : provided;
+
+    if (configuredKey) {
+      if (providedKey && providedKey === configuredKey) {
+        return next();
+      }
+      return res.status(401).json({
+        error: "Invalid or missing GPS provider API key",
+        code: "INVALID_PROVIDER_KEY",
+      });
+    }
+
+    // No provider key configured (development adapter): require an authenticated
+    // staff operator holding the matching telemetry permission.
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const payload = verifyToken(authHeader.split(" ")[1]);
+      if (payload && hasPermission(payload.role, fallbackPermission)) {
+        req.user = payload;
+        return next();
+      }
+    }
+
+    return res.status(401).json({
+      error: "GPS provider API key is not configured on the server. Telemetry access is disabled until credentials are provisioned.",
+      code: "PROVIDER_NOT_CONFIGURED",
+    });
+  };
+}
+
+/** Object-level authorization: which trips a given identity is allowed to see/mutate. */
+export function canAccessTrip(
+  user: TokenPayload | undefined,
+  trip: { customerId?: string; driverId?: string; additionalDriverId?: string; status?: string }
+): boolean {
+  if (!user) return false;
+  if (user.role === "SUPER_ADMIN") return true;
+
+  if (user.role === "CUSTOMER") {
+    return !!user.customerId && trip.customerId === user.customerId;
+  }
+
+  if (user.role === "DRIVER") {
+    const driverId = user.driverId || user.userId;
+    const ownsTrip = trip.driverId === driverId || trip.additionalDriverId === driverId;
+    const isOpenRequest =
+      !trip.driverId ||
+      trip.driverId === "unassigned" ||
+      trip.status === "DRAFT_CREATED" ||
+      trip.status === "PENDING_APPROVAL" ||
+      trip.status === "CONFIRMED";
+    return ownsTrip || isOpenRequest;
+  }
+
+  return true;
 }

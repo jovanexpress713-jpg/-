@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { useFleetStore } from "../state/fleetStore";
@@ -13,12 +13,14 @@ import {
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { TruckImage } from "./TruckImage";
 import { apiClient } from "../services/apiClient";
+import { useVehicleAssets } from "../state/vehicleAssetStore";
 import { useToast } from "./Toast";
 import {
   IconSearch,
   IconClose,
   IconTruck,
   IconPlus,
+  IconUpload,
 } from "./Icons";
 
 interface FleetManagerProps {
@@ -60,6 +62,39 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
   const [formCab, setFormCab] = useState("GigaSpace Cab");
   const [formCustomImage, setFormCustomImage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Central Vehicle Asset Registry (official image + official 3D model per category)
+  const { registry, typeImage, typeModel, refresh: refreshVehicleAssets } = useVehicleAssets();
+  const vehiclePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const [photoTargetVehicleId, setPhotoTargetVehicleId] = useState<string | null>(null);
+  const [isPhotoBusy, setIsPhotoBusy] = useState(false);
+  const [assetError, setAssetError] = useState<string | null>(null);
+
+  const publishVehiclePhoto = async (file: File, vehicleId: string) => {
+    if (file.size > registry.limits.maxImageBytes) {
+      setAssetError(t("Image size exceeds the permitted limit", "حجم الصورة يتجاوز الحد المسموح"));
+      return;
+    }
+    setIsPhotoBusy(true);
+    setAssetError(null);
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("read-error"));
+        reader.readAsDataURL(file);
+      });
+      await apiClient.vehicleAssets.publishVehicleImage(vehicleId, { data, fileName: file.name });
+      updateVehicle(vehicleId, { customImage: registry.vehicles[vehicleId]?.url } as any);
+      await refreshVehicleAssets();
+      setShowVehicleDetailsModal((prev) => (prev && prev.id === vehicleId ? { ...prev } : prev));
+      alert(t("Vehicle photograph published across the platform", "تم نشر صورة المركبة في كل النظام"));
+    } catch (err: any) {
+      setAssetError(err?.message || t("Upload failed", "فشل الرفع"));
+    } finally {
+      setIsPhotoBusy(false);
+    }
+  };
 
   // Selected driver for assignment
   const [selectedDriverId, setSelectedDriverId] = useState("");
@@ -575,6 +610,48 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                 </div>
               </div>
 
+              {/* Official Vehicle Asset for the selected category (Single Source of Truth) */}
+              <div className="rounded-[12px] border border-border-subtle bg-surface-2 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[11.5px] font-bold text-text-secondary">
+                    {t("Official Asset for the selected category", "الأصل الرسمي للنوع المختار")}
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-[2px] text-[9.5px] font-bold",
+                      registry.types[formType].hasOfficialModel
+                        ? "bg-status-active/15 text-status-active"
+                        : "bg-status-waiting/15 text-status-waiting",
+                    )}
+                  >
+                    {registry.types[formType].hasOfficialModel
+                      ? t("Official 3D model", "مجسم رسمي 3D")
+                      : t("Official image (3D pending)", "صورة رسمية (بانتظار المجسم)")}
+                  </span>
+                </div>
+                <div className="flex items-stretch gap-3">
+                  <div className="h-[92px] w-[140px] shrink-0 overflow-hidden rounded-[10px] border border-border-subtle bg-surface-3">
+                    <TruckImage body={formType} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="flex-1 text-[11px] leading-relaxed text-text-secondary">
+                    <div className="font-bold text-text-primary">
+                      {APPROVED_VEHICLE_TYPES[formType].arabicName} · {APPROVED_VEHICLE_TYPES[formType].englishName}
+                    </div>
+                    <div className="mt-1 text-text-muted">
+                      {t(
+                        "This exact asset is bound to the category across the app and the console — one upload, every screen.",
+                        "هذا الأصل نفسه مرتبط بهذا النوع في التطبيق ولوحة التحكم — رفع واحد يظهر في كل الشاشات.",
+                      )}
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] text-text-muted">
+                      {typeImage(formType)}
+                      {typeModel(formType)?.url ? ` · ${typeModel(formType)?.url}` : ""}
+                    </div>
+                  </div>
+                </div>
+                {assetError && <div className="mt-2 text-[10.5px] text-status-danger">{assetError}</div>}
+              </div>
+
               {/* Plate & Brand */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
                 <div>
@@ -832,9 +909,15 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                           </span>
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               updateVehicle(showVehicleDetailsModal.id, { customImage: undefined });
-                              setShowVehicleDetailsModal((prev) => prev ? { ...prev, customImage: undefined } : null);
+                              setShowVehicleDetailsModal((prev) => (prev ? { ...prev, customImage: undefined } : null));
+                              try {
+                                await apiClient.vehicleAssets.removeVehicleImage(showVehicleDetailsModal.id);
+                                await refreshVehicleAssets();
+                              } catch {
+                                /* the local override is already cleared */
+                              }
                               toast(t("Reverted to official type image", "تم الرجوع للصورة الرسمية للنوع"));
                             }}
                             className="text-red-400 hover:underline text-[10px] font-semibold shrink-0"
@@ -851,6 +934,32 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                         </p>
                       )}
                     </div>
+                  </div>
+
+                  {/* Publish a real vehicle photograph (stored in the central asset registry) */}
+                  <div className="bg-surface-2 rounded-[12px] border border-border-subtle p-3 text-[11.5px]">
+                    <button
+                      type="button"
+                      disabled={isPhotoBusy}
+                      onClick={() => {
+                        setPhotoTargetVehicleId(showVehicleDetailsModal.id);
+                        setAssetError(null);
+                        vehiclePhotoInputRef.current?.click();
+                      }}
+                      className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-brand/40 bg-brand/10 py-2 text-[12px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand disabled:opacity-60"
+                    >
+                      <IconUpload size={14} />
+                      {isPhotoBusy
+                        ? t("Publishing…", "جارٍ النشر…")
+                        : t("Publish a photograph for this vehicle", "نشر صورة فعلية لهذه المركبة")}
+                    </button>
+                    <p className="mt-1.5 text-[10px] leading-relaxed text-text-muted">
+                      {t(
+                        "The published photograph is used for this unit only; its category asset still governs the fleet type.",
+                        "الصورة المنشورة تُستخدم لهذه المركبة فقط، مع بقاء الأصل الرسمي هو المرجع لنوعها.",
+                      )}
+                    </p>
+                    {assetError && <div className="mt-1.5 text-[10.5px] text-status-danger">{assetError}</div>}
                   </div>
 
                   {/* Quick Custom Image URL Input */}
@@ -992,6 +1101,20 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
           </div>
         </div>
       )}
+      {/* Hidden picker: per-vehicle photograph published to the central registry */}
+      <input
+        ref={vehiclePhotoInputRef}
+        type="file"
+        accept=".png,.jpg,.jpeg,.webp,.avif"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file && photoTargetVehicleId) publishVehiclePhoto(file, photoTargetVehicleId);
+          e.target.value = "";
+        }}
+      />
+
+      {/* Modal: Assign Driver */}
     </div>
   );
 }

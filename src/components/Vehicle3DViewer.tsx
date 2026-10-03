@@ -9,6 +9,8 @@ import {
   normalizeVehicleType,
   type CanonicalVehicleTypeId,
 } from "../data/vehicleTypes";
+import { useVehicleAssets } from "../state/vehicleAssetStore";
+import { TruckImage } from "./TruckImage";
 import {
   IconZoomIn,
   IconZoomOut,
@@ -54,6 +56,18 @@ export function Vehicle3DViewer({
 
   const [autoRotate, setAutoRotate] = useState(true);
   const [glSupported, setGlSupported] = useState(true);
+
+  /**
+   * Asset provenance driven by the central Vehicle Asset Registry.
+   *  • OFFICIAL_MODEL  — a real GLB/GLTF published for this category (interactive 3D)
+   *  • REFERENCE_ONLY  — no model published yet: the OFFICIAL reference photograph is
+   *                      shown as-is. No fake rotation, no image flipping, no illusion.
+   *  • ILLUSTRATIVE    — optional generic geometry, explicitly labelled as a demo
+   *                      stand-in and never presented as the fleet unit.
+   */
+  const { typeModel } = useVehicleAssets();
+  const [assetMode, setAssetMode] = useState<"OFFICIAL_MODEL" | "REFERENCE_ONLY" | "ILLUSTRATIVE">("REFERENCE_ONLY");
+  const [allowIllustrative, setAllowIllustrative] = useState(false);
 
   // Three.js scene refs
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -719,7 +733,9 @@ export function Vehicle3DViewer({
   const touchStartRadiusRef = useRef<number>(24);
   const lastTapRef = useRef<number>(0);
 
-  // Swap Truck Model when activeType changes with smooth model loading / procedural fallback
+  // Resolve and mount the authoritative asset for the active category
+  const officialModel = typeModel(activeType);
+
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
@@ -729,69 +745,94 @@ export function Vehicle3DViewer({
     }
 
     let isCancelled = false;
-    const meta = getVehicleTypeMeta(activeType);
 
-    // Attempt loading external GLB if present, else mount high-fidelity procedural replica
-    const loadModel = async () => {
-      let loadedExternal = false;
-      if (meta.glbPath) {
-        try {
-          const check = await fetch(meta.glbPath, { method: "HEAD" });
-          if (check.ok && !isCancelled) {
-            gltfLoaderRef.current?.load(
-              meta.glbPath,
-              (gltf) => {
-                if (isCancelled || !sceneRef.current) return;
-                if (truckGroupRef.current) {
-                  sceneRef.current.remove(truckGroupRef.current);
-                }
-                const model = gltf.scene;
-                // Auto-center and normalize model scale
-                const box = new THREE.Box3().setFromObject(model);
-                const size = box.getSize(new THREE.Vector3());
-                const maxDim = Math.max(size.x, size.y, size.z);
-                if (maxDim > 0) {
-                  const scale = 20 / maxDim;
-                  model.scale.setScalar(scale);
-                }
-                model.position.set(0, 1.4, 0);
-                truckGroupRef.current = model;
-                sceneRef.current.add(model);
-              },
-              undefined,
-              () => {
-                // Fallback to procedural
-                if (!isCancelled && sceneRef.current) {
-                  if (truckGroupRef.current) sceneRef.current.remove(truckGroupRef.current);
-                  const procedural = buildTruckModel(activeType);
-                  truckGroupRef.current = procedural;
-                  sceneRef.current.add(procedural);
-                }
-              }
-            );
-            loadedExternal = true;
-          }
-        } catch {
-          loadedExternal = false;
-        }
-      }
-
-      if (!loadedExternal && !isCancelled && sceneRef.current) {
-        if (truckGroupRef.current) {
-          sceneRef.current.remove(truckGroupRef.current);
-        }
-        const newTruck = buildTruckModel(activeType);
-        truckGroupRef.current = newTruck;
-        sceneRef.current.add(newTruck);
+    const clearCurrent = () => {
+      if (truckGroupRef.current && sceneRef.current) {
+        sceneRef.current.remove(truckGroupRef.current);
+        truckGroupRef.current = null;
       }
     };
 
-    loadModel();
+    const mountIllustrative = () => {
+      clearCurrent();
+      if (isCancelled || !sceneRef.current) return;
+      const procedural = buildTruckModel(activeType);
+      truckGroupRef.current = procedural;
+      sceneRef.current.add(procedural);
+      setAssetMode("ILLUSTRATIVE");
+    };
+
+    // 1) A published official GLB/GLTF takes priority — this is real geometry.
+    if (officialModel?.url) {
+      clearCurrent();
+      gltfLoaderRef.current.load(
+        officialModel.url,
+        (gltf) => {
+          if (isCancelled || !sceneRef.current) return;
+          const model = gltf.scene;
+
+          // Normalise the model footprint so every uploaded model frames identically,
+          // then apply the per-category transform published in the registry.
+          const box = new THREE.Box3().setFromObject(model);
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const baseScale = maxDim > 0 ? 20 / maxDim : 1;
+          model.scale.setScalar(baseScale * (officialModel.scale || 1));
+
+          const scaledBox = new THREE.Box3().setFromObject(model);
+          const center = scaledBox.getCenter(new THREE.Vector3());
+          model.position.set(
+            -center.x,
+            -scaledBox.min.y + (officialModel.yOffset || 0) + 0.05,
+            -center.z,
+          );
+          model.rotation.y = THREE.MathUtils.degToRad(officialModel.rotationY || 0);
+
+          model.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              const mesh = child as THREE.Mesh;
+              mesh.castShadow = false;
+              mesh.receiveShadow = false;
+              const material = mesh.material as THREE.MeshStandardMaterial;
+              if (material && "envMapIntensity" in material) material.envMapIntensity = 1.15;
+            }
+          });
+
+          clearCurrent();
+          truckGroupRef.current = model;
+          sceneRef.current.add(model);
+          setAssetMode("OFFICIAL_MODEL");
+
+          if (officialModel.cameraRadius) {
+            sphericalRef.current.radius = officialModel.cameraRadius;
+          }
+        },
+        undefined,
+        () => {
+          // The registered file is unreadable: never substitute invented geometry.
+          if (isCancelled) return;
+          if (allowIllustrative) mountIllustrative();
+          else setAssetMode("REFERENCE_ONLY");
+        },
+      );
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    // 2) No published model. Show the official reference photograph honestly, or the
+    //    clearly-labelled illustrative geometry when the operator opts in.
+    if (allowIllustrative) {
+      mountIllustrative();
+    } else {
+      clearCurrent();
+      setAssetMode("REFERENCE_ONLY");
+    }
 
     return () => {
       isCancelled = true;
     };
-  }, [activeType, buildTruckModel]);
+  }, [activeType, officialModel?.url, officialModel?.scale, officialModel?.rotationY, officialModel?.yOffset, officialModel?.cameraRadius, allowIllustrative, buildTruckModel]);
 
   // Pointer Interaction Handlers (Mouse & Touch Orbiting)
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -908,6 +949,40 @@ export function Vehicle3DViewer({
         </div>
       )}
 
+      {/* Reference Asset Layer — shown while no official GLB/GLTF model is published.
+          This is the OFFICIAL category photograph displayed as a photograph: no fake
+          rotation, no flipping, no perspective illusion passing itself off as 3D. */}
+      {glSupported && assetMode === "REFERENCE_ONLY" && (
+        <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center px-4 pointer-events-none">
+          <div className="relative w-full max-w-[420px]">
+            <div className="overflow-hidden rounded-[14px] border border-border-subtle bg-surface-1/70 shadow-2xl backdrop-blur-sm">
+              <TruckImage
+                body={activeType}
+                alt={`${meta.arabicName} — ${t("official reference asset", "المرجع الرسمي")}`}
+                className="h-[190px] w-full object-cover"
+                loading="eager"
+              />
+            </div>
+
+            <div className="mt-2 flex flex-col items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-status-waiting/30 bg-status-waiting/12 px-3 py-1 text-[10.5px] font-bold text-status-waiting">
+                <span className="h-1.5 w-1.5 rounded-full bg-status-waiting" />
+                {t("Official reference image — interactive 3D asset not published yet", "الصورة الرسمية للنوع — لم يُرفع المجسم ثلاثي الأبعاد بعد")}
+              </span>
+
+              {showControls && (
+                <button
+                  onClick={() => setAllowIllustrative(true)}
+                  className="pointer-events-auto rounded-full border border-border-subtle bg-surface-2/90 px-3 py-1 text-[10.5px] font-semibold text-text-secondary backdrop-blur transition-colors hover:text-brand"
+                >
+                  {t("Preview generic demo geometry (clearly labelled)", "معاينة مجسم توضيحي عام (موسوم بوضوح)")}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating HUD: Top Banner */}
       <div className="relative z-10 p-3 lg:p-4 flex items-start justify-between pointer-events-none">
         {/* Left: Active Vehicle Specs */}
@@ -926,7 +1001,25 @@ export function Vehicle3DViewer({
             {t(meta.descriptionEn, meta.descriptionAr)}
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-[10.5px] border-t border-white/5 pt-1.5 tabular-nums text-text-muted">
+          <div className="mt-2 flex items-center justify-between text-[10.5px] border-t border-white/5 pt-1.5">
+            <span className="text-text-muted">{t("Asset", "الأصل")}:</span>
+            <span
+              className={cn(
+                "rounded-full px-2 py-[2px] text-[9.5px] font-bold",
+                assetMode === "OFFICIAL_MODEL" && "bg-status-active/15 text-status-active",
+                assetMode === "REFERENCE_ONLY" && "bg-status-waiting/15 text-status-waiting",
+                assetMode === "ILLUSTRATIVE" && "bg-text-muted/15 text-text-muted",
+              )}
+            >
+              {assetMode === "OFFICIAL_MODEL"
+                ? t("Official 3D model", "مجسم رسمي 3D")
+                : assetMode === "REFERENCE_ONLY"
+                  ? t("Official image", "صورة رسمية")
+                  : t("Demo geometry", "مجسم توضيحي")}
+            </span>
+          </div>
+
+          <div className="mt-1.5 flex items-center justify-between text-[10.5px] tabular-nums text-text-muted">
             <span>{t("Max Payload", "الحمولة القصوى")}:</span>
             <span className="font-semibold text-brand">{meta.maxPayloadTons} {t("tons", "طن")}</span>
           </div>
@@ -1024,7 +1117,11 @@ export function Vehicle3DViewer({
               })}
             </div>
             <div className="mt-1.5 text-center text-[10px] text-text-muted">
-              {t("360° Interactive 3D Model · Drag to Rotate", "مجسم ثلاثي الأبعاد تفاعلي 360° · اسحب للدوران")}
+              {assetMode === "OFFICIAL_MODEL"
+                ? t("360° Interactive 3D Model · Drag to Rotate", "مجسم ثلاثي الأبعاد تفاعلي 360° · اسحب للدوران")
+                : assetMode === "ILLUSTRATIVE"
+                  ? t("Generic demo geometry · not the fleet unit", "مجسم توضيحي عام · ليس صورة المركبة الفعلية")
+                  : t("Official reference image · awaiting the 3D asset", "الصورة الرسمية للنوع · بانتظار رفع المجسم ثلاثي الأبعاد")}
             </div>
           </div>
         ) : (
@@ -1037,6 +1134,10 @@ export function Vehicle3DViewer({
             <span className="font-bold text-brand">{meta.arabicName}</span>
             <span className="text-text-muted">·</span>
             <span className="text-[11px] font-mono">{vehiclePlate || "EJAZ FLEET"}</span>
+            <span className="text-text-muted">·</span>
+            <span className={cn("text-[10.5px] font-bold", assetMode === "OFFICIAL_MODEL" ? "text-status-active" : "text-status-waiting")}>
+              {assetMode === "OFFICIAL_MODEL" ? t("3D", "مجسم") : t("Photo", "صورة")}
+            </span>
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import { db } from "../db";
 import { comparePassword, generateToken } from "../auth/jwt";
 import { authenticate, type AuthenticatedRequest, ROLE_PERMISSIONS } from "../auth/middleware";
 import { logAuditEvent } from "../services/auditService";
+import { config } from "../config";
 
 const router = Router();
 
@@ -19,13 +20,23 @@ router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
     return res.status(401).json({ error: "Invalid credentials or account inactive", code: "INVALID_CREDENTIALS" });
   }
 
-  // Check password with bcrypt hash or official demo passwords
-  const isMatch =
-    (await comparePassword(password, user.passwordHash)) ||
-    (password === "Ejaz@2026Client" && user.email.toLowerCase() === "client@ejaz.sa") ||
-    (password === "Ejaz@2026Driver" && (user.email.toLowerCase() === "driver@ejaz.sa" || user.email.toLowerCase() === "fahad.driver@ejaz.sa")) ||
-    (password === "Ejaz@2026Admin" && user.email.toLowerCase() === "admin@ejaz.sa") ||
-    password === "Ejaz@2026!";
+  // Authoritative check: bcrypt hash comparison against the stored credential.
+  let isMatch = await comparePassword(password, user.passwordHash);
+
+  // Optional, explicitly opted-in demo credentials (ENABLE_DEMO_ACCOUNTS=true).
+  // These are bound to the exact demo accounts and never act as a master key.
+  if (!isMatch && config.enableDemoAccounts) {
+    const demoCredentials: Record<string, string> = {
+      "client@ejaz.sa": "Ejaz@2026Client",
+      "driver@ejaz.sa": "Ejaz@2026Driver",
+      "fahad.driver@ejaz.sa": "Ejaz@2026Driver",
+      "admin@ejaz.sa": "Ejaz@2026Admin",
+    };
+    const expected = demoCredentials[user.email.toLowerCase()];
+    if (expected && password === expected && !user.passwordHash) {
+      isMatch = true;
+    }
+  }
 
   if (!isMatch) {
     return res.status(401).json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS" });

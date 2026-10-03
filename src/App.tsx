@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "./utils/cn";
 import { SettingsProvider, useSettings } from "./settings";
 import { FleetStoreProvider, useFleetStore } from "./state/fleetStore";
+import { VehicleAssetProvider } from "./state/vehicleAssetStore";
 import { ToastProvider } from "./components/Toast";
 import { WebConsole } from "./components/WebConsole";
+import { ConsoleAuthGate } from "./components/ConsoleAuthGate";
 import { MobileApp } from "./mobile/MobileApp";
+import { apiClient, setAuthToken, getAuthToken } from "./services/apiClient";
 import { BrandLogo } from "./components/Logo";
 import { AIAssistant } from "./components/AIAssistant";
 import { AlertsCenter } from "./components/AlertsCenter";
@@ -34,10 +37,31 @@ const IconGlobe = ({ size = 15 }: { size?: number }) => (
   </svg>
 );
 
-function TopBar() {
+const STAFF_ROLES = [
+  "SUPER_ADMIN",
+  "GENERAL_MANAGER",
+  "OPERATIONS_MANAGER",
+  "DISPATCHER",
+  "ACCOUNTANT",
+  "WAREHOUSE",
+  "BROKER",
+  "CUSTOMS_BROKER",
+  "REPRESENTATIVE",
+];
+
+function TopBar({
+  user,
+  onLogout,
+  onStaffLogin,
+}: {
+  user: any;
+  onLogout: () => void;
+  onStaffLogin: (user: any) => void;
+}) {
   const { t, lang, setLang, theme, setTheme } = useSettings();
   const { alerts, trips } = useFleetStore();
-  const [project, setProject] = useState<Project>("web");
+  const isStaff = STAFF_ROLES.includes(user?.role);
+  const [project, setProject] = useState<Project>(() => (isStaff ? "web" : "mobile"));
   const [showAI, setShowAI] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -191,6 +215,24 @@ function TopBar() {
             {theme === "dark" ? <IconSun /> : <IconMoon />}
           </button>
 
+          {/* Authenticated Operator */}
+          <div className="hidden items-center gap-2 rounded-full border border-border-subtle bg-surface-2 py-1.5 pe-2 ps-3 xl:flex">
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-brand/15 text-[10px] font-bold text-brand">
+              {(user?.fullName || "EJ").slice(0, 2)}
+            </span>
+            <div className="leading-tight">
+              <div className="max-w-[130px] truncate text-[11.5px] font-bold text-text-primary">{user?.fullName}</div>
+              <div className="text-[9.5px] font-semibold uppercase tracking-wide text-text-muted">{user?.role}</div>
+            </div>
+            <button
+              onClick={onLogout}
+              className="btn-ghost ms-1 px-2 py-1 text-[10.5px] font-bold text-status-danger hover:bg-status-danger/10"
+              title={t("Sign out", "تسجيل الخروج")}
+            >
+              {t("Sign out", "خروج")}
+            </button>
+          </div>
+
           {/* Live Fleet Counter Pill */}
           <span className="hidden items-center gap-1.5 rounded-full bg-status-active/12 px-3 py-1.5 text-[11px] font-semibold text-status-active lg:inline-flex border border-status-active/20">
             <span className="h-2 w-2 animate-pulse-dot rounded-full bg-current" />
@@ -201,7 +243,38 @@ function TopBar() {
 
       {/* Main Container */}
       <main className="min-h-0 flex-1 overflow-hidden">
-        {project === "web" ? <WebConsole /> : <MobileApp />}
+        {project === "web" ? (
+          isStaff ? (
+            <WebConsole />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-surface-0 px-4">
+              <div className="max-w-md rounded-[18px] border border-border-subtle bg-surface-1 p-8 text-center">
+                <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-status-waiting/15 text-status-waiting">
+                  <IconBolt size={20} />
+                </div>
+                <h2 className="text-[15px] font-extrabold text-text-primary">
+                  {t("Control Room access requires a staff role", "لوحة التحكم مخصصة للأدوار الوظيفية")}
+                </h2>
+                <p className="mt-2 text-[12.5px] leading-relaxed text-text-secondary">
+                  {t(
+                    "Your account is scoped to the driver/client mobile experience. Switch to the mobile app to continue, or sign in with an operations account.",
+                    "حسابك مخصص لتطبيق السائق والعميل على الجوال. انتقل إلى تطبيق الجوال للمتابعة، أو سجّل الدخول بحساب تشغيلي.",
+                  )}
+                </p>
+                <button onClick={() => setProject("mobile")} className="btn-primary mx-auto mt-4 px-4 py-2 text-[12.5px]">
+                  {t("Open the mobile app", "فتح تطبيق الجوال")}
+                </button>
+              </div>
+            </div>
+          )
+        ) : (
+          <MobileApp
+            onStaffLogin={(staffUser: any) => {
+              setProject("web");
+              if (staffUser) onStaffLogin(staffUser);
+            }}
+          />
+        )}
       </main>
 
       {/* Global Modals */}
@@ -211,14 +284,102 @@ function TopBar() {
   );
 }
 
+function Shell() {
+  const [session, setSession] = useState<any | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [preAuthView, setPreAuthView] = useState<"web" | "mobile">("web");
+
+  // Restore an authenticated session on load so refreshes keep the operator signed in
+  useEffect(() => {
+    const bootstrap = async () => {
+      if (!getAuthToken()) {
+        setChecking(false);
+        return;
+      }
+      try {
+        const me = await apiClient.auth.me();
+        setSession(me);
+      } catch {
+        setAuthToken(null);
+      } finally {
+        setChecking(false);
+      }
+    };
+    bootstrap();
+  }, []);
+
+  const handleAuthenticated = useCallback((user: any) => {
+    setSession(user);
+    setPreAuthView(STAFF_ROLES.includes(user?.role) ? "web" : "mobile");
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await apiClient.auth.logout();
+    } catch {
+      /* session may already be gone */
+    }
+    setAuthToken(null);
+    try {
+      localStorage.removeItem("ejaz_current_user");
+    } catch {
+      /* ignore */
+    }
+    setSession(null);
+    setPreAuthView("web");
+  }, []);
+
+  if (checking) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-surface-0">
+        <div className="flex items-center gap-2 text-[12px] font-semibold text-text-muted">
+          <span className="h-2 w-2 animate-pulse-dot rounded-full bg-brand" />
+          جارٍ التحقق من الجلسة…
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthenticated: the control room is gated, while the driver/client mobile
+  // experience keeps its own welcome + login journey.
+  if (!session) {
+    if (preAuthView === "mobile") {
+      return (
+        <div className="relative h-full w-full">
+          <button
+            onClick={() => setPreAuthView("web")}
+            className="absolute end-3 top-3 z-40 rounded-full border border-border-subtle bg-surface-2/90 px-3 py-1.5 text-[11px] font-bold text-text-secondary backdrop-blur transition-colors hover:text-brand"
+          >
+            العودة إلى غرفة التحكم
+          </button>
+          <MobileApp onStaffLogin={handleAuthenticated} />
+        </div>
+      );
+    }
+
+    return (
+      <ConsoleAuthGate
+        onAuthenticated={handleAuthenticated}
+        onOpenMobileApp={() => setPreAuthView("mobile")}
+      />
+    );
+  }
+
+  return (
+    <FleetStoreProvider>
+      <ToastProvider>
+        <TopBar user={session} onLogout={handleLogout} onStaffLogin={handleAuthenticated} />
+      </ToastProvider>
+    </FleetStoreProvider>
+  );
+}
+
 export default function App() {
   return (
     <SettingsProvider>
-      <FleetStoreProvider>
-        <ToastProvider>
-          <TopBar />
-        </ToastProvider>
-      </FleetStoreProvider>
+      <VehicleAssetProvider>
+        <Shell />
+      </VehicleAssetProvider>
     </SettingsProvider>
   );
 }

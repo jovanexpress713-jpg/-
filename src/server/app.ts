@@ -17,12 +17,23 @@ import reportRoutes from "./routes/reportRoutes";
 import systemRoutes from "./routes/systemRoutes";
 import brandingRoutes from "./routes/brandingRoutes";
 import devGpsRoutes from "./routes/devGpsRoutes";
+import vehicleAssetRoutes from "./routes/vehicleAssetRoutes";
+import { getUploadsServeRoot } from "./services/vehicleAssetRegistry";
 
 export function createServerApp() {
   const app = express();
 
   // Basic Middlewares
   app.use(cors());
+
+  // Vehicle asset ingestion carries base64 GLB/GLTF payloads, so it gets a
+  // dedicated (larger) body parser mounted ahead of the global one.
+  app.use("/api/vehicle-assets", express.json({ limit: "48mb" }), vehicleAssetRoutes);
+
+  // Published official vehicle binaries (images + 3D models) are served straight
+  // from the upload root so they resolve identically in dev and production.
+  app.use("/uploads", express.static(getUploadsServeRoot(), { maxAge: "1h" }));
+
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
@@ -31,12 +42,14 @@ export function createServerApp() {
   app.use("/api/users", authRoutes);
   app.use("/api/trips", tripRoutes);
   app.use("/api/branding", brandingRoutes);
-  app.get("/api/client/trips", (req, res, next) => {
-    req.url = "/client/trips";
+  // Canonical alias mounts: the mobile app addresses client/driver trip resources
+  // under /api/client/trips and /api/driver/trips (including POST .../:id/request).
+  app.use("/api/client/trips", (req, res, next) => {
+    req.url = `/client/trips${req.url === "/" ? "" : req.url}`;
     tripRoutes(req, res, next);
   });
-  app.get("/api/driver/trips", (req, res, next) => {
-    req.url = "/driver/trips";
+  app.use("/api/driver/trips", (req, res, next) => {
+    req.url = `/driver/trips${req.url === "/" ? "" : req.url}`;
     tripRoutes(req, res, next);
   });
   app.use("/api/vehicles", vehicleRoutes);

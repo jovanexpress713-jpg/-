@@ -2,6 +2,8 @@ import { runAuthTests } from "./auth.test";
 import { runTripLifecycleTests } from "./tripLifecycle.test";
 import { runGPSAdapterTests } from "./gpsAdapter.test";
 import { runFinanceTests } from "./finance.test";
+import { runApiSecurityTests } from "./apiSecurity.test";
+import { runVehicleAssetTests } from "./vehicleAssets.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -13,9 +15,11 @@ async function runAll() {
     runTripLifecycleTests();
     await runGPSAdapterTests();
     runFinanceTests();
+    await runApiSecurityTests();
+    await runVehicleAssetTests();
 
     console.log("============================================================");
-    console.log("  ✅ ALL 4 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 6 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {

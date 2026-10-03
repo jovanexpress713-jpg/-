@@ -13,6 +13,7 @@ import { OwnerPortal } from "./OwnerPortal";
 import { TripsManager } from "./TripsManager";
 import { ShipmentsManager } from "./ShipmentsManager";
 import { FleetManager } from "./FleetManager";
+import { VehicleAssetsManager } from "./VehicleAssetsManager";
 import { LiveOperationsCenter } from "./LiveOperationsCenter";
 import { AnalyticsReports } from "./AnalyticsReports";
 import { AIAssistant } from "./AIAssistant";
@@ -205,6 +206,8 @@ export function WebConsole() {
                 setNav("tracking");
               }}
             />
+          ) : nav === "vehicle-assets" ? (
+            <VehicleAssetsManager />
           ) : nav === "trips" ? (
             <TripsManager
               onOpenLiveTracking={(tripId) => {

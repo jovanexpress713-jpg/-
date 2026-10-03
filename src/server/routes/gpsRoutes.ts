@@ -1,12 +1,13 @@
 import { Router, type Response } from "express";
 import { gpsAdapter, type GPSPosition } from "../services/gpsProviderAdapter";
-import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, requireProviderKey, type AuthenticatedRequest } from "../auth/middleware";
+import { config } from "../config";
 import { db } from "../db";
 
 const router = Router();
 
 // GET /api/gps/status
-router.get("/status", optionalAuthenticate, (_req: AuthenticatedRequest, res: Response) => {
+router.get("/status", authenticate, requirePermission("gps.view"), (_req: AuthenticatedRequest, res: Response) => {
   const status = gpsAdapter.getStatus();
   return res.json({
     ...status,
@@ -17,7 +18,7 @@ router.get("/status", optionalAuthenticate, (_req: AuthenticatedRequest, res: Re
 });
 
 // GET /api/gps/telemetry/:deviceId
-router.get("/telemetry/:deviceId", optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
+router.get("/telemetry/:deviceId", authenticate, requirePermission("gps.view"), async (req: AuthenticatedRequest, res: Response) => {
   const deviceId = String(req.params.deviceId);
   const pos = await gpsAdapter.getLatestPosition(deviceId);
 
@@ -35,7 +36,7 @@ router.get("/telemetry/:deviceId", optionalAuthenticate, async (req: Authenticat
 });
 
 // POST /api/gps/telemetry - Ingest real telemetry from authorized AVL hardware gateway
-router.post("/telemetry", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/telemetry", requireProviderKey(config.gpsProviderApiKey), (req: AuthenticatedRequest, res: Response) => {
   const { vehicleId, deviceId, tripId, latitude, longitude, speed, heading, altitude, accuracy, ignition, provider } = req.body;
 
   if (!vehicleId || !deviceId || latitude === undefined || longitude === undefined || speed === undefined) {

@@ -222,6 +222,43 @@ export const apiClient = {
     health: () => request<any>("/api/health"),
     mapsConfig: () => request<any>("/api/system/maps-config"),
   },
+  vehicleAssets: {
+    getRegistry: () =>
+      request<{
+        registry: { version: number; updatedAt: string; types: any[]; vehicles: Record<string, any> };
+        limits: { maxImageBytes: number; maxModelBytes: number; allowedTypes: string[] };
+      }>("/api/vehicle-assets"),
+    publishTypeImage: (type: string, payload: { data: string; fileName?: string; notesAr?: string }) =>
+      request<any>(`/api/vehicle-assets/${type}/image`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    publishTypeModel: (
+      type: string,
+      payload: { data: string; fileName?: string; scale?: number; rotationY?: number; yOffset?: number; cameraRadius?: number },
+    ) =>
+      request<any>(`/api/vehicle-assets/${type}/model`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    updateModelTransform: (
+      type: string,
+      payload: { scale?: number; rotationY?: number; yOffset?: number; cameraRadius?: number },
+    ) =>
+      request<any>(`/api/vehicle-assets/${type}/model`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    withdrawTypeModel: (type: string) =>
+      request<any>(`/api/vehicle-assets/${type}/model`, { method: "DELETE" }),
+    publishVehicleImage: (vehicleId: string, payload: { data: string; fileName?: string }) =>
+      request<any>(`/api/vehicle-assets/vehicle/${vehicleId}/image`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    removeVehicleImage: (vehicleId: string) =>
+      request<any>(`/api/vehicle-assets/vehicle/${vehicleId}/image`, { method: "DELETE" }),
+  },
   branding: {
     get: () => request<{ branding: any }>("/api/branding"),
     update: (data: any) =>

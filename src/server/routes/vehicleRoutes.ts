@@ -1,10 +1,20 @@
 import { Router, type Response } from "express";
 import { db, type VehicleEntity } from "../db";
-import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
+import { logAuditEvent } from "../services/auditService";
+import { getPublicRegistry, removeVehicleImage } from "../services/vehicleAssetRegistry";
 
 const router = Router();
 
 const OFFICIAL_TYPES = ["براد", "سطحة", "جاف", "ستارة"];
+
+/** Canonical category ids for the 4 approved Arabic fleet types. */
+const OFFICIAL_TYPE_IDS: Record<string, string> = {
+  "سطحة": "flatbed",
+  "براد": "reefer",
+  "جاف": "dry",
+  "ستارة": "curtain",
+};
 
 function checkDocExpiry(dateStr: string): { isExpired: boolean; daysRemaining: number } {
   const target = new Date(dateStr).getTime();
@@ -17,7 +27,7 @@ function checkDocExpiry(dateStr: string): { isExpired: boolean; daysRemaining: n
 }
 
 // GET /api/vehicles
-router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/", authenticate, requirePermission("vehicles.view"), (req: AuthenticatedRequest, res: Response) => {
   const { type, status } = req.query;
   let list = Array.from(db.vehicles.values());
 
@@ -57,7 +67,7 @@ router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response)
 });
 
 // GET /api/vehicles/:id
-router.get("/:id", (req: AuthenticatedRequest, res: Response) => {
+router.get("/:id", authenticate, requirePermission("vehicles.view"), (req: AuthenticatedRequest, res: Response) => {
   const vehicle = db.vehicles.get(String(req.params.id));
   if (!vehicle) {
     return res.status(404).json({ error: "Vehicle not found" });
@@ -81,8 +91,8 @@ router.get("/:id", (req: AuthenticatedRequest, res: Response) => {
 });
 
 // POST /api/vehicles
-router.post("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
-  const { plate, type, model, year, maxLoadTons, cab, registrationExpiry, insuranceExpiry, inspectionExpiry } = req.body;
+router.post("/", authenticate, requirePermission("vehicles.create", "vehicles.edit"), (req: AuthenticatedRequest, res: Response) => {
+  const { plate, type, model, brand, hp, year, maxLoadTons, cab, customImage, registrationExpiry, insuranceExpiry, inspectionExpiry } = req.body;
 
   if (!plate || !type || !model || !year || !maxLoadTons) {
     return res.status(400).json({ error: "Missing required vehicle parameters" });
@@ -100,8 +110,11 @@ router.post("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
     plate,
     type,
     model,
+    brand: brand || "Mercedes-Benz",
+    hp: hp ? Number(hp) : 530,
     year: Number(year),
     cab: cab || "Standard Cab",
+    customImage: typeof customImage === "string" && customImage.trim() ? customImage.trim() : undefined,
     status: "idle",
     maxLoadTons: Number(maxLoadTons),
     currentLoadTons: 0,
@@ -117,7 +130,96 @@ router.post("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
   };
 
   db.vehicles.set(id, newVehicle);
+
+  logAuditEvent({
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    action: "VEHICLE_CREATED",
+    entity: "vehicles",
+    entityId: id,
+    newValues: { plate, type, model, brand: newVehicle.brand, year: newVehicle.year },
+  });
+
   return res.status(201).json({ message: "Vehicle added successfully", vehicle: newVehicle });
+});
+
+/**
+ * PATCH /api/vehicles/:id — edit a fleet unit.
+ * Changing the body type automatically re-binds the unit to that category's
+ * official image and official 3D model through the central asset registry, so a
+ * flatbed converted to a refrigerated unit never keeps the flatbed assets.
+ */
+router.patch("/:id", authenticate, requirePermission("vehicles.edit"), (req: AuthenticatedRequest, res: Response) => {
+  const id = String(req.params.id);
+  const vehicle = db.vehicles.get(id);
+  if (!vehicle) {
+    return res.status(404).json({ error: "Vehicle not found" });
+  }
+
+  const { plate, type, model, brand, hp, year, cab, maxLoadTons, status, registrationExpiry, insuranceExpiry, inspectionExpiry, assignedDriverId, customImage } = req.body || {};
+
+  if (type !== undefined && !OFFICIAL_TYPES.includes(type)) {
+    return res.status(400).json({
+      error: `Invalid vehicle type '${type}'. Authorized EJAZ fleet types: ${OFFICIAL_TYPES.join(", ")}`,
+    });
+  }
+
+  const previous = { type: vehicle.type, plate: vehicle.plate, status: vehicle.status, model: vehicle.model };
+  const typeChanged = type !== undefined && type !== vehicle.type;
+
+  if (plate !== undefined) vehicle.plate = plate;
+  if (type !== undefined) vehicle.type = type;
+  if (model !== undefined) vehicle.model = model;
+  if (brand !== undefined) vehicle.brand = brand;
+  if (hp !== undefined) vehicle.hp = Number(hp);
+  if (year !== undefined) vehicle.year = Number(year);
+  if (cab !== undefined) vehicle.cab = cab;
+  if (maxLoadTons !== undefined) vehicle.maxLoadTons = Number(maxLoadTons);
+  if (status !== undefined) vehicle.status = status;
+  if (registrationExpiry !== undefined) vehicle.registrationExpiry = registrationExpiry;
+  if (insuranceExpiry !== undefined) vehicle.insuranceExpiry = insuranceExpiry;
+  if (inspectionExpiry !== undefined) vehicle.inspectionExpiry = inspectionExpiry;
+  if (assignedDriverId !== undefined) vehicle.assignedDriverId = assignedDriverId || undefined;
+
+  if (customImage === null || customImage === "") {
+    // A per-vehicle photograph is removed together with its published file.
+    removeVehicleImage(id);
+    vehicle.customImage = undefined;
+  } else if (typeof customImage === "string") {
+    vehicle.customImage = customImage.trim() || undefined;
+  }
+
+  // Re-bind the category assets whenever the body type changes.
+  const registryAsset = getPublicRegistry().types.find((t) => t.type === OFFICIAL_TYPE_IDS[vehicle.type]) || null;
+
+  logAuditEvent({
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    action: typeChanged ? "VEHICLE_TYPE_CHANGED" : "VEHICLE_UPDATED",
+    entity: "vehicles",
+    entityId: id,
+    oldValues: previous,
+    newValues: { type: vehicle.type, plate: vehicle.plate, status: vehicle.status, model: vehicle.model, customImage: vehicle.customImage },
+    reason: typeChanged ? `Vehicle category re-bound from '${previous.type}' to '${vehicle.type}'` : undefined,
+  });
+
+  return res.json({
+    message: typeChanged
+      ? `Vehicle updated. The official '${vehicle.type}' image and 3D model are now bound to this unit.`
+      : "Vehicle updated successfully",
+    vehicle,
+    assetRebind: typeChanged
+      ? {
+          type: vehicle.type,
+          typeId: OFFICIAL_TYPE_IDS[vehicle.type],
+          officialImage: registryAsset?.officialImage ?? null,
+          imageSource: registryAsset?.imageSource ?? null,
+          model: registryAsset?.model ?? null,
+        }
+      : undefined,
+  });
 });
 
 export default router;

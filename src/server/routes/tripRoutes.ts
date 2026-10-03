@@ -1,6 +1,11 @@
 import { Router, type Response } from "express";
 import { db, type TripEntity, type TripEventEntity } from "../db";
-import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import {
+  authenticate,
+  requirePermission,
+  canAccessTrip,
+  type AuthenticatedRequest,
+} from "../auth/middleware";
 import { generateTripNumber } from "../services/tripNumberGenerator";
 import { validateTransition, type TripLifecycleStatus, STATUS_LABELS } from "../services/tripLifecycleService";
 import { initTripFinancials, getTripFinancials } from "../services/financeService";
@@ -10,9 +15,19 @@ import { dispatchNotification } from "../services/notificationService";
 const router = Router();
 
 // GET /api/trips
-router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
   const { status, vehicleId, driverId, customerId } = req.query;
   let list = Array.from(db.trips.values());
+
+  // Object-level scoping: clients and drivers only ever see trips they are entitled to.
+  if (req.user?.role === "CUSTOMER") {
+    const scopedCustomerId = req.user.customerId;
+    list = list.filter((t) => !!scopedCustomerId && t.customerId === scopedCustomerId);
+  } else if (req.user?.role === "DRIVER") {
+    list = list.filter((t) => canAccessTrip(req.user, t));
+  } else if (req.user?.role === "BROKER" || req.user?.role === "REPRESENTATIVE" || req.user?.role === "CUSTOMS_BROKER") {
+    list = list.filter((t) => canAccessTrip(req.user, t));
+  }
 
   if (status && typeof status === "string") {
     list = list.filter((t) => t.status === status);
@@ -37,7 +52,7 @@ router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response)
 });
 
 // GET /api/client/trips - Trips specifically belonging to the authenticated client
-router.get("/client/trips", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/client/trips", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
   const customerId = req.user?.customerId;
   const userRole = req.user?.role;
   let list = Array.from(db.trips.values());
@@ -52,7 +67,7 @@ router.get("/client/trips", authenticate, (req: AuthenticatedRequest, res: Respo
 });
 
 // GET /api/driver/trips - Trips for driver with tab support (all | available | confirmed | active | completed)
-router.get("/driver/trips", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/driver/trips", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
   const driverId = req.user?.driverId || req.user?.userId;
   const userRole = req.user?.role;
   const tab = (req.query.tab as string) || "all";
@@ -112,11 +127,19 @@ router.get("/driver/trips", authenticate, (req: AuthenticatedRequest, res: Respo
 });
 
 // POST /api/driver/trips/:id/request - Driver requests an available trip
-router.post("/driver/trips/:id/request", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/driver/trips/:id/request", authenticate, requirePermission("trips.request", "trips.assign"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId);
   if (!trip) {
     return res.status(404).json({ error: "Trip not found" });
+  }
+
+  if (req.user?.role !== "DRIVER" && req.user?.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ error: "Only a driver can request a trip", code: "FORBIDDEN" });
+  }
+
+  if (trip.driverRequestStatus === "PENDING") {
+    return res.status(409).json({ error: "A driver request is already pending for this trip", code: "REQUEST_ALREADY_PENDING" });
   }
 
   const { notes } = req.body;
@@ -174,7 +197,7 @@ router.post("/driver/trips/:id/request", authenticate, (req: AuthenticatedReques
 });
 
 // POST /api/trips/:id/approve-request - Admin approves driver trip request
-router.post("/:id/approve-request", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:id/approve-request", authenticate, requirePermission("trips.approve"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId);
   if (!trip) {
@@ -239,7 +262,7 @@ router.post("/:id/approve-request", authenticate, (req: AuthenticatedRequest, re
 });
 
 // POST /api/trips/:id/reject-request - Admin rejects driver trip request
-router.post("/:id/reject-request", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:id/reject-request", authenticate, requirePermission("trips.approve"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId);
   if (!trip) {
@@ -288,7 +311,7 @@ router.post("/:id/reject-request", authenticate, (req: AuthenticatedRequest, res
 
 
 // GET /api/trips/:id
-router.get("/:id", optionalAuthenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/:id", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId) || Array.from(db.trips.values()).find((t) => t.tripNumber === tripId);
   if (!trip) {
@@ -297,6 +320,10 @@ router.get("/:id", optionalAuthenticate, (req: AuthenticatedRequest, res: Respon
 
   const vehicle = db.vehicles.get(trip.vehicleId);
   const driver = db.drivers.get(trip.driverId);
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "You are not authorized to access this trip", code: "TRIP_ACCESS_DENIED" });
+  }
+
   const customer = db.customers.get(trip.customerId);
   const events = db.tripEvents.filter((e) => e.tripId === trip.id);
   const financials = getTripFinancials(trip.id);
@@ -315,7 +342,7 @@ router.get("/:id", optionalAuthenticate, (req: AuthenticatedRequest, res: Respon
 });
 
 // POST /api/trips - Create new shipment request
-router.post("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/", authenticate, requirePermission("trips.create"), (req: AuthenticatedRequest, res: Response) => {
   const {
     originCity,
     destinationCity,
@@ -432,10 +459,14 @@ router.post("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
 });
 
 // POST /api/trips/:id/transition - Authoritative State Machine Transition
-router.post("/:id/transition", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:id/transition", authenticate, requirePermission("trips.transition"), (req: AuthenticatedRequest, res: Response) => {
   const trip = db.trips.get(String(req.params.id));
   if (!trip) {
     return res.status(404).json({ error: "Trip not found" });
+  }
+
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "You are not authorized to transition this trip", code: "TRIP_ACCESS_DENIED" });
   }
 
   const { targetStatus, notes, latitude, longitude, reason } = req.body;
@@ -521,7 +552,7 @@ router.post("/:id/transition", authenticate, (req: AuthenticatedRequest, res: Re
 });
 
 // POST /api/trips/:id/cancel
-router.post("/:id/cancel", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:id/cancel", authenticate, requirePermission("trips.cancel"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId);
   if (!trip) {
@@ -584,7 +615,7 @@ router.post("/:id/cancel", authenticate, (req: AuthenticatedRequest, res: Respon
 });
 
 // POST /api/trips/:id/reopen
-router.post("/:id/reopen", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:id/reopen", authenticate, requirePermission("trips.reopen"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId);
   if (!trip) {
@@ -643,18 +674,22 @@ router.post("/:id/reopen", authenticate, (req: AuthenticatedRequest, res: Respon
 });
 
 // GET /api/trips/:id/events
-router.get("/:id/events", (req: AuthenticatedRequest, res: Response) => {
+router.get("/:id/events", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const events = db.tripEvents.filter((e) => e.tripId === tripId);
   return res.json({ events });
 });
 
 // GET /api/trips/:id/tracking
-router.get("/:id/tracking", optionalAuthenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/:id/tracking", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId) || Array.from(db.trips.values()).find((t) => t.tripNumber === tripId);
   if (!trip) {
     return res.status(404).json({ error: "Trip not found" });
+  }
+
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "You are not authorized to track this trip", code: "TRIP_ACCESS_DENIED" });
   }
 
   const vehicle = db.vehicles.get(trip.vehicleId);
@@ -701,7 +736,7 @@ router.get("/:id/tracking", optionalAuthenticate, (req: AuthenticatedRequest, re
 });
 
 // POST /api/trips/:id/assign-driver
-router.post("/:id/assign-driver", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:id/assign-driver", authenticate, requirePermission("trips.assign"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId);
   if (!trip) {
@@ -785,7 +820,7 @@ router.post("/:id/assign-driver", authenticate, (req: AuthenticatedRequest, res:
 });
 
 // POST /api/trips/:id/replace-driver
-router.post("/:id/replace-driver", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:id/replace-driver", authenticate, requirePermission("trips.assign"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId);
   if (!trip) {
@@ -863,7 +898,7 @@ router.post("/:id/replace-driver", authenticate, (req: AuthenticatedRequest, res
 });
 
 // POST /api/trips/:id/assign-vehicle
-router.post("/:id/assign-vehicle", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:id/assign-vehicle", authenticate, requirePermission("trips.assign"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId);
   if (!trip) {
@@ -917,7 +952,7 @@ router.post("/:id/assign-vehicle", authenticate, (req: AuthenticatedRequest, res
 });
 
 // POST /api/trips/:id/replace-vehicle
-router.post("/:id/replace-vehicle", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:id/replace-vehicle", authenticate, requirePermission("trips.assign"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.id);
   const trip = db.trips.get(tripId);
   if (!trip) {
