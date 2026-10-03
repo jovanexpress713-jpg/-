@@ -7,12 +7,11 @@ import { config } from "./src/server/config";
 
 async function start() {
   const app = createServerApp();
-  const HOST = config.host || "0.0.0.0";
+  const HOST = "0.0.0.0";
   const TARGET_PORT = config.port || 3000;
 
-  // In AI Studio / Cloud Run containers, Nginx reverse proxy binds to 8080 and proxies traffic to 3000.
-  // We bind to 3000 internally so requests hitting the external APP_PORT (8080) are smoothly served.
-  const LISTEN_PORT = (TARGET_PORT === 8080 || !TARGET_PORT) ? 3000 : TARGET_PORT;
+  // In AI Studio dev environment, the dev server must bind to port 3000.
+  const LISTEN_PORT = process.env.NODE_ENV === "production" ? (TARGET_PORT || 3000) : 3000;
 
   if (process.env.NODE_ENV !== "production") {
     // Mount Vite middlewares in development
@@ -29,7 +28,7 @@ async function start() {
     // Production static serving
     const distPath = path.resolve(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (_req, res) => {
+    app.get("{/*splat}", (_req, res) => {
       res.sendFile(path.resolve(distPath, "index.html"));
     });
   }

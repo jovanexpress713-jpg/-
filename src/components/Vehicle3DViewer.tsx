@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import {
@@ -713,18 +714,83 @@ export function Vehicle3DViewer({
     };
   }, [buildTruckModel, resetCamera]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Swap Truck Model when activeType changes with smooth scale transition
+  const gltfLoaderRef = useRef<GLTFLoader | null>(null);
+  const touchStartDistRef = useRef<number | null>(null);
+  const touchStartRadiusRef = useRef<number>(24);
+  const lastTapRef = useRef<number>(0);
+
+  // Swap Truck Model when activeType changes with smooth model loading / procedural fallback
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
 
-    if (truckGroupRef.current) {
-      scene.remove(truckGroupRef.current);
+    if (!gltfLoaderRef.current) {
+      gltfLoaderRef.current = new GLTFLoader();
     }
 
-    const newTruck = buildTruckModel(activeType);
-    truckGroupRef.current = newTruck;
-    scene.add(newTruck);
+    let isCancelled = false;
+    const meta = getVehicleTypeMeta(activeType);
+
+    // Attempt loading external GLB if present, else mount high-fidelity procedural replica
+    const loadModel = async () => {
+      let loadedExternal = false;
+      if (meta.glbPath) {
+        try {
+          const check = await fetch(meta.glbPath, { method: "HEAD" });
+          if (check.ok && !isCancelled) {
+            gltfLoaderRef.current?.load(
+              meta.glbPath,
+              (gltf) => {
+                if (isCancelled || !sceneRef.current) return;
+                if (truckGroupRef.current) {
+                  sceneRef.current.remove(truckGroupRef.current);
+                }
+                const model = gltf.scene;
+                // Auto-center and normalize model scale
+                const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                if (maxDim > 0) {
+                  const scale = 20 / maxDim;
+                  model.scale.setScalar(scale);
+                }
+                model.position.set(0, 1.4, 0);
+                truckGroupRef.current = model;
+                sceneRef.current.add(model);
+              },
+              undefined,
+              () => {
+                // Fallback to procedural
+                if (!isCancelled && sceneRef.current) {
+                  if (truckGroupRef.current) sceneRef.current.remove(truckGroupRef.current);
+                  const procedural = buildTruckModel(activeType);
+                  truckGroupRef.current = procedural;
+                  sceneRef.current.add(procedural);
+                }
+              }
+            );
+            loadedExternal = true;
+          }
+        } catch {
+          loadedExternal = false;
+        }
+      }
+
+      if (!loadedExternal && !isCancelled && sceneRef.current) {
+        if (truckGroupRef.current) {
+          sceneRef.current.remove(truckGroupRef.current);
+        }
+        const newTruck = buildTruckModel(activeType);
+        truckGroupRef.current = newTruck;
+        sceneRef.current.add(newTruck);
+      }
+    };
+
+    loadModel();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [activeType, buildTruckModel]);
 
   // Pointer Interaction Handlers (Mouse & Touch Orbiting)
@@ -765,6 +831,44 @@ export function Vehicle3DViewer({
     );
   };
 
+  // Touch handlers for mobile Pinch-to-Zoom and Double-tap Reset
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchStartDistRef.current = dist;
+      touchStartRadiusRef.current = sphericalRef.current.radius;
+    } else if (e.touches.length === 1) {
+      const now = Date.now();
+      if (now - lastTapRef.current < 320) {
+        resetCamera();
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && touchStartDistRef.current !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = touchStartDistRef.current / (dist || 1);
+      const targetRadius = touchStartRadiusRef.current * factor;
+      sphericalRef.current.radius = Math.max(12, Math.min(38, targetRadius));
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      touchStartDistRef.current = null;
+    }
+  };
+
   const meta = getVehicleTypeMeta(activeType);
 
   return (
@@ -785,6 +889,11 @@ export function Vehicle3DViewer({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onWheel={handleWheel}
+          onDoubleClick={resetCamera}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
           className="absolute inset-0 h-full w-full cursor-grab active:cursor-grabbing touch-none z-0"
         />
       ) : (

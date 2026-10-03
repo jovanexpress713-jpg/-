@@ -54,8 +54,11 @@ export function createServerApp() {
   app.use("/api", systemRoutes);
 
   // Official uploaded vehicle reference assets handler
-  app.get(["/file_00000000bf908211b85dffc7076e553c.png", "*/file_00000000bf908211b85dffc7076e553c.png"], (_req, res) => {
-    res.sendFile(path.resolve(process.cwd(), "public/images/trucks/scania-flatbed.jpg"));
+  app.use((req, res, next) => {
+    if (req.path.endsWith("file_00000000bf908211b85dffc7076e553c.png")) {
+      return res.sendFile(path.resolve(process.cwd(), "public/images/trucks/scania-flatbed.jpg"));
+    }
+    next();
   });
 
   // Global 404 handler for unmatched API routes
