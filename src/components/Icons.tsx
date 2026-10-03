@@ -414,4 +414,188 @@ export const IconKey = (p: IconProps) => (
   </Svg>
 );
 
+/* ============================================================
+   Canonical fleet category glyphs — one distinct silhouette per
+   approved truck type so an operator can read the category from
+   the icon alone. Same 24px grid, 1.8 stroke, round caps as the
+   rest of this set; no decorative or generic substitutes.
+   ============================================================ */
+
+/** سطحة · Flatbed — open deck slab with stake pockets, no enclosed box. */
+export const IconTruckFlatbed = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M13 10h4.2l2.8 3v2H13z" />
+    <path d="M2 12.6h11v2.4H2z" />
+    <path d="M3.6 12.6v-2.4" />
+    <path d="M7.5 12.6v-2.4" />
+    <path d="M11.4 12.6v-2.4" />
+    <circle cx="6.5" cy="17.4" r="1.7" />
+    <circle cx="17" cy="17.4" r="1.7" />
+  </Svg>
+);
+
+/** براد · Refrigerated — insulated box with the nose cooling unit + snowflake. */
+export const IconTruckReefer = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M13 10h4.2l2.8 3v2H13z" />
+    <rect x="2" y="6.4" width="11" height="8.6" rx="1.2" />
+    <path d="M10.1 6.4V4.4h2.6v2" />
+    <path d="M6.4 8.9v4" />
+    <path d="M4.7 9.9l3.4 2" />
+    <path d="M8.1 9.9l-3.4 2" />
+    <circle cx="6.5" cy="17.4" r="1.7" />
+    <circle cx="17" cy="17.4" r="1.7" />
+  </Svg>
+);
+
+/** جاف · Dry Van — fully enclosed box with rear double doors + handle. */
+export const IconTruckDry = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M13 10h4.2l2.8 3v2H13z" />
+    <rect x="2" y="6.4" width="11" height="8.6" rx="1.2" />
+    <path d="M4.6 6.6v8.2" />
+    <path d="M3.3 10.5h.9" />
+    <circle cx="6.5" cy="17.4" r="1.7" />
+    <circle cx="17" cy="17.4" r="1.7" />
+  </Svg>
+);
+
+/** ستارة · Curtainsider — box with the roller top rail and curtain folds. */
+export const IconTruckCurtain = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M13 10h4.2l2.8 3v2H13z" />
+    <rect x="2" y="6.4" width="11" height="8.6" rx="1.2" />
+    <path d="M2 8.2h11" />
+    <path d="M4.9 8.4v6.4" />
+    <path d="M7.5 8.4v6.4" />
+    <path d="M10.1 8.4v6.4" />
+    <circle cx="6.5" cy="17.4" r="1.7" />
+    <circle cx="17" cy="17.4" r="1.7" />
+  </Svg>
+);
+
+/* ---- Measurement & telemetry glyphs for the vehicle spec sheets ---- */
+
+/** الطول · Length along the chassis. */
+export const IconRuler = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 9h18v6H3z" />
+    <path d="M7 9v2.4" />
+    <path d="M11 9v3.4" />
+    <path d="M15 9v2.4" />
+    <path d="M19 9v3.4" />
+  </Svg>
+);
+
+/** العرض · Horizontal measurement. */
+export const IconWidth = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 12h18" />
+    <path d="M6 9l-3 3 3 3" />
+    <path d="M18 9l3 3-3 3" />
+    <path d="M3 5.5v13" />
+    <path d="M21 5.5v13" />
+  </Svg>
+);
+
+/** الارتفاع · Vertical measurement. */
+export const IconHeight = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3v18" />
+    <path d="M9 6l3-3 3 3" />
+    <path d="M9 18l3 3 3-3" />
+    <path d="M5.5 3h13" />
+    <path d="M5.5 21h13" />
+  </Svg>
+);
+
+/** التبريد · Cold chain. */
+export const IconSnowflake = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3v18" />
+    <path d="M4.2 7.5l15.6 9" />
+    <path d="M19.8 7.5l-15.6 9" />
+    <path d="M9.6 4.8 12 6.9l2.4-2.1" />
+    <path d="M9.6 19.2 12 17.1l2.4 2.1" />
+  </Svg>
+);
+
+/** الحمولة / السعة · Payload & capacity. */
+export const IconCapacity = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3.5 8.5 12 4l8.5 4.5V16L12 20.5 3.5 16z" />
+    <path d="M3.5 8.5 12 13l8.5-4.5" />
+    <path d="M12 13v7.5" />
+  </Svg>
+);
+
+/** عداد المسافة · Odometer. */
+export const IconOdometer = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3.5 17a8.5 8.5 0 1 1 17 0" />
+    <path d="M12 17l3.6-4.6" />
+    <path d="M4.6 12.2h1.6" />
+    <path d="M17.8 12.2h1.6" />
+    <path d="M12 4.6v1.6" />
+  </Svg>
+);
+
+/** قوة المحرك · Horsepower. */
+export const IconEngine = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6 9h2V7h4v2h3l3 3v5h-3v2H8v-2H6z" />
+    <path d="M3 11h3v4H3z" />
+  </Svg>
+);
+
+/** رقم اللوحة · Registration plate. */
+export const IconPlate = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="2.5" y="7" width="19" height="10" rx="2" />
+    <path d="M6.5 12h2.4" />
+    <path d="M15.1 12h2.4" />
+    <circle cx="12" cy="12" r="1.6" />
+  </Svg>
+);
+
+/** الجهة المالكة · Owner / partner organisation. */
+export const IconBuilding = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 21V5.5A1.5 1.5 0 0 1 5.5 4h7A1.5 1.5 0 0 1 14 5.5V21" />
+    <path d="M14 10h4.5A1.5 1.5 0 0 1 20 11.5V21" />
+    <path d="M2.5 21h19" />
+    <path d="M7 8h4" />
+    <path d="M7 12h4" />
+    <path d="M7 16h4" />
+  </Svg>
+);
+
+/** سنة الصنع · Model year. */
+export const IconCalendar = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3.5" y="5" width="17" height="16" rx="2" />
+    <path d="M3.5 10h17" />
+    <path d="M8 3v4" />
+    <path d="M16 3v4" />
+  </Svg>
+);
+
+/** موديل المركبة · Model designation. */
+export const IconTag = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M11.6 3H21v9.4l-8.7 8.7a1.6 1.6 0 0 1-2.3 0l-7.1-7.1a1.6 1.6 0 0 1 0-2.3z" />
+    <circle cx="16.6" cy="7.4" r="1.5" />
+  </Svg>
+);
+
+/** دوران كامل · Full 360° orbit. */
+export const IconRotate360 = (p: IconProps) => (
+  <Svg {...p}>
+    <ellipse cx="12" cy="12" rx="9" ry="4.2" />
+    <path d="M12 3.5v17" />
+    <path d="M8.6 5.2 12 3.5l3.4 1.7" />
+    <path d="M15.4 18.8 12 20.5l-3.4-1.7" />
+  </Svg>
+);
+
 

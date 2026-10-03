@@ -11,6 +11,8 @@ import {
   type CanonicalVehicleTypeId,
 } from "../data/vehicleTypes";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
+import { TruckTypeIcon } from "./TruckTypeIcon";
+import { SpecTile } from "./TruckSpecs";
 import { TruckImage } from "./TruckImage";
 import { apiClient } from "../services/apiClient";
 import { useVehicleAssets } from "../state/vehicleAssetStore";
@@ -21,6 +23,10 @@ import {
   IconTruck,
   IconPlus,
   IconUpload,
+  IconDriver,
+  IconEngine,
+  IconGauge,
+  IconOdometer,
 } from "./Icons";
 
 interface FleetManagerProps {
@@ -360,11 +366,8 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                       : "bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary"
                   )}
                 >
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: isSelected ? "#0A1931" : meta.accentColor }}
-                  />
-                  <span>{meta.arabicName}</span>
+                  <TruckTypeIcon truckType={tid} size={15} className="shrink-0" />
+                  <span className="shrink-0">{meta.arabicName}</span>
                 </button>
               );
             })}
@@ -440,16 +443,17 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   )}
 
                   {/* Floating Category Badge */}
-                  <div className="absolute top-2.5 start-2.5 z-10">
+                  <div className="absolute top-2.5 start-2.5 z-10 max-w-[calc(100%-5rem)]">
                     <span
-                      className="px-2.5 py-1 rounded-full text-[10.5px] font-bold shadow-md border"
+                      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-bold shadow-md"
                       style={{
                         backgroundColor: meta.badgeBg,
                         color: meta.accentColor,
                         borderColor: `${meta.accentColor}44`,
                       }}
                     >
-                      {meta.arabicName} — {meta.englishName}
+                      <TruckTypeIcon truckType={normType} size={14} />
+                      <span className="truncate">{meta.arabicName} — {meta.englishName}</span>
                     </span>
                   </div>
 
@@ -1103,9 +1107,12 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                             : "bg-surface-1 text-text-secondary border-border-subtle hover:bg-surface-3"
                         )}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[13px] font-bold">{vt.arabicName}</span>
-                          {isCurrent && <span className="h-2 w-2 rounded-full bg-navy" />}
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="inline-flex min-w-0 items-center gap-1.5 text-[13px] font-bold">
+                            <TruckTypeIcon truckType={vt.id} size={17} className="shrink-0" />
+                            <span className="truncate">{vt.arabicName}</span>
+                          </span>
+                          {isCurrent && <span className="h-2 w-2 shrink-0 rounded-full bg-navy" />}
                         </div>
                         <div className="text-[10.5px] opacity-80 mt-1">{vt.englishName}</div>
                         <div className="text-[10px] opacity-70 mt-2 font-mono">
@@ -1117,39 +1124,40 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                 </div>
               </div>
 
-              {/* Vehicle Technical Specifications */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[12px]">
-                <div className="bg-surface-2 p-3 rounded-[10px] border border-white/5">
-                  <div className="text-[10.5px] text-text-muted">{t("Driver", "السائق المعتمد")}</div>
-                  <div className="font-semibold text-text-primary mt-0.5 truncate">
-                    {showVehicleDetailsModal.driver.name}
-                  </div>
-                  <div className="text-[10px] text-text-muted font-mono">{showVehicleDetailsModal.driver.phone}</div>
-                </div>
-
-                <div className="bg-surface-2 p-3 rounded-[10px] border border-white/5">
-                  <div className="text-[10.5px] text-text-muted">{t("Horsepower", "القوة")}</div>
-                  <div className="font-semibold text-text-primary mt-0.5 tabular-nums">
-                    {showVehicleDetailsModal.hp} {t("hp", "حصان")}
-                  </div>
-                  <div className="text-[10px] text-text-muted">{showVehicleDetailsModal.cab}</div>
-                </div>
-
-                <div className="bg-surface-2 p-3 rounded-[10px] border border-white/5">
-                  <div className="text-[10.5px] text-text-muted">{t("Odometer", "العداد")}</div>
-                  <div className="font-semibold text-brand mt-0.5 tabular-nums">
-                    {showVehicleDetailsModal.odometer?.toLocaleString() || "312,400"} كم
-                  </div>
-                  <div className="text-[10px] text-text-muted">{t("Fuel Level", "مستوى الوقود")}: {showVehicleDetailsModal.fuel}%</div>
-                </div>
-
-                <div className="bg-surface-2 p-3 rounded-[10px] border border-white/5">
-                  <div className="text-[10.5px] text-text-muted">{t("Status", "الحالة التشغيلية")}</div>
-                  <div className="font-semibold text-text-primary mt-0.5">
-                    {showVehicleDetailsModal.status === "active" ? "على الطريق" : showVehicleDetailsModal.status === "waiting" ? "متاحة" : "متوقفة"}
-                  </div>
-                  <div className="text-[10px] text-text-muted font-mono">{showVehicleDetailsModal.shipment}</div>
-                </div>
+              {/* Vehicle Technical Specifications — identical values, now glyphed */}
+              <div className="grid grid-cols-2 gap-3 text-[12px] sm:grid-cols-4">
+                <SpecTile
+                  icon={<IconDriver size={14} />}
+                  label={t("Driver", "السائق المعتمد")}
+                  value={showVehicleDetailsModal.driver.name}
+                  hint={<span className="font-mono">{showVehicleDetailsModal.driver.phone}</span>}
+                />
+                <SpecTile
+                  icon={<IconEngine size={14} />}
+                  label={t("Horsepower", "القوة")}
+                  value={`${showVehicleDetailsModal.hp} ${t("hp", "حصان")}`}
+                  valueClassName="tabular-nums"
+                  hint={showVehicleDetailsModal.cab}
+                />
+                <SpecTile
+                  icon={<IconOdometer size={14} />}
+                  label={t("Odometer", "العداد")}
+                  value={`${showVehicleDetailsModal.odometer?.toLocaleString() || "312,400"} كم`}
+                  valueClassName="tabular-nums text-brand"
+                  hint={`${t("Fuel Level", "مستوى الوقود")}: ${showVehicleDetailsModal.fuel}%`}
+                />
+                <SpecTile
+                  icon={<IconGauge size={14} />}
+                  label={t("Status", "الحالة التشغيلية")}
+                  value={
+                    showVehicleDetailsModal.status === "active"
+                      ? "على الطريق"
+                      : showVehicleDetailsModal.status === "waiting"
+                      ? "متاحة"
+                      : "متوقفة"
+                  }
+                  hint={<span className="font-mono">{showVehicleDetailsModal.shipment}</span>}
+                />
               </div>
             </div>
 

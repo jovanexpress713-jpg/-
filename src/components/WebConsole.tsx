@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import type { RequestKind, Vehicle } from "../data/types";
+import { useSettings } from "../settings";
 import { liveOf, useElapsed, useTicker } from "../hooks";
 import { useFleetStore } from "../state/fleetStore";
+import { IconMenu } from "./Icons";
 import { Sidebar, type NavCounts } from "./Sidebar";
 import { Dashboard } from "./Dashboard";
 import { DetailsPanel } from "./DetailsPanel";
@@ -22,7 +24,29 @@ import { AlertsCenter } from "./AlertsCenter";
 import { BrandingSettings } from "./BrandingSettings";
 import { useToast } from "./Toast";
 
+/**
+ * Console section titles for the mobile section bar. The dashboard renders its
+ * own header (with its own menu button), so it is deliberately absent here.
+ */
+const SECTION_TITLES: Record<string, [string, string]> = {
+  operations: ["Operations Center", "مركز العمليات"],
+  trips: ["Trips", "الرحلات"],
+  shipments: ["Shipments", "الشحنات"],
+  fleet: ["Fleet (4 Types)", "الأسطول (٤ أنواع)"],
+  "vehicle-assets": ["Vehicle Assets", "أصول المركبات"],
+  drivers: ["Drivers", "السائقون"],
+  registrations: ["Registration Requests", "طلبات التسجيل"],
+  tracking: ["Live Map", "الخريطة المباشرة"],
+  reports: ["Reports & Audit", "التقارير والتدقيق"],
+  history: ["History", "السجل"],
+  analysis: ["Analysis", "التحليلات"],
+  trucks: ["Trucks", "الشاحنات"],
+  cargos: ["Cargos", "الشحنات"],
+  repair: ["Repair", "الصيانة"],
+};
+
 export function WebConsole() {
+  const { t } = useSettings();
   const toast = useToast();
   const {
     trucks,
@@ -131,6 +155,34 @@ export function WebConsole() {
       {/* Interactive Role & Persona Bar */}
       <RoleSwitcher />
 
+      {/*
+        Mobile section bar. Every console screen stays reachable from a phone:
+        the sidebar is a drawer, and this bar is the single, always-present way
+        to open it — no screen is left without navigation on a small viewport.
+      */}
+      {nav !== "dashboard" && (
+        <div className="flex shrink-0 items-center gap-2.5 border-b border-border-subtle bg-surface-1 px-3 py-2 lg:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="btn-icon shrink-0"
+            aria-label={t("Open navigation menu", "فتح قائمة التنقل")}
+          >
+            <IconMenu size={17} />
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13.5px] font-bold text-text-primary">
+              {t(
+                SECTION_TITLES[nav]?.[0] ?? "Control Room",
+                SECTION_TITLES[nav]?.[1] ?? "غرفة التحكم",
+              )}
+            </div>
+          </div>
+          <span className="badge shrink-0 bg-surface-4 text-text-muted tabular-nums">
+            {counts.trucks}
+          </span>
+        </div>
+      )}
+
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden lg:flex">
@@ -149,7 +201,7 @@ export function WebConsole() {
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
               onClick={() => setSidebarOpen(false)}
             />
-            <div className="absolute inset-y-0 start-0 z-10">
+            <div className="absolute inset-y-0 start-0 z-10 max-w-[85vw]">
               <Sidebar
                 active={nav}
                 onSelect={(k) => {

@@ -9,6 +9,7 @@ import {
   type CanonicalVehicleTypeId,
 } from "../data/vehicleTypes";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
+import { TruckTypeIcon } from "./TruckTypeIcon";
 import {
   IconSearch,
   IconClose,
@@ -290,12 +291,13 @@ export function ShipmentsManager({
                     <div className="flex items-center justify-between gap-2 text-[11.5px]">
                       <div className="flex items-center gap-2">
                         <span
-                          className="px-2 py-0.5 rounded-[4px] font-bold text-[10.5px]"
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] font-bold text-[10.5px]"
                           style={{
                             backgroundColor: meta.badgeBg,
                             color: meta.accentColor,
                           }}
                         >
+                          <TruckTypeIcon truckType={tr.cargoType} size={14} />
                           {meta.arabicName}
                         </span>
                         <span className="font-mono text-text-primary">{truck.plate}</span>

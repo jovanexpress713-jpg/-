@@ -12,16 +12,25 @@ import { Gallery } from "./Gallery";
 import { useToast } from "./Toast";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { getVehicleTypeMeta } from "../data/vehicleTypes";
+import { TruckTypeIcon } from "./TruckTypeIcon";
+import { SpecRow, TruckTypeSpecRow } from "./TruckSpecs";
 import {
   IconArrowRight,
+  IconBuilding,
   IconCheck,
   IconClose,
   IconDoc,
+  IconEngine,
   IconFuel,
   IconGauge,
+  IconHistory,
   IconMessage,
+  IconOdometer,
   IconPhone,
   IconPin,
+  IconPlate,
+  IconRuler,
+  IconSnowflake,
   IconStar,
   IconThermo,
   IconWeight,
@@ -126,7 +135,9 @@ export function DetailsPanel({
     setMsgs(v.comments);
   }, [v.id, v.docs, v.comments]);
 
-  const bodyLabel = BODY_TYPES.find((b) => b.id === v.body)?.label ?? v.body;
+  const bodyEntry = BODY_TYPES.find((b) => b.id === v.body);
+  /** The catalog stores each label as [en, ar]; render the active language only. */
+  const bodyLabel = bodyEntry ? t(bodyEntry.label[0], bodyEntry.label[1]) : v.body;
   const photos = useMemo(
     () => v.photos.map((i) => PHOTO_REPORTS[i]).filter(Boolean),
     [v.photos],
@@ -214,22 +225,22 @@ export function DetailsPanel({
               <Stat
                 label={t("ETA", "الوصول")}
                 value={v.status === "inactive" ? "—" : formatCountdown(live.etaSeconds)}
-                icon={<IconGauge size={13} />}
+                icon={<IconHistory size={13} />}
               />
               <Stat
                 label={t("Distance", "المسافة")}
                 value={`${Math.round(live.miles).toLocaleString()} ${t("mi", "ميل")}`}
-                icon={<IconPin size={13} />}
+                icon={<IconRuler size={13} />}
               />
               <Stat
                 label={t("Speed", "السرعة")}
                 value={`${Math.round(live.speed)} ${t("km/h", "كم/س")}`}
-                icon={<IconArrowRight size={13} />}
+                icon={<IconGauge size={13} />}
               />
               <Stat
                 label={t("Stops", "المحطات")}
                 value={`${v.stops.filter((s) => s.done).length}/${v.stops.length}`}
-                icon={<IconWeight size={13} />}
+                icon={<IconPin size={13} />}
               />
             </div>
 
@@ -295,17 +306,21 @@ export function DetailsPanel({
                 />
               </div>
               <div className="relative flex items-end justify-between mt-3 px-1">
-                <div>
-                  <div className="text-[17px] font-bold text-text-primary">{v.model}</div>
-                  <div className="text-[11px] text-text-muted mt-0.5">
-                    {v.brand} · {v.cab} · <span className="text-brand font-semibold">{getVehicleTypeMeta(v.body).arabicName}</span>
+                <div className="min-w-0">
+                  <div className="truncate text-[17px] font-bold text-text-primary">{v.model}</div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-text-muted">
+                    <span className="truncate">{v.brand} · {v.cab}</span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-brand">
+                      <TruckTypeIcon truckType={v.body} size={14} />
+                      {getVehicleTypeMeta(v.body).arabicName}
+                    </span>
                   </div>
                 </div>
                 <span className="badge bg-brand/15 text-brand">{v.year}</span>
               </div>
             </div>
 
-            <div className="card flex items-center justify-around p-4">
+            <div className="card flex flex-wrap items-center justify-around gap-3 p-4">
               <Ring value={v.fuel} label={t("Fuel", "الوقود")} suffix="%" icon={<IconFuel size={18} />} />
               <Ring
                 value={Math.min(100, v.engineTemp)}
@@ -318,7 +333,7 @@ export function DetailsPanel({
                   value={Math.min(100, Math.abs(v.boxTemp) * 4)}
                   label={t("Box temp", "حرارة الصندوق")}
                   suffix="°"
-                  icon={<IconThermo size={18} />}
+                  icon={<IconSnowflake size={18} />}
                 />
               ) : (
                 <Ring
@@ -331,26 +346,57 @@ export function DetailsPanel({
             </div>
 
             <div className="card divide-y divide-border-subtle px-4">
-              {(
-                [
-                  [t("Body type", "نوع الهيكل"), bodyLabel],
-                  [t("Engine power", "قوة المحرك"), `${v.hp} ${t("hp", "حصان")}`],
-                  [t("Odometer", "عداد المسافة"), `${v.odometer.toLocaleString()} ${t("km", "كم")}`],
-                  [t("Plate", "رقم اللوحة"), v.plate],
-                  [t("Fuel level", "مستوى الوقود"), `${v.fuel}%`],
-                  [t("Engine temp", "حرارة المحرك"), `${v.engineTemp} °C`],
-                  ...(v.boxTemp !== undefined
-                    ? [[t("Box temp", "حرارة الصندوق"), `${v.boxTemp} °C`]]
-                    : []),
-                  [t("Payload", "الحمولة"), `${v.load} ${t("t", "طن")} / ${v.maxLoad} ${t("t", "طن")}`],
-                  [t("Owner", "الجهة المالكة"), v.partner],
-                ] as [string, string][]
-              ).map(([k, val]) => (
-                <div key={k} className="flex items-center justify-between py-2.5">
-                  <span className="text-[12px] text-text-muted">{k}</span>
-                  <span className="text-[12.5px] tabular-nums text-text-primary">{val}</span>
-                </div>
-              ))}
+              {/* Same values, same order, same wording — each now carries the
+                  vector glyph that expresses what the number means. */}
+              <TruckTypeSpecRow
+                truckType={v.body}
+                label={t("Body type", "نوع الهيكل")}
+                value={bodyLabel}
+                valueClassName="font-bold"
+              />
+              <SpecRow
+                icon={<IconEngine size={14} />}
+                label={t("Engine power", "قوة المحرك")}
+                value={`${v.hp} ${t("hp", "حصان")}`}
+              />
+              <SpecRow
+                icon={<IconOdometer size={14} />}
+                label={t("Odometer", "عداد المسافة")}
+                value={`${v.odometer.toLocaleString()} ${t("km", "كم")}`}
+              />
+              <SpecRow
+                icon={<IconPlate size={14} />}
+                label={t("Plate", "رقم اللوحة")}
+                value={v.plate}
+                valueClassName="font-mono"
+              />
+              <SpecRow
+                icon={<IconFuel size={14} />}
+                label={t("Fuel level", "مستوى الوقود")}
+                value={`${v.fuel}%`}
+              />
+              <SpecRow
+                icon={<IconThermo size={14} />}
+                label={t("Engine temp", "حرارة المحرك")}
+                value={`${v.engineTemp} °C`}
+              />
+              {v.boxTemp !== undefined && (
+                <SpecRow
+                  icon={<IconSnowflake size={14} />}
+                  label={t("Box temp", "حرارة الصندوق")}
+                  value={`${v.boxTemp} °C`}
+                />
+              )}
+              <SpecRow
+                icon={<IconWeight size={14} />}
+                label={t("Payload", "الحمولة")}
+                value={`${v.load} ${t("t", "طن")} / ${v.maxLoad} ${t("t", "طن")}`}
+              />
+              <SpecRow
+                icon={<IconBuilding size={14} />}
+                label={t("Owner", "الجهة المالكة")}
+                value={v.partner}
+              />
             </div>
           </>
         )}

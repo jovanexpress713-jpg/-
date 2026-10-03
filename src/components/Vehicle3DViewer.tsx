@@ -11,11 +11,58 @@ import {
 } from "../data/vehicleTypes";
 import { useVehicleAssets } from "../state/vehicleAssetStore";
 import { TruckImage } from "./TruckImage";
+import { TruckTypeIcon } from "./TruckTypeIcon";
+import { SpecInline } from "./TruckSpecs";
+import {
+  ORBIT_DEFAULTS,
+  applyDragDelta,
+  azimuthDegrees,
+  clampRadius,
+  orbitToPosition,
+  stepOrbit,
+  type OrbitState,
+} from "./orbit";
 import {
   IconZoomIn,
   IconZoomOut,
   IconTruck,
+  IconWeight,
+  IconTag,
+  IconPlate,
+  IconRuler,
+  IconRotate360,
 } from "./Icons";
+
+/**
+ * WebGL context budget.
+ *
+ * The fleet register renders one viewer per truck, and browsers hard-cap the
+ * number of live WebGL contexts (typically 8–16) — beyond that the oldest
+ * context is force-lost and the canvas goes black. Viewers claim a slot from
+ * this shared budget and release it on unmount; when the budget is exhausted a
+ * viewer presents the official photograph with a one-tap "open the 3D view"
+ * affordance instead of silently failing. Nothing about the model itself is
+ * reduced — a viewer that holds a slot always renders at full fidelity.
+ */
+const MAX_LIVE_WEBGL_CONTEXTS = 6;
+let liveContexts = 0;
+
+export function claimWebGLContext(): boolean {
+  if (liveContexts >= MAX_LIVE_WEBGL_CONTEXTS) return false;
+  liveContexts += 1;
+  return true;
+}
+
+export function releaseWebGLContext(): void {
+  liveContexts = Math.max(0, liveContexts - 1);
+}
+
+/**
+ * Damped-orbit tuning lives in `./orbit`, shared with the test suite so the
+ * rotation behaviour is verified through the same functions the render loop
+ * calls. The camera moves; the model never does.
+ */
+const clampRadiusValue = (radius: number) => clampRadius(radius, ORBIT_DEFAULTS);
 
 interface Vehicle3DViewerProps {
   vehicleType?: string;
@@ -34,6 +81,7 @@ interface Vehicle3DViewerProps {
   showControls?: boolean;
   height?: string | number;
 }
+
 
 export function Vehicle3DViewer({
   vehicleType = "curtain",
@@ -71,16 +119,59 @@ export function Vehicle3DViewer({
   /**
    * Asset provenance driven by the central Vehicle Asset Registry.
    *  • OFFICIAL_MODEL  — a real GLB/GLTF published for this category (interactive 3D)
-   *  • REFERENCE_ONLY  — no model published yet: the OFFICIAL reference photograph is
-   *                      shown as-is. No fake rotation, no image flipping, no illusion.
-   *  • ILLUSTRATIVE    — optional generic geometry, explicitly labelled as a demo
-   *                      stand-in and never presented as the fleet unit.
+   *  • CANONICAL_MODEL — the project's own high-detail 3D build of this category
+   *                      (procedural Actros tractor + type-specific trailer). Fully
+   *                      interactive, always available, never labelled as a stand-in.
+   *  • REFERENCE_ONLY  — the OFFICIAL reference photograph is shown as-is, either
+   *                      because the operator switched this viewer to photo mode or
+   *                      because the shared WebGL budget is already committed.
    */
   const { typeModel, vehicleImage, typeImage } = useVehicleAssets();
-  const [assetMode, setAssetMode] = useState<"OFFICIAL_MODEL" | "REFERENCE_ONLY" | "ILLUSTRATIVE">("REFERENCE_ONLY");
-  const [allowIllustrative, setAllowIllustrative] = useState(false);
+  const [assetMode, setAssetMode] = useState<
+    "OFFICIAL_MODEL" | "CANONICAL_MODEL" | "REFERENCE_ONLY"
+  >("CANONICAL_MODEL");
+  /** Operator opt-in to the photograph view; the 3D build is the default. */
+  const [preferPhoto, setPreferPhoto] = useState(false);
+  /** True once this viewer has claimed a slot from the shared WebGL budget. */
+  const [contextReady, setContextReady] = useState(false);
+  /** Bumped by "open the 3D view" so a queued viewer can retry for a free slot. */
+  const [contextAttempt, setContextAttempt] = useState(0);
   const officialModel = typeModel(activeType);
-  const shouldRender3D = Boolean(officialModel?.url) || allowIllustrative;
+  const hasPublishedModel = Boolean(officialModel?.url);
+
+  // WebGL availability is a device property, not a per-mode one — probe it once.
+  useEffect(() => {
+    try {
+      const probe = document.createElement("canvas");
+      const gl =
+        probe.getContext("webgl2") ||
+        probe.getContext("webgl") ||
+        probe.getContext("experimental-webgl");
+      setGlSupported(Boolean(gl));
+      const lose = gl as (WebGLRenderingContext & { getExtension?: (n: string) => unknown }) | null;
+      lose?.getExtension?.("WEBGL_lose_context");
+    } catch {
+      setGlSupported(false);
+    }
+  }, []);
+
+  // Claim / release a slot in the shared WebGL context budget.
+  useEffect(() => {
+    if (!glSupported) {
+      setContextReady(false);
+      return;
+    }
+    if (claimWebGLContext()) {
+      setContextReady(true);
+      return () => {
+        releaseWebGLContext();
+        setContextReady(false);
+      };
+    }
+    setContextReady(false);
+  }, [glSupported, contextAttempt]);
+
+  const shouldRender3D = glSupported && contextReady && !preferPhoto;
 
   // Three.js scene refs
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -90,22 +181,34 @@ export function Vehicle3DViewer({
   const animFrameIdRef = useRef<number | null>(null);
   const isPointerDownRef = useRef(false);
   const pointerPosRef = useRef({ x: 0, y: 0 });
-  const sphericalRef = useRef({ radius: 24, theta: 0.85, phi: 1.1 }); // 3/4 front view
+  /** Where the user is dragging to — the camera eases towards this. */
+  const targetOrbitRef = useRef<OrbitState>({ radius: 22, theta: 0.85, phi: 1.1 }); // 3/4 front
+  /** Where the camera actually is — easing this is what makes the orbit smooth. */
+  const orbitRef = useRef<OrbitState>({ radius: 22, theta: 0.85, phi: 1.1 });
+  /** Released-drag inertia, in rad/s. Decays to zero so a flick settles naturally. */
+  const orbitVelocityRef = useRef({ theta: 0, phi: 0 });
+  const lastInteractionRef = useRef(0);
+  const inViewRef = useRef(true);
   const targetLookAtRef = useRef(new THREE.Vector3(0, 2.8, 0));
+  /** Live azimuth in degrees, surfaced in the HUD so 360° coverage is verifiable. */
+  const [azimuthDeg, setAzimuthDeg] = useState(0);
 
   // Default camera reset
   const resetCamera = useCallback(() => {
-    sphericalRef.current = { radius: compact ? 26 : 22, theta: 0.85, phi: 1.1 };
+    const radius = compact ? 26 : 22;
+    targetOrbitRef.current = { radius, theta: 0.85, phi: 1.1 };
+    orbitVelocityRef.current = { theta: 0, phi: 0 };
     targetLookAtRef.current.set(0, 2.8, 0);
   }, [compact]);
 
   const zoomIn = useCallback(() => {
-    sphericalRef.current.radius = Math.max(14, sphericalRef.current.radius - 3);
+    targetOrbitRef.current.radius = clampRadiusValue(targetOrbitRef.current.radius - 3);
   }, []);
 
   const zoomOut = useCallback(() => {
-    sphericalRef.current.radius = Math.min(36, sphericalRef.current.radius + 3);
+    targetOrbitRef.current.radius = clampRadiusValue(targetOrbitRef.current.radius + 3);
   }, []);
+
 
   // Handler for carousel type switch
   const handleSelectType = useCallback(
@@ -604,7 +707,7 @@ export function Vehicle3DViewer({
     return truck;
   }, []);
 
-  // Initialize Three.js scene only when 3D geometry is actually active
+  // Initialize Three.js scene only when this viewer owns a live WebGL context
   useEffect(() => {
     if (!shouldRender3D) {
       setAssetMode("REFERENCE_ONLY");
@@ -615,45 +718,55 @@ export function Vehicle3DViewer({
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    // Check WebGL availability
-    try {
-      const testCanvas = document.createElement("canvas");
-      const gl = testCanvas.getContext("webgl") || testCanvas.getContext("experimental-webgl");
-      if (!gl) {
-        setGlSupported(false);
-        return;
-      }
-    } catch {
-      setGlSupported(false);
-      return;
-    }
-
     // 1. Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
     // 2. Camera: 3/4 Front View (Cab, Body, Wheels in full glory)
     const aspect = container.clientWidth / (container.clientHeight || 300);
-    const camera = new THREE.PerspectiveCamera(38, aspect, 0.5, 100);
+    const camera = new THREE.PerspectiveCamera(38, aspect, 0.5, 120);
     cameraRef.current = camera;
     resetCamera();
+    // Snap the eased camera onto the reset pose so a switch is instant, not a fly-in.
+    orbitRef.current = { ...targetOrbitRef.current };
 
-    // 3. Renderer
+    // 3. Renderer — full fidelity at all times: no LOD, no resolution scaling,
+    //    no texture downgrading while the operator is dragging.
     const renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
       alpha: true,
       powerPreference: "high-performance",
+      stencil: false,
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    const applyPixelRatio = () => {
+      // Retina-class density, capped at 2 so phones stay smooth without
+      // visibly softening edges.
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    };
+    applyPixelRatio();
+    renderer.setClearColor(0x000000, 0);
+    renderer.setSize(container.clientWidth, container.clientHeight, false);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
 
     // 4. Lighting: Three-Point Studio Lighting
     const keyLight = new THREE.DirectionalLight(0xfff4e5, 2.2);
     keyLight.position.set(16, 20, 16);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(1024, 1024);
+    keyLight.shadow.bias = -0.0008;
+    keyLight.shadow.normalBias = 0.02;
+    keyLight.shadow.camera.near = 1;
+    keyLight.shadow.camera.far = 80;
+    keyLight.shadow.camera.left = -26;
+    keyLight.shadow.camera.right = 26;
+    keyLight.shadow.camera.top = 22;
+    keyLight.shadow.camera.bottom = -22;
     scene.add(keyLight);
 
     const fillLight = new THREE.DirectionalLight(0xb4d3fe, 1.1);
@@ -679,6 +792,16 @@ export function Vehicle3DViewer({
     stage.position.y = 0;
     scene.add(stage);
 
+    // Soft contact shadow: a shadow-only plane, so the truck grounds itself
+    // without altering any of the truck's own materials.
+    const shadowGeo = new THREE.PlaneGeometry(44, 20);
+    shadowGeo.rotateX(-Math.PI / 2);
+    const shadowMat = new THREE.ShadowMaterial({ opacity: 0.34 });
+    const shadowCatcher = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowCatcher.position.y = 0.02;
+    shadowCatcher.receiveShadow = true;
+    scene.add(shadowCatcher);
+
     const ringGeo = new THREE.RingGeometry(15.8, 16.0, 48);
     ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({
@@ -691,38 +814,80 @@ export function Vehicle3DViewer({
     ring.position.y = 0.01;
     scene.add(ring);
 
-    // Animation Loop
+    // Animation Loop — damped orbit with released-drag inertia.
     let lastTime = performance.now();
+    let azimuthReport = 0;
+    let running = true;
+
     const animate = (time: number) => {
       animFrameIdRef.current = requestAnimationFrame(animate);
-      const delta = (time - lastTime) / 1000;
+      if (!running) return;
+
+      const delta = Math.min((time - lastTime) / 1000, 0.05); // clamp tab-switch jumps
       lastTime = time;
 
-      // Auto rotation when not interacting
-      if (autoRotateRef.current && !isPointerDownRef.current) {
-        sphericalRef.current.theta += delta * 0.35;
-      }
+      // One integrator, shared with the test suite.
+      stepOrbit(orbitRef.current, targetOrbitRef.current, orbitVelocityRef.current, {
+        dt: delta,
+        now: time,
+        dragging: isPointerDownRef.current,
+        autoRotate: autoRotateRef.current,
+        lastInteraction: lastInteractionRef.current,
+      });
 
-      // Update camera position from spherical coords
-      const { radius, theta, phi } = sphericalRef.current;
-      camera.position.x = radius * Math.sin(phi) * Math.sin(theta);
-      camera.position.y = radius * Math.cos(phi);
-      camera.position.z = radius * Math.sin(phi) * Math.cos(theta);
+      orbitToPosition(orbitRef.current, camera.position);
       camera.lookAt(targetLookAtRef.current);
 
       renderer.render(scene, camera);
+
+      // Publish the azimuth at ~6Hz so the HUD can prove full 360° coverage
+      // without re-rendering React on every frame.
+      if (time - azimuthReport > 160) {
+        azimuthReport = time;
+        const deg = azimuthDegrees(orbitRef.current.theta);
+        setAzimuthDeg((prev) => (Math.abs(prev - deg) < 1 ? prev : Math.round(deg)));
+      }
     };
 
     animFrameIdRef.current = requestAnimationFrame(animate);
 
-    // Resize Observer
+    // Pause the loop while the viewer is off-screen or the tab is hidden. This
+    // is pure scheduling — nothing about geometry, textures or materials changes.
+    const setVisible = (visible: boolean) => {
+      running = visible;
+      lastTime = performance.now();
+    };
+    const handleVisibility = () => setVisible(!document.hidden && inViewRef.current);
+    const inViewObserver = new IntersectionObserver(
+      (entries) => {
+        inViewRef.current = entries[0]?.isIntersecting ?? true;
+        setVisible(!document.hidden && inViewRef.current);
+      },
+      { threshold: 0.01 }
+    );
+    inViewObserver.observe(container);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // Wheel zoom needs a non-passive listener: React attaches onWheel passively,
+    // so preventDefault() there is ignored and logs a console warning.
+    const handleNativeWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      targetOrbitRef.current.radius = clampRadiusValue(
+        targetOrbitRef.current.radius + event.deltaY * 0.02
+      );
+      lastInteractionRef.current = performance.now();
+    };
+    canvas.addEventListener("wheel", handleNativeWheel, { passive: false });
+
+    // Resize Observer — keeps the aspect ratio AND the pixel density correct.
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height: h } = entry.contentRect;
         if (width > 0 && h > 0) {
           camera.aspect = width / h;
           camera.updateProjectionMatrix();
-          renderer.setSize(width, h);
+          applyPixelRatio();
+          renderer.setSize(width, h, false);
         }
       }
     });
@@ -730,10 +895,16 @@ export function Vehicle3DViewer({
     resizeObserver.observe(container);
 
     return () => {
+      running = false;
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
+      canvas.removeEventListener("wheel", handleNativeWheel);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      inViewObserver.disconnect();
       resizeObserver.disconnect();
       stageGeo.dispose();
       stageMat.dispose();
+      shadowGeo.dispose();
+      shadowMat.dispose();
       ringGeo.dispose();
       ringMat.dispose();
       renderer.dispose();
@@ -778,13 +949,29 @@ export function Vehicle3DViewer({
       }
     };
 
-    const mountIllustrative = () => {
+    /** Flags every mesh of a mounted model so it grounds itself on the stage. */
+    const enableShadows = (root: THREE.Object3D) => {
+      root.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+    };
+
+    /**
+     * Mounts the project's own 3D build of this category — the same geometry,
+     * materials and per-type trailer detail the fleet has always shipped with.
+     * It is a first-class fleet asset, never a demo stand-in.
+     */
+    const mountCanonical = () => {
       clearCurrent();
       if (isCancelled || !sceneRef.current) return;
-      const procedural = buildTruckModel(activeType);
-      truckGroupRef.current = procedural;
-      sceneRef.current.add(procedural);
-      setAssetMode("ILLUSTRATIVE");
+      const canonical = buildTruckModel(activeType);
+      enableShadows(canonical);
+      truckGroupRef.current = canonical;
+      sceneRef.current.add(canonical);
+      setAssetMode("CANONICAL_MODEL");
     };
 
     // 1) A published official GLB/GLTF takes priority — this is real geometry.
@@ -816,8 +1003,8 @@ export function Vehicle3DViewer({
           model.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
               const mesh = child as THREE.Mesh;
-              mesh.castShadow = false;
-              mesh.receiveShadow = false;
+              mesh.castShadow = true;
+              mesh.receiveShadow = true;
               const material = mesh.material as THREE.MeshStandardMaterial;
               if (material && "envMapIntensity" in material) material.envMapIntensity = 1.15;
             }
@@ -829,15 +1016,17 @@ export function Vehicle3DViewer({
           setAssetMode("OFFICIAL_MODEL");
 
           if (officialModel.cameraRadius) {
-            sphericalRef.current.radius = officialModel.cameraRadius;
+            const published = clampRadiusValue(officialModel.cameraRadius);
+            targetOrbitRef.current.radius = published;
+            orbitRef.current.radius = published;
           }
         },
         undefined,
         () => {
-          // The registered file is unreadable: never substitute invented geometry.
+          // The registered file is unreadable: fall back to the project's own
+          // build of this category rather than to invented geometry.
           if (isCancelled) return;
-          if (allowIllustrative) mountIllustrative();
-          else setAssetMode("REFERENCE_ONLY");
+          mountCanonical();
         },
       );
       return () => {
@@ -845,25 +1034,35 @@ export function Vehicle3DViewer({
       };
     }
 
-    // 2) No published model. Show the official reference photograph honestly, or the
-    //    clearly-labelled illustrative geometry when the operator opts in.
-    if (allowIllustrative) {
-      mountIllustrative();
-    } else {
-      clearCurrent();
-      setAssetMode("REFERENCE_ONLY");
-    }
+    // 2) No GLB published for this category: mount the project's own 3D build.
+    //    It is interactive by default — the operator never has to opt in.
+    mountCanonical();
 
     return () => {
       isCancelled = true;
     };
-  }, [shouldRender3D, activeType, officialModel?.url, officialModel?.scale, officialModel?.rotationY, officialModel?.yOffset, officialModel?.cameraRadius, allowIllustrative, buildTruckModel]);
+  }, [shouldRender3D, activeType, officialModel?.url, officialModel?.scale, officialModel?.rotationY, officialModel?.yOffset, officialModel?.cameraRadius, buildTruckModel]);
 
-  // Pointer Interaction Handlers (Mouse & Touch Orbiting)
+  // ── Pointer Interaction ─────────────────────────────────────────────────────
+  // One code path for mouse, pen and touch: Pointer Events cover all three, and
+  // `touch-action: none` on the canvas keeps the page from scrolling underneath
+  // a drag. Every update writes to the *target* orbit; the render loop eases the
+  // camera towards it, which is what makes the rotation feel smooth and stable
+  // instead of snapping to the cursor.
+  const lastMoveRef = useRef({ t: 0, dx: 0, dy: 0 });
+
   const handlePointerDown = (e: React.PointerEvent) => {
     isPointerDownRef.current = true;
     pointerPosRef.current = { x: e.clientX, y: e.clientY };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    lastMoveRef.current = { t: performance.now(), dx: 0, dy: 0 };
+    // Kill any settling inertia the instant the operator grabs the model again.
+    orbitVelocityRef.current = { theta: 0, phi: 0 };
+    lastInteractionRef.current = performance.now();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* capture is best-effort; the drag still works without it */
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -872,29 +1071,35 @@ export function Vehicle3DViewer({
     const dy = e.clientY - pointerPosRef.current.y;
     pointerPosRef.current = { x: e.clientX, y: e.clientY };
 
-    // Update spherical coordinates
-    sphericalRef.current.theta -= dx * 0.008;
-    sphericalRef.current.phi = Math.max(
-      0.3,
-      Math.min(Math.PI / 2 - 0.08, sphericalRef.current.phi - dy * 0.008)
-    );
+    // Full 360° azimuth (unclamped, it simply wraps) plus a wide polar sweep so
+    // the roof and the wheels are both reachable without leaving the horizon.
+    applyDragDelta(targetOrbitRef.current, dx, dy);
+
+    const now = performance.now();
+    const dt = Math.max(now - lastMoveRef.current.t, 1) / 1000;
+    lastMoveRef.current = { t: now, dx: dx / dt, dy: dy / dt };
+    lastInteractionRef.current = now;
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isPointerDownRef.current) return;
     isPointerDownRef.current = false;
+    // Hand the last drag velocity to the loop so a flick keeps spinning briefly.
+    const { dx, dy, t } = lastMoveRef.current;
+    if (performance.now() - t < 120) {
+      orbitVelocityRef.current = {
+        theta: Math.max(-6, Math.min(6, -dx * ORBIT_DEFAULTS.speed)),
+        phi: Math.max(-3, Math.min(3, -dy * ORBIT_DEFAULTS.speed)),
+      };
+    } else {
+      orbitVelocityRef.current = { theta: 0, phi: 0 };
+    }
+    lastInteractionRef.current = performance.now();
     try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {
       /* ignore */
     }
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    sphericalRef.current.radius = Math.max(
-      14,
-      Math.min(36, sphericalRef.current.radius + e.deltaY * 0.02)
-    );
   };
 
   // Touch handlers for mobile Pinch-to-Zoom and Double-tap Reset
@@ -905,7 +1110,7 @@ export function Vehicle3DViewer({
         e.touches[0].clientY - e.touches[1].clientY
       );
       touchStartDistRef.current = dist;
-      touchStartRadiusRef.current = sphericalRef.current.radius;
+      touchStartRadiusRef.current = targetOrbitRef.current.radius;
     } else if (e.touches.length === 1) {
       const now = Date.now();
       if (now - lastTapRef.current < 320) {
@@ -925,7 +1130,8 @@ export function Vehicle3DViewer({
       );
       const factor = touchStartDistRef.current / (dist || 1);
       const targetRadius = touchStartRadiusRef.current * factor;
-      sphericalRef.current.radius = Math.max(12, Math.min(38, targetRadius));
+      targetOrbitRef.current.radius = clampRadiusValue(targetRadius);
+      lastInteractionRef.current = performance.now();
     }
   };
 
@@ -954,23 +1160,23 @@ export function Vehicle3DViewer({
       )}
       style={{ height }}
     >
-      {/* 3D WebGL Canvas */}
-      {glSupported ? (
+      {/* 3D WebGL Canvas — mounted only while this viewer owns a live context. */}
+      {shouldRender3D ? (
         <canvas
           ref={canvasRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          onWheel={handleWheel}
+          onLostPointerCapture={handlePointerUp}
           onDoubleClick={resetCamera}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
-          className="absolute inset-0 h-full w-full cursor-grab active:cursor-grabbing touch-none z-0"
+          className="absolute inset-0 h-full w-full cursor-grab touch-none z-0 overscroll-contain active:cursor-grabbing"
         />
-      ) : (
+      ) : !glSupported ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted p-6 text-center z-0">
           <IconTruck size={42} className="text-brand mb-2" />
           <div className="font-semibold text-text-primary text-[14px]">
@@ -980,12 +1186,13 @@ export function Vehicle3DViewer({
             {meta.arabicName} · {meta.englishName}
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Reference Asset Layer — shown while no official GLB/GLTF model is published.
-          This is the OFFICIAL category photograph displayed as a photograph: no fake
-          rotation, no flipping, no perspective illusion passing itself off as 3D. */}
-      {glSupported && assetMode === "REFERENCE_ONLY" && (
+      {/* Reference Asset Layer — the official photograph, shown when the operator
+          switches this viewer to photo mode or while the shared WebGL budget is
+          committed elsewhere. Displayed as a photograph: no fake rotation, no
+          flipping, no perspective illusion passing itself off as 3D. */}
+      {!shouldRender3D && (
         <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center px-4 pointer-events-none">
           <div className="relative w-full max-w-[420px]">
             <div className="overflow-hidden rounded-[14px] border border-border-subtle bg-surface-1/70 shadow-2xl backdrop-blur-sm">
@@ -1007,25 +1214,23 @@ export function Vehicle3DViewer({
             </div>
 
             <div className="mt-2 flex flex-col items-center gap-1.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-status-waiting/30 bg-status-waiting/12 px-3 py-1 text-[10.5px] font-bold text-status-waiting">
-                <span className="h-1.5 w-1.5 rounded-full bg-status-waiting" />
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2/80 px-3 py-1 text-[10.5px] font-bold text-text-secondary">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand" />
                 {showVehiclePhoto
-                  ? t(
-                      "Vehicle photograph — interactive 3D asset not published yet",
-                      "صورة المركبة — لم يُرفع المجسم ثلاثي الأبعاد بعد",
-                    )
-                  : t(
-                      "Official reference image — interactive 3D asset not published yet",
-                      "الصورة الرسمية للنوع — لم يُرفع المجسم ثلاثي الأبعاد بعد",
-                    )}
+                  ? t("Vehicle photograph", "صورة المركبة الرسمية")
+                  : t("Official category photograph", "الصورة الرسمية للنوع")}
               </span>
 
-              {showControls && (
+              {showControls && glSupported && (
                 <button
-                  onClick={() => setAllowIllustrative(true)}
-                  className="pointer-events-auto rounded-full border border-border-subtle bg-surface-2/90 px-3 py-1 text-[10.5px] font-semibold text-text-secondary backdrop-blur transition-colors hover:text-brand"
+                  onClick={() => {
+                    setPreferPhoto(false);
+                    setContextAttempt((n) => n + 1);
+                  }}
+                  className="pointer-events-auto inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-brand/40 bg-brand/15 px-3.5 py-1 text-[10.5px] font-bold text-brand backdrop-blur transition-colors hover:bg-brand hover:text-on-brand"
                 >
-                  {t("Preview generic demo geometry (clearly labelled)", "معاينة مجسم توضيحي عام (موسوم بوضوح)")}
+                  <IconRotate360 size={13} />
+                  {t("Open the interactive 3D view", "تشغيل العرض ثلاثي الأبعاد التفاعلي 360°")}
                 </button>
               )}
             </div>
@@ -1034,67 +1239,89 @@ export function Vehicle3DViewer({
       )}
 
       {/* Floating HUD: Top Banner */}
-      <div className="relative z-10 p-3 lg:p-4 flex items-start justify-between pointer-events-none">
+      <div className="relative z-10 flex items-start justify-between gap-2 p-2 sm:p-3 lg:p-4 pointer-events-none">
         {/* Left: Active Vehicle Specs */}
-        <div className="pointer-events-auto bg-surface-1/90 backdrop-blur-md rounded-[10px] p-2.5 border border-border-subtle shadow-lg max-w-[260px]">
+        <div
+          className={cn(
+            "pointer-events-auto min-w-0 rounded-[10px] border border-border-subtle bg-surface-1/90 shadow-lg backdrop-blur-md",
+            compact ? "max-w-[min(220px,62%)] p-2" : "max-w-[min(280px,72%)] p-2.5 sm:max-w-[280px]",
+          )}
+        >
           <div className="flex items-center gap-2">
+            <TruckTypeIcon truckType={activeType} size={compact ? 16 : 18} className="shrink-0" />
             <span
-              className="h-2 w-2 rounded-full"
+              className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: meta.accentColor }}
             />
-            <span className="font-bold text-[13px] text-text-primary">
+            <span className="truncate font-bold text-[12px] text-text-primary sm:text-[13px]">
               {meta.arabicName} — {meta.englishName}
             </span>
           </div>
 
-          <div className="text-[11px] text-text-secondary mt-1 line-clamp-2">
-            {t(meta.descriptionEn, meta.descriptionAr)}
+          {!compact && (
+            <div className="mt-1 line-clamp-2 text-[11px] text-text-secondary">
+              {t(meta.descriptionEn, meta.descriptionAr)}
+            </div>
+          )}
+
+          <div className="mt-2 space-y-1 border-t border-white/5 pt-1.5">
+            <SpecInline
+              icon={<IconWeight size={13} className="text-brand" />}
+              label={t("Max Payload", "الحمولة القصوى")}
+              value={`${meta.maxPayloadTons} ${t("tons", "طن")}`}
+              valueClassName="font-semibold text-brand"
+            />
+            {vehicleModel && (
+              <SpecInline
+                icon={<IconTag size={13} />}
+                label={t("Model", "الموديل")}
+                value={vehicleModel}
+                valueClassName="font-medium"
+              />
+            )}
+            {vehiclePlate && (
+              <SpecInline
+                icon={<IconPlate size={13} />}
+                label={t("Plate", "اللوحة")}
+                value={vehiclePlate}
+                valueClassName="font-mono"
+              />
+            )}
+            {shouldRender3D && (
+              <SpecInline
+                icon={<IconRuler size={13} />}
+                label={t("View angle", "زاوية العرض")}
+                value={`${azimuthDeg}°`}
+                valueClassName="font-semibold text-status-active"
+              />
+            )}
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-[10.5px] border-t border-white/5 pt-1.5">
-            <span className="text-text-muted">{t("Asset", "الأصل")}:</span>
+          <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-white/5 pt-1.5">
+            <span className="text-[10.5px] text-text-muted">{t("Asset", "الأصل")}:</span>
             <span
               className={cn(
                 "rounded-full px-2 py-[2px] text-[9.5px] font-bold",
                 assetMode === "OFFICIAL_MODEL" && "bg-status-active/15 text-status-active",
+                assetMode === "CANONICAL_MODEL" && "bg-status-active/15 text-status-active",
                 assetMode === "REFERENCE_ONLY" && "bg-status-waiting/15 text-status-waiting",
-                assetMode === "ILLUSTRATIVE" && "bg-text-muted/15 text-text-muted",
               )}
             >
-              {assetMode === "OFFICIAL_MODEL"
-                ? t("Official 3D model", "مجسم رسمي 3D")
-                : assetMode === "REFERENCE_ONLY"
-                  ? t("Official image", "صورة رسمية")
-                  : t("Demo geometry", "مجسم توضيحي")}
+              {assetMode === "REFERENCE_ONLY"
+                ? t("Official image", "صورة رسمية")
+                : hasPublishedModel
+                  ? t("Official 3D model", "مجسم رسمي 3D")
+                  : t("Fleet 3D model", "مجسم الأسطول 3D")}
             </span>
           </div>
-
-          <div className="mt-1.5 flex items-center justify-between text-[10.5px] tabular-nums text-text-muted">
-            <span>{t("Max Payload", "الحمولة القصوى")}:</span>
-            <span className="font-semibold text-brand">{meta.maxPayloadTons} {t("tons", "طن")}</span>
-          </div>
-
-          {vehicleModel && (
-            <div className="mt-1 flex items-center justify-between text-[10.5px] text-text-muted">
-              <span>{t("Model", "الموديل")}:</span>
-              <span className="font-medium text-text-primary">{vehicleModel}</span>
-            </div>
-          )}
-
-          {vehiclePlate && (
-            <div className="mt-0.5 flex items-center justify-between text-[10.5px] text-text-muted">
-              <span>{t("Plate", "اللوحة")}:</span>
-              <span className="font-mono text-text-primary">{vehiclePlate}</span>
-            </div>
-          )}
         </div>
 
         {/* Right: Interactive 3D Control Actions */}
         {showControls && (
-          <div className="pointer-events-auto flex flex-col gap-1.5 bg-surface-1/90 backdrop-blur-md p-1.5 rounded-[10px] border border-border-subtle shadow-lg">
+          <div className="pointer-events-auto flex flex-col gap-1 rounded-[10px] border border-border-subtle bg-surface-1/90 p-1 shadow-lg backdrop-blur-md">
             <button
               onClick={resetCamera}
-              className="p-1.5 rounded-[6px] text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
+              className="grid h-8 w-8 place-items-center rounded-[6px] text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
               title={t("Reset Camera View (3/4 Front)", "إعادة ضبط الكاميرا")}
               aria-label="Reset View"
             >
@@ -1105,7 +1332,7 @@ export function Vehicle3DViewer({
             </button>
             <button
               onClick={zoomIn}
-              className="p-1.5 rounded-[6px] text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
+              className="grid h-8 w-8 place-items-center rounded-[6px] text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
               title={t("Zoom In", "تكبير")}
               aria-label="Zoom In"
             >
@@ -1113,7 +1340,7 @@ export function Vehicle3DViewer({
             </button>
             <button
               onClick={zoomOut}
-              className="p-1.5 rounded-[6px] text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
+              className="grid h-8 w-8 place-items-center rounded-[6px] text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
               title={t("Zoom Out", "تصغير")}
               aria-label="Zoom Out"
             >
@@ -1122,39 +1349,59 @@ export function Vehicle3DViewer({
             <button
               onClick={() => setAutoRotate((r) => !r)}
               className={cn(
-                "p-1.5 rounded-[6px] transition-colors text-[10px] font-bold",
+                "grid h-8 w-8 place-items-center rounded-[6px] transition-colors",
                 autoRotate
                   ? "bg-brand/20 text-brand"
-                  : "text-text-muted hover:text-text-primary hover:bg-surface-3"
+                  : "text-text-muted hover:bg-surface-3 hover:text-text-primary",
               )}
               title={t("Toggle 360° Auto-Rotation", "تشغيل / إيقاف الدوران التلقائي")}
+              aria-label={t("Toggle 360° Auto-Rotation", "تشغيل / إيقاف الدوران التلقائي")}
             >
-              360°
+              <IconRotate360 size={15} />
+            </button>
+            <button
+              onClick={() => setPreferPhoto((v) => !v)}
+              className={cn(
+                "grid h-8 w-8 place-items-center rounded-[6px] transition-colors",
+                preferPhoto
+                  ? "bg-brand/20 text-brand"
+                  : "text-text-muted hover:bg-surface-3 hover:text-text-primary",
+              )}
+              title={
+                preferPhoto
+                  ? t("Back to the interactive 3D model", "العودة إلى المجسم ثلاثي الأبعاد")
+                  : t("Show the official photograph", "عرض الصورة الرسمية")
+              }
+              aria-label={t("Toggle 3D / photograph", "تبديل بين المجسم والصورة")}
+            >
+              <IconTruck size={15} />
             </button>
           </div>
         )}
       </div>
 
       {/* Floating HUD: Bottom Vehicle Carousel */}
-      <div className="relative z-10 p-3 lg:p-4 pointer-events-auto flex flex-col items-center">
+      <div className="relative z-10 flex flex-col items-center p-2 sm:p-3 lg:p-4 pointer-events-auto">
         {previewMode ? (
           /* Preview Mode: Full 4-Vehicle Switcher with Dots */
-          <div className="w-full max-w-[460px] bg-surface-1/95 backdrop-blur-md rounded-[12px] p-2 border border-border-subtle shadow-2xl">
-            <div className="flex items-center justify-between gap-1">
+          <div className="w-full max-w-[460px] bg-surface-1/95 backdrop-blur-md rounded-[12px] p-1.5 sm:p-2 border border-border-subtle shadow-2xl">
+            <div className="flex items-stretch justify-between gap-1">
               {APPROVED_VEHICLE_TYPES_LIST.map((vt) => {
                 const isSelected = activeType === vt.id;
                 return (
                   <button
                     key={vt.id}
                     onClick={() => handleSelectType(vt.id)}
+                    aria-pressed={isSelected}
                     className={cn(
-                      "flex-1 py-1.5 px-2 rounded-[8px] text-[12px] font-medium transition-all duration-200 flex flex-col items-center gap-1",
+                      "flex min-h-[38px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[8px] px-1 py-1.5 text-[11px] font-medium transition-all duration-200 sm:gap-1 sm:text-[12px]",
                       isSelected
                         ? "bg-brand text-navy font-bold shadow-md"
                         : "text-text-secondary hover:text-text-primary hover:bg-surface-2"
                     )}
                   >
-                    <span>{vt.arabicName}</span>
+                    <TruckTypeIcon truckType={vt.id} size={17} />
+                    <span className="truncate">{vt.arabicName}</span>
                     {/* Carousel Dot */}
                     <span
                       className={cn(
@@ -1167,26 +1414,34 @@ export function Vehicle3DViewer({
               })}
             </div>
             <div className="mt-1.5 text-center text-[10px] text-text-muted">
-              {assetMode === "OFFICIAL_MODEL"
+              {shouldRender3D
                 ? t("360° Interactive 3D Model · Drag to Rotate", "مجسم ثلاثي الأبعاد تفاعلي 360° · اسحب للدوران")
-                : assetMode === "ILLUSTRATIVE"
-                  ? t("Generic demo geometry · not the fleet unit", "مجسم توضيحي عام · ليس صورة المركبة الفعلية")
-                  : t("Official reference image · awaiting the 3D asset", "الصورة الرسمية للنوع · بانتظار رفع المجسم ثلاثي الأبعاد")}
+                : t("Official reference image · tap to open the 3D model", "الصورة الرسمية · اضغط لفتح المجسم ثلاثي الأبعاد")}
             </div>
           </div>
         ) : (
           /* Real Vehicle Mode: Fixed Real Vehicle Indicator */
-          <div className="flex items-center gap-2 bg-surface-1/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-border-subtle text-[11.5px] text-text-secondary shadow-lg">
-            <span className="h-2 w-2 rounded-full bg-status-active animate-pulse" />
+          <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-border-subtle bg-surface-1/95 px-3 py-1.5 text-[11px] text-text-secondary shadow-lg backdrop-blur-md sm:px-3.5 sm:text-[11.5px]">
+            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-status-active" />
             <span className="font-semibold text-text-primary">
               {t("Real Fleet Unit", "مركبة أسطول مسجلة")}:
             </span>
-            <span className="font-bold text-brand">{meta.arabicName}</span>
+            <span className="inline-flex items-center gap-1.5 font-bold text-brand">
+              <TruckTypeIcon truckType={activeType} size={15} />
+              {meta.arabicName}
+            </span>
             <span className="text-text-muted">·</span>
-            <span className="text-[11px] font-mono">{vehiclePlate || "EJAZ FLEET"}</span>
+            <span className="font-mono text-[11px]">{vehiclePlate || "EJAZ FLEET"}</span>
             <span className="text-text-muted">·</span>
-            <span className={cn("text-[10.5px] font-bold", assetMode === "OFFICIAL_MODEL" ? "text-status-active" : "text-status-waiting")}>
-              {assetMode === "OFFICIAL_MODEL" ? t("3D", "مجسم") : t("Photo", "صورة")}
+            <span
+              className={cn(
+                "text-[10.5px] font-bold",
+                shouldRender3D ? "text-status-active" : "text-status-waiting",
+              )}
+            >
+              {shouldRender3D
+                ? t("3D 360° · drag to rotate", "مجسم 360° · اسحب للدوران")
+                : t("Photo", "صورة")}
             </span>
           </div>
         )}

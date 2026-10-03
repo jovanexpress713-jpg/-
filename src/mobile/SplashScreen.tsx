@@ -31,17 +31,15 @@ export function SplashScreen({
   replayKey = 0,
   onContinue,
 }: {
+  /** Remount key — retained so a caller can replay the intro animation. */
   replayKey?: number;
+  /** "اضغط للمتابعة": the single transition out of the welcome screen. */
   onContinue?: () => void;
 }) {
   const { t } = useSettings();
 
   const handleTap = () => {
-    if (onContinue) {
-      onContinue();
-    } else {
-      window.dispatchEvent(new CustomEvent("ejaz-replay"));
-    }
+    onContinue?.();
   };
 
   return (

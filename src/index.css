@@ -109,6 +109,17 @@
 
 @layer base {
   html, body, #root { height: 100%; }
+  /* A wide table, canvas or map must never push the document sideways.
+     `clip` (not `hidden`) keeps sticky/absolute children working normally. */
+  html { overflow-x: clip; }
+  body { min-width: 0; }
+  /*
+   * Scroll containers start from zero intrinsic width so a wide table or map
+   * scrolls inside its own box instead of dragging the page sideways. Scoped to
+   * the two overflow-prone utilities rather than applied to every element, so
+   * flex children that need their intrinsic width keep it.
+   */
+  .scroll-x, .table-scroll, .overflow-x-auto { min-width: 0; }
   body {
     background-color: var(--color-surface-0);
     color: var(--color-text-primary);
@@ -123,6 +134,15 @@
   input::placeholder, textarea::placeholder { color: var(--color-text-muted); }
   h1, h2, h3 { letter-spacing: -0.02em; }
   [dir="rtl"] body { letter-spacing: 0; }
+
+  /* Finger-sized touch targets on touch devices. Visual sizing on desktop is
+     untouched — this only fires when the primary pointer is coarse. */
+  @media (pointer: coarse) {
+    .btn-icon-sm { height: 2rem; width: 2rem; }
+    .nav-item { padding-top: 11px; padding-bottom: 11px; }
+    .chip { padding-top: 9px; padding-bottom: 9px; }
+    .field { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  }
 }
 
 @layer components {
@@ -252,6 +272,23 @@
   .range::-moz-range-thumb {
     height: 16px; width: 16px; border: none; border-radius: 99px;
     background: var(--color-brand); cursor: pointer;
+  }
+
+  /* Edge-to-edge horizontal scroller for filter rails and card carousels. */
+  .scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .scroll-x::-webkit-scrollbar { display: none; }
+
+  /* Tables and wide grids scroll inside their own box on phones instead of
+     dragging the whole layout with them. */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
   }
 
   .truck-plate { mix-blend-mode: lighten; filter: contrast(1.3); }
