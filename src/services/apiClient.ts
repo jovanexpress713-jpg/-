@@ -68,6 +68,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     } catch {
       /* ignore */
     }
+    // A 401 means the session token is missing/invalid: drop it so the app
+    // re-authenticates cleanly instead of silently failing every call.
+    if (response.status === 401) {
+      setAuthToken(null);
+    }
     throw new Error(errorMsg);
   }
 

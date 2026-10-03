@@ -88,7 +88,12 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
         setUploadMsg("تم رفع الشعار وتعميمه مباشرة عبر النظام.");
       }
     } catch (err: any) {
-      setUploadMsg(err?.message || "فشل رفع الشعار");
+      const msg = String(err?.message || "");
+      setUploadMsg(
+        /auth|session|unauthor|مصادق|جلسة/i.test(msg)
+          ? "انتهت جلستك أو لم يتم التحقق منها — أعد تسجيل الدخول بحساب مدير ثم جرّب الرفع مجددًا."
+          : msg || "فشل رفع الشعار",
+      );
     } finally {
       setUploading(false);
     }
