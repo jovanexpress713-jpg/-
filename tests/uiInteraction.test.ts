@@ -178,12 +178,26 @@ export function runUiInteractionTests() {
   assert.match(viewer, /setPointerCapture/, "the drag must capture the pointer so it survives leaving the canvas");
   assert.match(viewer, /touch-none/, "the canvas must opt out of browser touch scrolling");
 
-  // The four existing models are mounted by default — no opt-in button needed.
+  // Presentation contract: the official photograph of the real truck is the
+  // default; interactive 3D mounts a real published GLB automatically, and the
+  // project's own build on explicit request. A truck is never silently replaced
+  // by a model it does not have.
   assert.match(viewer, /const mountCanonical = \(\) => \{/, "the canonical model mount must exist");
   assert.match(viewer, /buildTruckModel\(activeType\)/, "the viewer must build the project's own model");
-  assert.ok(
-    !/setAllowIllustrative\(true\)/.test(viewer),
-    "3D must not sit behind an opt-in 'illustrative geometry' button"
+  assert.match(
+    viewer,
+    /glSupported && contextReady && \(hasPublishedModel \|\| interactiveRequested\)/,
+    "3D must be automatic for real GLB and on-request otherwise"
+  );
+  assert.match(
+    viewer,
+    /setInteractiveRequested\(true\)/,
+    "a clearly-labelled control must open the interactive 3D view"
+  );
+  assert.match(
+    viewer,
+    /hasPublishedModel \|\| interactiveRequested/,
+    "photo-only viewers must not hoard a WebGL context slot"
   );
 
   // Full 360° azimuth plus a polar sweep that reaches the roof and the wheels.

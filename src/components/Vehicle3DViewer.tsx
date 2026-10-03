@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import {
@@ -118,20 +119,30 @@ export function Vehicle3DViewer({
 
   /**
    * Asset provenance driven by the central Vehicle Asset Registry.
-   *  • OFFICIAL_MODEL  — a real GLB/GLTF published for this category (interactive 3D)
-   *  • CANONICAL_MODEL — the project's own high-detail 3D build of this category
-   *                      (procedural Actros tractor + type-specific trailer). Fully
-   *                      interactive, always available, never labelled as a stand-in.
-   *  • REFERENCE_ONLY  — the OFFICIAL reference photograph is shown as-is, either
-   *                      because the operator switched this viewer to photo mode or
-   *                      because the shared WebGL budget is already committed.
+   *
+   * The OFFICIAL PHOTOGRAPH of the operator's real truck is the default
+   * presentation — it is what the fleet unit actually looks like. Interactive 3D
+   * is layered on top as an explicit, clearly-labelled view:
+   *
+   *  • OFFICIAL_MODEL  — a real GLB/GLTF published for this category. Real geometry,
+   *                      so it is the automatic default the moment it exists.
+   *  • CANONICAL_MODEL — the project's own interactive 3D build (procedural Actros
+   *                      tractor + type-specific trailer). Shown when the operator
+   *                      opens the interactive 360° view.
+   *  • REFERENCE_ONLY  — the OFFICIAL photograph, shown as-is. The default while no
+   *                      real GLB is published, so a truck is never represented by a
+   *                      model it does not have.
    */
   const { typeModel, vehicleImage, typeImage } = useVehicleAssets();
   const [assetMode, setAssetMode] = useState<
     "OFFICIAL_MODEL" | "CANONICAL_MODEL" | "REFERENCE_ONLY"
-  >("CANONICAL_MODEL");
-  /** Operator opt-in to the photograph view; the 3D build is the default. */
-  const [preferPhoto, setPreferPhoto] = useState(false);
+  >("REFERENCE_ONLY");
+  /**
+   * Operator opt-in to the interactive 3D view. A published GLB does not need it —
+   * real geometry is always shown. The procedural build only appears on request so
+   * the photograph of the real truck is never replaced uninvited.
+   */
+  const [interactiveRequested, setInteractiveRequested] = useState(false);
   /** True once this viewer has claimed a slot from the shared WebGL budget. */
   const [contextReady, setContextReady] = useState(false);
   /** Bumped by "open the 3D view" so a queued viewer can retry for a free slot. */
@@ -155,9 +166,14 @@ export function Vehicle3DViewer({
     }
   }, []);
 
+  // Interactive 3D is only wanted when there is real geometry to show or the
+  // operator has asked for the preview. Photo-only viewers must not hoard one of
+  // the few WebGL context slots a browser allows.
+  const wants3D = hasPublishedModel || interactiveRequested;
+
   // Claim / release a slot in the shared WebGL context budget.
   useEffect(() => {
-    if (!glSupported) {
+    if (!glSupported || !wants3D) {
       setContextReady(false);
       return;
     }
@@ -169,9 +185,12 @@ export function Vehicle3DViewer({
       };
     }
     setContextReady(false);
-  }, [glSupported, contextAttempt]);
+  }, [glSupported, wants3D, contextAttempt]);
 
-  const shouldRender3D = glSupported && contextReady && !preferPhoto;
+  // Real published geometry is always interactive; the procedural build only when
+  // the operator asks for it; otherwise the official photograph is shown.
+  const shouldRender3D =
+    glSupported && contextReady && (hasPublishedModel || interactiveRequested);
 
   // Three.js scene refs
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -780,6 +799,13 @@ export function Vehicle3DViewer({
     const ambientLight = new THREE.AmbientLight(0x182436, 1.6);
     scene.add(ambientLight);
 
+    // Image-based lighting: a soft studio environment so the paint clearcoat,
+    // chrome and glass read with real reflections instead of flat black. Pure
+    // rendering enhancement — the model's geometry and materials are untouched.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTexture;
+
     // 5. Studio Stage / Ground Disc with Contact Shadow
     const stageGeo = new THREE.CircleGeometry(16, 48);
     stageGeo.rotateX(-Math.PI / 2);
@@ -907,6 +933,8 @@ export function Vehicle3DViewer({
       shadowMat.dispose();
       ringGeo.dispose();
       ringMat.dispose();
+      envTexture.dispose();
+      pmrem.dispose();
       renderer.dispose();
       sceneRef.current = null;
       rendererRef.current = null;
@@ -1224,7 +1252,7 @@ export function Vehicle3DViewer({
               {showControls && glSupported && (
                 <button
                   onClick={() => {
-                    setPreferPhoto(false);
+                    setInteractiveRequested(true);
                     setContextAttempt((n) => n + 1);
                   }}
                   className="pointer-events-auto inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-brand/40 bg-brand/15 px-3.5 py-1 text-[10.5px] font-bold text-brand backdrop-blur transition-colors hover:bg-brand hover:text-on-brand"
@@ -1360,17 +1388,17 @@ export function Vehicle3DViewer({
               <IconRotate360 size={15} />
             </button>
             <button
-              onClick={() => setPreferPhoto((v) => !v)}
+              onClick={() => setInteractiveRequested((v) => !v)}
               className={cn(
                 "grid h-8 w-8 place-items-center rounded-[6px] transition-colors",
-                preferPhoto
+                interactiveRequested
                   ? "bg-brand/20 text-brand"
                   : "text-text-muted hover:bg-surface-3 hover:text-text-primary",
               )}
               title={
-                preferPhoto
-                  ? t("Back to the interactive 3D model", "العودة إلى المجسم ثلاثي الأبعاد")
-                  : t("Show the official photograph", "عرض الصورة الرسمية")
+                interactiveRequested
+                  ? t("Show the official photograph", "عرض صورة شاحنتي الرسمية")
+                  : t("Open the interactive 3D view", "تشغيل العرض ثلاثي الأبعاد التفاعلي 360°")
               }
               aria-label={t("Toggle 3D / photograph", "تبديل بين المجسم والصورة")}
             >
