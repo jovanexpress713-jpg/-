@@ -112,8 +112,10 @@ export function LiveOperationsCenter({
     let animFrame: number;
 
     const render = () => {
-      const width = (canvas.width = canvas.parentElement?.clientWidth || 800);
-      const height = (canvas.height = canvas.parentElement?.clientHeight || 600);
+      const width = canvas.parentElement?.clientWidth || 800;
+      const height = canvas.parentElement?.clientHeight || 600;
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
 
       // 1. Background
       ctx.fillStyle = mapLayer === "satellite" ? "#040b15" : "#071322";
@@ -305,12 +307,20 @@ export function LiveOperationsCenter({
     };
 
     render();
-    animFrame = requestAnimationFrame(function loop() {
-      render();
-      animFrame = requestAnimationFrame(loop);
-    });
+    const parent = canvas.parentElement;
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" && parent
+        ? new ResizeObserver(() => {
+            cancelAnimationFrame(animFrame);
+            animFrame = requestAnimationFrame(render);
+          })
+        : null;
+    if (resizeObserver && parent) resizeObserver.observe(parent);
 
-    return () => cancelAnimationFrame(animFrame);
+    return () => {
+      cancelAnimationFrame(animFrame);
+      resizeObserver?.disconnect();
+    };
   }, [trips, focusedTrip, pan, zoom, mapLayer, typeFilter]);
 
   // Pointer panning & dragging

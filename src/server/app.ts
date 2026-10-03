@@ -39,6 +39,7 @@ export function createServerApp() {
 
   // Published vehicle binaries (images + 3D models) are public by design.
   app.use("/uploads", express.static(getUploadsServeRoot(), { maxAge: "1h" }));
+  app.use("/images", express.static(path.resolve(process.cwd(), "public/images"), { maxAge: "1h" }));
 
   // Registration requests carry base64 identity/company documents.
   app.use("/api/registrations", express.json({ limit: "32mb" }), registrationRoutes);
