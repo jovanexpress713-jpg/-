@@ -54,6 +54,24 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
     }
   };
 
+  const handleApproveDriverRequest = async (tripId: string) => {
+    try {
+      await apiClient.trips.approveRequest(tripId);
+      setReplacementNotice(t("Driver trip request approved successfully! Trip is now confirmed.", "تمت الموافقة على طلب السائق وإسناد الرحلة رسمياً بنجاح!"));
+    } catch (err: any) {
+      alert(err.message || "فشلت الموافقة على طلب السائق");
+    }
+  };
+
+  const handleRejectDriverRequest = async (tripId: string) => {
+    try {
+      await apiClient.trips.rejectRequest(tripId, "عدم تطابق نوع المركبة أو جدول الراحة");
+      setReplacementNotice(t("Driver trip request rejected.", "تم رفض طلب الرحلة وإعادتها لقائمة الرحلات المتاحة."));
+    } catch (err: any) {
+      alert(err.message || "فشل رفض طلب السائق");
+    }
+  };
+
   const handleExecuteVehicleReplacement = async () => {
     try {
       await apiClient.trips.replaceVehicle(currentTrip.id, "v2", vehicleReplaceReason);
@@ -272,6 +290,41 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 </button>
               </div>
             </div>
+
+            {/* Pending Driver Trip Request Banner */}
+            {((currentTrip as any).driverRequestStatus === "PENDING" || (currentTrip as any).requestedByDriverId) && (
+              <div className="mt-3.5 rounded-[12px] bg-status-waiting/15 border border-status-waiting/40 p-3.5 flex flex-wrap items-center justify-between gap-3 animate-fade-in">
+                <div className="flex items-center gap-2.5">
+                  <span className="h-3 w-3 rounded-full bg-status-waiting animate-pulse" />
+                  <div>
+                    <div className="text-[12.5px] font-bold text-white">
+                      {t("Pending Driver Request", "طلب رحلة قيد المراجعة من السائق")}:{" "}
+                      <span className="text-brand">
+                        {(currentTrip as any).requestedByDriverName || t("Driver", "السائق")}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-text-muted">
+                      {(currentTrip as any).driverRequestNotes ||
+                        t("Driver submitted request to be assigned to this trip", "قدم السائق طلباً لتولي هذه الرحلة")}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleApproveDriverRequest(currentTrip.id)}
+                    className="btn-primary text-[11.5px] py-1.5 px-3.5 bg-status-active text-navy hover:brightness-110 font-bold"
+                  >
+                    {t("Approve & Assign Trip", "اعتماد وإسناد الرحلة")}
+                  </button>
+                  <button
+                    onClick={() => handleRejectDriverRequest(currentTrip.id)}
+                    className="btn-ghost text-[11.5px] py-1.5 px-3 bg-status-danger/15 text-status-danger hover:bg-status-danger hover:text-white"
+                  >
+                    {t("Decline Request", "رفض الطلب")}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Quick Metrics Strip */}
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 border-t border-border-subtle pt-4">

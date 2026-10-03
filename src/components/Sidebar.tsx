@@ -18,6 +18,7 @@ import {
   IconTracking,
   IconTruck,
   IconBolt,
+  IconLayers,
 } from "./Icons";
 import type { RequestKind } from "../data/types";
 
@@ -80,6 +81,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
         {row("partners", t("Partners", "الشركاء"), IconPartners)}
         {row("ai", t("AI Logistics Assistant", "مساعد إيجاز الذكي"), IconBolt)}
         {row("alerts", t("Live Smart Alerts", "التنبيهات المباشرة"), IconBolt)}
+        {row("branding", t("Branding & Identity", "الهوية والعلامة التجارية"), IconLayers)}
 
         <div>
           <button

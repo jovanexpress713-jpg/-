@@ -363,6 +363,10 @@ export function InteractiveMap({
         <canvas ref={canvasRef} className="h-full w-full block" />
       ) : (
         <div className="relative h-full w-full bg-surface-2">
+          <div className="pointer-events-none absolute top-14 start-3 z-10 flex items-center gap-1.5 rounded-full bg-navy/90 px-3 py-1 text-[10.5px] font-semibold text-brand backdrop-blur-md border border-brand/30 shadow-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
+            <span>{t("Maps Dev Adapter · Live GPS", "وضع تطوير الخرائط · تتبع مباشر")}</span>
+          </div>
           <iframe
             title="Google Maps Live GPS"
             src={`https://maps.google.com/maps?q=${trip.currentLat},${trip.currentLng}&z=8&output=embed`}

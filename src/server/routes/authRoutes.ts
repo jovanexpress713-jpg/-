@@ -19,8 +19,14 @@ router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
     return res.status(401).json({ error: "Invalid credentials or account inactive", code: "INVALID_CREDENTIALS" });
   }
 
-  // Check password (allow default demo password 'Ejaz@2026!' or bcrypt match)
-  const isMatch = password === "Ejaz@2026!" || (await comparePassword(password, user.passwordHash));
+  // Check password with bcrypt hash or official demo passwords
+  const isMatch =
+    (await comparePassword(password, user.passwordHash)) ||
+    (password === "Ejaz@2026Client" && user.email.toLowerCase() === "client@ejaz.sa") ||
+    (password === "Ejaz@2026Driver" && (user.email.toLowerCase() === "driver@ejaz.sa" || user.email.toLowerCase() === "fahad.driver@ejaz.sa")) ||
+    (password === "Ejaz@2026Admin" && user.email.toLowerCase() === "admin@ejaz.sa") ||
+    password === "Ejaz@2026!";
+
   if (!isMatch) {
     return res.status(401).json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS" });
   }
@@ -98,6 +104,47 @@ router.post("/logout", authenticate, (req: AuthenticatedRequest, res: Response) 
     });
   }
   return res.json({ message: "Logged out successfully" });
+});
+
+// GET /api/auth/demo-accounts - Controlled by ENABLE_DEMO_ACCOUNTS
+router.get("/demo-accounts", (_req, res: Response) => {
+  const isEnabled = process.env.ENABLE_DEMO_ACCOUNTS !== "false";
+  if (!isEnabled) {
+    return res.json({ enabled: false, accounts: [] });
+  }
+
+  return res.json({
+    enabled: true,
+    accounts: [
+      {
+        key: "client",
+        role: "CLIENT",
+        titleAr: "تجربة حساب العميل",
+        titleEn: "Demo Client Account",
+        email: "client@ejaz.sa",
+        password: "Ejaz@2026Client",
+        descAr: "متابعة الشحنات والرحلات، والتتبع المباشر، ومستندات بوليصة الشحن وإثبات التسليم POD",
+      },
+      {
+        key: "driver",
+        role: "DRIVER",
+        titleAr: "تجربة حساب السائق",
+        titleEn: "Demo Driver Account",
+        email: "driver@ejaz.sa",
+        password: "Ejaz@2026Driver",
+        descAr: "عرض وطلب الرحلات المتاحة، تنفيذ مراحل الرحلة، وإثبات التسليم الميداني",
+      },
+      {
+        key: "admin",
+        role: "ADMIN",
+        titleAr: "تجربة حساب الإدارة",
+        titleEn: "Demo Admin Account",
+        email: "admin@ejaz.sa",
+        password: "Ejaz@2026Admin",
+        descAr: "لوحة التحكم المركزية، إدارة الأسطول والشاحنات، واعتماد طلبات السائقين",
+      },
+    ],
+  });
 });
 
 export default router;

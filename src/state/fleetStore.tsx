@@ -635,8 +635,8 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
             cargoType: (bt.cargoType === "براد" ? "reefer" : bt.cargoType === "سطحة" ? "flatbed" : bt.cargoType === "جاف" ? "container" : "curtain") as BodyType,
             cargoWeightTons: Number(bt.cargoWeightTons),
             maxCapacityTons: Number(bt.maxCapacityTons || 25),
-            status: (bt.status === "IN_TRANSIT" ? "on_road" : bt.status === "DELIVERED" ? "delivered" : "ready") as TripStatus,
-            progressPct: bt.status === "IN_TRANSIT" ? 45 : 0,
+            status: (bt.status === "IN_TRANSIT" ? "on_road" : bt.status === "DELIVERED" ? "delivered" : bt.status === "COMPLETED" ? "completed" : "ready") as TripStatus,
+            progressPct: bt.status === "IN_TRANSIT" ? 48 : (bt.status === "DELIVERED" || bt.status === "COMPLETED" ? 100 : 0),
             speedKmH: Number(bt.currentSpeed || 0),
             headingDeg: Number(bt.currentHeading || 0),
             currentLat: Number(bt.currentLat || 24.7136),
@@ -659,13 +659,18 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
                 actor: "النظام المركزي",
               },
             ],
+            // Authoritative server-side properties preserved
+            requestedByDriverId: bt.requestedByDriverId,
+            requestedByDriverName: bt.requestedByDriverName,
+            driverRequestStatus: bt.driverRequestStatus,
+            driverRequestNotes: bt.driverRequestNotes,
+            driverHistory: bt.driverHistory,
+            vehicleHistory: bt.vehicleHistory,
+            additionalDriverId: bt.additionalDriverId,
+            additionalDriverName: bt.additionalDriverName,
           }));
 
-          setTrips((prev) => {
-            const existingIds = new Set(mappedTrips.map((t) => t.id));
-            const remainingPrev = prev.filter((p) => !existingIds.has(p.id));
-            return [...mappedTrips, ...remainingPrev];
-          });
+          setTrips(mappedTrips);
         }
       } catch (err) {
         console.warn("[FleetStore] Operating with baseline data cache", err);
@@ -673,8 +678,10 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
     }
 
     syncBackendData();
+    const syncTimer = setInterval(syncBackendData, 4000);
     return () => {
       isMounted = false;
+      clearInterval(syncTimer);
     };
   }, []);
 

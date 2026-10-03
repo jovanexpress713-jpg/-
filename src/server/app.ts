@@ -15,6 +15,7 @@ import auditRoutes from "./routes/auditRoutes";
 import reportRoutes from "./routes/reportRoutes";
 import systemRoutes from "./routes/systemRoutes";
 import brandingRoutes from "./routes/brandingRoutes";
+import devGpsRoutes from "./routes/devGpsRoutes";
 
 export function createServerApp() {
   const app = express();
@@ -45,6 +46,7 @@ export function createServerApp() {
   app.use("/api/pod", podRoutes);
   app.use("/api/claims", claimRoutes);
   app.use("/api/gps", gpsRoutes);
+  app.use("/api/dev/gps", devGpsRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/audit", auditRoutes);
   app.use("/api/reports", reportRoutes);

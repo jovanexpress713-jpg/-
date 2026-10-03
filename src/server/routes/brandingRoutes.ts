@@ -1,5 +1,5 @@
 import { Router, type Response } from "express";
-import { authenticate, requireRole, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, type AuthenticatedRequest } from "../auth/middleware";
 import { logAuditEvent } from "../services/auditService";
 import { dispatchNotification } from "../services/notificationService";
 

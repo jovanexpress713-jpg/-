@@ -14,6 +14,7 @@ import { TripsManager } from "./TripsManager";
 import { AnalyticsReports } from "./AnalyticsReports";
 import { AIAssistant } from "./AIAssistant";
 import { AlertsCenter } from "./AlertsCenter";
+import { BrandingSettings } from "./BrandingSettings";
 import { useToast } from "./Toast";
 
 export function WebConsole() {
@@ -35,6 +36,7 @@ export function WebConsole() {
   const [resetKey, setResetKey] = useState(0);
   const [showAIModal, setShowAIModal] = useState(false);
   const [showAlertsModal, setShowAlertsModal] = useState(false);
+  const [showBrandingModal, setShowBrandingModal] = useState(false);
 
   const now = useTicker(1000);
   const elapsed = useElapsed(now);
@@ -75,6 +77,10 @@ export function WebConsole() {
     }
     if (key === "alerts") {
       setShowAlertsModal(true);
+      return;
+    }
+    if (key === "branding") {
+      setShowBrandingModal(true);
       return;
     }
     setNav(key);
@@ -241,6 +247,13 @@ export function WebConsole() {
             setNav("tracking");
             setShowAlertsModal(false);
           }}
+        />
+      )}
+
+      {showBrandingModal && (
+        <BrandingSettings
+          isOpen={showBrandingModal}
+          onClose={() => setShowBrandingModal(false)}
         />
       )}
     </div>

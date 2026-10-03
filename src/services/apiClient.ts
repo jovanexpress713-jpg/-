@@ -66,6 +66,8 @@ export const apiClient = {
       request<any>("/api/auth/logout", {
         method: "POST",
       }),
+    getDemoAccounts: () =>
+      request<{ enabled: boolean; accounts: Array<{ key: string; role: string; titleAr: string; titleEn: string; email: string; password: string; descAr: string }> }>("/api/auth/demo-accounts"),
   },
   trips: {
     getAll: (params?: Record<string, string>) => {
@@ -218,5 +220,14 @@ export const apiClient = {
   },
   system: {
     health: () => request<any>("/api/health"),
+    mapsConfig: () => request<any>("/api/system/maps-config"),
+  },
+  branding: {
+    get: () => request<{ branding: any }>("/api/branding"),
+    update: (data: any) =>
+      request<{ message: string; branding: any }>("/api/branding", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
   },
 };
