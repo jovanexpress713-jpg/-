@@ -112,7 +112,7 @@ router.delete("/:type/model", authenticate, requirePermission("settings.manage")
 });
 
 // PUT /api/vehicle-assets/vehicle/:vehicleId/image — per-vehicle photograph
-router.put("/vehicle/:vehicleId/image", authenticate, requirePermission("vehicles.edit", "trips.assign"), (req: AuthenticatedRequest, res: Response) => {
+router.put("/vehicle/:vehicleId/image", authenticate, requirePermission("vehicles.edit", "trips.assign", "settings.manage"), (req: AuthenticatedRequest, res: Response) => {
   try {
     const { data, fileName } = req.body || {};
     if (!data) return res.status(400).json({ error: "data (base64 image) is required" });
@@ -142,7 +142,7 @@ router.put("/vehicle/:vehicleId/image", authenticate, requirePermission("vehicle
 });
 
 // DELETE /api/vehicle-assets/vehicle/:vehicleId/image — revert to the official category asset
-router.delete("/vehicle/:vehicleId/image", authenticate, requirePermission("vehicles.edit", "trips.assign"), (req: AuthenticatedRequest, res: Response) => {
+router.delete("/vehicle/:vehicleId/image", authenticate, requirePermission("vehicles.edit", "trips.assign", "settings.manage"), (req: AuthenticatedRequest, res: Response) => {
   try {
     const vehicleId = String(req.params.vehicleId);
     removeVehicleImage(vehicleId);

@@ -1,6 +1,7 @@
 import { Router, type Response } from "express";
 import { db } from "../db";
 import { comparePassword, generateToken } from "../auth/jwt";
+import { statusForUser, REGISTRATION_STATUS_AR } from "../services/registrationService";
 import { authenticate, type AuthenticatedRequest, ROLE_PERMISSIONS } from "../auth/middleware";
 import { logAuditEvent } from "../services/auditService";
 import { config } from "../config";
@@ -8,6 +9,35 @@ import { config } from "../config";
 const router = Router();
 
 // POST /api/auth/login
+/**
+ * An account created through a registration request only receives the privileges
+ * of its account type after the administration approves it. Until then the user
+ * can still sign in to follow the request status — nothing more.
+ */
+function resolveAccountAccess(user: {
+  id: string;
+  email: string;
+  role: string;
+  registrationId?: string;
+  registrationStatus?: string;
+}) {
+  const isApplicantRole = user.role === "DRIVER" || user.role === "CUSTOMER";
+  const registration = isApplicantRole ? statusForUser({ userId: user.id, email: user.email }) : null;
+  // Fail closed if the request store is unavailable but the user record still
+  // carries a registration marker; legacy accounts without one remain active.
+  const approved = !isApplicantRole
+    ? true
+    : registration
+      ? registration.approved
+      : !user.registrationId || user.registrationStatus === "APPROVED";
+  const base = ROLE_PERMISSIONS[user.role] || [];
+  return {
+    registration,
+    approved,
+    permissions: approved ? base : ["registration.status_own"],
+  };
+}
+
 router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -42,7 +72,8 @@ router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
     return res.status(401).json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS" });
   }
 
-  const permissions = ROLE_PERMISSIONS[user.role] || [];
+  const access = resolveAccountAccess(user);
+  const permissions = access.permissions;
   const token = generateToken({
     userId: user.id,
     email: user.email,
@@ -51,6 +82,9 @@ router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
     driverId: user.driverId,
     customerId: user.customerId,
     permissions,
+    registrationId: access.registration?.request.id ?? user.registrationId,
+    registrationStatus: access.registration?.status ?? user.registrationStatus,
+    accountApproved: access.approved,
   });
 
   logAuditEvent({
@@ -74,6 +108,12 @@ router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
       driverId: user.driverId,
       customerId: user.customerId,
       permissions,
+      // Registration/approval state: the app shows «جاري معالجة طلبك» while the
+      // request is under review instead of the full account functions.
+      registrationId: access.registration?.request.id ?? user.registrationId,
+      registrationStatus: access.registration?.status ?? user.registrationStatus,
+      registrationStatusAr: access.registration ? REGISTRATION_STATUS_AR[access.registration.status] : undefined,
+      accountApproved: access.approved,
     },
   });
 });
@@ -89,7 +129,7 @@ router.get("/me", authenticate, (req: AuthenticatedRequest, res: Response) => {
     return res.status(404).json({ error: "User record not found" });
   }
 
-  const permissions = ROLE_PERMISSIONS[user.role] || [];
+  const access = resolveAccountAccess(user);
   return res.json({
     id: user.id,
     email: user.email,
@@ -98,7 +138,11 @@ router.get("/me", authenticate, (req: AuthenticatedRequest, res: Response) => {
     role: user.role,
     driverId: user.driverId,
     customerId: user.customerId,
-    permissions,
+    permissions: access.permissions,
+    registrationId: access.registration?.request.id ?? user.registrationId,
+    registrationStatus: access.registration?.status ?? user.registrationStatus,
+    registrationStatusAr: access.registration ? REGISTRATION_STATUS_AR[access.registration.status] : undefined,
+    accountApproved: access.approved,
   });
 });
 

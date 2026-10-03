@@ -4,6 +4,9 @@ import { runGPSAdapterTests } from "./gpsAdapter.test";
 import { runFinanceTests } from "./finance.test";
 import { runApiSecurityTests } from "./apiSecurity.test";
 import { runVehicleAssetTests } from "./vehicleAssets.test";
+import { runBootSurfaceTests } from "./bootSurface.test";
+import { runFleetImageryTests } from "./fleetImagery.test";
+import { runRegistrationTests } from "./registration.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -17,9 +20,12 @@ async function runAll() {
     runFinanceTests();
     await runApiSecurityTests();
     await runVehicleAssetTests();
+    runBootSurfaceTests();
+    runFleetImageryTests();
+    await runRegistrationTests();
 
     console.log("============================================================");
-    console.log("  ✅ ALL 6 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 9 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {

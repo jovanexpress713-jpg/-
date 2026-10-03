@@ -18,6 +18,7 @@ import systemRoutes from "./routes/systemRoutes";
 import brandingRoutes from "./routes/brandingRoutes";
 import devGpsRoutes from "./routes/devGpsRoutes";
 import vehicleAssetRoutes from "./routes/vehicleAssetRoutes";
+import registrationRoutes from "./routes/registrationRoutes";
 import { getUploadsServeRoot } from "./services/vehicleAssetRegistry";
 
 export function createServerApp() {
@@ -30,9 +31,17 @@ export function createServerApp() {
   // dedicated (larger) body parser mounted ahead of the global one.
   app.use("/api/vehicle-assets", express.json({ limit: "48mb" }), vehicleAssetRoutes);
 
-  // Published official vehicle binaries (images + 3D models) are served straight
-  // from the upload root so they resolve identically in dev and production.
+  // Never serve registration identity documents from the public upload tree,
+  // including leftovers from older deployments that stored them under /public.
+  app.use("/uploads/registrations", (_req, res) =>
+    res.status(404).json({ error: "Not found", code: "NOT_FOUND" })
+  );
+
+  // Published vehicle binaries (images + 3D models) are public by design.
   app.use("/uploads", express.static(getUploadsServeRoot(), { maxAge: "1h" }));
+
+  // Registration requests carry base64 identity/company documents.
+  app.use("/api/registrations", express.json({ limit: "32mb" }), registrationRoutes);
 
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ extended: true, limit: "15mb" }));
@@ -69,7 +78,9 @@ export function createServerApp() {
   // Official uploaded vehicle reference assets handler
   app.use((req, res, next) => {
     if (req.path.endsWith("file_00000000bf908211b85dffc7076e553c.png")) {
-      return res.sendFile(path.resolve(process.cwd(), "public/images/trucks/scania-flatbed.jpg"));
+      // Legacy flatbed asset name from an earlier build: resolve it through the
+      // registry so it can never serve a different truck than the official one.
+      return res.sendFile(path.resolve(process.cwd(), "public/images/trucks/official/official-flatbed.png"));
     }
     next();
   });

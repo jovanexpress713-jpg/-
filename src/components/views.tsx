@@ -1,6 +1,6 @@
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
-import { BODY_TYPES, PHOTO_REPORTS, imageFor } from "../data/catalog";
+import { BODY_TYPES, PHOTO_REPORTS } from "../data/catalog";
 import type { Vehicle } from "../data/types";
 import {
   IconArrowRight,
@@ -503,7 +503,7 @@ export function FleetStrip({
           >
             <span className="block overflow-hidden rounded-[6px] bg-black px-1">
               <TruckImage
-                src={imageFor(v.brand, v.body)}
+                vehicle={v}
                 alt=""
                 className="h-10 w-full object-contain transition-transform duration-500 group-hover:scale-105"
               />

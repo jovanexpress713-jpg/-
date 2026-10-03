@@ -14,6 +14,7 @@ import { TripsManager } from "./TripsManager";
 import { ShipmentsManager } from "./ShipmentsManager";
 import { FleetManager } from "./FleetManager";
 import { VehicleAssetsManager } from "./VehicleAssetsManager";
+import { RegistrationRequestsManager } from "./RegistrationRequestsManager";
 import { LiveOperationsCenter } from "./LiveOperationsCenter";
 import { AnalyticsReports } from "./AnalyticsReports";
 import { AIAssistant } from "./AIAssistant";
@@ -206,6 +207,8 @@ export function WebConsole() {
                 setNav("tracking");
               }}
             />
+          ) : nav === "registrations" ? (
+            <RegistrationRequestsManager />
           ) : nav === "vehicle-assets" ? (
             <VehicleAssetsManager />
           ) : nav === "trips" ? (

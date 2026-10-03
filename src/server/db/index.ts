@@ -21,6 +21,10 @@ export interface UserEntity {
   customerId?: string;
   isActive: boolean;
   createdAt: string;
+  /** Registration request this account came from (driver/customer onboarding). */
+  registrationId?: string;
+  /** Approval state of that request: DRAFT | PENDING_REVIEW | NEEDS_COMPLETION | APPROVED | REJECTED. */
+  registrationStatus?: string;
 }
 
 export interface VehicleEntity {

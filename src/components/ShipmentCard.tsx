@@ -1,6 +1,5 @@
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
-import { imageFor } from "../data/catalog";
 import type { Vehicle } from "../data/types";
 import type { Live } from "../hooks";
 import { formatCountdown } from "../hooks";
@@ -110,7 +109,7 @@ export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[128px] overflow-hidden bg-black">
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/75 to-transparent" />
         <TruckImage
-          src={imageFor(v.brand, v.body)}
+          vehicle={v}
           alt={`${v.brand} ${v.model}`}
           className="absolute bottom-[-12px] left-1/2 w-[86%] -translate-x-1/2 opacity-95 transition-transform duration-500 group-hover:scale-[1.04]"
         />

@@ -1,3 +1,4 @@
+import { getVehicleOfficialImage } from "./vehicleTypes";
 import type { BodyType, Brand } from "./types";
 
 export const COMPANY = {
@@ -46,23 +47,38 @@ export const PARTNERS = [
   "SABIC",
 ];
 
-/** Grey monochrome studio renders (pure black plates, blended with `lighten`). */
-export const TRUCK_IMAGES: Record<string, string> = {
-  "mb-curtain": "images/trucks/mb-curtain.jpg",
-  "mb-reefer": "images/trucks/mb-reefer.jpg",
-  "volvo-tanker": "images/trucks/volvo-tanker.jpg",
-  "volvo-container": "images/trucks/volvo-container.jpg",
-  "scania-flatbed": "images/trucks/scania-flatbed.jpg",
-  "scania-tipper": "images/trucks/scania-tipper.jpg",
-};
+/**
+ * Legacy per-brand studio renders (`mb-curtain.jpg`, `scania-flatbed.jpg`, …)
+ * were removed from the visual pipeline: they showed trucks that are not part of
+ * the EJAZ fleet. Vehicle imagery now resolves exclusively through the approved
+ * category asset in `data/vehicleTypes.ts` / the Vehicle Asset Registry.
+ * The original files remain on disk for the legacy file paths only.
+ */
 
 export const AERIAL_NIGHT = "images/trucks/aerial-night.jpg";
 
+/**
+ * Login screen backdrop (mobile app).
+ *
+ * A portrait CROP of the official flatbed photograph — the same pixels the
+ * Vehicle Asset Registry publishes, framed for a phone screen. Nothing is
+ * retouched, no other vehicle is introduced, and the cut-out truck composites
+ * directly onto the dark UI. The 1:1 original stays the official asset.
+ */
+export const LOGIN_BACKDROP = "/images/trucks/official/official-flatbed-login.webp";
+
+/**
+ * Single Source of Truth for vehicle imagery.
+ *
+ * Every screen (fleet register, fleet strip, shipment cards, mobile app) resolves
+ * a truck's photograph through the approved category asset — the four official
+ * photographs published in the Vehicle Asset Registry — and never through a
+ * per-brand stock image. The brand argument is accepted for call-site
+ * compatibility but deliberately does not influence the result: one category,
+ * one official photograph, everywhere.
+ */
 export function imageFor(_brand: Brand, body: BodyType): string {
-  if (body === "reefer") return TRUCK_IMAGES["mb-reefer"];
-  if (body === "flatbed") return TRUCK_IMAGES["scania-flatbed"];
-  if (body === "dry") return TRUCK_IMAGES["volvo-container"];
-  return TRUCK_IMAGES["mb-curtain"];
+  return getVehicleOfficialImage(body);
 }
 
 export const STATUS_LABEL: Record<string, [string, string]> = {

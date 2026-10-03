@@ -23,3 +23,9 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# Runtime data: uploaded registration documents and the request store contain
+# personal applicant data — never commit them.
+public/uploads/registrations/
+data/registration-uploads/
+data/registration-requests.json
