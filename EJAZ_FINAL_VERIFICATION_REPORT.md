@@ -1,6 +1,10 @@
 # تقرير التحقق النهائي والإطلاق الإنتاجي
 # EJAZ TRANSPORT — FINAL MASTER VERIFICATION REPORT
 **Specification Version:** V1.0-PROD  
+
+> ⚠️ **تصحيح لاحق (2026-10-03):** عبارات "Strict RBAC enforced on all protected endpoints" و"VERIFIED & PRODUCTION READY" في هذا التقرير لم تكن صحيحة عند كتابته. كشف تدقيق مستقل وجود 7 عيوب حرجة (كلمة مرور خلفية، غياب تطبيق RBAC، وصول مجهول للبيانات المالية والسائقين، تعطّل انتقال `CONFIRMED → ASSIGNED`، تجاوز آلة الحالة في POD، تسوية قبل التسليم، بوابة AVL غير محمية). جرى إصلاحها جميعاً والتحقق منها آلياً. راجع: `EJAZ_SECURITY_HARDENING_REPORT.md`.
+
+
 **Timestamp:** 2026-10-02  
 **Platform URL:** https://ais-dev-c3vwgstlrijwt2s4erevzg-161070334447.europe-west3.run.app  
 **Auditor / Architect:** Senior Lead Architect & Full-Stack Systems Engineer

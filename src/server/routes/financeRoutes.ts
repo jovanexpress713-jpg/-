@@ -1,13 +1,13 @@
 import { Router, type Response } from "express";
 import { db } from "../db";
-import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
 import { getAllFinancials, getTripFinancials, updateTripFinancials } from "../services/financeService";
 import { logAuditEvent } from "../services/auditService";
 
 const router = Router();
 
 // GET /api/finance/trips
-router.get("/trips", optionalAuthenticate, (_req: AuthenticatedRequest, res: Response) => {
+router.get("/trips", authenticate, requirePermission("finance.view"), (_req: AuthenticatedRequest, res: Response) => {
   const list = getAllFinancials();
   const summary = {
     totalGrossFreight: list.reduce((acc, f) => acc + f.freightPrice, 0),
@@ -21,7 +21,7 @@ router.get("/trips", optionalAuthenticate, (_req: AuthenticatedRequest, res: Res
 });
 
 // GET /api/finance/trips/:tripId
-router.get("/trips/:tripId", (req: AuthenticatedRequest, res: Response) => {
+router.get("/trips/:tripId", authenticate, requirePermission("finance.view"), (req: AuthenticatedRequest, res: Response) => {
   const fin = getTripFinancials(String(req.params.tripId));
   if (!fin) {
     return res.status(404).json({ error: "Financial record not found for this trip" });
@@ -30,7 +30,7 @@ router.get("/trips/:tripId", (req: AuthenticatedRequest, res: Response) => {
 });
 
 // POST /api/finance/settle
-router.post("/settle", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/settle", authenticate, requirePermission("finance.settle"), (req: AuthenticatedRequest, res: Response) => {
   const { tripId, paidAmount, settlementStatus, paymentStatus } = req.body;
   if (!tripId) {
     return res.status(400).json({ error: "tripId is required" });
@@ -39,6 +39,15 @@ router.post("/settle", authenticate, (req: AuthenticatedRequest, res: Response) 
   const trip = db.trips.get(tripId);
   if (!trip) {
     return res.status(404).json({ error: "Trip not found" });
+  }
+
+  const SETTLEABLE_STATES = ["DELIVERED", "SETTLEMENT_PENDING", "FINANCIAL_REVIEW", "PARTIALLY_PAID", "PAID"];
+  if (!SETTLEABLE_STATES.includes(trip.status)) {
+    return res.status(422).json({
+      error: `Financial settlement is not permitted while the trip is in '${trip.status}'. The shipment must be delivered first.`,
+      code: "SETTLEMENT_NOT_ALLOWED",
+      currentStatus: trip.status,
+    });
   }
 
   const updated = updateTripFinancials(tripId, {

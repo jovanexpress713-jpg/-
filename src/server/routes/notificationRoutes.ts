@@ -1,11 +1,11 @@
 import { Router, type Response } from "express";
-import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
 import { getNotifications, markAsRead } from "../services/notificationService";
 
 const router = Router();
 
 // GET /api/notifications
-router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/", authenticate, requirePermission("notifications.view"), (req: AuthenticatedRequest, res: Response) => {
   const role = req.user?.role;
   const userId = req.user?.userId;
   const list = getNotifications({ role, userId });
@@ -13,8 +13,14 @@ router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response)
 });
 
 // POST /api/notifications/:id/read
-router.post("/:id/read", authenticate, (req: AuthenticatedRequest, res: Response) => {
-  const success = markAsRead(String(req.params.id));
+router.post("/:id/read", authenticate, requirePermission("notifications.view"), (req: AuthenticatedRequest, res: Response) => {
+  const notificationId = String(req.params.id);
+  const visible = getNotifications({ role: req.user?.role, userId: req.user?.userId });
+  if (!visible.some((n) => n.id === notificationId)) {
+    return res.status(404).json({ error: "Notification not found", code: "NOT_FOUND" });
+  }
+
+  const success = markAsRead(notificationId);
   return res.json({ success });
 });
 

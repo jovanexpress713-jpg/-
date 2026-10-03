@@ -31,12 +31,14 @@ export function createServerApp() {
   app.use("/api/users", authRoutes);
   app.use("/api/trips", tripRoutes);
   app.use("/api/branding", brandingRoutes);
-  app.get("/api/client/trips", (req, res, next) => {
-    req.url = "/client/trips";
+  // Canonical alias mounts: the mobile app addresses client/driver trip resources
+  // under /api/client/trips and /api/driver/trips (including POST .../:id/request).
+  app.use("/api/client/trips", (req, res, next) => {
+    req.url = `/client/trips${req.url === "/" ? "" : req.url}`;
     tripRoutes(req, res, next);
   });
-  app.get("/api/driver/trips", (req, res, next) => {
-    req.url = "/driver/trips";
+  app.use("/api/driver/trips", (req, res, next) => {
+    req.url = `/driver/trips${req.url === "/" ? "" : req.url}`;
     tripRoutes(req, res, next);
   });
   app.use("/api/vehicles", vehicleRoutes);

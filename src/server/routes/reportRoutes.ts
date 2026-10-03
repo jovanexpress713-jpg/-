@@ -1,12 +1,12 @@
 import { Router, type Response } from "express";
 import { db } from "../db";
-import { optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
 import { getAllFinancials } from "../services/financeService";
 
 const router = Router();
 
 // GET /api/reports/operational-summary
-router.get("/operational-summary", optionalAuthenticate, (_req: AuthenticatedRequest, res: Response) => {
+router.get("/operational-summary", authenticate, requirePermission("reports.view"), (_req: AuthenticatedRequest, res: Response) => {
   const trips = Array.from(db.trips.values());
   const vehicles = Array.from(db.vehicles.values());
   const drivers = Array.from(db.drivers.values());

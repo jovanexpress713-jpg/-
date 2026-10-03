@@ -1,27 +1,18 @@
 import { Router, type Request, type Response } from "express";
+import { requireProviderKey } from "../auth/middleware";
 import { config } from "../config";
 import { gpsAdapter, type GPSPosition } from "../services/gpsProviderAdapter";
 import { db } from "../db";
 
 const router = Router();
 
-// Middleware to check dev GPS key if provided
-function verifyDevKey(req: Request): boolean {
-  const headerKey = req.headers["x-api-key"] || req.headers["authorization"]?.replace(/^Bearer\s+/i, "");
-  const queryKey = req.query.apiKey as string | undefined;
-  const provided = (headerKey || queryKey) as string | undefined;
-
-  // In development adapter mode, accept the configured dev key or valid bearer
-  if (!config.gpsProviderApiKey) return true;
-  if (provided && provided === config.gpsProviderApiKey) return true;
-  if (provided && provided.includes("DEV")) return true;
-  return true; // Allow dev inspection
-}
+// Telemetry read guard: provider API key, or an authenticated operator with gps.view
+const guardRead = requireProviderKey(config.gpsProviderApiKey, "gps.view");
+// Telemetry ingestion guard: provider API key, or an authorized operator with gps.configure
+const guardIngest = requireProviderKey(config.gpsProviderApiKey, "gps.configure");
 
 // GET /api/dev/gps - Status & Active Telemetry Feed
-router.get("/", (req: Request, res: Response) => {
-  verifyDevKey(req);
-
+router.get("/", guardRead, (_req: Request, res: Response) => {
   return res.json({
     status: "ONLINE",
     mode: "DEVELOPMENT_AVL_SIMULATION_GATEWAY",
@@ -40,13 +31,13 @@ router.get("/", (req: Request, res: Response) => {
 });
 
 // GET /api/dev/gps/devices - List devices
-router.get("/devices", async (_req: Request, res: Response) => {
+router.get("/devices", guardRead, async (_req: Request, res: Response) => {
   const devices = await gpsAdapter.getDevices();
   return res.json({ devices });
 });
 
 // GET /api/dev/gps/telemetry/:deviceId
-router.get("/telemetry/:deviceId", async (req: Request, res: Response) => {
+router.get("/telemetry/:deviceId", guardRead, async (req: Request, res: Response) => {
   const deviceId = String(req.params.deviceId);
   const pos = await gpsAdapter.getLatestPosition(deviceId);
   if (!pos) {
@@ -56,7 +47,7 @@ router.get("/telemetry/:deviceId", async (req: Request, res: Response) => {
 });
 
 // POST /api/dev/gps - Telemetry Push (Standard AVL Packet)
-router.post("/", (req: Request, res: Response) => {
+router.post("/", guardIngest, (req: Request, res: Response) => {
   const { vehicleId, deviceId, tripId, latitude, longitude, speed, heading, altitude, accuracy, ignition } = req.body;
 
   if (!deviceId || latitude === undefined || longitude === undefined) {

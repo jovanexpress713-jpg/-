@@ -34,7 +34,7 @@ export interface TransitionRule {
 export const TRANSITION_MATRIX: TransitionRule[] = [
   { from: "DRAFT_CREATED", to: "PENDING_APPROVAL", allowedRoles: ["SUPER_ADMIN", "OPERATIONS_MANAGER", "DISPATCHER", "CUSTOMER"] },
   { from: "PENDING_APPROVAL", to: "CONFIRMED", allowedRoles: ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"] },
-  { from: "CONFIRMED", to: "ASSIGNED", allowedRoles: ["SUPER_ADMIN", "OPERATIONS_MANAGER", "DISPATCHER"], requiredFields: ["vehicle_id", "driver_id"] },
+  { from: "CONFIRMED", to: "ASSIGNED", allowedRoles: ["SUPER_ADMIN", "OPERATIONS_MANAGER", "DISPATCHER"], requiredFields: ["vehicleId", "driverId"] },
   { from: "ASSIGNED", to: "HEADING_TO_LOADING", allowedRoles: ["SUPER_ADMIN", "OPERATIONS_MANAGER", "DISPATCHER", "DRIVER"] },
   { from: "HEADING_TO_LOADING", to: "ARRIVED_LOADING", allowedRoles: ["SUPER_ADMIN", "OPERATIONS_MANAGER", "DISPATCHER", "DRIVER", "WAREHOUSE"] },
   { from: "ARRIVED_LOADING", to: "LOADED", allowedRoles: ["SUPER_ADMIN", "OPERATIONS_MANAGER", "DISPATCHER", "DRIVER", "WAREHOUSE"] },
@@ -99,10 +99,13 @@ export function validateTransition(
     return { isValid: false, error: `Role '${userRole}' is not authorized to transition trip to '${targetStatus}'.` };
   }
 
-  // Check required data fields
+  // Check required data fields. Accepts either the canonical camelCase entity
+  // field (vehicleId) or the snake_case API alias (vehicle_id).
   if (rule.requiredFields) {
+    const alias = (field: string) => field.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
     for (const f of rule.requiredFields) {
-      if (!tripData[f]) {
+      const value = tripData[f] ?? tripData[alias(f)];
+      if (value === undefined || value === null || value === "" || value === "unassigned") {
         return { isValid: false, error: `Missing required field '${f}' for transition to '${targetStatus}'.` };
       }
     }

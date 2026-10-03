@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
 import { db, type VehicleEntity } from "../db";
-import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
 
 const router = Router();
 
@@ -17,7 +17,7 @@ function checkDocExpiry(dateStr: string): { isExpired: boolean; daysRemaining: n
 }
 
 // GET /api/vehicles
-router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/", authenticate, requirePermission("vehicles.view"), (req: AuthenticatedRequest, res: Response) => {
   const { type, status } = req.query;
   let list = Array.from(db.vehicles.values());
 
@@ -57,7 +57,7 @@ router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response)
 });
 
 // GET /api/vehicles/:id
-router.get("/:id", (req: AuthenticatedRequest, res: Response) => {
+router.get("/:id", authenticate, requirePermission("vehicles.view"), (req: AuthenticatedRequest, res: Response) => {
   const vehicle = db.vehicles.get(String(req.params.id));
   if (!vehicle) {
     return res.status(404).json({ error: "Vehicle not found" });
@@ -81,7 +81,7 @@ router.get("/:id", (req: AuthenticatedRequest, res: Response) => {
 });
 
 // POST /api/vehicles
-router.post("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/", authenticate, requirePermission("vehicles.create", "vehicles.edit"), (req: AuthenticatedRequest, res: Response) => {
   const { plate, type, model, year, maxLoadTons, cab, registrationExpiry, insuranceExpiry, inspectionExpiry } = req.body;
 
   if (!plate || !type || !model || !year || !maxLoadTons) {

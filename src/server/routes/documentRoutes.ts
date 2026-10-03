@@ -1,18 +1,18 @@
 import { Router, type Response } from "express";
 import { db, type TripDocumentEntity } from "../db";
-import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
 
 const router = Router();
 
 // GET /api/documents/:tripId
-router.get("/:tripId", optionalAuthenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/:tripId", authenticate, requirePermission("documents.view"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.tripId);
   const docs = Array.from(db.documents.values()).filter((d) => d.tripId === tripId);
   return res.json({ tripId, documents: docs });
 });
 
 // POST /api/documents/:tripId
-router.post("/:tripId", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/:tripId", authenticate, requirePermission("documents.upload"), (req: AuthenticatedRequest, res: Response) => {
   const tripId = String(req.params.tripId);
   const { documentType, title, fileUrl, fileSizeBytes, mimeType, expiresAt } = req.body;
   if (!documentType || !title) {

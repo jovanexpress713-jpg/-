@@ -1,13 +1,13 @@
 import { Router, type Response } from "express";
 import { db, type ClaimEntity } from "../db";
-import { authenticate, optionalAuthenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
 import { logAuditEvent } from "../services/auditService";
 import { dispatchNotification } from "../services/notificationService";
 
 const router = Router();
 
 // GET /api/claims
-router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response) => {
+router.get("/", authenticate, requirePermission("claims.view"), (req: AuthenticatedRequest, res: Response) => {
   const { tripId, status } = req.query;
   let list = Array.from(db.claims.values());
 
@@ -18,11 +18,20 @@ router.get("/", optionalAuthenticate, (req: AuthenticatedRequest, res: Response)
     list = list.filter((c) => c.status === status);
   }
 
+  // Customers only see claims filed against their own shipments
+  if (req.user?.role === "CUSTOMER") {
+    const customerId = req.user.customerId;
+    list = list.filter((c) => {
+      const trip = db.trips.get(c.tripId);
+      return !!trip && !!customerId && trip.customerId === customerId;
+    });
+  }
+
   return res.json({ total: list.length, claims: list });
 });
 
 // POST /api/claims
-router.post("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
+router.post("/", authenticate, requirePermission("claims.create"), (req: AuthenticatedRequest, res: Response) => {
   const { tripId, claimType, description, estimatedAmount, responsibleParty, evidenceUrls } = req.body;
 
   if (!tripId || !claimType || !description || !responsibleParty) {
@@ -32,6 +41,13 @@ router.post("/", authenticate, (req: AuthenticatedRequest, res: Response) => {
   const trip = db.trips.get(tripId);
   if (!trip) {
     return res.status(404).json({ error: "Trip not found" });
+  }
+
+  if (req.user?.role === "CUSTOMER") {
+    const customerId = req.user.customerId;
+    if (!customerId || trip.customerId !== customerId) {
+      return res.status(403).json({ error: "You can only file claims against your own shipments", code: "CLAIM_ACCESS_DENIED" });
+    }
   }
 
   const claimId = `claim-${Date.now()}`;

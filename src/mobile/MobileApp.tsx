@@ -11,7 +11,7 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 
 type ScreenFlow = "welcome" | "login" | "app";
 
-export function MobileApp() {
+export function MobileApp({ onStaffLogin }: { onStaffLogin?: (user: any) => void } = {}) {
   const { t, lang, setLang, theme, setTheme } = useSettings();
   const [currentUser, setCurrentUser] = useState<any | null>(() => {
     try {
@@ -42,6 +42,26 @@ export function MobileApp() {
   }, [currentUser]);
 
   const handleLoginSuccess = (user: any) => {
+    const STAFF_ROLES = [
+      "SUPER_ADMIN",
+      "GENERAL_MANAGER",
+      "OPERATIONS_MANAGER",
+      "DISPATCHER",
+      "ACCOUNTANT",
+      "WAREHOUSE",
+      "BROKER",
+      "CUSTOMS_BROKER",
+      "REPRESENTATIVE",
+    ];
+
+    // Staff identities belong to the unified control room, not the driver/client app
+    if (onStaffLogin && user?.role && STAFF_ROLES.includes(user.role)) {
+      setCurrentUser(user);
+      setCurrentScreen("app");
+      onStaffLogin(user);
+      return;
+    }
+
     setCurrentUser(user);
     setCurrentScreen("app");
   };

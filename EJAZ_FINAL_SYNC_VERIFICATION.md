@@ -1,5 +1,9 @@
 # EJAZ TRANSPORT — FINAL MASTER PATCH V2.0 SYNCHRONIZATION & VERIFICATION REPORT
 **Report Reference:** `EJAZ_FINAL_SYNC_VERIFICATION.md`  
+
+> ⚠️ **تصحيح لاحق (2026-10-03):** عبارات "Strict RBAC enforced on all protected endpoints" و"VERIFIED & PRODUCTION READY" في هذا التقرير لم تكن صحيحة عند كتابته. كشف تدقيق مستقل وجود 7 عيوب حرجة (كلمة مرور خلفية، غياب تطبيق RBAC، وصول مجهول للبيانات المالية والسائقين، تعطّل انتقال `CONFIRMED → ASSIGNED`، تجاوز آلة الحالة في POD، تسوية قبل التسليم، بوابة AVL غير محمية). جرى إصلاحها جميعاً والتحقق منها آلياً. راجع: `EJAZ_SECURITY_HARDENING_REPORT.md`.
+
+
 **Execution Mode:** Production Upgrade, Component Restoration & Full-Stack Bi-Directional Synchronization  
 **Platform Architecture:** One Android Application (Client + Driver Modes) + Unified Admin Control Panel + Central Authoritative Backend + Shared Database Layer  
 
