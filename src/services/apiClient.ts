@@ -318,5 +318,15 @@ export const apiClient = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+    /** Upload a logo image file (base64) from the device and publish it for a surface. */
+    uploadLogo: (payload: {
+      data: string;
+      fileName?: string;
+      variant?: "master" | "header" | "login" | "report";
+    }) =>
+      request<{ message: string; url: string; branding: any }>("/api/branding/logo", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
   },
 };
