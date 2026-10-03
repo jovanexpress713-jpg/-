@@ -26,6 +26,94 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Boot surface: visible until React mounts. Styled inline on purpose so it
+         renders even when the stylesheet has not loaded yet, which makes a blank
+         white screen impossible to mistake for a broken deployment. -->
+    <div
+      id="ejaz-boot"
+      style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;background:#0A1931;color:#fff;font-family:system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;z-index:9999"
+    >
+      <svg width="72" height="72" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#FF7A00" />
+        <path d="M6 11h11v8H6z" fill="none" stroke="#0A1931" stroke-width="2.2" />
+        <path d="M17 13h3.5l3 3v3H17z" fill="none" stroke="#0A1931" stroke-width="2.2" />
+      </svg>
+      <div style="font-size:18px;font-weight:800;letter-spacing:.5px">مؤسسة إيجاز للنقليات</div>
+      <div style="font-size:12px;opacity:.65">EJAZ Transport · جارٍ تحميل المنصة…</div>
+      <div style="width:120px;height:3px;border-radius:99px;background:rgba(255,255,255,.15);overflow:hidden">
+        <div style="width:40%;height:100%;background:#FF7A00;border-radius:99px;animation:ejaz-boot-slide 1.1s ease-in-out infinite"></div>
+      </div>
+      <style>
+        @keyframes ejaz-boot-slide {
+          0% { transform: translateX(-120%); }
+          100% { transform: translateX(320%); }
+        }
+      </style>
+    </div>
+
+    <div
+      id="ejaz-boot-error"
+      style="display:none;position:fixed;inset:0;z-index:10000;background:#0A1931;color:#fff;font-family:system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;padding:24px;overflow:auto"
+    ></div>
+
+    <script>
+      // The boot surface is removed as soon as the application mounts. Any failure
+      // before that point is shown on screen instead of leaving a blank page.
+      window.__EJAZ_BOOT__ = {
+        hide: function () {
+          var el = document.getElementById("ejaz-boot");
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        },
+        fail: function (detail) {
+          var panel = document.getElementById("ejaz-boot-error");
+          if (!panel || panel.style.display === "block") return;
+          var text = String(detail && detail.stack ? detail.stack : detail || "Unknown error");
+          panel.innerHTML =
+            '<div style="max-width:760px;margin:6vh auto 0;direction:rtl">' +
+            '<div style="font-size:20px;font-weight:800;margin-bottom:6px">تعذّر تشغيل المنصة</div>' +
+            '<div style="font-size:13px;opacity:.75;margin-bottom:16px">The platform could not start. The diagnostic below identifies the failing module.</div>' +
+            '<pre style="white-space:pre-wrap;word-break:break-word;background:#0f2440;border:1px solid #23405f;border-radius:10px;padding:14px;font-size:12px;line-height:1.6;direction:ltr;text-align:left">' +
+            text.replace(/[<>&]/g, function (c) {
+              return { "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c];
+            }) +
+            "</pre>" +
+            '<button onclick="location.reload()" style="margin-top:14px;background:#FF7A00;color:#0A1931;border:0;border-radius:10px;padding:10px 18px;font-weight:800;cursor:pointer">إعادة المحاولة · Retry</button>' +
+            "</div>";
+          panel.style.display = "block";
+          var boot = document.getElementById("ejaz-boot");
+          if (boot) boot.style.display = "none";
+        },
+      };
+
+      window.addEventListener(
+        "error",
+        function (e) {
+          if (e && e.target && e.target.tagName === "SCRIPT") {
+            window.__EJAZ_BOOT__.fail("Failed to load script: " + (e.target.src || "inline module"));
+          } else if (e && e.error) {
+            window.__EJAZ_BOOT__.fail(e.error);
+          }
+        },
+        true
+      );
+
+      window.addEventListener("unhandledrejection", function (e) {
+        window.__EJAZ_BOOT__.fail(e.reason);
+      });
+
+      // If the application has not mounted within 20 seconds, report it explicitly
+      // rather than leaving the visitor staring at an empty page.
+      setTimeout(function () {
+        var root = document.getElementById("root");
+        if (document.getElementById("ejaz-boot") && root && root.children.length === 0) {
+          window.__EJAZ_BOOT__.fail(
+            "The application did not mount within 20 seconds.\n\nMost common cause: the development server is not running, or this preview was opened while it was restarting.\n\nVerify the server is up, then reload."
+          );
+        }
+      }, 20000);
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

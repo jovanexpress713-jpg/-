@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { cn } from "./utils/cn";
 import { SettingsProvider, useSettings } from "./settings";
 import { FleetStoreProvider, useFleetStore } from "./state/fleetStore";
-import { VehicleAssetProvider } from "./state/vehicleAssetStore";
+import { VehicleAssetProvider, useVehicleAssets } from "./state/vehicleAssetStore";
 import { ToastProvider } from "./components/Toast";
 import { WebConsole } from "./components/WebConsole";
 import { ConsoleAuthGate } from "./components/ConsoleAuthGate";
@@ -288,6 +288,16 @@ function Shell() {
   const [session, setSession] = useState<any | null>(null);
   const [checking, setChecking] = useState(true);
   const [preAuthView, setPreAuthView] = useState<"web" | "mobile">("web");
+  const { refresh: refreshVehicleAssets } = useVehicleAssets();
+
+  /**
+   * The asset registry is a protected resource, so the initial load (before
+   * sign-in) is rejected by design. Reload it the moment a session exists so
+   * the freshly published official images and models go live without a refresh.
+   */
+  useEffect(() => {
+    if (session) refreshVehicleAssets();
+  }, [session, refreshVehicleAssets]);
 
   // Restore an authenticated session on load so refreshes keep the operator signed in
   useEffect(() => {

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-03T14:37:36.703Z",
+  "types": {
+    "flatbed": {
+      "type": "flatbed",
+      "officialImage": "/uploads/vehicle-assets/flatbed/official.png",
+      "imageSource": "OFFICIAL_UPLOAD",
+      "model": {
+        "url": null,
+        "format": null,
+        "source": "NONE",
+        "scale": 1,
+        "rotationY": 0,
+        "yOffset": 0
+      },
+      "originalImage": "/uploads/vehicle-assets/flatbed/original.png",
+      "imageFileName": "official-flatbed.png",
+      "imageUpdatedAt": "2026-10-03T14:37:35.881Z"
+    },
+    "reefer": {
+      "type": "reefer",
+      "officialImage": "/uploads/vehicle-assets/reefer/official.png",
+      "imageSource": "OFFICIAL_UPLOAD",
+      "model": {
+        "url": null,
+        "format": null,
+        "source": "NONE",
+        "scale": 1,
+        "rotationY": 0,
+        "yOffset": 0
+      },
+      "originalImage": "/uploads/vehicle-assets/reefer/original.png",
+      "imageFileName": "official-reefer.png",
+      "imageUpdatedAt": "2026-10-03T14:37:36.149Z"
+    },
+    "dry": {
+      "type": "dry",
+      "officialImage": "/uploads/vehicle-assets/dry/official.png",
+      "imageSource": "OFFICIAL_UPLOAD",
+      "model": {
+        "url": null,
+        "format": null,
+        "source": "NONE",
+        "scale": 1,
+        "rotationY": 0,
+        "yOffset": 0
+      },
+      "originalImage": "/uploads/vehicle-assets/dry/original.png",
+      "imageFileName": "official-dry.png",
+      "imageUpdatedAt": "2026-10-03T14:37:36.419Z"
+    },
+    "curtain": {
+      "type": "curtain",
+      "officialImage": "/uploads/vehicle-assets/curtain/official.png",
+      "imageSource": "OFFICIAL_UPLOAD",
+      "model": {
+        "url": null,
+        "format": null,
+        "source": "NONE",
+        "scale": 1,
+        "rotationY": 0,
+        "yOffset": 0
+      },
+      "originalImage": "/uploads/vehicle-assets/curtain/original.png",
+      "imageFileName": "official-curtain.png",
+      "imageUpdatedAt": "2026-10-03T14:37:36.703Z"
+    }
+  },
+  "vehicles": {}
+}

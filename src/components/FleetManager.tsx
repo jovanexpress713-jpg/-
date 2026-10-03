@@ -84,17 +84,50 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
         reader.onerror = () => reject(new Error("read-error"));
         reader.readAsDataURL(file);
       });
-      await apiClient.vehicleAssets.publishVehicleImage(vehicleId, { data, fileName: file.name });
-      updateVehicle(vehicleId, { customImage: registry.vehicles[vehicleId]?.url } as any);
+      const res = await apiClient.vehicleAssets.publishVehicleImage(vehicleId, { data, fileName: file.name });
+      const publishedUrl: string | undefined = res?.image?.url || res?.asset?.url || res?.url;
+      // The vehicle keeps its own photograph; the category asset stays the baseline.
+      updateVehicle(vehicleId, { customImage: publishedUrl } as any);
       await refreshVehicleAssets();
-      setShowVehicleDetailsModal((prev) => (prev && prev.id === vehicleId ? { ...prev } : prev));
-      alert(t("Vehicle photograph published across the platform", "تم نشر صورة المركبة في كل النظام"));
+      setShowVehicleDetailsModal((prev) =>
+        prev && prev.id === vehicleId ? ({ ...prev, customImage: publishedUrl } as any) : prev,
+      );
+      toast(t("Photograph updated everywhere", "تم تحديث الصورة في كل الشاشات"), `${file.name}`);
+      setAssetError(null);
     } catch (err: any) {
-      setAssetError(err?.message || t("Upload failed", "فشل الرفع"));
+      const message = err?.message || t("Upload failed", "فشل الرفع");
+      setAssetError(message);
+      toast(t("Could not publish the photograph", "تعذّر نشر الصورة"), message);
     } finally {
       setIsPhotoBusy(false);
     }
   };
+
+  /** Card-level upload: publishes a photograph for one vehicle and refreshes every screen. */
+  const requestVehiclePhoto = (vehicleId: string) => {
+    setPhotoTargetVehicleId(vehicleId);
+    setAssetError(null);
+    vehiclePhotoInputRef.current?.click();
+  };
+
+  const [photoDropVehicleId, setPhotoDropVehicleId] = useState<string | null>(null);
+
+  const cardDropProps = (vehicleId: string) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (!e.dataTransfer.types.includes("Files")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (photoDropVehicleId !== vehicleId) setPhotoDropVehicleId(vehicleId);
+    },
+    onDragLeave: () => setPhotoDropVehicleId((cur) => (cur === vehicleId ? null : cur)),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setPhotoDropVehicleId(null);
+      const file = e.dataTransfer.files?.[0];
+      if (file) publishVehiclePhoto(file, vehicleId);
+    },
+  });
 
   // Selected driver for assignment
   const [selectedDriverId, setSelectedDriverId] = useState("");
@@ -377,13 +410,20 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                 key={v.id}
                 className="bg-surface-1 rounded-[14px] border border-border-subtle hover:border-brand/40 transition-all duration-200 shadow-md flex flex-col justify-between overflow-hidden"
               >
-                {/* 3D Viewport or Official Image Header */}
-                <div className="relative h-[200px] w-full bg-surface-2 border-b border-white/5 overflow-hidden">
+                {/* 3D Viewport or Official Image Header — drop a photograph here to apply it instantly */}
+                <div
+                  {...cardDropProps(v.id)}
+                  className={cn(
+                    "relative h-[200px] w-full bg-surface-2 border-b border-white/5 overflow-hidden transition-shadow",
+                    photoDropVehicleId === v.id && "ring-2 ring-brand ring-inset"
+                  )}
+                >
                   {(cardDisplayMode[v.id] ?? "3d") === "3d" ? (
                     <Vehicle3DViewer
                       vehicleType={normType}
                       vehiclePlate={v.plate}
                       vehicleModel={v.model}
+                      vehicle={v as any}
                       previewMode={false}
                       height="100%"
                       compact={true}
@@ -446,6 +486,34 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                       {t("Asset", "صورة")}
                     </button>
                   </div>
+
+                  {/* Per-vehicle photograph: publish a photograph for THIS unit.
+                      It applies immediately here, in the fleet register, in the
+                      Android app and on every trip/shipment card. */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      requestVehiclePhoto(v.id);
+                    }}
+                    disabled={isPhotoBusy}
+                    title={t("Upload a photograph for this vehicle", "رفع صورة لهذه المركبة")}
+                    className="absolute bottom-2.5 end-2.5 z-10 inline-flex items-center gap-1 rounded-full border border-brand/40 bg-black/75 px-2.5 py-1 text-[10px] font-bold text-brand backdrop-blur-md transition-colors hover:bg-brand hover:text-on-brand disabled:opacity-50"
+                  >
+                    <IconUpload size={12} />
+                    {isPhotoBusy && photoTargetVehicleId === v.id
+                      ? t("Publishing…", "جارٍ النشر…")
+                      : t("Change photo", "تغيير الصورة")}
+                  </button>
+
+                  {photoDropVehicleId === v.id && (
+                    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-1 bg-black/70 text-center">
+                      <IconUpload size={22} className="text-brand" />
+                      <span className="text-[11.5px] font-bold text-brand">
+                        {t("Drop to apply to this vehicle", "أفلت الصورة لتُطبَّق على هذه المركبة")}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Custom Image Indicator if present */}
                   {v.customImage && cardDisplayMode[v.id] === "image" && (

@@ -33,10 +33,10 @@ export const VEHICLE_ASSET_TYPE_META: Record<VehicleAssetTypeId, { ar: string; e
 
 /** Baseline official assets shipped with the project (used until an upload supersedes them). */
 export const DEFAULT_TYPE_IMAGES: Record<VehicleAssetTypeId, string> = {
-  flatbed: "/images/trucks/scania-flatbed.jpg",
-  reefer: "/images/trucks/mb-reefer.jpg",
-  dry: "/images/trucks/volvo-container.jpg",
-  curtain: "/images/trucks/mb-curtain.jpg",
+  flatbed: "/images/trucks/official/official-flatbed.png",
+  reefer: "/images/trucks/official/official-reefer.png",
+  dry: "/images/trucks/official/official-dry.png",
+  curtain: "/images/trucks/official/official-curtain.png",
 };
 
 export interface VehicleModelAsset {

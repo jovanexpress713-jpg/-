@@ -3,6 +3,8 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 interface Props {
   children: ReactNode;
   fallbackTitle?: string;
+  /** Optional reporter so a fatal render error also reaches the boot surface. */
+  onError?: (error: Error, errorInfo?: ErrorInfo) => void;
 }
 
 interface State {
@@ -22,6 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("[EJAZ Enterprise System] Uncaught error:", error, errorInfo);
+    this.props.onError?.(error, errorInfo);
   }
 
   private handleReset = () => {

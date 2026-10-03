@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { useFleetStore } from "../state/fleetStore";
@@ -8,7 +8,7 @@ import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { TruckImage } from "./TruckImage";
 import { apiClient } from "../services/apiClient";
 import { useToast } from "./Toast";
-import { IconUpload, IconTruck, IconCheck, IconAlertCircle, IconClose } from "./Icons";
+import { IconUpload, IconTruck, IconCheck, IconAlertCircle, IconClose, IconSearch } from "./Icons";
 
 /**
  * EJAZ Transport — Official Vehicle Asset Management.
@@ -50,6 +50,8 @@ export function VehicleAssetsManager() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<"image" | "model" | null>(null);
+  const [vehicleQuery, setVehicleQuery] = useState("");
+  const [vehicleDropId, setVehicleDropId] = useState<string | null>(null);
 
   const dropProps = (kind: "image" | "model") => ({
     onDragOver: (e: React.DragEvent) => {
@@ -62,9 +64,14 @@ export function VehicleAssetsManager() {
       setDropTarget(null);
       const file = e.dataTransfer.files?.[0];
       if (!file) return;
-      setImageTarget(kind === "image" ? { kind: "type", type: activeType } : null);
-      if (kind === "image") handleImagePicked(file);
-      else handleModelPicked(file);
+      if (kind === "image") {
+        const target: ImageTarget = { kind: "type", type: activeType };
+        setImageTarget(target);
+        handleImagePicked(file, target);
+      } else {
+        setImageTarget(null);
+        handleModelPicked(file);
+      }
     },
   });
 
@@ -75,7 +82,20 @@ export function VehicleAssetsManager() {
 
   const asset: VehicleTypeAsset = registry.types[activeType];
 
-  const handleImagePicked = async (file: File) => {
+  /** Every truck in the fleet is reachable, filtered by plate / model / category. */
+  const filteredVehicles = useMemo(() => {
+    const q = vehicleQuery.trim().toLowerCase();
+    if (!q) return trucks;
+    return trucks.filter((v) =>
+      `${v.plate} ${v.brand} ${v.model} ${registry.types[normalizeVehicleType(v.body)].arabicName} ${registry.types[normalizeVehicleType(v.body)].englishName}`
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [trucks, vehicleQuery, registry]);
+
+  type ImageTarget = { kind: "type"; type: CanonicalVehicleTypeId } | { kind: "vehicle"; vehicleId: string };
+
+  const handleImagePicked = async (file: File, target: ImageTarget | null = imageTarget) => {
     const ext = `.${file.name.split(".").pop()?.toLowerCase() || ""}`;
     if (!ALLOWED_IMAGE_EXT.includes(ext)) {
       setError(t("Unsupported image format. Use PNG, JPG, WEBP or AVIF.", "صيغة الصورة غير مدعومة. استخدم PNG أو JPG أو WEBP أو AVIF."));
@@ -96,13 +116,20 @@ export function VehicleAssetsManager() {
     try {
       const data = await readFileAsBase64(file);
 
-      if (imageTarget?.kind === "vehicle") {
-        await apiClient.vehicleAssets.publishVehicleImage(imageTarget.vehicleId, { data, fileName: file.name });
-        pushToast(t("Vehicle photograph published", "تم نشر صورة المركبة"));
+      if (target?.kind === "vehicle") {
+        await apiClient.vehicleAssets.publishVehicleImage(target.vehicleId, { data, fileName: file.name });
+        const plate = trucks.find((v) => v.id === target.vehicleId)?.plate;
+        pushToast(
+          t("Vehicle photograph published — applied everywhere now", "تم نشر صورة المركبة — طُبِّقت على كل الشاشات فوراً"),
+          plate,
+        );
       } else {
-        const type = imageTarget?.kind === "type" ? imageTarget.type : activeType;
+        const type = target?.kind === "type" ? target.type : activeType;
         await apiClient.vehicleAssets.publishTypeImage(type, { data, fileName: file.name });
-        pushToast(t("Official category image published", "تم نشر الصورة الرسمية للنوع"));
+        pushToast(
+          t("Official category image published — applied everywhere now", "تم نشر الصورة الرسمية للنوع — طُبِّقت على كل الشاشات فوراً"),
+          APPROVED_VEHICLE_TYPES_LIST.find((x) => x.id === type)?.arabicName,
+        );
       }
 
       await refresh();
@@ -349,7 +376,8 @@ export function VehicleAssetsManager() {
 
             <button
               onClick={() => {
-                setImageTarget({ kind: "type", type: activeType });
+                const target: ImageTarget = { kind: "type", type: activeType };
+                setImageTarget(target);
                 setError(null);
                 imageInputRef.current?.click();
               }}
@@ -516,17 +544,57 @@ export function VehicleAssetsManager() {
             </h2>
             <p className="mb-3 text-[11px] leading-relaxed text-text-muted">
               {t(
-                "Optional per-vehicle photograph. When published it overrides the category image for that unit only; the type itself remains one of the four approved categories.",
-                "صورة فعلية اختيارية لكل مركبة. عند نشرها تحل محل صورة النوع لهذه المركبة فقط؛ ويبقى نوع المركبة أحد الأنواع الأربعة المعتمدة.",
+                "Upload a photograph for any truck in the fleet — it replaces the category image for that unit only and is applied on every screen the moment it is published. Drag a file onto a card, or use its upload button.",
+                "ارفع صورة لأي شاحنة في الأسطول — تحل محل صورة النوع لهذه المركبة فقط وتُطبَّق على كل الشاشات لحظة النشر. أفلت الملف على البطاقة أو استخدم زر الرفع.",
               )}
             </p>
 
-            <div className="grid gap-2 sm:grid-cols-2">
-              {trucks.slice(0, 8).map((v) => {
+            <div className="mb-2.5 flex items-center gap-2 rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-1.5">
+              <IconSearch size={14} className="shrink-0 text-text-muted" />
+              <input
+                value={vehicleQuery}
+                onChange={(e) => setVehicleQuery(e.target.value)}
+                placeholder={t("Search by plate, model or type…", "ابحث باللوحة أو الموديل أو النوع…")}
+                className="w-full bg-transparent text-[11.5px] text-text-primary outline-none placeholder:text-text-muted"
+              />
+              {vehicleQuery && (
+                <button
+                  onClick={() => setVehicleQuery("")}
+                  className="shrink-0 text-text-muted transition-colors hover:text-brand"
+                  title={t("Clear", "مسح")}
+                >
+                  <IconClose size={13} />
+                </button>
+              )}
+            </div>
+
+            <div className="scroll-thin grid max-h-[420px] gap-2 overflow-y-auto pe-1 sm:grid-cols-2">
+              {filteredVehicles.map((v) => {
                 const published = registry.vehicles[v.id]?.url;
                 const typeId = normalizeVehicleType(v.body);
                 return (
-                  <div key={v.id} className="flex items-center gap-2.5 rounded-[12px] border border-border-subtle bg-surface-2 p-2.5">
+                  <div
+                    key={v.id}
+                    onDragOver={(e) => {
+                      if (!e.dataTransfer.types.includes("Files")) return;
+                      e.preventDefault();
+                      setVehicleDropId(v.id);
+                    }}
+                    onDragLeave={() => setVehicleDropId((cur) => (cur === v.id ? null : cur))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setVehicleDropId(null);
+                      const file = e.dataTransfer.files?.[0];
+                      if (!file) return;
+                      const target: ImageTarget = { kind: "vehicle", vehicleId: v.id };
+                      setImageTarget(target);
+                      handleImagePicked(file, target);
+                    }}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-[12px] border bg-surface-2 p-2.5 transition-colors",
+                      vehicleDropId === v.id ? "border-brand bg-brand/10 ring-1 ring-brand/40" : "border-border-subtle",
+                    )}
+                  >
                     <div className="h-11 w-14 shrink-0 overflow-hidden rounded-[8px] bg-surface-3">
                       <TruckImage vehicle={v as any} className="h-full w-full object-cover" />
                     </div>
@@ -546,14 +614,17 @@ export function VehicleAssetsManager() {
                     <div className="flex shrink-0 items-center gap-1">
                       <button
                         onClick={() => {
-                          setImageTarget({ kind: "vehicle", vehicleId: v.id });
+                          const target: ImageTarget = { kind: "vehicle", vehicleId: v.id };
+                          setImageTarget(target);
                           setError(null);
                           vehicleImageInputRef.current?.click();
                         }}
-                        className="rounded-[8px] border border-border-subtle p-1.5 text-text-secondary transition-colors hover:text-brand"
+                        disabled={busy === "image"}
+                        className="inline-flex items-center gap-1 rounded-[8px] border border-brand/40 px-2 py-1 text-[10.5px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand disabled:opacity-50"
                         title={t("Publish a photograph for this vehicle", "نشر صورة لهذه المركبة")}
                       >
-                        <IconUpload size={13} />
+                        <IconUpload size={12} />
+                        {published ? t("Replace", "تبديل") : t("Upload", "رفع")}
                       </button>
                       {published && (
                         <button

@@ -21,6 +21,12 @@ interface Vehicle3DViewerProps {
   vehicleType?: string;
   vehicleModel?: string;
   vehiclePlate?: string;
+  /**
+   * When the viewer is bound to a real unit, the reference photograph follows
+   * that vehicle: a photograph published for it (or uploaded by an operator)
+   * supersedes the category image the moment it is published.
+   */
+  vehicle?: { id?: string; body?: string | null; customImage?: string | null } | null;
   previewMode?: boolean; // If true: allows carousel switching. If false: locked to real vehicle type.
   onTypeChange?: (newType: CanonicalVehicleTypeId) => void;
   className?: string;
@@ -33,6 +39,7 @@ export function Vehicle3DViewer({
   vehicleType = "curtain",
   vehicleModel,
   vehiclePlate,
+  vehicle,
   previewMode = false,
   onTypeChange,
   className,
@@ -65,7 +72,7 @@ export function Vehicle3DViewer({
    *  • ILLUSTRATIVE    — optional generic geometry, explicitly labelled as a demo
    *                      stand-in and never presented as the fleet unit.
    */
-  const { typeModel } = useVehicleAssets();
+  const { typeModel, vehicleImage, typeImage } = useVehicleAssets();
   const [assetMode, setAssetMode] = useState<"OFFICIAL_MODEL" | "REFERENCE_ONLY" | "ILLUSTRATIVE">("REFERENCE_ONLY");
   const [allowIllustrative, setAllowIllustrative] = useState(false);
 
@@ -912,6 +919,14 @@ export function Vehicle3DViewer({
 
   const meta = getVehicleTypeMeta(activeType);
 
+  /**
+   * Reference photograph shown while no official GLB/GLTF is published.
+   * Bound to a vehicle: that vehicle's own photograph (published or uploaded),
+   * otherwise the official photograph of the active category.
+   */
+  const vehiclePhotoSrc = vehicle ? vehicleImage(vehicle) : null;
+  const showVehiclePhoto = Boolean(vehiclePhotoSrc && vehiclePhotoSrc !== typeImage(activeType));
+
   return (
     <div
       ref={containerRef}
@@ -956,18 +971,35 @@ export function Vehicle3DViewer({
         <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center px-4 pointer-events-none">
           <div className="relative w-full max-w-[420px]">
             <div className="overflow-hidden rounded-[14px] border border-border-subtle bg-surface-1/70 shadow-2xl backdrop-blur-sm">
-              <TruckImage
-                body={activeType}
-                alt={`${meta.arabicName} — ${t("official reference asset", "المرجع الرسمي")}`}
-                className="h-[190px] w-full object-cover"
-                loading="eager"
-              />
+              {vehicle ? (
+                <TruckImage
+                  vehicle={vehicle}
+                  alt={`${meta.arabicName} — ${t("official reference asset", "المرجع الرسمي")}`}
+                  className="h-[190px] w-full object-cover"
+                  loading="eager"
+                />
+              ) : (
+                <TruckImage
+                  body={activeType}
+                  alt={`${meta.arabicName} — ${t("official reference asset", "المرجع الرسمي")}`}
+                  className="h-[190px] w-full object-cover"
+                  loading="eager"
+                />
+              )}
             </div>
 
             <div className="mt-2 flex flex-col items-center gap-1.5">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-status-waiting/30 bg-status-waiting/12 px-3 py-1 text-[10.5px] font-bold text-status-waiting">
                 <span className="h-1.5 w-1.5 rounded-full bg-status-waiting" />
-                {t("Official reference image — interactive 3D asset not published yet", "الصورة الرسمية للنوع — لم يُرفع المجسم ثلاثي الأبعاد بعد")}
+                {showVehiclePhoto
+                  ? t(
+                      "Vehicle photograph — interactive 3D asset not published yet",
+                      "صورة المركبة — لم يُرفع المجسم ثلاثي الأبعاد بعد",
+                    )
+                  : t(
+                      "Official reference image — interactive 3D asset not published yet",
+                      "الصورة الرسمية للنوع — لم يُرفع المجسم ثلاثي الأبعاد بعد",
+                    )}
               </span>
 
               {showControls && (

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
+import { LOGIN_BACKDROP } from "../data/catalog";
 import { BrandLogo } from "../components/Logo";
 import { apiClient, setAuthToken } from "../services/apiClient";
 import {
@@ -17,6 +18,8 @@ import {
 
 interface LoginScreenProps {
   onLoginSuccess: (user: any) => void;
+  /** Opens the formal registration-request flow (reviewed by the administration). */
+  onRegister?: (type: "DRIVER" | "CUSTOMER") => void;
 }
 
 interface DemoAccount {
@@ -59,7 +62,7 @@ const OFFICIAL_DEMO_ACCOUNTS: DemoAccount[] = [
   },
 ];
 
-export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
+export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
   const { t, lang } = useSettings();
 
   // Inputs & Credentials
@@ -180,11 +183,13 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 
   return (
     <div className="relative h-full w-full overflow-y-auto overflow-x-hidden bg-[#070b14] text-white select-none flex flex-col justify-between">
-      {/* 1. Cinematic Full-Screen Background: Luxury Mercedes-Benz Actros Truck */}
+      {/* 1. Cinematic Full-Screen Background: the official EJAZ Actros photograph.
+             A portrait crop of the published flatbed asset — the real fleet truck,
+             composited onto the dark UI. No other vehicle is shown. */}
       <div className="absolute inset-0 h-full w-full overflow-hidden select-none pointer-events-none z-0">
         <img
-          src="/images/actros_login_bg.jpg"
-          alt="Mercedes-Benz Actros Heavy Freight Truck"
+          src={LOGIN_BACKDROP}
+          alt="شاحنة مرسيدس-بنز أكتوس من أسطول مؤسسة إيجاز للنقليات"
           className="h-full w-full object-cover object-top sm:object-center transform scale-100 transition-transform duration-700"
           referrerPolicy="no-referrer"
           loading="eager"
@@ -349,6 +354,40 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               <span>{t("Sign In", "تسجيل الدخول")}</span>
             )}
           </button>
+
+          {/* 9b. Registration request — creating an account is a request that the
+                 administration reviews before the account is activated. */}
+          {onRegister && (
+            <div className="mt-3 rounded-xl border border-slate-700/60 bg-[#0e1626]/70 p-3">
+              <div className="text-[11.5px] font-bold text-slate-200">
+                {t("No account yet?", "لا تملك حسابًا؟")}
+              </div>
+              <p className="mt-0.5 text-[10.5px] leading-relaxed text-slate-400">
+                {t(
+                  "Submit a formal registration request — the administration reviews it, then your account is activated.",
+                  "قدّم طلب تسجيل رسمي — تراجعه الإدارة ثم يتم اعتماد حسابك وتفعيله.",
+                )}
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onRegister("DRIVER")}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-brand/40 bg-brand/10 py-2 text-[11.5px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
+                >
+                  <IconTruck size={14} />
+                  {t("Driver request", "طلب تسجيل سائق")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRegister("CUSTOMER")}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-accent-2/40 bg-accent-2/10 py-2 text-[11.5px] font-bold text-accent-2 transition-colors hover:bg-accent-2 hover:text-white"
+                >
+                  <IconProfile size={14} />
+                  {t("Customer request", "طلب تسجيل عميل")}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* 10 & 12. Switch Account & Demo Accounts Row */}
           <div className="pt-2 flex items-center justify-between text-[11.5px] border-t border-slate-800/80">

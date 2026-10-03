@@ -1,7 +1,7 @@
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { useFleetStore } from "../state/fleetStore";
-import { imageFor, BODY_TYPES } from "../data/catalog";
+import { BODY_TYPES } from "../data/catalog";
 import { TruckImage } from "./TruckImage";
 
 export function OwnerPortal() {
@@ -129,7 +129,7 @@ export function OwnerPortal() {
                     <td className="py-3 flex items-center gap-3">
                       <span className="block h-10 w-16 overflow-hidden rounded-[6px] bg-black p-0.5 shrink-0">
                         <TruckImage
-                          src={imageFor(tk.brand, tk.body)}
+                          vehicle={tk as any}
                           alt={tk.model}
                           className="h-full w-full object-contain"
                         />

@@ -9,7 +9,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "test": "tsx tests/runAllTests.ts"
+    "test": "tsx tests/runAllTests.ts",
+    "verify:fleet-imagery": "tsx scripts/verify-fleet-imagery.tsx",
+    "verify:upload": "node scripts/verify-upload-propagation.mjs",
+    "verify:registration": "node scripts/verify-registration-flow.mjs"
   },
   "dependencies": {
     "@types/canvas-confetti": "^1.9.0",
@@ -41,7 +44,7 @@
     "tailwindcss": "4.1.17",
     "tsx": "^4.23.15",
     "typescript": "5.9.3",
-    "vite": "7.3.2",
+    "vite": "^7.3.6",
     "vite-plugin-singlefile": "2.3.0"
   }
 }

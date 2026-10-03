@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyToken, type TokenPayload } from "./jwt";
+import { statusForUser } from "../services/registrationService";
 
 export interface AuthenticatedRequest extends Request {
   user?: TokenPayload;
@@ -11,7 +12,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "trips.view", "trips.approve", "trips.cancel", "trips.reopen", "trips.assign",
     "finance.view", "finance.approve", "finance.settle", "claims.view", "claims.manage",
     "customers.view", "customers.manage", "notifications.view", "pod.view",
-    "vehicles.view", "drivers.view", "reports.view", "reports.export", "audit.view", "settings.manage"
+    "vehicles.view", "drivers.view", "reports.view", "reports.export", "audit.view", "settings.manage",
+    "registrations.view", "registrations.review"
   ],
   OPERATIONS_MANAGER: [
     "trips.view", "trips.create", "trips.assign", "trips.transition", "trips.cancel", "trips.approve",
@@ -19,7 +21,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "vehicles.view", "vehicles.create", "vehicles.edit", "vehicles.assign",
     "drivers.view", "drivers.create", "drivers.edit",
     "gps.view", "gps.configure", "documents.view", "documents.upload",
-    "reports.view", "audit.view"
+    "reports.view", "audit.view", "registrations.view", "registrations.review"
   ],
   DISPATCHER: [
     "trips.view", "trips.create", "trips.assign", "trips.transition",
@@ -87,6 +89,13 @@ export function requireRole(...roles: string[]) {
       return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
 
+    if (!accountIsApproved(req.user)) {
+      return res.status(403).json({
+        error: "Account access is pending registration approval",
+        code: "ACCOUNT_PENDING_APPROVAL",
+      });
+    }
+
     if (req.user.role === "SUPER_ADMIN" || roles.includes(req.user.role)) {
       return next();
     }
@@ -105,21 +114,40 @@ export function hasPermission(role: string | undefined, permission: string): boo
   return userPerms.includes("*") || userPerms.includes(permission);
 }
 
+function accountIsApproved(user: TokenPayload): boolean {
+  if (user.role !== "DRIVER" && user.role !== "CUSTOMER") return true;
+
+  const registration = statusForUser({ userId: user.userId, email: user.email });
+  if (registration) return registration.approved;
+  if (user.registrationId) return user.registrationStatus === "APPROVED" || user.accountApproved === true;
+  return user.accountApproved !== false;
+}
+
+function effectiveHasPermission(user: TokenPayload, permission: string): boolean {
+  return accountIsApproved(user) && hasPermission(user.role, permission);
+}
+
 export function requirePermission(...permissions: string[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
 
+    if (!accountIsApproved(req.user)) {
+      return res.status(403).json({
+        error: "Account access is pending registration approval",
+        code: "ACCOUNT_PENDING_APPROVAL",
+      });
+    }
+
     if (req.user.role === "SUPER_ADMIN") {
       return next();
     }
 
-    // Wildcard from the role matrix, or any of the accepted permissions for this endpoint
-    const granted = permissions.some((p) => hasPermission(req.user?.role, p));
-    if (granted) {
-      return next();
-    }
+    // Role permissions stay authoritative, but are evaluated only after the
+    // live registration state confirms that an applicant account is approved.
+    const granted = permissions.some((permission) => effectiveHasPermission(req.user!, permission));
+    if (granted) return next();
 
     return res.status(403).json({
       error: `Access denied. Missing permission: ${permissions.join(" | ")}`,
@@ -153,7 +181,7 @@ export function requireProviderKey(configuredKey: string, fallbackPermission = "
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const payload = verifyToken(authHeader.split(" ")[1]);
-      if (payload && hasPermission(payload.role, fallbackPermission)) {
+      if (payload && effectiveHasPermission(payload, fallbackPermission)) {
         req.user = payload;
         return next();
       }
@@ -171,7 +199,7 @@ export function canAccessTrip(
   user: TokenPayload | undefined,
   trip: { customerId?: string; driverId?: string; additionalDriverId?: string; status?: string }
 ): boolean {
-  if (!user) return false;
+  if (!user || !accountIsApproved(user)) return false;
   if (user.role === "SUPER_ADMIN") return true;
 
   if (user.role === "CUSTOMER") {

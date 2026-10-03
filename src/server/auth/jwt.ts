@@ -10,6 +10,9 @@ export interface TokenPayload {
   driverId?: string;
   customerId?: string;
   permissions?: string[];
+  registrationId?: string;
+  registrationStatus?: string;
+  accountApproved?: boolean;
 }
 
 export async function hashPassword(plain: string): Promise<string> {

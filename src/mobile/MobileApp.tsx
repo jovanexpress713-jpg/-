@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { LoginScreen } from "./LoginScreen";
+import { RegistrationScreen, RegistrationStatusScreen } from "./RegistrationFlow";
 import { ClientMode } from "./ClientMode";
 import { DriverMode } from "./DriverMode";
 import { SplashScreen } from "./SplashScreen";
@@ -9,7 +10,7 @@ import { apiClient, setAuthToken } from "../services/apiClient";
 import { IconGlobe, IconTruck, IconProfile } from "../components/Icons";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
-type ScreenFlow = "welcome" | "login" | "app";
+type ScreenFlow = "welcome" | "login" | "register" | "app";
 
 export function MobileApp({ onStaffLogin }: { onStaffLogin?: (user: any) => void } = {}) {
   const { t, lang, setLang, theme, setTheme } = useSettings();
@@ -27,6 +28,7 @@ export function MobileApp({ onStaffLogin }: { onStaffLogin?: (user: any) => void
     return currentUser ? "app" : "login";
   });
   const [welcomeReplayKey, setWelcomeReplayKey] = useState(1);
+  const [registerType, setRegisterType] = useState<"DRIVER" | "CUSTOMER">("DRIVER");
 
   // Sync current user to local cache
   useEffect(() => {
@@ -65,6 +67,14 @@ export function MobileApp({ onStaffLogin }: { onStaffLogin?: (user: any) => void
     setCurrentUser(user);
     setCurrentScreen("app");
   };
+
+  /**
+   * An account created through a registration request only receives the account
+   * functions after the administration approves it. Until then the applicant can
+   * sign in and follow the request status.
+   */
+  const isApplicantRole = currentUser?.role === "DRIVER" || currentUser?.role === "CUSTOMER";
+  const awaitingApproval = isApplicantRole && currentUser?.accountApproved === false;
 
   const handleLogout = () => {
     setAuthToken(null);
@@ -172,11 +182,45 @@ export function MobileApp({ onStaffLogin }: { onStaffLogin?: (user: any) => void
 
           {currentScreen === "login" && (
             <ErrorBoundary fallbackTitle="حدث خطأ في تحميل شاشة تسجيل الدخول">
-              <LoginScreen onLoginSuccess={handleLoginSuccess} />
+              <LoginScreen
+                onLoginSuccess={handleLoginSuccess}
+                onRegister={(kind) => {
+                  setRegisterType(kind);
+                  setCurrentScreen("register");
+                }}
+              />
             </ErrorBoundary>
           )}
 
-          {currentScreen === "app" && currentUser && (
+          {currentScreen === "register" && (
+            <ErrorBoundary fallbackTitle="حدث خطأ في تحميل طلب التسجيل">
+              <RegistrationScreen
+                initialType={registerType}
+                onBackToLogin={() => setCurrentScreen("login")}
+                onSubmitted={() => setCurrentScreen("login")}
+              />
+            </ErrorBoundary>
+          )}
+
+          {currentScreen === "app" && currentUser && awaitingApproval && (
+            <ErrorBoundary fallbackTitle="حدث خطأ في تحميل حالة الطلب">
+              <RegistrationStatusScreen
+                user={currentUser}
+                onLogout={handleLogout}
+                onApproved={async () => {
+                  // Approved: refresh the session so the account functions unlock.
+                  try {
+                    const me = await apiClient.auth.me();
+                    setCurrentUser(me);
+                  } catch {
+                    /* keep the current session */
+                  }
+                }}
+              />
+            </ErrorBoundary>
+          )}
+
+          {currentScreen === "app" && currentUser && !awaitingApproval && (
             currentUser.role === "DRIVER" ? (
               <DriverMode user={currentUser} onLogout={handleLogout} />
             ) : (

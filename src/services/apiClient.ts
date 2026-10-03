@@ -54,6 +54,24 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   return response.json();
 }
 
+/** Authenticated binary fetch for private registration documents. */
+async function requestBlob(endpoint: string): Promise<Blob> {
+  const headers = new Headers();
+  if (authToken) headers.set("Authorization", `Bearer ${authToken}`);
+  const response = await fetch(endpoint, { headers, cache: "no-store" });
+  if (!response.ok) {
+    let errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+    try {
+      const errJson = await response.json();
+      errorMsg = errJson.error || errorMsg;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(errorMsg);
+  }
+  return response.blob();
+}
+
 export const apiClient = {
   auth: {
     login: (email: string, password: string) =>
@@ -222,6 +240,40 @@ export const apiClient = {
     health: () => request<any>("/api/health"),
     mapsConfig: () => request<any>("/api/system/maps-config"),
   },
+  /**
+   * Registration = a formal request reviewed by the administration before the
+   * account is activated (never an automatic approval).
+   */
+  registrations: {
+    /** Public submission (no session required). */
+    submit: (payload: {
+      type: "DRIVER" | "CUSTOMER";
+      fields: Record<string, string>;
+      password: string;
+      documents?: { kind: string; fileName?: string; data: string }[];
+      submit?: boolean;
+    }) => request<any>("/api/registrations", { method: "POST", body: JSON.stringify(payload) }),
+    /** The form contract: required fields and documents per account type. */
+    schema: () => request<any>("/api/registrations/schema"),
+    /** The signed-in applicant follows up on their own request. */
+    mine: () => request<any>("/api/registrations/me"),
+    resubmitMine: (payload: { fields?: Record<string, string>; documents?: { kind: string; fileName?: string; data: string }[] }) =>
+      request<any>("/api/registrations/me/resubmit", { method: "POST", body: JSON.stringify(payload) }),
+    /** Control-room review queue. */
+    list: (filter: { status?: string; type?: string } = {}) => {
+      const qs = new URLSearchParams(Object.entries(filter).filter(([, v]) => !!v) as [string, string][]).toString();
+      return request<any>(`/api/registrations${qs ? `?${qs}` : ""}`);
+    },
+    get: (id: string) => request<any>(`/api/registrations/${encodeURIComponent(id)}`),
+    document: (id: string, documentId: string) =>
+      requestBlob(`/api/registrations/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}`),
+    decide: (id: string, action: "APPROVE" | "NEEDS_COMPLETION" | "REJECT", payload: { reason?: string; missingItems?: string[] }) =>
+      request<any>(`/api/registrations/${id}/decision`, {
+        method: "POST",
+        body: JSON.stringify({ action, ...payload }),
+      }),
+  },
+
   vehicleAssets: {
     getRegistry: () =>
       request<{
