@@ -73,6 +73,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
       </div>
 
       <nav className="scroll-thin mt-7 flex-1 space-y-1 overflow-y-auto px-1">
+        {row("overview", t("Logistics Dashboard", "لوحة المؤشرات"), IconAnalysis)}
         {row("operations", t("Operations Center", "الرئيسية (مركز العمليات)"), IconDashboard)}
         {row("trips", t("Trips", "الرحلات"), IconTruck)}
         {row("shipments", t("Shipments", "الشحنات"), IconCargo)}
