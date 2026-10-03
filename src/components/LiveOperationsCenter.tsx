@@ -10,6 +10,7 @@ import {
   type CanonicalVehicleTypeId,
 } from "../data/vehicleTypes";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
+import { TruckTypeIcon } from "./TruckTypeIcon";
 import {
   IconZoomIn,
   IconZoomOut,
@@ -495,7 +496,7 @@ export function LiveOperationsCenter({
 
         {/* 3. FLOATING VEHICLE / TRIP PANEL (Section 5 Example) */}
         {showFloatingPanel && focusedTrip && (
-          <div className="absolute top-4 end-4 z-20 w-[340px] sm:w-[380px] bg-surface-1/95 backdrop-blur-md rounded-[16px] border border-border-subtle shadow-2xl overflow-hidden flex flex-col animate-fade-up">
+          <div className="absolute top-2 end-2 z-20 flex w-[calc(100%-1rem)] max-w-[340px] flex-col overflow-hidden rounded-[16px] border border-border-subtle bg-surface-1/95 shadow-2xl backdrop-blur-md animate-fade-up sm:top-4 sm:end-4 sm:w-[380px] sm:max-w-none">
             {/* Header */}
             <div className="p-3.5 border-b border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -653,9 +654,10 @@ export function LiveOperationsCenter({
                     {tr.tripNumber}
                   </span>
                   <span
-                    className="px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold"
                     style={{ backgroundColor: meta.badgeBg, color: meta.accentColor }}
                   >
+                    <TruckTypeIcon truckType={tr.cargoType} size={13} />
                     {meta.arabicName}
                   </span>
                 </div>

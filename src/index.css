@@ -51,6 +51,8 @@
   --animate-stripes: stripes-move 0.9s linear infinite;
   --animate-scan: scan-line 2.4s ease-in-out infinite;
   --animate-draw: draw 1.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  --animate-logo-in: logo-in 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  --animate-logo-float: logo-float 4.5s ease-in-out 0.9s infinite;
 
   @keyframes fade-up {
     from { opacity: 0; transform: translateY(12px); }
@@ -76,6 +78,18 @@
     from { stroke-dashoffset: var(--dash, 300); }
     to { stroke-dashoffset: 0; }
   }
+}
+
+/* Brand logo motion — defined in global scope (outside @theme) so the
+   keyframes are always emitted and can be driven by an inline animation
+   shorthand that combines the reveal and the continuous float. */
+@keyframes logo-in {
+  from { opacity: 0; transform: scale(0.86); filter: drop-shadow(0 0 0 color-mix(in oklab, var(--color-brand) 0%, transparent)); }
+  to { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 18px color-mix(in oklab, var(--color-brand) 45%, transparent)); }
+}
+@keyframes logo-float {
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 16px color-mix(in oklab, var(--color-brand) 38%, transparent)); }
+  50% { transform: translateY(-7px) scale(1.025); filter: drop-shadow(0 0 26px color-mix(in oklab, var(--color-brand) 60%, transparent)); }
 }
 
 /* ============================================================
@@ -109,6 +123,17 @@
 
 @layer base {
   html, body, #root { height: 100%; }
+  /* A wide table, canvas or map must never push the document sideways.
+     `clip` (not `hidden`) keeps sticky/absolute children working normally. */
+  html { overflow-x: clip; }
+  body { min-width: 0; }
+  /*
+   * Scroll containers start from zero intrinsic width so a wide table or map
+   * scrolls inside its own box instead of dragging the page sideways. Scoped to
+   * the two overflow-prone utilities rather than applied to every element, so
+   * flex children that need their intrinsic width keep it.
+   */
+  .scroll-x, .table-scroll, .overflow-x-auto { min-width: 0; }
   body {
     background-color: var(--color-surface-0);
     color: var(--color-text-primary);
@@ -123,6 +148,15 @@
   input::placeholder, textarea::placeholder { color: var(--color-text-muted); }
   h1, h2, h3 { letter-spacing: -0.02em; }
   [dir="rtl"] body { letter-spacing: 0; }
+
+  /* Finger-sized touch targets on touch devices. Visual sizing on desktop is
+     untouched — this only fires when the primary pointer is coarse. */
+  @media (pointer: coarse) {
+    .btn-icon-sm { height: 2rem; width: 2rem; }
+    .nav-item { padding-top: 11px; padding-bottom: 11px; }
+    .chip { padding-top: 9px; padding-bottom: 9px; }
+    .field { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  }
 }
 
 @layer components {
@@ -252,6 +286,23 @@
   .range::-moz-range-thumb {
     height: 16px; width: 16px; border: none; border-radius: 99px;
     background: var(--color-brand); cursor: pointer;
+  }
+
+  /* Edge-to-edge horizontal scroller for filter rails and card carousels. */
+  .scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .scroll-x::-webkit-scrollbar { display: none; }
+
+  /* Tables and wide grids scroll inside their own box on phones instead of
+     dragging the whole layout with them. */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
   }
 
   .truck-plate { mix-blend-mode: lighten; filter: contrast(1.3); }

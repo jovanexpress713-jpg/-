@@ -57,7 +57,7 @@ export function RoleSwitcher() {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-1 border-b border-border-subtle px-4 py-2.5 text-[12px]">
       {/* Role Selector Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+      <div className="scroll-x flex max-w-full items-center gap-1.5 py-0.5">
         <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider me-1.5 hidden sm:inline">
           {t("Persona Mode:", "نمط التجربة:")}
         </span>

@@ -298,7 +298,7 @@ export function Dashboard({
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(292px,1fr))] gap-3">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(292px,100%),1fr))] gap-3">
                 {filtered.map((v, i) => (
                   <ShipmentCard
                     key={v.id}

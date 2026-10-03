@@ -3,6 +3,7 @@ import { cn } from "./utils/cn";
 import { SettingsProvider, useSettings } from "./settings";
 import { FleetStoreProvider, useFleetStore } from "./state/fleetStore";
 import { VehicleAssetProvider, useVehicleAssets } from "./state/vehicleAssetStore";
+import { BrandingProvider } from "./state/brandingStore";
 import { ToastProvider } from "./components/Toast";
 import { WebConsole } from "./components/WebConsole";
 import { ConsoleAuthGate } from "./components/ConsoleAuthGate";
@@ -73,7 +74,7 @@ function TopBar({
     <div className="flex h-full flex-col bg-surface-0">
       <header className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border-subtle px-3 py-2 lg:px-5">
         <BrandLogo
-          size={36}
+          size={40}
           sub={t("Heavy Fleet & Logistics Control", "إدارة أسطول النقل الثقيل والرحلات")}
         />
 
@@ -387,9 +388,11 @@ function Shell() {
 export default function App() {
   return (
     <SettingsProvider>
-      <VehicleAssetProvider>
-        <Shell />
-      </VehicleAssetProvider>
+      <BrandingProvider>
+        <VehicleAssetProvider>
+          <Shell />
+        </VehicleAssetProvider>
+      </BrandingProvider>
     </SettingsProvider>
   );
 }

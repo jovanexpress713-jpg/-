@@ -7,6 +7,10 @@ import { runVehicleAssetTests } from "./vehicleAssets.test";
 import { runBootSurfaceTests } from "./bootSurface.test";
 import { runFleetImageryTests } from "./fleetImagery.test";
 import { runRegistrationTests } from "./registration.test";
+import { runUiInteractionTests } from "./uiInteraction.test";
+import { runRuntimeUiTests } from "./runtimeUi.test";
+import { runResponsiveAudit } from "./responsiveAudit.test";
+import { runBrandingTests } from "./branding.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -23,9 +27,13 @@ async function runAll() {
     runBootSurfaceTests();
     runFleetImageryTests();
     await runRegistrationTests();
+    runUiInteractionTests();
+    await runRuntimeUiTests();
+    runResponsiveAudit();
+    runBrandingTests();
 
     console.log("============================================================");
-    console.log("  ✅ ALL 9 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 13 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {

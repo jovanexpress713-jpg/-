@@ -6,7 +6,7 @@ import { RegistrationScreen, RegistrationStatusScreen } from "./RegistrationFlow
 import { ClientMode } from "./ClientMode";
 import { DriverMode } from "./DriverMode";
 import { SplashScreen } from "./SplashScreen";
-import { apiClient, setAuthToken } from "../services/apiClient";
+import { apiClient, setAuthToken, getAuthToken } from "../services/apiClient";
 import { IconGlobe, IconTruck, IconProfile } from "../components/Icons";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
@@ -14,21 +14,70 @@ type ScreenFlow = "welcome" | "login" | "register" | "app";
 
 export function MobileApp({ onStaffLogin }: { onStaffLogin?: (user: any) => void } = {}) {
   const { t, lang, setLang, theme, setTheme } = useSettings();
-  const [currentUser, setCurrentUser] = useState<any | null>(() => {
-    try {
-      const saved = localStorage.getItem("ejaz_current_user");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
-  // Default to login screen when unauthenticated so user immediately sees the login interface
-  const [currentScreen, setCurrentScreen] = useState<ScreenFlow>(() => {
-    return currentUser ? "app" : "login";
-  });
-  const [welcomeReplayKey, setWelcomeReplayKey] = useState(1);
+  /**
+   * The welcome screen is the real entry point of the application — it is not a
+   * destination behind a toolbar button. It renders first, and the session probe
+   * below decides where the operator goes next:
+   *
+   *   no session      → welcome → (tap to continue) → login / register → app
+   *   session present → welcome → session validated → app  (no re-login)
+   */
+  const [currentScreen, setCurrentScreen] = useState<ScreenFlow>("welcome");
   const [registerType, setRegisterType] = useState<"DRIVER" | "CUSTOMER">("DRIVER");
+
+  // Validate a stored session so a signed-in operator is never asked to sign in
+  // again. The cached profile is used only to render instantly; the server
+  // answer is authoritative and a rejected token clears the local session.
+  useEffect(() => {
+    let cancelled = false;
+
+    const restore = async () => {
+      let cached: any = null;
+      try {
+        const saved = localStorage.getItem("ejaz_current_user");
+        cached = saved ? JSON.parse(saved) : null;
+      } catch {
+        cached = null;
+      }
+
+      if (!getAuthToken() || !cached) {
+        if (!cancelled) {
+          setCurrentUser(null);
+          setSessionChecked(true);
+        }
+        return;
+      }
+
+      // Render from cache immediately, then confirm with the server.
+      if (!cancelled) setCurrentUser(cached);
+      try {
+        const me = await apiClient.auth.me();
+        if (cancelled) return;
+        setCurrentUser(me);
+        setCurrentScreen("app");
+      } catch {
+        if (cancelled) return;
+        setAuthToken(null);
+        try {
+          localStorage.removeItem("ejaz_current_user");
+        } catch {
+          /* ignore */
+        }
+        setCurrentUser(null);
+        setCurrentScreen("login");
+      } finally {
+        if (!cancelled) setSessionChecked(true);
+      }
+    };
+
+    restore();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Sync current user to local cache
   useEffect(() => {
@@ -79,21 +128,21 @@ export function MobileApp({ onStaffLogin }: { onStaffLogin?: (user: any) => void
   const handleLogout = () => {
     setAuthToken(null);
     setCurrentUser(null);
+    setSessionChecked(true);
     setCurrentScreen("login");
     apiClient.auth.logout().catch(() => {});
   };
 
+  /**
+   * "اضغط للمتابعة" is the single transition out of the welcome screen. A
+   * validated session goes straight to the app; everyone else reaches sign-in.
+   */
   const handleWelcomeContinue = () => {
-    if (currentUser) {
+    if (currentUser && sessionChecked) {
       setCurrentScreen("app");
     } else {
       setCurrentScreen("login");
     }
-  };
-
-  const handleReplayWelcome = () => {
-    setWelcomeReplayKey((k) => k + 1);
-    setCurrentScreen("welcome");
   };
 
   return (
@@ -111,17 +160,8 @@ export function MobileApp({ onStaffLogin }: { onStaffLogin?: (user: any) => void
             <span className="text-[10px] text-white/70">EJAZ 5G LTE</span>
           </div>
 
-          {/* Quick Utility Actions: Theme, Lang, Replay, User Role */}
+          {/* Quick Utility Actions: Language, Theme, User Role */}
           <div className="flex items-center gap-1.5">
-            {/* Replay Welcome Screen */}
-            <button
-              onClick={handleReplayWelcome}
-              className="px-2 py-0.5 rounded-[6px] bg-white/10 hover:bg-brand hover:text-navy text-[10px] font-bold transition-colors"
-              title={t("Replay Welcome Screen", "إعادة تشغيل شاشة الترحيب")}
-            >
-              {t("Welcome", "الترحيب")}
-            </button>
-
             {/* 3-Language Toggle */}
             <button
               onClick={() => {
@@ -174,10 +214,7 @@ export function MobileApp({ onStaffLogin }: { onStaffLogin?: (user: any) => void
         {/* Real App Viewport Screen Content */}
         <main className="relative flex-1 min-h-0 overflow-hidden bg-surface-0">
           {currentScreen === "welcome" && (
-            <SplashScreen
-              replayKey={welcomeReplayKey}
-              onContinue={handleWelcomeContinue}
-            />
+            <SplashScreen onContinue={handleWelcomeContinue} />
           )}
 
           {currentScreen === "login" && (

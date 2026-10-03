@@ -1,4 +1,34 @@
 import { cn } from "../utils/cn";
+import { useBranding } from "../state/brandingStore";
+
+/**
+ * Renders the brand emblem. When the operator has published a custom logo in
+ * `Settings & Identity`, that image is shown; otherwise the official vector
+ * recreation is used. One call site, both behaviours.
+ */
+export function BrandEmblem({
+  size = 40,
+  variant = "header",
+  className,
+}: {
+  size?: number;
+  variant?: "header" | "login";
+  className?: string;
+}) {
+  const { headerLogo, loginLogo, branding } = useBranding();
+  const src = variant === "login" ? loginLogo : headerLogo;
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={branding.officialNameAr}
+        style={{ height: size }}
+        className={cn("w-auto max-w-full select-none object-contain", className)}
+      />
+    );
+  }
+  return <EjazEmblem size={size} color="var(--color-brand)" className={className} />;
+}
 
 /**
  * Official vector recreation of the Ejaz Transport (مؤسسة إيجاز للنقليات) logo
@@ -125,7 +155,7 @@ export function EjazEmblem({
 
 /** Responsive Header / Dashboard Brand Logo */
 export function BrandLogo({
-  size = 36,
+  size = 40,
   showSub = true,
   sub,
   className,
@@ -141,29 +171,18 @@ export function BrandLogo({
     <div
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 select-none",
+        "flex min-w-0 items-center gap-2.5 select-none",
         onClick && "cursor-pointer transition-transform hover:scale-[1.02] active:scale-95",
         className
       )}
     >
-      <div className="relative flex items-center justify-center">
-        <EjazEmblem size={size} color="var(--color-brand)" />
-      </div>
-      <div className="flex flex-col leading-tight">
-        <div className="flex items-baseline gap-2">
-          <span className="font-extrabold text-[18px] tracking-tight text-text-primary">
-            إيجاز
-          </span>
-          <span className="font-bold text-[13px] tracking-widest text-brand">
-            EJAZ
-          </span>
-        </div>
-        {showSub && (
-          <span className="text-[10.5px] font-medium text-text-muted tracking-wide">
-            {sub || "مؤسسة إيجاز للنقليات · Since 2022"}
-          </span>
-        )}
-      </div>
+      {/* The published logo already carries the identity — no separate wordmark. */}
+      <BrandEmblem size={size} variant="header" className="shrink-0" />
+      {showSub && sub && (
+        <span className="truncate text-[10.5px] font-medium text-text-muted tracking-wide">
+          {sub}
+        </span>
+      )}
     </div>
   );
 }

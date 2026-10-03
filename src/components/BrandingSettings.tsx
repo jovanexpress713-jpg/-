@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSettings } from "../settings";
 import { apiClient } from "../services/apiClient";
 import { BrandLogo, EjazEmblem } from "./Logo";
+import { useBranding } from "../state/brandingStore";
 import { IconClose, IconCheck } from "./Icons";
 
 interface BrandingSettingsProps {
@@ -11,9 +12,13 @@ interface BrandingSettingsProps {
 
 export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
   const { t } = useSettings();
+  const { refresh: refreshBranding } = useBranding();
   const [loading, setLoading] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState<string | null>(null);
+  const [logoVariant, setLogoVariant] = useState<"master" | "header" | "login" | "report">("master");
 
   const [branding, setBranding] = useState({
     officialNameAr: "مؤسسة إيجاز للنقليات",
@@ -54,6 +59,46 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
 
   if (!isOpen) return null;
 
+  const readFileAsBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("تعذّر قراءة الملف"));
+      reader.readAsDataURL(file);
+    });
+
+  const FIELD_BY_VARIANT = {
+    master: "logoUrl",
+    header: "headerLogoUrl",
+    login: "loginLogoUrl",
+    report: "reportLogoUrl",
+  } as const;
+
+  const handleLogoUpload = async (file: File | null) => {
+    if (!file) return;
+    setUploading(true);
+    setUploadMsg(null);
+    try {
+      const data = await readFileAsBase64(file);
+      const res = await apiClient.branding.uploadLogo({ data, fileName: file.name, variant: logoVariant });
+      const url = res?.url;
+      if (url) {
+        setBranding((prev) => ({ ...prev, [FIELD_BY_VARIANT[logoVariant]]: url }));
+        await refreshBranding();
+        setUploadMsg("تم رفع الشعار وتعميمه مباشرة عبر النظام.");
+      }
+    } catch (err: any) {
+      const msg = String(err?.message || "");
+      setUploadMsg(
+        /auth|session|unauthor|مصادق|جلسة/i.test(msg)
+          ? "انتهت جلستك أو لم يتم التحقق منها — أعد تسجيل الدخول بحساب مدير ثم جرّب الرفع مجددًا."
+          : msg || "فشل رفع الشعار",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -69,6 +114,8 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
         reportLogoUrl: branding.reportLogoUrl.trim() || null,
       });
 
+      // Push the new identity to the live header / sidebar / welcome surfaces.
+      await refreshBranding();
       setSavedSuccess(true);
       setTimeout(() => {
         setSavedSuccess(false);
@@ -230,6 +277,51 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
                 className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
               />
             </div>
+          </div>
+
+          {/* Upload a logo file from the device */}
+          <div className="rounded-[14px] bg-surface-2 border border-border-subtle p-4 space-y-3">
+            <div className="text-[11px] font-bold text-text-muted uppercase">
+              {t("Upload Logo File", "رفع ملف الشعار من الجهاز")}
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+              <div className="flex-1 min-w-0">
+                <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+                  {t("Logo Target", "وجهة الشعار")}
+                </label>
+                <select
+                  value={logoVariant}
+                  onChange={(e) => setLogoVariant(e.target.value as any)}
+                  className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
+                >
+                  <option value="master">{t("Master (all surfaces)", "الرئيسي (كل الشاشات)")}</option>
+                  <option value="header">{t("Admin header / sidebar", "هيدر ولوحة التحكم")}</option>
+                  <option value="login">{t("Login & welcome", "شاشات الدخول والترحيب")}</option>
+                  <option value="report">{t("Reports / PDF", "التقارير والطباعة")}</option>
+                </select>
+              </div>
+              <label className="btn-primary h-10 inline-flex items-center justify-center gap-2 rounded-[10px] px-4 text-[12px] font-bold text-navy bg-brand hover:bg-brand-600 cursor-pointer shrink-0">
+                {uploading ? t("Uploading...", "جارٍ الرفع...") : t("Choose & Upload", "اختيار ورفع")}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    handleLogoUpload(e.target.files?.[0] || null);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            <p className="text-[11px] text-text-muted">
+              {t("PNG / JPG / WEBP / SVG · up to 4MB", "PNG / JPG / WEBP / SVG · حتى 4 ميجابايت")}
+            </p>
+            {uploadMsg && (
+              <div className="rounded-[10px] bg-surface-3 border border-border-subtle p-2 text-[11.5px] text-text-secondary">
+                {uploadMsg}
+              </div>
+            )}
           </div>
 
           {/* Custom Logo URL */}

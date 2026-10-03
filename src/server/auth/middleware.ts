@@ -55,13 +55,30 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 };
 
-export function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+/**
+ * Extract the bearer token from any of the supported locations. Some reverse
+ * proxies (including sandbox preview proxies) strip the `Authorization` header,
+ * so the client also sends `X-Ejaz-Token` and, as a last resort, `?token=`.
+ */
+function extractToken(req: AuthenticatedRequest): string | null {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const t = authHeader.split(" ")[1];
+    if (t) return t;
+  }
+  const custom = req.headers["x-ejaz-token"];
+  if (typeof custom === "string" && custom) return custom;
+  const q = req.query?.token;
+  if (typeof q === "string" && q) return q;
+  return null;
+}
+
+export function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const token = extractToken(req);
+  if (!token) {
     return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
   }
 
-  const token = authHeader.split(" ")[1];
   const payload = verifyToken(token);
   if (!payload) {
     return res.status(401).json({ error: "Invalid or expired session token", code: "TOKEN_EXPIRED" });
@@ -72,9 +89,8 @@ export function authenticate(req: AuthenticatedRequest, res: Response, next: Nex
 }
 
 export function optionalAuthenticate(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.split(" ")[1];
+  const token = extractToken(req);
+  if (token) {
     const payload = verifyToken(token);
     if (payload) {
       req.user = payload;

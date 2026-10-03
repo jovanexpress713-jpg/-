@@ -6,6 +6,7 @@ import { apiClient } from "../services/apiClient";
 import { EjazEmblem } from "./Logo";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { getVehicleTypeMeta } from "../data/vehicleTypes";
+import { TruckTypeIcon } from "./TruckTypeIcon";
 import {
   IconCheck,
   IconClose,
@@ -188,9 +189,9 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
       </div>
 
       {/* Main 2-column view */}
-      <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[340px_1fr]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,232px)_minmax(0,1fr)] overflow-hidden lg:grid-cols-[340px_1fr] lg:grid-rows-none">
         {/* Left Trips Selector List */}
-        <div className="scroll-thin border-e border-border-subtle overflow-y-auto p-3 space-y-2 bg-surface-1">
+        <div className="scroll-thin min-h-0 overflow-y-auto border-b border-border-subtle p-3 space-y-2 bg-surface-1 lg:min-h-full lg:border-b-0 lg:border-e">
           <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider px-2 block mb-2">
             {t("Active Fleet Consignments", "الشحنات والرحلات النشطة")}
           </span>
@@ -205,19 +206,29 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                   selectTrip(tr.id);
                 }}
                 className={cn(
-                  "w-full rounded-[12px] p-3 text-start transition-all border",
+                  "w-full min-w-0 rounded-[12px] p-3 text-start transition-all border",
                   isSelected
                     ? "bg-surface-3 border-brand shadow-lg selected-ring"
                     : "bg-surface-2 border-border-subtle hover:bg-surface-3 hover:border-border-subtle/80"
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-[14px] text-text-primary tracking-wide">
-                    {tr.tripNumber}
+                  <span className="flex min-w-0 items-center gap-2">
+                    {/* Dynamic truck-type glyph — resolves from the trip's own
+                        cargoType, so each card shows its real category. */}
+                    <TruckTypeIcon
+                      truckType={tr.cargoType}
+                      size={17}
+                      className="shrink-0"
+                      title={`${getVehicleTypeMeta(tr.cargoType).arabicName} — ${getVehicleTypeMeta(tr.cargoType).englishName}`}
+                    />
+                    <span className="truncate font-bold text-[14px] text-text-primary tracking-wide">
+                      {tr.tripNumber}
+                    </span>
                   </span>
                   <span
                     className={cn(
-                      "badge text-[10.5px]",
+                      "badge shrink-0 text-[10.5px]",
                       tr.status === "on_road"
                         ? "bg-status-active/20 text-status-active font-bold"
                         : tr.status === "arrived" || tr.status === "delivered"
@@ -229,8 +240,13 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                   </span>
                 </div>
 
-                <div className="mt-1 text-[12px] text-text-secondary font-medium">
-                  {tr.originCity} → {tr.destinationCity}
+                <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-text-secondary font-medium">
+                  <span className="truncate">
+                    {tr.originCity} → {tr.destinationCity}
+                  </span>
+                  <span className="shrink-0 text-[11px] font-bold" style={{ color: getVehicleTypeMeta(tr.cargoType).accentColor }}>
+                    {getVehicleTypeMeta(tr.cargoType).arabicName}
+                  </span>
                 </div>
 
                 <div className="mt-2 flex items-center justify-between text-[11px] text-text-muted tabular-nums">
@@ -251,17 +267,24 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
         </div>
 
         {/* Right Trip Details & Lifecycle Controller */}
-        <div className="scroll-thin overflow-y-auto p-4 lg:p-6 space-y-5 bg-surface-0">
+        <div className="scroll-thin min-h-0 overflow-y-auto p-4 lg:p-6 space-y-5 bg-surface-0">
           {/* Active Trip Header Card */}
           <div className="card p-5 border border-border-subtle">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[26px] font-extrabold text-text-primary tracking-tight">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <span className="text-[22px] font-extrabold text-text-primary tracking-tight sm:text-[26px]">
                     {currentTrip.tripNumber}
                   </span>
-                  <span className="badge bg-brand/20 text-brand text-[11.5px] px-2.5 py-1">
-                    {currentTrip.cargoType}
+                  <span
+                    className="badge text-[11.5px] px-2.5 py-1"
+                    style={{
+                      backgroundColor: getVehicleTypeMeta(currentTrip.cargoType).badgeBg,
+                      color: getVehicleTypeMeta(currentTrip.cargoType).accentColor,
+                    }}
+                  >
+                    <TruckTypeIcon truckType={currentTrip.cargoType} size={14} />
+                    <span className="ms-1">{currentTrip.cargoType}</span>
                   </span>
                   <span className="badge bg-status-active/20 text-status-active text-[11.5px] px-2.5 py-1 font-bold">
                     {currentTrip.status === "on_road" ? t("Live On Route", "نشطة على الطريق") : currentTrip.status}
