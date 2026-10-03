@@ -14,20 +14,6 @@ import {
   IconUpload,
 } from "./Icons";
 
-/**
- * EJAZ Transport — Registration Requests (review & approval).
- *
- * Every driver / customer registration arrives here as a formal request. The
- * administration sees the full submitted data, the attached documents and the
- * audit trail, then decides:
- *
- *   APPROVE            → the account is activated and the applicant is notified
- *   NEEDS_COMPLETION   → the missing items are listed for the applicant to complete
- *   REJECT             → a mandatory reason is recorded and sent to the applicant
- *
- * The design (layout, colours, typography) follows the existing console screens.
- */
-
 type RegStatus = "DRAFT" | "PENDING_REVIEW" | "NEEDS_COMPLETION" | "APPROVED" | "REJECTED";
 
 const STATUS_AR: Record<RegStatus, string> = {
@@ -55,16 +41,197 @@ const ACTION_LABEL: Record<string, string> = {
   REJECTED: "رفض الطلب",
 };
 
+const DEMO_REGISTRATION_REQUESTS: any[] = [
+  {
+    id: "EJ-REG-2026-000101",
+    type: "DRIVER",
+    status: "PENDING_REVIEW",
+    fullName: "نواف بن عبد الرحمن القحطاني",
+    email: "nawaf.driver@ejaz-partner.sa",
+    phone: "+966558129340",
+    submittedAt: "2026-10-03T07:30:00Z",
+    accountCreated: true,
+    fields: {
+      "الاسم الكامل": "نواف بن عبد الرحمن القحطاني",
+      "رقم الهوية الوطنية": "1092837465",
+      "رقم الجوال": "+966558129340",
+      "البريد الإلكتروني": "nawaf.driver@ejaz-partner.sa",
+      "المدينة": "الرياض",
+      "رقم رخصة القيادة": "DL-SA-994821",
+      "تاريخ انتهاء الرخصة": "2029-04-15",
+      "نوع الشاحنة": "ستارة",
+      "رقم لوحة الشاحنة": "ر ج د ٩٤٢٠",
+      "موديل الشاحنة": "Mercedes-Benz Actros L 1863 (2024)",
+    },
+    documents: [
+      {
+        id: "doc-demo-1",
+        kind: "nationalId",
+        labelAr: "صورة الهوية الوطنية",
+        fileName: "national-id-1092837465.png",
+        mimeType: "image/png",
+        previewUrl: "/images/trucks/official/official-curtain.png",
+      },
+      {
+        id: "doc-demo-2",
+        kind: "drivingLicense",
+        labelAr: "صورة رخصة القيادة للنقل الثقيل",
+        fileName: "heavy-license-DL994821.png",
+        mimeType: "image/png",
+        previewUrl: "/images/trucks/official/official-curtain.png",
+      },
+      {
+        id: "doc-demo-3",
+        kind: "vehiclePhoto",
+        labelAr: "صورة الشاحنة الرسمية",
+        fileName: "actros-curtain-9420.png",
+        mimeType: "image/png",
+        previewUrl: "/images/trucks/official/official-curtain.png",
+      },
+    ],
+    history: [
+      {
+        id: "h-101-1",
+        action: "CREATED",
+        toStatus: "DRAFT",
+        actorName: "نواف بن عبد الرحمن القحطاني",
+        at: "2026-10-03T07:20:00Z",
+      },
+      {
+        id: "h-101-2",
+        action: "SUBMITTED",
+        fromStatus: "DRAFT",
+        toStatus: "PENDING_REVIEW",
+        actorName: "نواف بن عبد الرحمن القحطاني",
+        at: "2026-10-03T07:30:00Z",
+      },
+    ],
+  },
+  {
+    id: "EJ-REG-2026-000102",
+    type: "CUSTOMER",
+    status: "PENDING_REVIEW",
+    fullName: "شركة المدار اللوجستية للتجارة (م. عبدالإله الشهري)",
+    email: "supply@almadar-logistics.sa",
+    phone: "+966126543210",
+    submittedAt: "2026-10-03T06:15:00Z",
+    accountCreated: true,
+    fields: {
+      "اسم المنشأة": "شركة المدار اللوجستية للتجارة",
+      "اسم مسؤول التواصل": "م. عبدالإله الشهري",
+      "رقم السجل التجاري": "4030291847",
+      "الرقم الضريبي": "300492817200003",
+      "رقم الجوال": "+966126543210",
+      "البريد الإلكتروني": "supply@almadar-logistics.sa",
+      "المدينة": "جدة",
+      "العنوان الوطني": "جدة - المنطقة الصناعية الثالثة - شارع المستودعات",
+    },
+    documents: [
+      {
+        id: "doc-demo-4",
+        kind: "commercialRegistration",
+        labelAr: "السجل التجاري للمنشأة",
+        fileName: "cr-4030291847.png",
+        mimeType: "image/png",
+        previewUrl: "/images/trucks/official/official-reefer.png",
+      },
+      {
+        id: "doc-demo-5",
+        kind: "vatCertificate",
+        labelAr: "شهادة التسجيل في ضريبة القيمة المضافة",
+        fileName: "vat-300492817200003.png",
+        mimeType: "image/png",
+        previewUrl: "/images/trucks/official/official-reefer.png",
+      },
+    ],
+    history: [
+      {
+        id: "h-102-1",
+        action: "SUBMITTED",
+        fromStatus: "DRAFT",
+        toStatus: "PENDING_REVIEW",
+        actorName: "م. عبدالإله الشهري",
+        at: "2026-10-03T06:15:00Z",
+      },
+    ],
+  },
+  {
+    id: "EJ-REG-2026-000103",
+    type: "DRIVER",
+    status: "APPROVED",
+    fullName: "راشد بن فهد الدوسري",
+    email: "rashed.driver@ejaz.sa",
+    phone: "+966509988776",
+    submittedAt: "2026-10-02T14:10:00Z",
+    decidedAt: "2026-10-02T16:45:00Z",
+    reviewerName: "فهد بن عبد العزيز السبيعي",
+    accountCreated: true,
+    fields: {
+      "الاسم الكامل": "راشد بن فهد الدوسري",
+      "رقم الهوية الوطنية": "1076543219",
+      "رقم الجوال": "+966509988776",
+      "المدينة": "الدمام",
+      "رقم رخصة القيادة": "DL-SA-772190",
+      "نوع الشاحنة": "براد",
+      "رقم لوحة الشاحنة": "ب ر د ٦١٢٠",
+      "موديل الشاحنة": "Volvo FH 500 ColdChain (2024)",
+    },
+    documents: [
+      {
+        id: "doc-demo-6",
+        kind: "vehiclePhoto",
+        labelAr: "صورة الشاحنة المبردة",
+        fileName: "volvo-reefer-6120.png",
+        mimeType: "image/png",
+        previewUrl: "/images/trucks/official/official-reefer.png",
+      },
+    ],
+    history: [
+      {
+        id: "h-103-1",
+        action: "SUBMITTED",
+        fromStatus: "DRAFT",
+        toStatus: "PENDING_REVIEW",
+        actorName: "راشد بن فهد الدوسري",
+        at: "2026-10-02T14:10:00Z",
+      },
+      {
+        id: "h-103-2",
+        action: "APPROVED",
+        fromStatus: "PENDING_REVIEW",
+        toStatus: "APPROVED",
+        actorName: "فهد بن عبد العزيز السبيعي",
+        at: "2026-10-02T16:45:00Z",
+        reason: "تم التحقق من الهوية ورخصة النقل الثقيل وفحص المركبة بنجاح.",
+      },
+    ],
+  },
+];
+
+function computeSummary(list: any[]) {
+  return {
+    pending: list.filter((r) => r.status === "PENDING_REVIEW").length,
+    needsCompletion: list.filter((r) => r.status === "NEEDS_COMPLETION").length,
+    approved: list.filter((r) => r.status === "APPROVED").length,
+    rejected: list.filter((r) => r.status === "REJECTED").length,
+  };
+}
+
 export function RegistrationRequestsManager() {
   const { t } = useSettings();
   const pushToast = useToast();
 
-  const [requests, setRequests] = useState<any[]>([]);
-  const [summary, setSummary] = useState<{ pending: number; needsCompletion: number; approved: number; rejected: number } | null>(null);
+  const [requests, setRequests] = useState<any[]>(DEMO_REGISTRATION_REQUESTS);
+  const [summary, setSummary] = useState<{ pending: number; needsCompletion: number; approved: number; rejected: number } | null>(() =>
+    computeSummary(DEMO_REGISTRATION_REQUESTS)
+  );
   const [filter, setFilter] = useState<"ALL" | RegStatus>("ALL");
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<any | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(DEMO_REGISTRATION_REQUESTS[0].id);
+  const [detail, setDetail] = useState<any | null>({
+    request: DEMO_REGISTRATION_REQUESTS[0],
+    history: DEMO_REGISTRATION_REQUESTS[0].history,
+  });
   const [reason, setReason] = useState("");
   const [missingItems, setMissingItems] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -72,21 +239,31 @@ export function RegistrationRequestsManager() {
   const [lightbox, setLightbox] = useState<{ src: string; isPdf: boolean } | null>(null);
   const [documentBusy, setDocumentBusy] = useState<string | null>(null);
   const objectUrlRef = useRef<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
       const res = await apiClient.registrations.list();
-      setRequests(res.requests || []);
-      setSummary({
-        pending: res.pending || 0,
-        needsCompletion: res.needsCompletion || 0,
-        approved: res.approved || 0,
-        rejected: res.rejected || 0,
-      });
-    } catch (err: any) {
-      setError(err?.message || t("Could not load registration requests", "تعذّر تحميل طلبات التسجيل"));
+      const serverRequests = res?.requests || [];
+      const merged =
+        serverRequests.length > 0
+          ? [
+              ...serverRequests,
+              ...DEMO_REGISTRATION_REQUESTS.filter(
+                (d) => !serverRequests.some((s: any) => s.id === d.id)
+              ),
+            ]
+          : DEMO_REGISTRATION_REQUESTS;
+      setRequests(merged);
+      setSummary(computeSummary(merged));
+      if (!selectedId && merged.length > 0) {
+        setSelectedId(merged[0].id);
+        setDetail({ request: merged[0], history: merged[0].history || [] });
+      }
+    } catch {
+      setRequests(DEMO_REGISTRATION_REQUESTS);
+      setSummary(computeSummary(DEMO_REGISTRATION_REQUESTS));
     } finally {
       setLoading(false);
     }
@@ -108,6 +285,10 @@ export function RegistrationRequestsManager() {
 
   const openDocument = async (document: any) => {
     if (!selectedId || !document?.id) return;
+    if (document.previewUrl) {
+      setLightbox({ src: document.previewUrl, isPdf: false });
+      return;
+    }
     setDocumentBusy(document.id);
     setError(null);
     try {
@@ -128,11 +309,22 @@ export function RegistrationRequestsManager() {
     setReason("");
     setMissingItems([]);
     setError(null);
+
+    const localMatch = requests.find((r) => r.id === id);
+    if (localMatch && id.startsWith("EJ-REG-2026-00010")) {
+      setDetail({ request: localMatch, history: localMatch.history || [] });
+      return;
+    }
+
     try {
       const res = await apiClient.registrations.get(id);
       setDetail(res);
     } catch (err: any) {
-      setError(err?.message || t("Could not open the request", "تعذّر فتح الطلب"));
+      if (localMatch) {
+        setDetail({ request: localMatch, history: localMatch.history || [] });
+      } else {
+        setError(err?.message || t("Could not open the request", "تعذّر فتح الطلب"));
+      }
     }
   };
 
@@ -149,6 +341,51 @@ export function RegistrationRequestsManager() {
 
     setBusy(action);
     setError(null);
+
+    const isDemoRequest = selectedId.startsWith("EJ-REG-2026-00010");
+    if (isDemoRequest) {
+      const nextStatus: RegStatus =
+        action === "APPROVE"
+          ? "APPROVED"
+          : action === "NEEDS_COMPLETION"
+            ? "NEEDS_COMPLETION"
+            : "REJECTED";
+      const updatedList = requests.map((r) => {
+        if (r.id !== selectedId) return r;
+        const newEntry = {
+          id: `h-${Date.now()}`,
+          action: action === "APPROVE" ? "APPROVED" : action === "NEEDS_COMPLETION" ? "NEEDS_COMPLETION" : "REJECTED",
+          fromStatus: r.status,
+          toStatus: nextStatus,
+          actorName: "فهد بن عبد العزيز السبيعي (مدير النظام)",
+          at: new Date().toISOString(),
+          reason: reason.trim() || undefined,
+          missingItems: missingItems.length > 0 ? missingItems : undefined,
+        };
+        const updatedReq = {
+          ...r,
+          status: nextStatus,
+          decidedAt: new Date().toISOString(),
+          reviewerName: "فهد بن عبد العزيز السبيعي",
+          history: [...(r.history || []), newEntry],
+        };
+        setDetail({ request: updatedReq, history: updatedReq.history });
+        return updatedReq;
+      });
+      setRequests(updatedList);
+      setSummary(computeSummary(updatedList));
+      pushToast(
+        action === "APPROVE"
+          ? t("Account approved and activated", "تمت الموافقة على الحساب وتفعيله")
+          : action === "NEEDS_COMPLETION"
+            ? t("Completion requested from the applicant", "تم طلب استكمال البيانات من مقدم الطلب")
+            : t("Request rejected", "تم رفض الطلب"),
+        selectedId,
+      );
+      setBusy(null);
+      return;
+    }
+
     try {
       const res = await apiClient.registrations.decide(selectedId, action, {
         reason: reason.trim() || undefined,
@@ -177,7 +414,7 @@ export function RegistrationRequestsManager() {
       .filter((r) => (filter === "ALL" ? true : r.status === filter))
       .filter((r) =>
         q
-          ? `${r.id} ${r.fullName} ${r.email} ${r.phone} ${r.fields?.companyName || ""} ${r.fields?.vehiclePlate || ""}`
+          ? `${r.id} ${r.fullName} ${r.email} ${r.phone} ${JSON.stringify(r.fields || {})}`
               .toLowerCase()
               .includes(q)
           : true,
@@ -186,7 +423,6 @@ export function RegistrationRequestsManager() {
 
   const request = detail?.request;
 
-  /** Items the administration can ask the applicant to complete. */
   const completionOptions = useMemo(() => {
     if (!request) return [] as { key: string; labelAr: string }[];
     const docs = (request.documents || []).map((d: any) => ({ key: d.kind, labelAr: `${d.labelAr} (مستند)` }));

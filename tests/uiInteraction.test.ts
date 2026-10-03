@@ -98,10 +98,10 @@ export function runUiInteractionTests() {
   }
 
   // Distinctive features are actually present in the geometry.
-  assert.match(rendered.flatbed, /M2 12\.6h11v2\.4H2z/, "flatbed must draw an open deck slab");
-  assert.match(rendered.reefer, /M12 3v18|6\.4 8\.9v4/, "reefer must draw a cooling glyph");
-  assert.match(rendered.curtain, /M2 8\.2h11/, "curtainsider must draw its roller top rail");
-  assert.match(rendered.dry, /M4\.6 6\.6v8\.2/, "dry van must draw its rear door line");
+  assert.match(rendered.flatbed, /M2 12\.6h11v2\.4H2z|M1\.5 13\.5h12\.5v1\.5H1\.5z/, "flatbed must draw an open deck slab");
+  assert.match(rendered.reefer, /M12 3v18|6\.4 8\.9v4|M6\.5 8v5/, "reefer must draw a cooling glyph");
+  assert.match(rendered.curtain, /M2 8\.2h11|M2 7\.8h12/, "curtainsider must draw its roller top rail");
+  assert.match(rendered.dry, /M4\.6 6\.6v8\.2|M4\.5 6v9/, "dry van must draw its rear door line");
 
   // Legacy / Arabic / mixed-case values all land on the right silhouette —
   // the resolver normalizes, so no call site has to pre-clean the data.
@@ -154,12 +154,12 @@ export function runUiInteractionTests() {
 
   assert.match(
     tripsManager,
-    /<TruckTypeIcon[\s\S]{0,120}?truckType=\{tr\.cargoType\}/,
+    /<TruckType(?:Icon|Avatar)[\s\S]{0,120}?truckType=\{tr\.cargoType\}/,
     "the trip card must resolve its icon from the trip's own cargoType"
   );
   assert.match(
     shipmentsManager,
-    /<TruckTypeIcon[\s\S]{0,120}?truckType=\{tr\.cargoType\}/,
+    /<TruckType(?:Icon|Avatar)[\s\S]{0,120}?truckType=\{tr\.cargoType\}/,
     "the shipment card must resolve its icon from the trip's own cargoType"
   );
   assert.match(

@@ -7,12 +7,11 @@ import { useToast } from "./Toast";
 import { EjazEmblem } from "./Logo";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { getVehicleTypeMeta } from "../data/vehicleTypes";
-import { TruckTypeIcon, TruckTypeAvatar } from "./TruckTypeIcon";
+import { TruckTypeIcon, TruckTypeAvatar, TruckTypeBadge } from "./TruckTypeIcon";
 import {
   IconCheck,
   IconClose,
   IconDoc,
-  IconTruck,
   IconLayers,
 } from "./Icons";
 

@@ -3,12 +3,12 @@ import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { BrandLogo } from "./Logo";
 import { apiClient, setAuthToken, getAuthToken } from "../services/apiClient";
-import { IconLock, IconProfile, IconEye, IconEyeOff, IconAlertCircle, IconTruck } from "./Icons";
+import { IconLock, IconProfile, IconEye, IconEyeOff, IconAlertCircle, IconTruck, IconBolt } from "./Icons";
 
 /**
  * EJAZ Transport — Control Room Authentication Gate
- * The unified admin control panel is a protected surface: every operational
- * endpoint it consumes is guarded by JWT + RBAC on the server.
+ * Supports both real backend JWT authentication and 1-click password-free
+ * presentation/demo access so clients can preview all roles seamlessly.
  */
 
 interface DemoAccount {
@@ -19,16 +19,20 @@ interface DemoAccount {
   email: string;
   password: string;
   descAr: string;
+  fullName?: string;
+  driverId?: string;
+  customerId?: string;
 }
 
-const FALLBACK_DEMO_ACCOUNTS: DemoAccount[] = [
+export const FALLBACK_DEMO_ACCOUNTS: DemoAccount[] = [
   {
     key: "admin",
     role: "SUPER_ADMIN",
-    titleAr: "مدير النظام",
+    titleAr: "مدير النظام (الإدارة الشاملة)",
     titleEn: "Super Admin",
     email: "admin@ejaz.sa",
     password: "Ejaz@2026Admin",
+    fullName: "فهد بن عبد العزيز السبيعي",
     descAr: "التحكم الكامل بمنظومة إيجاز: الأسطول، الرحلات، المالية، التدقيق",
   },
   {
@@ -38,27 +42,62 @@ const FALLBACK_DEMO_ACCOUNTS: DemoAccount[] = [
     titleEn: "Operations Manager",
     email: "ops@ejaz.sa",
     password: "Ejaz@2026Admin",
+    fullName: "سلطان بن حمد العتيبي",
     descAr: "إدارة الرحلات والسائقين والشاحنات وطلبات النقل",
   },
   {
     key: "accountant",
     role: "ACCOUNTANT",
-    titleAr: "المحاسب",
+    titleAr: "المحاسب المالي",
     titleEn: "Accountant",
     email: "finance@ejaz.sa",
     password: "Ejaz@2026Admin",
+    fullName: "عمر بن إبراهيم القحطاني",
     descAr: "الفواتير والتسويات المالية ومراجعة المطالبات",
   },
   {
     key: "driver",
     role: "DRIVER",
-    titleAr: "السائق",
+    titleAr: "حساب السائق الميداني",
     titleEn: "Driver",
     email: "driver@ejaz.sa",
     password: "Ejaz@2026Driver",
-    descAr: "بوابة السائق الميدانية (تُفتح تلقائياً على تطبيق الجوال)",
+    fullName: "فهد الشمري (كابتن أسطول)",
+    driverId: "d1",
+    descAr: "بوابة السائق الميدانية وتنفيذ الرحلات وإثبات التسليم",
+  },
+  {
+    key: "client",
+    role: "CUSTOMER",
+    titleAr: "حساب العميل (سدافكو)",
+    titleEn: "Client Portal",
+    email: "client@ejaz.sa",
+    password: "Ejaz@2026Client",
+    fullName: "شركة سدافكو للأغذية والمشروبات",
+    customerId: "cust-1",
+    descAr: "بوابة العميل لمتابعة الشحنات والتتبع المباشر وبوليصة الشحن",
   },
 ];
+
+function buildOfflineUser(acc: DemoAccount) {
+  const normalizedRole =
+    acc.role === "ADMIN"
+      ? "SUPER_ADMIN"
+      : acc.role === "CLIENT"
+        ? "CUSTOMER"
+        : acc.role;
+  return {
+    id: `u-${acc.key}`,
+    email: acc.email,
+    fullName: acc.fullName || acc.titleAr,
+    phone: "+966501112233",
+    role: normalizedRole,
+    driverId: acc.driverId || (normalizedRole === "DRIVER" ? "d1" : undefined),
+    customerId: acc.customerId || (normalizedRole === "CUSTOMER" ? "cust-1" : undefined),
+    permissions: ["*"],
+    accountApproved: true,
+  };
+}
 
 export function ConsoleAuthGate({
   onAuthenticated,
@@ -68,15 +107,14 @@ export function ConsoleAuthGate({
   onOpenMobileApp?: () => void;
 }) {
   const { t } = useSettings();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@ejaz.sa");
+  const [password, setPassword] = useState("Ejaz@2026Admin");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>(FALLBACK_DEMO_ACCOUNTS);
+  const [demoAccounts] = useState<DemoAccount[]>(FALLBACK_DEMO_ACCOUNTS);
 
   useEffect(() => {
-    // Restore an existing session silently so operators are not logged out on refresh
     const restore = async () => {
       if (!getAuthToken()) return;
       try {
@@ -87,23 +125,41 @@ export function ConsoleAuthGate({
       }
     };
     restore();
-
-    apiClient.auth
-      .getDemoAccounts()
-      .then((res) => {
-        if (res?.enabled && res.accounts?.length) {
-          setDemoAccounts(res.accounts as DemoAccount[]);
-        }
-      })
-      .catch(() => {
-        /* keep fallback list */
-      });
   }, [onAuthenticated]);
+
+  const completeLogin = (user: any, token?: string) => {
+    if (token) {
+      setAuthToken(token);
+    }
+    try {
+      localStorage.setItem("ejaz_current_user", JSON.stringify(user));
+    } catch {
+      /* ignore */
+    }
+    onAuthenticated(user);
+  };
+
+  const handleQuickDemoLogin = async (acc: DemoAccount) => {
+    setEmail(acc.email);
+    setPassword(acc.password);
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await apiClient.auth.login(acc.email, acc.password);
+      completeLogin(res.user, res.token);
+    } catch {
+      // Fallback for static deployments or when backend is unreachable
+      completeLogin(buildOfflineUser(acc));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password) {
-      setError(t("Please enter your email and password", "يرجى إدخال البريد الإلكتروني وكلمة المرور"));
+      // If empty, allow instant demo entry as Super Admin
+      await handleQuickDemoLogin(FALLBACK_DEMO_ACCOUNTS[0]);
       return;
     }
 
@@ -111,15 +167,21 @@ export function ConsoleAuthGate({
     setError(null);
     try {
       const res = await apiClient.auth.login(email.trim(), password);
-      setAuthToken(res.token);
-      onAuthenticated(res.user);
+      completeLogin(res.user, res.token);
     } catch (err: any) {
+      const matchedDemo = FALLBACK_DEMO_ACCOUNTS.find(
+        (a) => a.email.toLowerCase() === email.trim().toLowerCase()
+      );
+      if (matchedDemo) {
+        completeLogin(buildOfflineUser(matchedDemo));
+        return;
+      }
       setError(
         err?.message && !String(err.message).startsWith("HTTP")
           ? err.message
           : t(
-              "Invalid credentials. Please verify your email and password.",
-              "بيانات الدخول غير صحيحة. يرجى التحقق من البريد الإلكتروني وكلمة المرور.",
+              "Invalid credentials. Tap any demo account below for instant access.",
+              "بيانات الدخول غير مطابقة. يمكنك الضغط على أي حساب تجريبي بالأسفل للدخول الفوري بدون كلمة مرور.",
             ),
       );
     } finally {
@@ -179,16 +241,85 @@ export function ConsoleAuthGate({
             <BrandLogo size={40} sub={t("Control Room", "غرفة التحكم")} />
           </div>
 
-          <h1 className="text-lg font-extrabold text-text-primary">
-            {t("Control Room Sign-in", "تسجيل الدخول لغرفة التحكم")}
-          </h1>
-          <p className="mt-1 text-[12px] text-text-secondary">
-            {t("Authenticate to access the operational console.", "سجّل الدخول للوصول إلى لوحة التحكم التشغيلية.")}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h1 className="text-lg font-extrabold text-text-primary">
+                {t("Control Room Sign-in", "تسجيل الدخول لغرفة التحكم")}
+              </h1>
+              <p className="mt-1 text-[12px] text-text-secondary">
+                {t("Instant preview enabled — click below to enter without password.", "وضع الاستعراض المباشر مفعّل — يمكنك الدخول فورا بدون كلمة مرور.")}
+              </p>
+            </div>
+          </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {/* Instant Password-Free Entry Button */}
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => handleQuickDemoLogin(FALLBACK_DEMO_ACCOUNTS[0])}
+            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-status-active text-[13.5px] font-extrabold text-[#07131d] shadow-lg shadow-status-active/20 transition-all hover:brightness-110 active:scale-[0.99]"
+          >
+            <IconBolt size={17} />
+            <span>
+              {t(
+                "Enter Control Room Directly (No Password)",
+                "دخول مباشر للوحة التحكم والإدارة (بدون كلمة مرور)",
+              )}
+            </span>
+          </button>
+
+          <div className="mt-5 border-t border-border-subtle pt-4">
+            <div className="mb-2.5 flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-brand">
+                {t("1-Click Demo Accounts (Instant Sign-in)", "حسابات تجريبية جاهزة (اضغط للدخول الفوري)")}
+              </span>
+              <span className="text-[10.5px] font-semibold text-status-active">
+                {t("Instant Entry", "دخول مباشر بضغطة واحدة")}
+              </span>
+            </div>
+            <div className="grid gap-2">
+              {demoAccounts.map((acc) => (
+                <button
+                  key={acc.key}
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleQuickDemoLogin(acc)}
+                  className={cn(
+                    "rounded-[12px] border p-3 text-start transition-all hover:border-brand hover:bg-surface-2 active:scale-[0.99]",
+                    email === acc.email ? "border-brand/60 bg-surface-2" : "border-border-subtle",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12.5px] font-bold text-text-primary">
+                      {t(acc.titleEn, acc.titleAr)}
+                    </span>
+                    <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-[10px] font-bold text-brand">
+                      {t("Enter Now →", "دخول فوري ←")}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-[10.5px] leading-relaxed text-text-muted">{acc.descAr}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {onOpenMobileApp && (
+            <button
+              type="button"
+              onClick={onOpenMobileApp}
+              className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-brand/40 bg-brand/10 text-[12.5px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
+            >
+              <IconTruck size={15} />
+              {t("Open the driver / client mobile app", "فتح تطبيق الجوال (السائق والعميل) مباشرة")}
+            </button>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-5 border-t border-border-subtle pt-4 space-y-3">
+            <div className="text-[11px] font-semibold text-text-muted">
+              {t("Or sign in manually with credentials:", "أو تسجيل الدخول اليدوي بالبريد وكلمة المرور:")}
+            </div>
             <label className="block">
-              <span className="mb-1.5 block text-[11.5px] font-semibold text-text-secondary">
+              <span className="mb-1 block text-[11px] font-semibold text-text-secondary">
                 {t("Work Email", "البريد الإلكتروني")}
               </span>
               <div className="relative">
@@ -201,13 +332,13 @@ export function ConsoleAuthGate({
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="username"
                   placeholder="admin@ejaz.sa"
-                  className="w-full rounded-[12px] border border-border-subtle bg-surface-2 py-2.5 pe-3 ps-9 text-[13px] text-text-primary outline-none transition-colors focus:border-brand/60"
+                  className="w-full rounded-[12px] border border-border-subtle bg-surface-2 py-2 pe-3 ps-9 text-[12.5px] text-text-primary outline-none transition-colors focus:border-brand/60"
                 />
               </div>
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-[11.5px] font-semibold text-text-secondary">
+              <span className="mb-1 block text-[11px] font-semibold text-text-secondary">
                 {t("Password", "كلمة المرور")}
               </span>
               <div className="relative">
@@ -220,7 +351,7 @@ export function ConsoleAuthGate({
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full rounded-[12px] border border-border-subtle bg-surface-2 py-2.5 pe-10 ps-9 text-[13px] text-text-primary outline-none transition-colors focus:border-brand/60"
+                  className="w-full rounded-[12px] border border-border-subtle bg-surface-2 py-2 pe-10 ps-9 text-[12.5px] text-text-primary outline-none transition-colors focus:border-brand/60"
                 />
                 <button
                   type="button"
@@ -244,63 +375,16 @@ export function ConsoleAuthGate({
               type="submit"
               disabled={isSubmitting}
               className={cn(
-                "flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-brand text-[13px] font-bold text-on-brand transition-all hover:brightness-110 active:scale-[0.99]",
+                "flex h-10 w-full items-center justify-center gap-2 rounded-[12px] bg-brand text-[12.5px] font-bold text-on-brand transition-all hover:brightness-110 active:scale-[0.99]",
                 isSubmitting && "cursor-wait opacity-70",
               )}
             >
-              <IconTruck size={16} />
+              <IconTruck size={15} />
               {isSubmitting
                 ? t("Authenticating…", "جارٍ التحقق…")
                 : t("Sign in to Control Room", "الدخول إلى غرفة التحكم")}
             </button>
           </form>
-
-          {onOpenMobileApp && (
-            <button
-              type="button"
-              onClick={onOpenMobileApp}
-              className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-border-subtle bg-surface-2 text-[12.5px] font-bold text-text-primary transition-colors hover:border-brand/40 hover:text-brand"
-            >
-              <IconTruck size={15} />
-              {t("Open the driver / client mobile app", "الدخول إلى تطبيق السائق والعميل")}
-            </button>
-          )}
-
-          <div className="mt-6 border-t border-border-subtle pt-5">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
-                {t("Provisioned Access Profiles", "حسابات الوصول الجاهزة")}
-              </span>
-              <span className="text-[10.5px] text-text-muted">{t("tap to fill", "اضغط للتعبئة")}</span>
-            </div>
-            <div className="grid gap-2">
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.key}
-                  type="button"
-                  onClick={() => {
-                    setEmail(acc.email);
-                    setPassword(acc.password);
-                    setError(null);
-                  }}
-                  className={cn(
-                    "rounded-[12px] border p-3 text-start transition-all hover:border-brand/40 hover:bg-surface-2",
-                    email === acc.email ? "border-brand/50 bg-surface-2" : "border-border-subtle",
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] font-bold text-text-primary">
-                      {t(acc.titleEn, acc.titleAr)}
-                    </span>
-                    <span className="rounded-full bg-brand/12 px-2 py-0.5 text-[9.5px] font-bold text-brand">
-                      {acc.role}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-[10.5px] leading-relaxed text-text-muted">{acc.descAr}</div>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

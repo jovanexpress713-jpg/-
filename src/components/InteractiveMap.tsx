@@ -9,9 +9,8 @@ import {
   IconZoomIn,
   IconZoomOut,
   IconPin,
-  IconTruck,
 } from "./Icons";
-import { TruckTypeIcon, TruckTypeBadge } from "./TruckTypeIcon";
+import { TruckTypeIcon } from "./TruckTypeIcon";
 
 interface InteractiveMapProps {
   trip: Trip;
