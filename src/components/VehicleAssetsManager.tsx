@@ -49,6 +49,24 @@ export function VehicleAssetsManager() {
   const [show3DPreview, setShow3DPreview] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<"image" | "model" | null>(null);
+
+  const dropProps = (kind: "image" | "model") => ({
+    onDragOver: (e: React.DragEvent) => {
+      e.preventDefault();
+      if (dropTarget !== kind) setDropTarget(kind);
+    },
+    onDragLeave: () => setDropTarget((current) => (current === kind ? null : current)),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setDropTarget(null);
+      const file = e.dataTransfer.files?.[0];
+      if (!file) return;
+      setImageTarget(kind === "image" ? { kind: "type", type: activeType } : null);
+      if (kind === "image") handleImagePicked(file);
+      else handleModelPicked(file);
+    },
+  });
 
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const modelInputRef = useRef<HTMLInputElement | null>(null);
@@ -203,6 +221,34 @@ export function VehicleAssetsManager() {
         </div>
       </div>
 
+      {/* Operating procedure — the asset pipeline in three steps */}
+      <div className="mb-4 grid gap-2 rounded-[14px] border border-border-subtle bg-surface-1 p-3 sm:grid-cols-3">
+        {[
+          {
+            n: "1",
+            ar: "اختر النوع المعتمد (سطحة · براد · جاف · ستارة)",
+            en: "Pick the approved category",
+          },
+          {
+            n: "2",
+            ar: "اسحب صورة الشاحنة الأصلية وأفلتها في البطاقة — أو اضغط زر النشر واختر الملف",
+            en: "Drag the original photograph into the card, or use the publish button",
+          },
+          {
+            n: "3",
+            ar: "بعد النشر تُحفظ النسخة الأصلية دون أي تعديل وتظهر فوراً في التطبيق ولوحة التحكم",
+            en: "The untouched original is preserved and the asset goes live everywhere at once",
+          },
+        ].map((step) => (
+          <div key={step.n} className="flex items-start gap-2">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand/15 text-[11px] font-extrabold text-brand">
+              {step.n}
+            </span>
+            <span className="text-[11.5px] leading-relaxed text-text-secondary">{t(step.en, step.ar)}</span>
+          </div>
+        ))}
+      </div>
+
       {error && (
         <div className="mb-4 flex items-start gap-2 rounded-[12px] border border-status-danger/30 bg-status-danger/10 p-3 text-[12px] text-status-danger">
           <IconAlertCircle size={15} />
@@ -259,7 +305,13 @@ export function VehicleAssetsManager() {
       <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1.15fr]">
         {/* Left: official assets */}
         <div className="space-y-4">
-          <section className="rounded-[16px] border border-border-subtle bg-surface-1 p-4">
+          <section
+            {...dropProps("image")}
+            className={cn(
+              "rounded-[16px] border bg-surface-1 p-4 transition-colors",
+              dropTarget === "image" ? "border-brand bg-brand/5 ring-2 ring-brand/30" : "border-border-subtle",
+            )}
+          >
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-[13.5px] font-bold text-text-primary">
                 {t("Official reference image", "الصورة الرسمية للنوع")} · {asset.arabicName}
@@ -313,13 +365,19 @@ export function VehicleAssetsManager() {
             </button>
             <p className="mt-2 text-[10.5px] leading-relaxed text-text-muted">
               {t(
-                "The uploaded file is preserved byte-for-byte as the original and is used across every screen without alteration.",
-                "يُحفظ الملف المرفوع كما هو بايت ببايت كنسخة أصلية، ويُستخدم في كل الشاشات دون أي تعديل على المركبة.",
+                "Drop the file here, or use the button above. The uploaded file is preserved byte-for-byte as the original and is used across every screen without alteration.",
+                "أفلت الملف هنا أو استخدم الزر أعلاه. يُحفظ الملف المرفوع كما هو بايت ببايت كنسخة أصلية، ويُستخدم في كل الشاشات دون أي تعديل على المركبة.",
               )}
             </p>
           </section>
 
-          <section className="rounded-[16px] border border-border-subtle bg-surface-1 p-4">
+          <section
+            {...dropProps("model")}
+            className={cn(
+              "rounded-[16px] border bg-surface-1 p-4 transition-colors",
+              dropTarget === "model" ? "border-brand bg-brand/5 ring-2 ring-brand/30" : "border-border-subtle",
+            )}
+          >
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-[13.5px] font-bold text-text-primary">
                 {t("Official 3D model (GLB / glTF)", "المجسم الرسمي ثلاثي الأبعاد (GLB / glTF)")}
