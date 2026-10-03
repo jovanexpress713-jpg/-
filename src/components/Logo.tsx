@@ -7,7 +7,7 @@ import { useBranding } from "../state/brandingStore";
  * recreation is used. One call site, both behaviours.
  */
 export function BrandEmblem({
-  size = 36,
+  size = 40,
   variant = "header",
   className,
 }: {
@@ -23,7 +23,7 @@ export function BrandEmblem({
         src={src}
         alt={branding.officialNameAr}
         style={{ height: size }}
-        className={cn("w-auto max-w-[140px] select-none object-contain", className)}
+        className={cn("w-auto max-w-full select-none object-contain", className)}
       />
     );
   }
@@ -155,7 +155,7 @@ export function EjazEmblem({
 
 /** Responsive Header / Dashboard Brand Logo */
 export function BrandLogo({
-  size = 36,
+  size = 40,
   showSub = true,
   sub,
   className,
@@ -167,34 +167,22 @@ export function BrandLogo({
   className?: string;
   onClick?: () => void;
 }) {
-  const { branding } = useBranding();
   return (
     <div
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 select-none",
+        "flex min-w-0 items-center gap-2.5 select-none",
         onClick && "cursor-pointer transition-transform hover:scale-[1.02] active:scale-95",
         className
       )}
     >
-      <div className="relative flex items-center justify-center">
-        <BrandEmblem size={size} variant="header" />
-      </div>
-      <div className="flex min-w-0 flex-col leading-tight">
-        <div className="flex items-baseline gap-2">
-          <span className="font-extrabold text-[18px] tracking-tight text-text-primary">
-            إيجاز
-          </span>
-          <span className="font-bold text-[13px] tracking-widest text-brand">
-            EJAZ
-          </span>
-        </div>
-        {showSub && (
-          <span className="truncate text-[10.5px] font-medium text-text-muted tracking-wide">
-            {sub || `${branding.officialNameAr} · Since 2022`}
-          </span>
-        )}
-      </div>
+      {/* The published logo already carries the identity — no separate wordmark. */}
+      <BrandEmblem size={size} variant="header" className="shrink-0" />
+      {showSub && sub && (
+        <span className="truncate text-[10.5px] font-medium text-text-muted tracking-wide">
+          {sub}
+        </span>
+      )}
     </div>
   );
 }

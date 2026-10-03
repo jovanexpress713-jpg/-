@@ -74,7 +74,7 @@ function TopBar({
     <div className="flex h-full flex-col bg-surface-0">
       <header className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border-subtle px-3 py-2 lg:px-5">
         <BrandLogo
-          size={36}
+          size={40}
           sub={t("Heavy Fleet & Logistics Control", "إدارة أسطول النقل الثقيل والرحلات")}
         />
 
