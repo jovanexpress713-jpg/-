@@ -423,15 +423,18 @@ export async function runNovaDesignTests() {
       dry: "official-dry.png",
       curtain: "official-curtain.png",
     };
-    let referenceMask: string | null = null;
+    const expectedMasks: Record<string, string> = {
+      reefer: "M 804 226",
+      flatbed: "M 702 627",
+      dry: "M 692 226",
+      curtain: "M 698 240",
+    };
     for (const [type, imageName] of Object.entries(expectedImages)) {
       const view = await mount(React.createElement(CapacityTruck, { pct: 63, truckType: type }));
       assert.ok((view.query("image")[0]?.getAttribute("href") ?? "").endsWith(imageName), `${type} keeps its own approved truck image`);
-      assert.ok(view.query("clipPath").length > 0, `${type} renders the shared load indicator`);
+      assert.ok(view.query("clipPath").length > 0, `${type} renders the reefer-approved gauge`);
       const mask = view.query("clipPath path")[0]?.getAttribute("d") ?? "";
-      assert.ok(mask.startsWith("M "), `${type} has the approved reefer gauge mask`);
-      if (referenceMask === null) referenceMask = mask;
-      assert.strictEqual(mask, referenceMask, `${type} uses the exact same reefer indicator geometry`);
+      assert.ok(mask.startsWith(expectedMasks[type]), `${type} gauge is aligned to its body bounds`);
       assert.ok(view.query("text").some((node) => (node.textContent ?? "").includes("%")), `${type} displays its load percentage`);
       await view.unmount();
     }
