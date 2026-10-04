@@ -16,6 +16,10 @@ import { runI18nTests } from "./i18n.test";
 import { runRoleRoutingTests } from "./roles.test";
 import { runLanguageSwitchTests } from "./languageSwitch.test";
 import { runOrganizationTests } from "./organization.test";
+import { runTariffTests } from "./tariffs.test";
+import { runTripScreenTests } from "./tripScreen.test";
+import { runTripIdentityTests } from "./tripIdentity.test";
+import { runIntegrationTests } from "./integration.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -41,9 +45,13 @@ async function runAll() {
     await runRoleRoutingTests();
     await runLanguageSwitchTests();
     await runOrganizationTests();
+    await runTariffTests();
+    await runTripScreenTests();
+    await runTripIdentityTests();
+    await runIntegrationTests();
 
     console.log("============================================================");
-    console.log("  ✅ ALL 18 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 22 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {

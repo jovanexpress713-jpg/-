@@ -11,12 +11,14 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   GENERAL_MANAGER: [
     "trips.view", "trips.approve", "trips.cancel", "trips.reopen", "trips.assign",
     "finance.view", "finance.approve", "finance.settle", "claims.view", "claims.manage",
+    "tariffs.view", "tariffs.manage",
     "customers.view", "customers.create", "customers.manage", "notifications.view", "pod.view",
     "vehicles.view", "drivers.view", "drivers.create", "reports.view", "reports.export", "audit.view", "settings.manage",
     "registrations.view", "registrations.review"
   ],
   OPERATIONS_MANAGER: [
     "trips.view", "trips.create", "trips.assign", "trips.transition", "trips.cancel", "trips.approve",
+    "tariffs.view", "tariffs.manage",
     "claims.view", "claims.manage", "customers.view", "customers.create", "customers.manage", "notifications.view", "pod.view",
     "vehicles.view", "vehicles.create", "vehicles.edit", "vehicles.assign",
     "drivers.view", "drivers.create", "drivers.edit",
@@ -25,11 +27,13 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   DISPATCHER: [
     "trips.view", "trips.create", "trips.assign", "trips.transition",
+    "tariffs.view",
     "vehicles.view", "vehicles.assign", "drivers.view", "gps.view",
     "documents.view", "documents.upload", "customers.view", "notifications.view", "pod.view"
   ],
   ACCOUNTANT: [
     "finance.view", "finance.create", "finance.approve", "finance.settle",
+    "tariffs.view", "tariffs.manage",
     "trips.view", "claims.view", "customers.view", "notifications.view", "pod.view",
     "invoices.create", "payments.record", "reports.view", "reports.export"
   ],

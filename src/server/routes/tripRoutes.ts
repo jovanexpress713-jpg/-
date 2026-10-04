@@ -11,6 +11,8 @@ import { validateTransition, type TripLifecycleStatus, STATUS_LABELS } from "../
 import { initTripFinancials, getTripFinancials } from "../services/financeService";
 import { logAuditEvent } from "../services/auditService";
 import { dispatchNotification } from "../services/notificationService";
+import { resolveQuote } from "../services/tariffService";
+import { computeRoadDistance } from "../services/cityRegistry";
 
 const router = Router();
 
@@ -68,7 +70,7 @@ router.get("/client/trips", authenticate, requirePermission("trips.view"), (req:
 
 // GET /api/driver/trips - Trips for driver with tab support (all | available | confirmed | active | completed)
 router.get("/driver/trips", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
-  const driverId = req.user?.driverId || req.user?.userId;
+  const driverId = req.user?.driverId || req.user?.userId || "";
   const userRole = req.user?.role;
   const tab = (req.query.tab as string) || "all";
   let allTrips = Array.from(db.trips.values());
@@ -76,14 +78,16 @@ router.get("/driver/trips", authenticate, requirePermission("trips.view"), (req:
   let filtered = allTrips;
 
   if (tab === "available") {
-    // Available trips: unassigned or open for driver requests
+    // Available trips: unassigned or open for driver requests (declined ones stay hidden)
     filtered = allTrips.filter(
       (t) =>
-        t.status === "DRAFT_CREATED" ||
-        t.status === "PENDING_APPROVAL" ||
-        !t.driverId ||
-        t.driverId === "unassigned" ||
-        (t.status === "CONFIRMED" && !t.driverId)
+        !t.declinedDriverIds?.includes(driverId) &&
+        (t.status === "DRAFT_CREATED" ||
+          t.status === "PENDING_APPROVAL" ||
+          t.status === "REOPENED" ||
+          !t.driverId ||
+          t.driverId === "unassigned" ||
+          (t.status === "CONFIRMED" && !t.driverId))
     );
   } else if (tab === "confirmed") {
     // Confirmed/assigned to this driver
@@ -109,15 +113,17 @@ router.get("/driver/trips", authenticate, requirePermission("trips.view"), (req:
         completedStates.includes(t.status)
     );
   } else {
-    // "all": Trips assigned to driver OR available
+    // "all": Trips assigned to driver OR available (declined ones stay hidden)
     if (userRole === "DRIVER") {
       filtered = allTrips.filter(
         (t) =>
           t.driverId === driverId ||
           t.additionalDriverId === driverId ||
-          t.status === "DRAFT_CREATED" ||
-          t.status === "PENDING_APPROVAL" ||
-          !t.driverId
+          (!t.declinedDriverIds?.includes(driverId) &&
+            (t.status === "DRAFT_CREATED" ||
+              t.status === "PENDING_APPROVAL" ||
+              t.status === "REOPENED" ||
+              !t.driverId))
       );
     }
   }
@@ -194,6 +200,72 @@ router.post("/driver/trips/:id/request", authenticate, requirePermission("trips.
     message: "Trip requested successfully and sent to Operations for approval",
     trip,
   });
+});
+
+// POST /api/driver/trips/:id/decline - Driver declines an available trip
+// The trip stays in the system untouched; it simply stops being offered to this
+// driver. Existing conditions apply: only genuinely open trips can be declined.
+router.post("/driver/trips/:id/decline", authenticate, requirePermission("trips.request", "trips.assign"), (req: AuthenticatedRequest, res: Response) => {
+  const tripId = String(req.params.id);
+  const trip = db.trips.get(tripId);
+  if (!trip) {
+    return res.status(404).json({ error: "Trip not found" });
+  }
+
+  if (req.user?.role !== "DRIVER" && req.user?.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ error: "Only a driver can decline a trip", code: "FORBIDDEN" });
+  }
+
+  const driverId = req.user?.driverId || req.user?.userId || "";
+  const isOpen =
+    !trip.driverId ||
+    trip.driverId === "unassigned" ||
+    ["DRAFT_CREATED", "PENDING_APPROVAL", "CONFIRMED", "REOPENED"].includes(trip.status);
+  if (!isOpen) {
+    return res.status(409).json({
+      error: "هذه الرحلة لم تعد متاحة للرفض — تم إسنادها أو دخلت مرحلة تنفيذية",
+      code: "TRIP_NOT_OPEN",
+    });
+  }
+  if (trip.requestedByDriverId === driverId && trip.driverRequestStatus === "PENDING") {
+    return res.status(409).json({
+      error: "لديك طلب معلّق على هذه الرحلة — لا يمكن رفضها أثناء انتظار الموافقة",
+      code: "REQUEST_ALREADY_PENDING",
+    });
+  }
+  if (trip.declinedDriverIds?.includes(driverId)) {
+    return res.status(409).json({ error: "سبق رفض هذه الرحلة من قبلك", code: "ALREADY_DECLINED" });
+  }
+
+  trip.declinedDriverIds = [...(trip.declinedDriverIds || []), driverId];
+  trip.updatedAt = new Date().toISOString();
+
+  const { reason } = req.body || {};
+  db.tripEvents.push({
+    id: `ev-${Date.now()}`,
+    tripId: trip.id,
+    eventType: "TRIP_DECLINED_BY_DRIVER",
+    fromStatus: trip.status,
+    toStatus: trip.status,
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: "DRIVER",
+    notes: `رفض السائق ${req.user?.fullName || driverId} الرحلة المتاحة${reason ? `. السبب: ${reason}` : ""}`,
+    timestamp: new Date().toISOString(),
+  });
+
+  logAuditEvent({
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: "DRIVER",
+    action: "TRIP_DECLINED_BY_DRIVER",
+    entity: "trips",
+    entityId: trip.id,
+    tripId: trip.id,
+    newValues: { declinedDriverIds: trip.declinedDriverIds, reason },
+  });
+
+  return res.json({ message: "Trip declined — it will no longer appear in your available list", trip });
 });
 
 // POST /api/trips/:id/approve-request - Admin approves driver trip request
@@ -328,6 +400,8 @@ router.get("/:id", authenticate, requirePermission("trips.view"), (req: Authenti
   const events = db.tripEvents.filter((e) => e.tripId === trip.id);
   const financials = getTripFinancials(trip.id);
   const documents = Array.from(db.documents.values()).filter((d) => d.tripId === trip.id);
+  const pod = Array.from(db.podRecords.values()).filter((p) => p.tripId === trip.id);
+  const claims = Array.from(db.claims.values()).filter((c) => c.tripId === trip.id);
 
   return res.json({
     trip,
@@ -337,6 +411,8 @@ router.get("/:id", authenticate, requirePermission("trips.view"), (req: Authenti
     events,
     financials,
     documents,
+    pod,
+    claims,
     statusMeta: STATUS_LABELS[trip.status as TripLifecycleStatus] || { ar: trip.status, en: trip.status, badgeColor: "#FF6B1A" },
   });
 });
@@ -353,7 +429,7 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     cargoWeightTons,
     maxCapacityTons,
     temperatureRequired,
-    tripPrice,
+    tariffId,
     corridorKey,
     customerId,
     vehicleId,
@@ -378,6 +454,42 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
 
   const customer = customerId ? db.customers.get(customerId) : undefined;
   const driver = driverId ? db.drivers.get(driverId) : undefined;
+
+  // ── Dynamic pricing (Phase 1 tariff engine) ─────────────────────────────
+  // The price is NEVER hardcoded. It is resolved from the company's tariff
+  // book by (truck type + route + system distance + weight). If no tariff
+  // matches, the trip is created awaiting a company quote — no invented price.
+  const distance = computeRoadDistance(originCity, destinationCity);
+  const quote = resolveQuote(Array.from(db.tariffs.values()), {
+    truckType: cargoType,
+    originCity,
+    destinationCity,
+    weightTons: Number(cargoWeightTons),
+  });
+
+  let resolvedPrice: number;
+  let resolvedTariffId: string | undefined;
+  let resolvedCurrency = "SAR";
+  let priceStatus: TripEntity["priceStatus"];
+
+  if (quote.available && quote.tariff) {
+    resolvedPrice = quote.price!;
+    resolvedTariffId = quote.tariff.id;
+    resolvedCurrency = quote.tariff.currency;
+    priceStatus = "TARIFF";
+  } else {
+    // Explicit price only accepted when it is backed by a real tariff record.
+    const explicitTariff = tariffId ? db.tariffs.get(String(tariffId)) : undefined;
+    if (explicitTariff && explicitTariff.status === "ACTIVE") {
+      resolvedPrice = explicitTariff.price;
+      resolvedTariffId = explicitTariff.id;
+      resolvedCurrency = explicitTariff.currency;
+      priceStatus = "TARIFF";
+    } else {
+      resolvedPrice = 0;
+      priceStatus = distance.resolvable ? "PENDING_QUOTE" : "UNPRICED";
+    }
+  }
 
   const newTrip: TripEntity = {
     id: tripId,
@@ -405,7 +517,11 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     currentHeading: 0,
     departureTime: new Date().toISOString(),
     estimatedArrival: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
-    tripPrice: Number(tripPrice || 4500),
+    tripPrice: resolvedPrice,
+    currency: resolvedCurrency,
+    priceStatus,
+    tariffId: resolvedTariffId,
+    distanceKm: quote.distanceKm ?? distance.distanceKm,
     createdBy: req.user?.userId || "system",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -424,7 +540,11 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     actorId: req.user?.userId,
     actorName: req.user?.fullName,
     actorRole: req.user?.role,
-    notes: `تم إنشاء الشحنة بنجاح وحجز الرقم المرجعي الموحد ${tripNumber}`,
+    notes:
+      priceStatus === "TARIFF"
+        ? `تم إنشاء الشحنة وحجز الرقم الموحد ${tripNumber} — السعر ${resolvedPrice} ${resolvedCurrency} من التعرفة المعتمدة (${resolvedTariffId})`
+        : `تم إنشاء الشحنة وحجز الرقم الموحد ${tripNumber} — لا توجد تعرفة مطابقة حاليًا والرحلة بانتظار عرض سعر من الشركة`,
+    metadata: { tripPrice: resolvedPrice, currency: resolvedCurrency, priceStatus, tariffId: resolvedTariffId, distanceKm: newTrip.distanceKm },
     timestamp: new Date().toISOString(),
   };
   db.tripEvents.push(createEvent);
@@ -444,7 +564,10 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     targetRole: "OPERATIONS_MANAGER",
     titleAr: "شحنة جديدة بانتظار الاعتماد",
     titleEn: "New Shipment Awaiting Approval",
-    messageAr: `تم إنشاء طلب نقل جديد رقم ${tripNumber} من ${originCity} إلى ${destinationCity}`,
+    messageAr:
+      priceStatus === "TARIFF"
+        ? `طلب نقل جديد ${tripNumber}: ${originCity} ← ${destinationCity} · السعر المعتمد ${resolvedPrice} ${resolvedCurrency} من التعرفة`
+        : `طلب نقل جديد ${tripNumber}: ${originCity} ← ${destinationCity} · لا توجد تعرفة مطابقة — يتطلب عرض سعر`,
     messageEn: `New trip order ${tripNumber} created from ${originCity} to ${destinationCity}`,
     type: "INFO",
     entityType: "trip",
@@ -837,18 +960,20 @@ router.post("/:id/replace-driver", authenticate, requirePermission("trips.assign
     return res.status(404).json({ error: "New driver not found" });
   }
 
-  // Preserve history
+  const oldDriverId = trip.driverId;
+  const oldDriverName = trip.driverName;
+
+  // Preserve history — previous + replacement + acting user + reason + time
   if (!trip.driverHistory) trip.driverHistory = [];
   trip.driverHistory.push({
-    driverId: trip.driverId,
-    driverName: trip.driverName,
+    driverId: oldDriverId,
+    driverName: oldDriverName,
+    newDriverId: newDriver.id,
+    newDriverName: newDriver.fullName,
     replacedBy: req.user?.fullName || "إدارة العمليات",
     reason,
     timestamp: new Date().toISOString(),
   });
-
-  const oldDriverId = trip.driverId;
-  const oldDriverName = trip.driverName;
 
   trip.driverId = newDriver.id;
   trip.driverName = newDriver.fullName;
@@ -969,18 +1094,20 @@ router.post("/:id/replace-vehicle", authenticate, requirePermission("trips.assig
     return res.status(404).json({ error: "New vehicle not found" });
   }
 
-  // Preserve history
-  if (!trip.vehicleHistory) trip.vehicleHistory = [];
+  // Preserve history — previous + replacement + acting user + reason + time
   const oldVehicle = db.vehicles.get(trip.vehicleId);
+  const oldVehicleId = trip.vehicleId;
+  if (!trip.vehicleHistory) trip.vehicleHistory = [];
   trip.vehicleHistory.push({
-    vehicleId: trip.vehicleId,
-    plate: oldVehicle?.plate || trip.vehicleId,
+    vehicleId: oldVehicleId,
+    plate: oldVehicle?.plate || oldVehicleId,
+    newVehicleId: newVehicle.id,
+    newPlate: newVehicle.plate,
     replacedBy: req.user?.fullName || "إدارة العمليات",
     reason,
     timestamp: new Date().toISOString(),
   });
 
-  const oldVehicleId = trip.vehicleId;
   trip.vehicleId = newVehicle.id;
   trip.updatedAt = new Date().toISOString();
 
@@ -1024,6 +1151,118 @@ router.post("/:id/replace-vehicle", authenticate, requirePermission("trips.assig
   });
 
   return res.json({ message: "Vehicle replaced successfully", trip, vehicleHistory: trip.vehicleHistory });
+});
+
+// POST /api/trips/:id/replace-assignment — replace driver AND vehicle together
+// One operation inside the SAME trip: no new trip, the unified number never
+// changes, both histories and one combined event are recorded.
+router.post("/:id/replace-assignment", authenticate, requirePermission("trips.assign"), (req: AuthenticatedRequest, res: Response) => {
+  const tripId = String(req.params.id);
+  const trip = db.trips.get(tripId);
+  if (!trip) {
+    return res.status(404).json({ error: "Trip not found" });
+  }
+
+  const { newDriverId, newVehicleId, reason, latitude, longitude } = req.body || {};
+  if (!newDriverId || !newVehicleId || !reason || String(reason).trim().length < 4) {
+    return res.status(400).json({ error: "newDriverId, newVehicleId and a clear reason are required to replace both", code: "MISSING_FIELDS" });
+  }
+
+  const newDriver = db.drivers.get(newDriverId);
+  if (!newDriver) return res.status(404).json({ error: "New driver not found" });
+  const newVehicle = db.vehicles.get(newVehicleId);
+  if (!newVehicle) return res.status(404).json({ error: "New vehicle not found" });
+
+  const isLicenseExpired = new Date(newDriver.licenseExpiry).getTime() < Date.now();
+  if (isLicenseExpired) {
+    return res.status(400).json({ error: "Cannot assign replacement driver: licence has expired." });
+  }
+
+  const oldDriverId = trip.driverId;
+  const oldDriverName = trip.driverName;
+  const oldVehicle = db.vehicles.get(trip.vehicleId);
+  const oldVehicleId = trip.vehicleId;
+
+  // Preserve both histories inside the same trip record
+  // (previous + replacement + acting user + reason + time + location)
+  if (!trip.driverHistory) trip.driverHistory = [];
+  trip.driverHistory.push({
+    driverId: oldDriverId,
+    driverName: oldDriverName,
+    newDriverId: newDriver.id,
+    newDriverName: newDriver.fullName,
+    replacedBy: req.user?.fullName || "إدارة العمليات",
+    reason,
+    timestamp: new Date().toISOString(),
+    latitude,
+    longitude,
+  });
+  if (!trip.vehicleHistory) trip.vehicleHistory = [];
+  trip.vehicleHistory.push({
+    vehicleId: oldVehicleId,
+    plate: oldVehicle?.plate || oldVehicleId,
+    newVehicleId: newVehicle.id,
+    newPlate: newVehicle.plate,
+    replacedBy: req.user?.fullName || "إدارة العمليات",
+    reason,
+    timestamp: new Date().toISOString(),
+    latitude,
+    longitude,
+  });
+
+  trip.driverId = newDriver.id;
+  trip.driverName = newDriver.fullName;
+  trip.driverPhone = newDriver.phone;
+  trip.vehicleId = newVehicle.id;
+  trip.updatedAt = new Date().toISOString();
+
+  db.tripEvents.push({
+    id: `ev-${Date.now()}`,
+    tripId: trip.id,
+    eventType: "DRIVER_AND_VEHICLE_REPLACED",
+    fromStatus: trip.status,
+    toStatus: trip.status,
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    notes: `تم استبدال المركبة والسائق معًا (السائق: ${oldDriverName} ➔ ${newDriver.fullName} · المركبة: ${oldVehicle?.plate || oldVehicleId} ➔ ${newVehicle.plate}). السبب: ${reason}`,
+    latitude,
+    longitude,
+    metadata: { oldDriverId, newDriverId: newDriver.id, oldVehicleId, newVehicleId: newVehicle.id, reason },
+    timestamp: new Date().toISOString(),
+  });
+
+  logAuditEvent({
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    action: "TRIP_DRIVER_AND_VEHICLE_REPLACED",
+    entity: "trips",
+    entityId: trip.id,
+    tripId: trip.id,
+    oldValues: { driverId: oldDriverId, driverName: oldDriverName, vehicleId: oldVehicleId },
+    newValues: { driverId: newDriver.id, driverName: newDriver.fullName, vehicleId: newVehicle.id, plate: newVehicle.plate, reason },
+    reason,
+  });
+
+  dispatchNotification({
+    targetRole: "ALL",
+    titleAr: `استبدال المركبة والسائق للرحلة ${trip.tripNumber}`,
+    titleEn: `Driver & Vehicle Replaced for Trip ${trip.tripNumber}`,
+    messageAr: `تم استبدال المركبة والسائق داخل نفس الرحلة دون تغيير رقمها الموحد. السبب: ${reason}`,
+    messageEn: `Driver and vehicle replaced inside the same trip; unified number unchanged: ${reason}`,
+    type: "WARNING",
+    entityType: "trip",
+    entityId: trip.id,
+    tripId: trip.id,
+  });
+
+  return res.json({
+    message: "Driver and vehicle replaced inside the same trip — unified number unchanged",
+    trip,
+    driverHistory: trip.driverHistory,
+    vehicleHistory: trip.vehicleHistory,
+  });
 });
 
 export default router;

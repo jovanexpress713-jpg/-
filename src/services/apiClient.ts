@@ -155,6 +155,11 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify({ notes }),
       }),
+    declineTrip: (tripId: string, reason?: string) =>
+      request<any>(`/api/driver/trips/${tripId}/decline`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
     approveRequest: (tripId: string) =>
       request<any>(`/api/trips/${tripId}/approve-request`, {
         method: "POST",
@@ -185,6 +190,11 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify({ newVehicleId, reason }),
       }),
+    replaceAssignment: (tripId: string, payload: { newDriverId: string; newVehicleId: string; reason: string; latitude?: number; longitude?: number }) =>
+      request<any>(`/api/trips/${tripId}/replace-assignment`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
   },
   vehicles: {
     getAll: (params?: Record<string, string>) => {
@@ -214,6 +224,32 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+  },
+  tariffs: {
+    getAll: (params?: Record<string, string>) => {
+      const qs = params ? `?${new URLSearchParams(params)}` : "";
+      return request<{ total: number; tariffs: any[] }>(`/api/tariffs${qs}`);
+    },
+    getById: (id: string) => request<any>(`/api/tariffs/${id}`),
+    create: (data: any) =>
+      request<any>("/api/tariffs", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: any) =>
+      request<any>(`/api/tariffs/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    deactivate: (id: string, reason?: string) =>
+      request<any>(`/api/tariffs/${id}/deactivate`, { method: "POST", body: JSON.stringify({ reason }) }),
+    activate: (id: string, reason?: string) =>
+      request<any>(`/api/tariffs/${id}/activate`, { method: "POST", body: JSON.stringify({ reason }) }),
+    getCities: () => request<{ cities: Array<{ id: string; ar: string; en: string }> }>("/api/tariffs/cities"),
+    getQuote: (params: Record<string, string>) =>
+      request<any>(`/api/tariffs/quote?${new URLSearchParams(params)}`),
+    getQuoteRequests: (params?: Record<string, string>) => {
+      const qs = params ? `?${new URLSearchParams(params)}` : "";
+      return request<{ total: number; quoteRequests: any[] }>(`/api/tariffs/quote-requests${qs}`);
+    },
+    submitQuoteRequest: (data: any) =>
+      request<any>("/api/tariffs/quote-requests", { method: "POST", body: JSON.stringify(data) }),
+    resolveQuoteRequest: (id: string, resolution?: string) =>
+      request<any>(`/api/tariffs/quote-requests/${id}/resolve`, { method: "POST", body: JSON.stringify({ resolution }) }),
   },
   finance: {
     getTrips: () => request<any>("/api/finance/trips"),

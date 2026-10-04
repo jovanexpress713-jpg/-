@@ -9,6 +9,7 @@ import pg from "pg";
 import { config } from "../config";
 import { generateTripNumber } from "../services/tripNumberGenerator";
 import { initTripFinancials } from "../services/financeService";
+import type { TariffEntity, TariffChangeRecord, QuoteRequestEntity } from "../services/tariffService";
 
 export interface UserEntity {
   id: string;
@@ -107,10 +108,36 @@ export interface TripEntity {
   estimatedArrival: string;
   actualArrival?: string;
   tripPrice: number;
+  /** Currency of the trip price (defaults to SAR). */
+  currency?: string;
+  /** How the price was resolved: tariff match, awaiting a company quote, or unpriced. */
+  priceStatus?: "TARIFF" | "PENDING_QUOTE" | "UNPRICED";
+  /** Tariff the price came from (Phase 1 pricing engine). */
+  tariffId?: string;
+  /** System-computed road distance for the corridor (km). */
+  distanceKm?: number | null;
+  /** Drivers who explicitly declined this trip (it stays hidden from their available list). */
+  declinedDriverIds?: string[];
   additionalDriverId?: string;
   additionalDriverName?: string;
-  vehicleHistory?: Array<{ vehicleId: string; plate: string; replacedBy: string; reason: string; timestamp: string }>;
-  driverHistory?: Array<{ driverId: string; driverName: string; replacedBy: string; reason: string; timestamp: string }>;
+  /**
+   * Assignment & replacement history (§Phase 3). Every record keeps the
+   * previous entity, the new entity, the acting user, the reason and the time.
+   */
+  vehicleHistory?: Array<{
+    vehicleId: string; plate: string;               // previous vehicle
+    newVehicleId?: string; newPlate?: string;       // replacement vehicle
+    replacedBy: string;                             // acting user (المستخدم)
+    reason: string; timestamp: string;
+    latitude?: number; longitude?: number;          // location if available
+  }>;
+  driverHistory?: Array<{
+    driverId: string; driverName: string;           // previous driver
+    newDriverId?: string; newDriverName?: string;   // replacement driver
+    replacedBy: string;                             // acting user (المستخدم)
+    reason: string; timestamp: string;
+    latitude?: number; longitude?: number;
+  }>;
   requestedByDriverId?: string;
   requestedByDriverName?: string;
   driverRequestStatus?: "PENDING" | "APPROVED" | "REJECTED";
@@ -195,6 +222,12 @@ class InMemoryDatabase {
   documents = new Map<string, TripDocumentEntity>();
   podRecords = new Map<string, PODRecordEntity>();
   claims = new Map<string, ClaimEntity>();
+  /** Phase 1 — the company's tariff book (dynamic pricing source of truth). */
+  tariffs = new Map<string, TariffEntity>();
+  /** Phase 1 — immutable change log of every tariff edit (who/when/old/new/reason). */
+  tariffHistory: TariffChangeRecord[] = [];
+  /** Phase 1 — client quote requests for routes without a matching tariff. */
+  quoteRequests = new Map<string, QuoteRequestEntity>();
 
   constructor() {
     this.seedBaseline();
