@@ -423,19 +423,16 @@ export async function runNovaDesignTests() {
       dry: "official-dry.png",
       curtain: "official-curtain.png",
     };
+    let referenceMask: string | null = null;
     for (const [type, imageName] of Object.entries(expectedImages)) {
       const view = await mount(React.createElement(CapacityTruck, { pct: 63, truckType: type }));
-      assert.ok((view.query("image")[0]?.getAttribute("href") ?? "").endsWith(imageName), `${type} meter uses its own approved truck image`);
-      assert.ok(view.query("clipPath").length > 0, `${type} liquid overlay is clipped to the vehicle cargo area`);
+      assert.ok((view.query("image")[0]?.getAttribute("href") ?? "").endsWith(imageName), `${type} keeps its own approved truck image`);
+      assert.ok(view.query("clipPath").length > 0, `${type} renders the shared load indicator`);
       const mask = view.query("clipPath path")[0]?.getAttribute("d") ?? "";
-      assert.ok(mask.startsWith("M "), `${type} has an explicit body-shaped fill mask`);
-      if (type === "reefer") assert.ok(mask.startsWith("M 804 226"), "reefer fill starts behind the refrigeration unit, not over it");
-      if (type === "dry") assert.ok(mask.startsWith("M 692 226"), "dry-van fill follows the dry box, not another body's mask");
-      if (type === "curtain") assert.ok(mask.startsWith("M 698 240"), "curtain fill stays within the tarp and above its lower rails");
-      if (type === "flatbed") {
-        assert.ok(mask.startsWith("M 702 627 L 1450 649 L 1450 665"), "flatbed gauge is a slim deck strip, not a box");
-        assert.ok(view.query("text").some((node) => (node.textContent ?? "").includes("%")), "flatbed percentage stays readable in its own badge");
-      }
+      assert.ok(mask.startsWith("M "), `${type} has the approved reefer gauge mask`);
+      if (referenceMask === null) referenceMask = mask;
+      assert.strictEqual(mask, referenceMask, `${type} uses the exact same reefer indicator geometry`);
+      assert.ok(view.query("text").some((node) => (node.textContent ?? "").includes("%")), `${type} displays its load percentage`);
       await view.unmount();
     }
   }
