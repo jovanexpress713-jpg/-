@@ -20,8 +20,11 @@ export interface Preferences {
   assistantContext: boolean;
   assistantSuggestions: boolean;
   assistantAudit: boolean;
+  /** Time & date display (§5) — never in the header, configured in settings. */
+  timeFormat: "24" | "12";
+  dateFormat: "iso" | "arabic";
   /** Last settings tab the user opened, restored on next visit. */
-  lastSettingsTab: "profile" | "preferences" | "notifications" | "assistant" | "help";
+  lastSettingsTab: string;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -32,7 +35,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   assistantContext: true,
   assistantSuggestions: true,
   assistantAudit: true,
-  lastSettingsTab: "profile",
+  timeFormat: "24",
+  dateFormat: "iso",
+  lastSettingsTab: "account",
 };
 
 const KEY = "ejaz-preferences";

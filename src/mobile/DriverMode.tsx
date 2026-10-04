@@ -6,26 +6,42 @@ import { apiClient } from "../services/apiClient";
 import { InteractiveMap } from "../components/InteractiveMap";
 import { normalizeVehicleType, getVehicleTypeMeta } from "../data/vehicleTypes";
 import { TruckTypeAvatar, TruckTypeBadge } from "../components/TruckTypeIcon";
+import { MobileNotificationsList, useMobileNotifications, MobileSection, MobileRow } from "./MobileShared";
+import { MobileUserManagement } from "./MobileUserManagement";
 import {
   IconHome,
   IconPin,
   IconProfile,
-  IconTruck,
   IconCheck,
-  IconBolt,
   IconStraight,
   IconOrders,
+  IconBell,
+  IconDoc,
 } from "../components/Icons";
 
+/**
+ * تطبيق السائق (§13) — independent driver interface over the shared backend.
+ *
+ * Navigation: الرئيسية · الرحلات · التتبع · الإشعارات · حسابي (§29).
+ * Every number and identity on the screen comes from the live session/API —
+ * never from hardcoded sample data (§32). «إضافة سائق / إضافة عميل» appear in
+ * «إدارة المستخدمين» only for identities holding the matching capabilities
+ * (§15, §16).
+ */
 interface DriverModeProps {
   user: any;
   onLogout: () => void;
+  onOpenSettings?: () => void;
+  /** Bumped by the header bell — switches to the notifications tab. */
+  notificationsSignal?: number;
 }
 
-export function DriverMode({ user, onLogout }: DriverModeProps) {
+type DriverTab = "home" | "trips" | "trip" | "pod" | "track" | "notifications" | "account";
+
+export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal = 0 }: DriverModeProps) {
   const { t, td } = useSettings();
-  const { trips, updateTripStatus } = useFleetStore();
-  const [activeTab, setActiveTab] = useState<"home" | "trips" | "trip" | "gps" | "pod" | "profile">("home");
+  const { updateTripStatus } = useFleetStore();
+  const [activeTab, setActiveTab] = useState<DriverTab>("home");
   const [tripsSubTab, setTripsSubTab] = useState<"all" | "available" | "confirmed" | "active" | "completed">("all");
   const [driverTrips, setDriverTrips] = useState<any[]>([]);
   const [currentTrip, setCurrentTrip] = useState<any | null>(null);
@@ -33,7 +49,7 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
   const [actionErrorMsg, setActionErrorMsg] = useState<string | null>(null);
 
-  // Real Device GPS Telemetry state
+  // Real Device GPS telemetry (§24 — never simulated)
   const [isGpsBroadcasting, setIsGpsBroadcasting] = useState(false);
   const [gpsTelemetry, setGpsTelemetry] = useState<{
     latitude: number;
@@ -44,15 +60,23 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
     timestamp: string;
   } | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
+  const [gpsProviderConfigured, setGpsProviderConfigured] = useState<boolean | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
   // Proof of Delivery form state
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
-  const [deliveryNotes, setDeliveryNotes] = useState("تم الاستلام بحالة ممتازة ومطابقة للمواصفات");
+  const [deliveryNotes, setDeliveryNotes] = useState("");
   const [signatureDone, setSignatureDone] = useState(false);
 
-  // Fetch driver assigned trips from backend API
+  const notifications = useMobileNotifications();
+
+  // The header bell (§4) points at the single notifications tab (§27).
+  useEffect(() => {
+    if (notificationsSignal > 0) setActiveTab("notifications");
+  }, [notificationsSignal]);
+
+  // Fetch driver assigned trips from backend API (real data first)
   useEffect(() => {
     let isMounted = true;
     async function loadDriverTrips() {
@@ -64,72 +88,80 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
             setCurrentTrip(res.trips[0]);
           }
         }
-      } catch (err) {
-        console.warn("[DriverMode] Store trips fallback", err);
-        if (isMounted) {
-          setDriverTrips(trips);
-          if (!currentTrip && trips.length > 0) {
-            setCurrentTrip(trips[0]);
-          }
-        }
+      } catch {
+        if (isMounted) setDriverTrips([]);
       }
     }
     loadDriverTrips();
     return () => {
       isMounted = false;
     };
-  }, [trips, tripsSubTab]);
+  }, [tripsSubTab]);
+
+  // GPS provider status — §24: if no real provider is configured we say so.
+  useEffect(() => {
+    let mounted = true;
+    apiClient.gps
+      .getStatus()
+      .then((s) => mounted && setGpsProviderConfigured(!!s?.configured))
+      .catch(() => mounted && setGpsProviderConfigured(false));
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleRequestTrip = async (tripId: string) => {
     setIsSubmitting(true);
     setActionSuccessMsg(null);
     setActionErrorMsg(null);
     try {
-      await apiClient.trips.requestTrip(tripId, `طلب الرحلة بواسطة السائق ${user?.fullName || "فهد الشمري"}`);
+      await apiClient.trips.requestTrip(tripId, `طلب الرحلة بواسطة السائق ${user?.fullName || ""}`);
       setActionSuccessMsg(t("Trip requested successfully! Sent to Operations for approval.", "تم إرسال طلب الرحلة لغرفة العمليات للموافقة بنجاح!"));
       const res = await apiClient.trips.getDriverTrips(tripsSubTab);
       if (res?.trips) setDriverTrips(res.trips);
     } catch {
-      setActionSuccessMsg(t("Trip requested successfully! Sent to Operations for approval.", "تم إرسال طلب الرحلة لغرفة العمليات للموافقة بنجاح!"));
+      setActionErrorMsg(t("Unable to send the trip request right now.", "تعذّر إرسال طلب الرحلة حاليًا."));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const active = currentTrip || driverTrips[0] || trips[0];
+  const active = currentTrip || driverTrips[0] || null;
 
-  // Helper mapped store trip
-  const mappedTrip: Trip = {
-    id: active?.id || "trip-1",
-    tripNumber: active?.tripNumber || "EJ-2026-000125",
-    truckId: active?.vehicleId || "v1",
-    driverId: active?.driverId || "d1",
-    shipper: active?.customerName || "شركة سدافكو للأغذية",
-    consignee: active?.deliveryAddress || "ميناء جدة الإسلامي",
-    originCity: active?.originCity || "الرياض",
-    originTerminal: active?.pickupAddress || "المستودع المركزي",
-    destinationCity: active?.destinationCity || "جدة",
-    destinationTerminal: active?.deliveryAddress || "ميناء جدة رصيف ٧",
-    corridorKey: active?.corridorKey || "riyadh-jeddah",
-    cargoType: normalizeVehicleType(active?.cargoType),
-    cargoWeightTons: Number(active?.cargoWeightTons || 19.8),
-    maxCapacityTons: Number(active?.maxCapacityTons || 25),
-    status: active?.status === "IN_TRANSIT" ? "on_road" : active?.status === "DELIVERED" ? "delivered" : "ready",
-    progressPct: active?.status === "IN_TRANSIT" ? 48 : 0,
-    speedKmH: Number(active?.currentSpeed || 85),
-    headingDeg: Number(active?.currentHeading || 255),
-    currentLat: Number(active?.currentLat || 24.7136),
-    currentLng: Number(active?.currentLng || 46.6753),
-    distanceTotalKm: 948,
-    distanceCoveredKm: 420,
-    distanceRemainingKm: 528,
-    etaMinutes: 210,
-    nextWaypointAr: "محطة ميزان القويعية",
-    nextWaypointEn: "Al Quwayiyah Weighbridge",
-    createdAt: active?.createdAt || "الآن",
-    qrCodeToken: `EJAZ-${active?.tripNumber || "EJ-2026-000125"}`,
-    timeline: [],
-  };
+  /** The map needs a route record; built only from real trip fields. */
+  const mappedTrip: Trip | null = active
+    ? {
+        id: active.id,
+        tripNumber: active.tripNumber,
+        truckId: active.vehicleId || active.truckId || "",
+        driverId: active.driverId || "",
+        shipper: active.customerName || "",
+        consignee: active.deliveryAddress || "",
+        originCity: active.originCity || "",
+        originTerminal: active.pickupAddress || "",
+        destinationCity: active.destinationCity || "",
+        destinationTerminal: active.deliveryAddress || "",
+        corridorKey: active.corridorKey || "riyadh-jeddah",
+        cargoType: normalizeVehicleType(active.cargoType),
+        cargoWeightTons: Number(active.cargoWeightTons || 0),
+        maxCapacityTons: Number(active.maxCapacityTons || 0),
+        status: active.status === "IN_TRANSIT" ? "on_road" : active.status === "DELIVERED" ? "delivered" : "ready",
+        progressPct: Number(active.progressPct || 0),
+        speedKmH: Number(active.currentSpeed || 0),
+        headingDeg: Number(active.currentHeading || 0),
+        currentLat: Number(active.currentLat || 0),
+        currentLng: Number(active.currentLng || 0),
+        distanceTotalKm: Number(active.distanceTotalKm || 0),
+        distanceCoveredKm: Number(active.distanceCoveredKm || 0),
+        distanceRemainingKm: Number(active.distanceRemainingKm || 0),
+        etaMinutes: Number(active.etaMinutes || 0),
+        nextWaypointAr: active.nextWaypointAr || "",
+        nextWaypointEn: active.nextWaypointEn || "",
+        createdAt: active.createdAt || "",
+        qrCodeToken: `EJAZ-${active.tripNumber || active.id}`,
+        timeline: [],
+      }
+    : null;
 
   // Real Device Geolocation watcher
   const toggleGpsBroadcast = () => {
@@ -153,7 +185,7 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
         async (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
-          const spd = Math.round((pos.coords.speed || 0) * 3.6); // convert m/s to km/h
+          const spd = Math.round((pos.coords.speed || 0) * 3.6);
           const heading = Math.round(pos.coords.heading || 0);
           const acc = Math.round(pos.coords.accuracy || 10);
 
@@ -166,11 +198,10 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
             timestamp: new Date().toLocaleTimeString("ar-SA"),
           });
 
-          // Ingest telemetry into authoritative backend
           try {
             await apiClient.gps.recordTelemetry({
-              vehicleId: active?.vehicleId || "v1",
-              deviceId: `DEVICE-${user?.id || "d1"}`,
+              vehicleId: active?.vehicleId,
+              deviceId: `DEVICE-${user?.id || user?.driverId || ""}`,
               tripId: active?.id,
               latitude: lat,
               longitude: lng,
@@ -193,7 +224,6 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
     }
   };
 
-  // Cleanup geolocation on unmount
   useEffect(() => {
     return () => {
       if (watchIdRef.current !== null) {
@@ -202,7 +232,6 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
     };
   }, []);
 
-  // Execute canonical state transition
   const handleTransitionAction = async (targetStatus: string, actionLabelAr: string) => {
     if (!active?.id) return;
     setIsSubmitting(true);
@@ -221,10 +250,10 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
     try {
       const res = await apiClient.trips.transition(active.id, {
         targetStatus,
-        notes: `تم الإجراء بواسطة السائق ${user?.fullName || "فهد الشمري"}: ${actionLabelAr}`,
+        notes: `تم الإجراء بواسطة السائق ${user?.fullName || ""}: ${actionLabelAr}`,
         reason: actionLabelAr,
-        latitude: gpsTelemetry?.latitude || active.currentLat,
-        longitude: gpsTelemetry?.longitude || active.currentLng,
+        latitude: gpsTelemetry?.latitude,
+        longitude: gpsTelemetry?.longitude,
       });
 
       if (res?.trip) {
@@ -233,20 +262,21 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
       updateTripStatus(active.id, mappedUiStatus, actionLabelAr);
       setActionSuccessMsg(`تم تحديث حالة الرحلة بنجاح إلى: ${actionLabelAr}`);
     } catch {
-      setCurrentTrip((prev: any) => (prev ? { ...prev, status: targetStatus } : { ...active, status: targetStatus }));
-      updateTripStatus(active.id, mappedUiStatus, actionLabelAr);
-      setActionSuccessMsg(`تم تحديث حالة الرحلة بنجاح إلى: ${actionLabelAr}`);
+      setActionErrorMsg(t("Unable to update the trip status.", "تعذّر تحديث حالة الرحلة."));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Submit Proof of Delivery (POD)
   const handleSubmitPOD = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionErrorMsg(null);
     if (!active?.id || !recipientName) {
-      setActionErrorMsg("يرجى إدخال اسم المستلم وتأكيد التوقيع");
+      setActionErrorMsg(t("Enter the recipient name and confirm the signature.", "يرجى إدخال اسم المستلم وتأكيد التوقيع"));
+      return;
+    }
+    if (!signatureDone) {
+      setActionErrorMsg(t("Confirm the recipient's digital signature first.", "يرجى تأكيد التوقيع الإلكتروني من المستلم أولًا."));
       return;
     }
 
@@ -258,15 +288,19 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
         recipientPhone,
         notes: deliveryNotes,
         signatureUrl: "SIGNED_DIGITALLY_ON_DRIVER_GLASS",
-        latitude: gpsTelemetry?.latitude || active.currentLat,
-        longitude: gpsTelemetry?.longitude || active.currentLng,
+        latitude: gpsTelemetry?.latitude,
+        longitude: gpsTelemetry?.longitude,
       });
     } catch {
-      /* continue with local state update in demo/offline mode */
+      /* the transition below still records the delivery event */
     }
     try {
       await handleTransitionAction("DELIVERED", "تم إثبات التسليم وتوقيع المستلم");
-      setActionSuccessMsg("تم توثيق إثبات التسليم (POD) وإغلاق الرحلة بنجاح!");
+      setActionSuccessMsg(t("Proof of delivery recorded and the trip is closed.", "تم توثيق إثبات التسليم (POD) وإغلاق الرحلة بنجاح!"));
+      setRecipientName("");
+      setRecipientPhone("");
+      setDeliveryNotes("");
+      setSignatureDone(false);
       setActiveTab("home");
     } finally {
       setIsSubmitting(false);
@@ -275,52 +309,44 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-surface-0 text-white flex flex-col justify-between select-none">
-      {/* Scrollable Content Container */}
       <div className="scroll-thin flex-1 overflow-y-auto pb-24">
-        {/* Driver Shift Header */}
-        <div className="px-5 pt-12 pb-4 bg-gradient-to-b from-navy via-navy to-surface-0 border-b border-border-subtle">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-brand/20 text-[13px] font-bold text-brand border border-brand/30">
-                {user?.fullName?.slice(0, 2) || "DR"}
-              </span>
-              <div>
-                <div className="text-[10px] uppercase tracking-wider text-text-muted">
-                  {t("Driver Terminal", "بوابة السائق الميدانية")}
-                </div>
-                <div className="text-[14px] font-bold text-white truncate max-w-[190px]">
-                  {user?.fullName || "فهد الشمري (كابتن أسطول)"}
-                </div>
+        {/* Greeting — the live identity, no hardcoded names or ratings (§32) */}
+        <div className="px-5 pt-5 pb-4 bg-gradient-to-b from-navy via-navy to-surface-0 border-b border-border-subtle">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-brand/20 text-[13px] font-bold text-brand border border-brand/30">
+              {(user?.fullName || "—").slice(0, 2)}
+            </span>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-text-muted">
+                {t("Driver app", "تطبيق السائق")}
+              </div>
+              <div className="text-[14px] font-bold text-white truncate max-w-[220px]">
+                {t("Welcome", "مرحبًا")}، {user?.fullName || user?.email || "—"}
               </div>
             </div>
-
-            <div className="flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-semibold border border-white/10">
-              <span className="text-brand font-bold">★ 4.95</span>
-              <span className="text-white/40">·</span>
+            <div className="ms-auto flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-semibold border border-white/10">
               <span className="text-status-active">{t("On duty", "مناوب")}</span>
             </div>
           </div>
 
-          {/* Assigned Truck Badge */}
-          {(() => {
-            const assignedType = active?.cargoType || (user?.driverId ? "flatbed" : "reefer");
-            const assignedMeta = getVehicleTypeMeta(assignedType);
-            return (
-              <div className="mt-3.5 flex items-center justify-between rounded-[12px] bg-surface-2 p-2.5 border border-border-subtle text-[11px]">
-                <div className="flex items-center gap-2.5 truncate">
-                  <TruckTypeAvatar truckType={assignedType} size={30} iconSize={16} showBadge />
-                  <div className="truncate">
-                    <span className="text-text-muted me-1">{t("Assigned Vehicle:", "الشاحنة المكلفة:")}</span>
-                    <strong className="text-white truncate">ر ج د ٤٨٢١ ({assignedMeta.arabicName})</strong>
-                  </div>
+          {/* Assigned truck badge — real data only */}
+          {active && (
+            <div className="mt-3.5 flex items-center justify-between rounded-[12px] bg-surface-2 p-2.5 border border-border-subtle text-[11px]">
+              <div className="flex items-center gap-2.5 truncate">
+                <TruckTypeAvatar truckType={active.cargoType || "flatbed"} size={30} iconSize={16} showBadge />
+                <div className="truncate">
+                  <span className="text-text-muted me-1">{t("Assigned Vehicle:", "الشاحنة المكلفة:")}</span>
+                  <strong className="text-white truncate">
+                    {active.vehiclePlate || active.plate || t("—", "—")}{" "}
+                    {active.cargoType ? `(${getVehicleTypeMeta(active.cargoType).arabicName})` : ""}
+                  </strong>
                 </div>
-                <TruckTypeBadge truckType={assignedType} size={11} />
               </div>
-            );
-          })()}
+              <TruckTypeBadge truckType={active.cargoType || "flatbed"} size={11} />
+            </div>
+          )}
         </div>
 
-        {/* Action feedback message */}
         {actionSuccessMsg && (
           <div className="mx-5 mt-3 rounded-[12px] bg-status-active/15 border border-status-active/30 p-3 text-[11.5px] text-status-active font-semibold text-center animate-fade-in flex items-center justify-center gap-2">
             <IconCheck size={16} />
@@ -335,364 +361,259 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
           </div>
         )}
 
-        {/* TAB 1: DRIVER HOME */}
+        {/* ── الرئيسية ─────────────────────────────────────────────── */}
         {activeTab === "home" && (
           <div className="px-5 py-4 space-y-4 animate-fade-in">
-            {/* Active Assignment Card */}
             {active ? (
               <div className="rounded-[18px] bg-gradient-to-br from-navy via-surface-1 to-surface-2 p-4 border border-border-subtle shadow-xl space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-text-muted uppercase">{t("Current trip", "الرحلة الحالية")}</span>
+                  <span className="text-[11px] font-bold text-brand tabular-nums">{active.tripNumber}</span>
+                </div>
+                <div className="text-[13.5px] font-bold text-white">
+                  {td(active.originCity)} ← {td(active.destinationCity)}
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-[10px] rounded-[10px] bg-surface-2 p-2.5 border border-white/5 tabular-nums">
                   <div>
-                    <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("Active Assignment", "مهمة النقل الحالية")}</span>
-                    <div className="text-[15px] font-bold text-brand">{active.tripNumber}</div>
+                    <div className="text-text-muted">{t("Status", "الحالة")}</div>
+                    <div className="font-bold text-white">{td(active.statusAr || active.status)}</div>
                   </div>
-                  <span className="rounded-full bg-status-active/15 border border-status-active/30 px-2.5 py-0.5 text-[10.5px] font-bold text-status-active">
-                    {active.status}
-                  </span>
-                </div>
-
-                {/* Route Points */}
-                <div className="grid grid-cols-2 gap-2 text-[11.5px]">
-                  <div className="rounded-[10px] bg-surface-0/60 p-2 border border-white/5">
-                    <div className="text-[10px] text-text-muted">{t("Loading Terminal", "نقطة التحميل")}</div>
-                    <div className="font-bold text-white mt-0.5 truncate">{active.originCity}</div>
+                  <div>
+                    <div className="text-text-muted">{t("Cargo", "الحمولة")}</div>
+                    <div className="font-bold text-white">{active.cargoWeightTons ? `${active.cargoWeightTons}` : "—"}</div>
                   </div>
-                  <div className="rounded-[10px] bg-surface-0/60 p-2 border border-white/5">
-                    <div className="text-[10px] text-text-muted">{t("Destination Discharge", "وجهة التفريغ")}</div>
-                    <div className="font-bold text-white mt-0.5 truncate">{active.destinationCity}</div>
+                  <div>
+                    <div className="text-text-muted">{t("Type", "النوع")}</div>
+                    <div className="font-bold text-white">{getVehicleTypeMeta(active.cargoType || "flatbed").arabicName}</div>
                   </div>
                 </div>
-
-                {/* Cargo spec */}
-                <div className="flex items-center justify-between text-[11px] text-text-secondary pt-1">
-                  <span>{t("Cargo:", "الحمولة:")} <strong className="text-white">{active.cargoDescription || "ألبان طازجة مبردة"}</strong></span>
-                  <span className="text-brand font-bold tabular-nums">{active.cargoWeightTons || 19.8} طن</span>
-                </div>
-
-                {/* Button to current trip actions */}
                 <button
                   onClick={() => setActiveTab("trip")}
-                  className="w-full flex h-10 items-center justify-center gap-2 rounded-[12px] bg-brand text-on-brand text-[12.5px] font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
+                  className="w-full h-10 rounded-[12px] bg-brand text-on-brand font-bold text-[12px] hover:brightness-110 active:scale-95 transition-all"
                 >
-                  <IconStraight size={16} />
-                  <span>{t("Open Trip Actions & Roadmap", "تنفيذ إجراءات الرحلة والمسار")}</span>
+                  {t("Open current trip", "فتح الرحلة الحالية")}
                 </button>
               </div>
             ) : (
-              <div className="rounded-[16px] bg-surface-1 p-6 text-center text-text-muted border border-border-subtle">
-                {t("No active trip currently assigned to you", "لا توجد رحلة مسندة إليك حالياً")}
-              </div>
-            )}
-
-            {/* Live GPS Broadcast Widget */}
-            <div className="rounded-[16px] bg-surface-1 p-4 border border-border-subtle space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[12.5px] font-bold text-white">{t("Field Driver GPS Broadcast", "بث موقع الجهاز الميداني")}</div>
-                  <div className="text-[10.5px] text-text-muted">
-                    {isGpsBroadcasting ? t("Live device location transmitting", "جاري بث الموقع الحقيقي للمركز والعميل") : t("GPS telemetry paused", "البث الميداني متوقف")}
-                  </div>
-                </div>
+              <div className="rounded-[18px] border border-border-subtle bg-surface-1 p-6 text-center">
+                <IconOrders size={22} className="mx-auto text-text-muted" />
+                <p className="mt-2 text-[11.5px] text-text-muted">
+                  {t("No trips are assigned to you yet.", "لا توجد رحلات مسندة إليك حتى الآن.")}
+                </p>
                 <button
-                  onClick={toggleGpsBroadcast}
-                  className={cn(
-                    "px-3 py-1.5 rounded-[10px] text-[11.5px] font-bold transition-all active:scale-95",
-                    isGpsBroadcasting
-                      ? "bg-status-danger text-white shadow-lg shadow-status-danger/30"
-                      : "bg-brand text-on-brand shadow-lg shadow-brand/25"
-                  )}
+                  onClick={() => setActiveTab("trips")}
+                  className="mt-3 rounded-full bg-brand/15 px-4 py-1.5 text-[11px] font-bold text-brand"
                 >
-                  {isGpsBroadcasting ? t("Stop GPS", "إيقاف البث") : t("Start GPS", "تفعيل البث")}
+                  {t("Browse available trips", "تصفح الرحلات المتاحة")}
                 </button>
               </div>
-
-              {gpsTelemetry && (
-                <div className="grid grid-cols-3 gap-2 text-center text-[10px] rounded-[10px] bg-surface-2 p-2.5 border border-white/5 tabular-nums">
-                  <div>
-                    <span className="text-text-muted block">{t("Speed", "السرعة")}</span>
-                    <strong className="text-status-active text-[12px]">{gpsTelemetry.speed} كم/س</strong>
-                  </div>
-                  <div>
-                    <span className="text-text-muted block">{t("Accuracy", "الدقة")}</span>
-                    <strong className="text-white text-[12px]">±{gpsTelemetry.accuracy}م</strong>
-                  </div>
-                  <div>
-                    <span className="text-text-muted block">{t("Last ping", "آخر إرسال")}</span>
-                    <strong className="text-brand text-[12px]">{td(gpsTelemetry.timestamp)}</strong>
-                  </div>
-                </div>
-              )}
-
-              {gpsError && (
-                <div className="text-[10.5px] text-status-danger bg-status-danger/10 p-2 rounded-[8px] border border-status-danger/20">
-                  {gpsError}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         )}
 
-        {/* TAB 2: DRIVER TRIPS (All | Available | Confirmed | Active | Completed) */}
+        {/* ── الرحلات ──────────────────────────────────────────────── */}
         {activeTab === "trips" && (
-          <div className="px-5 py-4 space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
-              <div>
-                <span className="text-[10px] text-text-muted uppercase tracking-wider">
-                  {t("Driver Fleet Schedule", "جدول رحلات السائق والمهام")}
-                </span>
-                <h2 className="text-[16px] font-bold text-white">
-                  {t("Trips & Available Dispatch", "الرحلات وعروض النقل المتاحة")}
-                </h2>
-              </div>
-              <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-[10.5px] font-bold text-brand tabular-nums">
-                {driverTrips.length} {t("Trips", "رحلة")}
-              </span>
-            </div>
-
-            {/* 5-Filter Segment Control: الكل | متاحة | مؤكدة | جارية | مكتملة */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 scroll-thin text-[11px] font-semibold">
-              {[
-                ["all", t("All", "الكل")],
-                ["available", t("Available", "متاحة")],
-                ["confirmed", t("Confirmed", "مؤكدة")],
-                ["active", t("Active", "جارية")],
-                ["completed", t("Completed", "مكتملة")],
-              ].map(([key, label]) => (
+          <div className="px-5 py-4 space-y-3 animate-fade-in">
+            <h2 className="text-[15px] font-bold text-white">{t("Trips & Available Dispatch", "الرحلات وعروض النقل المتاحة")}</h2>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scroll-x">
+              {(["all", "available", "confirmed", "active", "completed"] as const).map((key) => (
                 <button
                   key={key}
-                  onClick={() => setTripsSubTab(key as any)}
+                  onClick={() => setTripsSubTab(key)}
                   className={cn(
-                    "px-3 py-1.5 rounded-full whitespace-nowrap transition-all duration-200 active:scale-95",
-                    tripsSubTab === key
-                      ? "bg-brand text-on-brand font-bold shadow-md shadow-brand/20"
-                      : "bg-surface-2 text-text-muted hover:text-white border border-white/5"
+                    "shrink-0 rounded-full px-3 py-1 text-[10px] font-bold transition-colors",
+                    tripsSubTab === key ? "bg-brand text-on-brand" : "bg-surface-2 text-text-muted hover:text-white"
                   )}
                 >
-                  {label}
+                  {key === "all" ? t("All", "الكل") : key === "available" ? t("Available", "المتاحة") : key === "confirmed" ? t("Confirmed", "المؤكدة") : key === "active" ? t("In progress", "الجارية") : t("Completed", "المكتملة")}
                 </button>
               ))}
             </div>
 
-            {/* Trips List */}
             {driverTrips.length === 0 ? (
-              <div className="rounded-[16px] bg-surface-1 p-8 text-center text-text-muted border border-border-subtle">
-                <IconTruck size={28} className="mx-auto mb-2 text-text-muted/40" />
-                <div className="text-[12px] font-semibold text-white">
-                  {tripsSubTab === "available"
-                    ? t("No open trips currently available for request", "لا توجد رحلات متاحة للطلب حالياً")
-                    : t("No trips found in this category", "لا توجد رحلات في هذا القسم")}
-                </div>
-                <p className="text-[10.5px] text-text-muted mt-1">
-                  {t("Check back shortly or contact Operations Dispatch", "يمكنك متابعة التحديثات الميدانية أو مراجعة غرفة العمليات")}
-                </p>
+              <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-6 text-center text-[11px] text-text-muted">
+                {tripsSubTab === "available"
+                  ? t("No available trips right now.", "لا توجد رحلات متاحة حاليًا.")
+                  : t("No trips in this list.", "لا توجد رحلات في هذه القائمة.")}
               </div>
             ) : (
-              <div className="space-y-3">
-                {driverTrips.map((tr) => {
-                  const isAvailable =
-                    tr.status === "DRAFT_CREATED" ||
-                    tr.status === "PENDING_APPROVAL" ||
-                    !tr.driverId ||
-                    tr.driverId === "unassigned";
-
-                  const isRequestedByMe =
-                    tr.requestedByDriverId === user?.driverId ||
-                    tr.requestedByDriverId === user?.id ||
-                    tr.driverRequestStatus === "PENDING";
-
-                  return (
-                    <div
-                      key={tr.id}
-                      className="rounded-[16px] bg-surface-1 p-4 border border-border-subtle shadow-lg space-y-3 transition-all hover:border-brand/30"
-                    >
-                      {/* Top Bar */}
-                      <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                        <div className="flex items-center gap-2">
-                          <TruckTypeAvatar truckType={tr.cargoType} size={30} iconSize={16} showBadge />
-                          <span className="text-[13.5px] font-bold text-brand">{tr.tripNumber}</span>
-                          <TruckTypeBadge truckType={tr.cargoType} size={11} />
-                        </div>
-                        <span
-                          className={cn(
-                            "rounded-full px-2.5 py-0.5 text-[10px] font-bold",
-                            tr.status === "IN_TRANSIT"
-                              ? "bg-status-active/15 text-status-active border border-status-active/30"
-                              : tr.status === "DELIVERED" || tr.status === "COMPLETED"
-                              ? "bg-accent-2/15 text-accent-2 border border-accent-2/30"
-                              : "bg-status-waiting/15 text-status-waiting border border-status-waiting/30"
-                          )}
+              driverTrips.map((tr) => (
+                <div key={tr.id} className="rounded-[14px] border border-border-subtle bg-surface-1 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-brand tabular-nums">{tr.tripNumber}</span>
+                    <TruckTypeBadge truckType={tr.cargoType || "flatbed"} size={10} />
+                  </div>
+                  <div className="text-[12px] font-semibold text-white">
+                    {td(tr.originCity)} ← {td(tr.destinationCity)}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-text-muted">{td(tr.statusAr || tr.status)}</span>
+                    <div className="flex gap-1.5">
+                      {tripsSubTab === "available" ? (
+                        <button
+                          onClick={() => handleRequestTrip(tr.id)}
+                          disabled={isSubmitting}
+                          className="rounded-[8px] bg-brand px-3 py-1 text-[10px] font-bold text-on-brand disabled:opacity-50"
                         >
-                          {tr.status}
-                        </span>
-                      </div>
-
-                      {/* Route */}
-                      <div className="grid grid-cols-2 gap-2 text-[11px]">
-                        <div className="rounded-[10px] bg-surface-2 p-2">
-                          <span className="text-[9.5px] text-text-muted block">{t("Origin", "الانطلاق")}</span>
-                          <strong className="text-white truncate block mt-0.5">{tr.originCity}</strong>
-                        </div>
-                        <div className="rounded-[10px] bg-surface-2 p-2">
-                          <span className="text-[9.5px] text-text-muted block">{t("Destination", "الوجهة")}</span>
-                          <strong className="text-white truncate block mt-0.5">{tr.destinationCity}</strong>
-                        </div>
-                      </div>
-
-                      {/* Cargo, Vehicle & Price */}
-                      <div className="flex items-center justify-between text-[11px] text-text-secondary pt-1">
-                        <span>
-                          {t("Cargo:", "الحمولة:")} <strong className="text-white">{tr.cargoDescription || tr.cargoType}</strong>
-                        </span>
-                        {tr.tripPrice && (
-                          <span className="text-status-active font-bold tabular-nums">
-                            {Number(tr.tripPrice).toLocaleString("ar-SA")} {t("SAR", "ر.س")}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="pt-1">
-                        {isAvailable ? (
-                          isRequestedByMe ? (
-                            <div className="w-full py-2 rounded-[10px] bg-status-waiting/20 border border-status-waiting/40 text-status-waiting text-center font-bold text-[11.5px] flex items-center justify-center gap-1.5">
-                              <span className="h-2 w-2 rounded-full bg-status-waiting animate-pulse" />
-                              <span>{t("Request Pending Operations Review", "الطلب قيد مراجعة غرفة العمليات")}</span>
-                            </div>
-                          ) : (
-                            <button
-                              disabled={isSubmitting}
-                              onClick={() => handleRequestTrip(tr.id)}
-                              className="w-full h-10 rounded-[12px] bg-brand text-on-brand font-bold text-[12px] shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
-                            >
-                              <IconTruck size={15} />
-                              <span>{t("Request Trip Assignment", "طلب الرحلة")}</span>
-                            </button>
-                          )
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setCurrentTrip(tr);
-                              setActiveTab("trip");
-                            }}
-                            className="w-full h-9 rounded-[10px] bg-surface-2 text-white hover:bg-surface-3 font-semibold text-[11.5px] border border-white/10 transition-colors flex items-center justify-center gap-2"
-                          >
-                            <IconStraight size={14} />
-                            <span>{t("Open Trip Actions & Roadmap", "عرض مسار وإجراءات الرحلة")}</span>
-                          </button>
-                        )}
-                      </div>
+                          {t("Accept trip", "طلب الرحلة")}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setCurrentTrip(tr);
+                            setActiveTab("trip");
+                          }}
+                          className="rounded-[8px] bg-surface-2 px-3 py-1 text-[10px] font-bold text-white hover:bg-brand hover:text-on-brand"
+                        >
+                          {t("Open", "فتح")}
+                        </button>
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* ── الرحلة الحالية + الإجراءات ───────────────────────────── */}
+        {activeTab === "trip" && (
+          <div className="px-5 py-4 space-y-3 animate-fade-in">
+            {active ? (
+              <>
+                <h2 className="text-[15px] font-bold text-white">{t("Current trip", "الرحلة الحالية")}</h2>
+                <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-3.5 space-y-2 text-[11px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-text-muted">{t("Trip number", "رقم الرحلة")}</span>
+                    <span className="font-bold text-brand tabular-nums">{active.tripNumber}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-text-muted">{t("Route", "المسار")}</span>
+                    <span className="font-semibold text-white">{td(active.originCity)} ← {td(active.destinationCity)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-text-muted">{t("Status", "الحالة")}</span>
+                    <span className="font-semibold text-white">{td(active.statusAr || active.status)}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleTransitionAction("IN_TRANSIT", "بدء الرحلة")}
+                  disabled={isSubmitting}
+                  className="w-full h-11 rounded-[12px] bg-status-active text-navy font-bold text-[13px] shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <IconStraight size={15} />
+                  {t("Start trip (IN_TRANSIT)", "بدء الرحلة (قيد النقل)")}
+                </button>
+                <button
+                  onClick={() => handleTransitionAction("ARRIVED_DESTINATION", "الوصول إلى الوجهة")}
+                  disabled={isSubmitting}
+                  className="w-full h-11 rounded-[12px] bg-brand text-on-brand font-bold text-[12.5px] hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {t("Arrived at destination", "الوصول إلى الوجهة")}
+                </button>
+                <button
+                  onClick={() => setActiveTab("pod")}
+                  className="w-full h-11 rounded-[12px] bg-surface-2 border border-border-subtle text-white font-bold text-[12.5px] hover:bg-surface-3 transition-all"
+                >
+                  {t("Proof of delivery (POD)", "إثبات التسليم (POD)")}
+                </button>
+              </>
+            ) : (
+              <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-6 text-center text-[11px] text-text-muted">
+                {t("No current trip selected.", "لم يتم تحديد رحلة حالية.")}
               </div>
             )}
           </div>
         )}
 
-        {/* TAB 2: CURRENT TRIP & SEQUENTIAL ACTIONS */}
-        {activeTab === "trip" && (
-          <div className="px-5 py-4 space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
-              <div>
-                <span className="text-[10.5px] text-text-muted uppercase">{t("Trip Control", "التحكم في مراحل الرحلة")}</span>
-                <div className="text-[15px] font-bold text-brand">{active?.tripNumber || "EJ-2026-000125"}</div>
-              </div>
-              <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-[10.5px] font-bold text-brand">
-                {active?.status || "CONFIRMED"}
+        {/* ── إثبات التسليم (POD) ─────────────────────────────────── */}
+        {activeTab === "pod" && (
+          <form onSubmit={handleSubmitPOD} className="px-5 py-4 space-y-3.5 animate-fade-in">
+            <h2 className="text-[15px] font-bold text-white">{t("Proof of Delivery (POD)", "توثيق إثبات التسليم الرسمي")}</h2>
+            <p className="text-[11.5px] text-text-muted leading-relaxed">
+              {t("Enter recipient info and capture digital sign-off for", "أدخل بيانات المستلم وتأكيد التوقيع الإلكتروني للشحنة")}{" "}
+              <strong className="text-brand">{active?.tripNumber || "—"}</strong>
+            </p>
+
+            <div>
+              <label className="mb-1 block text-[10px] font-semibold text-text-muted">
+                {t("Recipient name", "اسم المستلم")}
+                <span className="text-status-danger"> *</span>
+              </label>
+              <input
+                type="text"
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+                className="w-full rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-2 text-[11px] text-white focus:border-brand focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-semibold text-text-muted">
+                {t("Recipient phone", "هاتف المستلم")}
+              </label>
+              <input
+                type="tel"
+                value={recipientPhone}
+                onChange={(e) => setRecipientPhone(e.target.value)}
+                className="w-full rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-2 text-[11px] text-white focus:border-brand focus:outline-none"
+                inputMode="tel"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-semibold text-text-muted">
+                {t("Delivery notes", "ملاحظات التسليم")}
+              </label>
+              <textarea
+                value={deliveryNotes}
+                onChange={(e) => setDeliveryNotes(e.target.value)}
+                rows={2}
+                className="w-full rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-2 text-[11px] text-white focus:border-brand focus:outline-none"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSignatureDone((v) => !v)}
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-[12px] border p-3 text-start transition-colors",
+                signatureDone
+                  ? "border-status-active/50 bg-status-active/10"
+                  : "border-border-subtle bg-surface-2",
+              )}
+            >
+              <span
+                className={cn(
+                  "grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border",
+                  signatureDone ? "border-status-active bg-status-active text-navy" : "border-border-subtle",
+                )}
+              >
+                {signatureDone && <IconCheck size={12} />}
               </span>
-            </div>
+              <span className="text-[11px] font-semibold text-white">
+                {t("The recipient signed digitally", "تم التوقيع الإلكتروني من المستلم")}
+              </span>
+            </button>
 
-            {/* Step-by-Step Action Controller */}
-            <div className="rounded-[16px] bg-surface-1 p-4 border border-border-subtle space-y-3">
-              <h3 className="text-[13px] font-bold text-white flex items-center gap-2">
-                <IconBolt size={15} className="text-brand" />
-                <span>{t("Current Stage & Authorized Actions", "المرحلة التشغيلية الحالية والإجراء المتاح")}</span>
-              </h3>
-
-              <div className="rounded-[12px] bg-surface-2 p-3 text-[11.5px] leading-relaxed border border-white/5">
-                <span className="text-text-muted">{t("Current Status:", "الحالة الحالية:")} </span>
-                <strong className="text-status-active font-semibold">{active?.status}</strong>
-              </div>
-
-              {/* Dynamic Authorized Button based on Canonical State */}
-              <div className="pt-1">
-                {(!active?.status || active?.status === "CONFIRMED" || active?.status === "ASSIGNED") && (
-                  <button
-                    disabled={isSubmitting}
-                    onClick={() => handleTransitionAction("HEADING_TO_LOADING", "بدء التوجه لموقع التحميل")}
-                    className="w-full h-11 rounded-[12px] bg-brand text-on-brand font-bold text-[13px] shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>1. {t("Start Heading to Loading Bay", "بدء التوجه لموقع التحميل")}</span>
-                  </button>
-                )}
-
-                {active?.status === "HEADING_TO_LOADING" && (
-                  <button
-                    disabled={isSubmitting}
-                    onClick={() => handleTransitionAction("ARRIVED_LOADING", "تأكيد الوصول لساحة التحميل")}
-                    className="w-full h-11 rounded-[12px] bg-brand text-on-brand font-bold text-[13px] shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>2. {t("Confirm Arrived at Loading Bay", "تأكيد الوصول لموقع التحميل")}</span>
-                  </button>
-                )}
-
-                {active?.status === "ARRIVED_LOADING" && (
-                  <button
-                    disabled={isSubmitting}
-                    onClick={() => handleTransitionAction("LOADED", "تأكيد إتمام التحميل ومطابقة الحمولة")}
-                    className="w-full h-11 rounded-[12px] bg-brand text-on-brand font-bold text-[13px] shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>3. {t("Confirm Cargo Loaded & Strapped", "تأكيد إتمام التحميل وإصدار البوليصة")}</span>
-                  </button>
-                )}
-
-                {active?.status === "LOADED" && (
-                  <button
-                    disabled={isSubmitting}
-                    onClick={() => handleTransitionAction("IN_TRANSIT", "الانطلاق على الطريق السريع")}
-                    className="w-full h-11 rounded-[12px] bg-status-active text-navy font-bold text-[13px] shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>4. {t("Depart & Start Highway Transit", "الانطلاق وبدء مسار السفر (على الطريق)")}</span>
-                  </button>
-                )}
-
-                {active?.status === "IN_TRANSIT" && (
-                  <button
-                    disabled={isSubmitting}
-                    onClick={() => handleTransitionAction("ARRIVED_DESTINATION", "تأكيد الوصول لوجهة التفريغ")}
-                    className="w-full h-11 rounded-[12px] bg-accent-2 text-white font-bold text-[13px] shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>5. {t("Confirm Arrived at Destination", "تأكيد الوصول لوجهة التفريغ")}</span>
-                  </button>
-                )}
-
-                {active?.status === "ARRIVED_DESTINATION" && (
-                  <button
-                    disabled={isSubmitting}
-                    onClick={() => setActiveTab("pod")}
-                    className="w-full h-11 rounded-[12px] bg-status-active text-navy font-bold text-[13px] shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>6. {t("Proceed to Delivery & Sign POD", "إثبات التسليم وتوقيع المستلم (POD)")}</span>
-                  </button>
-                )}
-
-                {(active?.status === "DELIVERED" || active?.status === "COMPLETED") && (
-                  <div className="rounded-[12px] bg-status-active/20 border border-status-active/40 p-3 text-center text-status-active font-bold text-[12.5px]">
-                    ✓ {t("Trip Delivered & Completed Successfully", "تم تسليم الشحنة وإتمام الرحلة بنجاح")}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-11 rounded-[12px] bg-status-active text-navy font-bold text-[12.5px] shadow-lg shadow-status-active/25 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {isSubmitting ? t("Recording…", "جاري التوثيق…") : t("Confirm delivery (POD)", "اعتماد وتسجيل إثبات التسليم")}
+            </button>
+          </form>
         )}
 
-        {/* TAB 3: NAVIGATION & MAP */}
-        {activeTab === "gps" && (
+        {/* ── التتبع (GPS حقيقي فقط، §24) ─────────────────────────── */}
+        {activeTab === "track" && (
           <div className="h-full flex flex-col p-4 animate-fade-in space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] text-text-muted uppercase">{t("Driver Route Navigation", "ملاحة المسار والموقع الميداني")}</span>
-                <div className="text-[14px] font-bold text-white">{td(active?.originCity)} → {td(active?.destinationCity)}</div>
+                <div className="text-[14px] font-bold text-white">
+                  {active ? `${td(active.originCity)} → ${td(active.destinationCity)}` : t("No active trip", "لا توجد رحلة نشطة")}
+                </div>
               </div>
               <button
                 onClick={toggleGpsBroadcast}
@@ -701,151 +622,130 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
                   isGpsBroadcasting ? "bg-status-danger text-white" : "bg-brand text-on-brand"
                 )}
               >
-                {isGpsBroadcasting ? "إيقاف GPS" : "تشغيل GPS"}
+                {isGpsBroadcasting ? t("Stop GPS", "إيقاف GPS") : t("Start GPS", "تشغيل GPS")}
               </button>
             </div>
 
-            {/* Embedded Live Map Component */}
-            <div className="h-[340px] w-full rounded-[16px] overflow-hidden border border-border-subtle shadow-xl">
-              <InteractiveMap trip={mappedTrip} compact showCardOverlay={false} />
-            </div>
+            {gpsProviderConfigured === false && (
+              <div className="rounded-[12px] border border-brand/40 bg-brand/10 p-2.5 text-[10.5px] font-semibold text-brand">
+                {t("GPS service is not configured on the platform. Device GPS broadcasting still works; live fleet telemetry requires the provider setup.", "خدمة GPS غير مهيأة على المنصة. بث موقع الجهاز يعمل، لكن تتبع الأسطول المباشر يتطلب إعداد مزود الخدمة.")}
+              </div>
+            )}
+
+            {gpsError && (
+              <div className="rounded-[12px] border border-status-danger/40 bg-status-danger/10 p-2.5 text-[10.5px] text-status-danger">
+                {gpsError}
+              </div>
+            )}
+
+            {gpsTelemetry && (
+              <div className="grid grid-cols-3 gap-2 rounded-[10px] bg-surface-2 p-2.5 border border-white/5 text-center text-[10px] tabular-nums">
+                <div>
+                  <div className="text-text-muted">{t("Latitude", "خط العرض")}</div>
+                  <div className="font-bold text-white">{gpsTelemetry.latitude.toFixed(5)}</div>
+                </div>
+                <div>
+                  <div className="text-text-muted">{t("Longitude", "خط الطول")}</div>
+                  <div className="font-bold text-white">{gpsTelemetry.longitude.toFixed(5)}</div>
+                </div>
+                <div>
+                  <div className="text-text-muted">{t("Speed", "السرعة")}</div>
+                  <div className="font-bold text-white">{gpsTelemetry.speed} km/h</div>
+                </div>
+              </div>
+            )}
+
+            {mappedTrip && (
+              <div className="h-[320px] w-full rounded-[16px] overflow-hidden border border-border-subtle shadow-xl">
+                <InteractiveMap trip={mappedTrip} compact showCardOverlay={false} />
+              </div>
+            )}
           </div>
         )}
 
-        {/* TAB 4: PROOF OF DELIVERY (POD) */}
-        {activeTab === "pod" && (
-          <form onSubmit={handleSubmitPOD} className="px-5 py-4 space-y-3.5 animate-fade-in">
-            <h2 className="text-[15px] font-bold text-white">{t("Proof of Delivery (POD)", "توثيق إثبات التسليم الرسمي")}</h2>
-            <p className="text-[11.5px] text-text-muted leading-relaxed">
-              {t("Enter recipient info and capture digital sign-off for", "أدخل بيانات المستلم وتأكيد التوقيع الإلكتروني للشحنة")}{" "}
-              <strong className="text-brand">{active?.tripNumber}</strong>
-            </p>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">{t("Official recipient name", "اسم المستلم الرسمي")} *</label>
-              <input
-                type="text"
-                required
-                value={recipientName}
-                onChange={(e) => setRecipientName(e.target.value)}
-                placeholder={t("e.g. Tarek Mansour", "مثال: طارق منصور")}
-                className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-[12.5px] text-white border border-border-subtle outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">{t("Recipient phone number", "رقم هاتف المستلم")}</label>
-              <input
-                type="tel"
-                value={recipientPhone}
-                onChange={(e) => setRecipientPhone(e.target.value)}
-                placeholder="+966 5X XXX XXXX"
-                className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-[12.5px] text-white border border-border-subtle outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">{t("Cargo condition notes", "ملاحظات حالة البضاعة")}</label>
-              <textarea
-                rows={2}
-                value={deliveryNotes}
-                onChange={(e) => setDeliveryNotes(e.target.value)}
-                className="w-full rounded-[10px] bg-surface-2 p-2.5 text-[11.5px] text-white border border-border-subtle outline-none resize-none"
-              />
-            </div>
-
-            {/* Digital Signature Confirmation Pad */}
-            <div className="rounded-[12px] bg-surface-1 p-3 border border-border-subtle space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-white">{t("Recipient e-signature", "توقيع المستلم الإلكتروني")} *</span>
-                <span className="text-[10px] text-brand">{t("Certified with a digital fingerprint", "معتمد بالبصمة الرقمية")}</span>
-              </div>
-              <div
-                onClick={() => setSignatureDone(true)}
-                className={cn(
-                  "h-20 w-full rounded-[10px] border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors",
-                  signatureDone
-                    ? "border-status-active bg-status-active/10 text-status-active font-bold text-[12px]"
-                    : "border-border-subtle bg-surface-2 text-text-muted text-[11px]"
-                )}
-              >
-                {signatureDone ? "✓ تم تسجيل التوقيع الرقمي بنجاح" : "اضغط هنا لتسجيل توقيع المستلم على الشاشة"}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting || !signatureDone || !recipientName}
-              className="w-full h-11 rounded-[12px] bg-status-active text-navy font-bold text-[13px] shadow-lg shadow-status-active/25 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {isSubmitting ? "جاري التوثيق..." : "اعتماد وتسجيل إثبات التسليم (Confirm Delivery)"}
-            </button>
-          </form>
+        {/* ── الإشعارات ────────────────────────────────────────────── */}
+        {activeTab === "notifications" && (
+          <MobileNotificationsList
+            notifications={notifications.notifications}
+            loading={notifications.loading}
+            onMarkRead={notifications.markAsRead}
+            onReload={notifications.reload}
+          />
         )}
 
-        {/* TAB 5: DRIVER PROFILE */}
-        {activeTab === "profile" && (
+        {/* ── حسابي ────────────────────────────────────────────────── */}
+        {activeTab === "account" && (
           <div className="px-5 py-4 space-y-4 animate-fade-in">
-            <h2 className="text-[15px] font-bold text-white">{t("Driver Profile", "الملف الشخصي للسائق")}</h2>
+            <h2 className="text-[15px] font-bold text-white">{t("My account", "حسابي")}</h2>
 
-            <div className="rounded-[16px] bg-surface-1 p-4 border border-border-subtle space-y-3 text-[12px]">
-              <div className="flex items-center gap-3 pb-3 border-b border-white/5">
-                <span className="grid h-12 w-12 place-items-center rounded-full bg-brand/20 text-[15px] font-bold text-brand">
-                  {user?.fullName?.slice(0, 2) || "DR"}
+            <MobileSection title={t("Account data", "بيانات الحساب")}>
+              <div className="flex items-center gap-3 px-3.5 py-3.5 border-b border-border-subtle">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-brand/20 text-[13px] font-bold text-brand">
+                  {(user?.fullName || "—").slice(0, 2)}
                 </span>
-                <div>
-                  <div className="font-bold text-[14px] text-white">{user?.fullName || "فهد الشمري"}</div>
-                  <div className="text-[11px] text-text-muted">{user?.phone || "+966 55 123 4567"}</div>
+                <div className="min-w-0">
+                  <div className="text-[12.5px] font-bold text-white truncate">{user?.fullName || "—"}</div>
+                  <div className="text-[10px] text-text-muted truncate" dir="ltr">{user?.email || "—"}</div>
                 </div>
               </div>
+              <MobileRow label={t("Phone", "الهاتف")} value={user?.phone || "—"} />
+              <MobileRow label={t("Account type", "نوع الحساب")} value={user?.role ? String(user.role).replace(/_/g, " ") : "—"} />
+              <MobileRow
+                label={t("Account status", "حالة الحساب")}
+                value={
+                  user?.accountApproved === false
+                    ? t("Under review", "قيد المراجعة")
+                    : t("Active", "نشط")
+                }
+              />
+            </MobileSection>
 
-              <div className="flex items-center justify-between text-[11.5px]">
-                <span className="text-text-muted">{t("Approved licence number", "رقم الرخصة المعتمد")}:</span>
-                <span className="font-mono text-white">DL-SA-91823 ({t("heavy transport", "نقل ثقيل")})</span>
-              </div>
+            {/* §15-§16 — RBAC-gated user management (never in the header) */}
+            <MobileUserManagement user={user} />
 
-              <div className="flex items-center justify-between text-[11.5px]">
-                <span className="text-text-muted">{t("Driving licence validity", "صلاحية رخصة القيادة")}:</span>
-                <span className="text-status-active font-semibold">{t("Valid until", "سارية حتى")} 2028-06-14</span>
-              </div>
-
-              <div className="flex items-center justify-between text-[11.5px]">
-                <span className="text-text-muted">{t("Operational rating", "التقييم التشغيلي")}:</span>
-                <span className="text-brand font-bold">★ 4.95 ({t("184 completed trips", "184 رحلة ناجحة")})</span>
-              </div>
-            </div>
+            <MobileSection title={t("Settings", "الإعدادات")}>
+              <MobileRow
+                icon={IconDoc}
+                label={t("App settings", "إعدادات التطبيق")}
+                hint={t("Language, appearance, time & date", "اللغة، المظهر، الوقت والتاريخ")}
+                onClick={onOpenSettings}
+              />
+            </MobileSection>
 
             <button
               onClick={onLogout}
               className="w-full flex h-11 items-center justify-center gap-2 rounded-[12px] bg-status-danger/15 border border-status-danger/30 text-status-danger font-bold text-[12.5px] hover:bg-status-danger hover:text-white transition-all"
             >
-              <span>{t("Sign Out from Driver Account", "تسجيل الخروج من حساب السائق")}</span>
+              <span>{t("Sign out", "تسجيل الخروج")}</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* Modern Bottom Navigation Bar */}
+      {/* Bottom navigation: الرئيسية · الرحلات · التتبع · الإشعارات · حسابي (§29) */}
       <div className="absolute bottom-3 inset-x-4 z-40 flex items-center justify-around rounded-[18px] bg-navy/95 border border-white/10 px-2 py-2 shadow-2xl backdrop-blur-xl">
         {[
-          ["home", t("Shift", "الرئيسية"), IconHome],
+          ["home", t("Home", "الرئيسية"), IconHome],
           ["trips", t("Trips", "الرحلات"), IconOrders],
-          ["trip", t("Actions", "الإجراءات"), IconStraight],
-          ["gps", t("Route", "الملاحة"), IconPin],
-          ["profile", t("Profile", "حسابي"), IconProfile],
-        ].map(([id, label, IconComponent]: any) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={cn(
-              "flex flex-col items-center gap-1 py-1 px-2.5 rounded-[10px] transition-all duration-200 active:scale-95",
-              activeTab === id ? "text-brand font-bold" : "text-white/50 hover:text-white"
-            )}
-          >
-            <IconComponent size={18} />
-            <span className="text-[9.5px]">{label}</span>
-          </button>
-        ))}
+          ["track", t("Tracking", "التتبع"), IconPin],
+          ["notifications", t("Notifications", "الإشعارات"), IconBell],
+          ["account", t("Account", "حسابي"), IconProfile],
+        ].map(([id, label, IconComponent]: any) => {
+          const isActive = activeTab === id || (id === "trips" && (activeTab === "trip" || activeTab === "pod"));
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={cn(
+                "flex flex-col items-center gap-1 py-1 px-2 rounded-[10px] transition-all duration-200 active:scale-95",
+                isActive ? "text-brand font-bold" : "text-white/50 hover:text-white"
+              )}
+            >
+              <IconComponent size={18} />
+              <span className="text-[9px]">{label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

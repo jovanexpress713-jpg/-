@@ -103,8 +103,8 @@ export function RoleSwitcher() {
           </span>
           <span className="text-[11px] text-text-muted tabular-nums">
             {isSimulating
-              ? t("Live GPS Engine Running", "محرك التتبع المباشر نشط")
-              : t("Simulation Paused", "المحاكاة متوقفة مؤقتاً")}
+              ? t("Route demo moving · not live GPS", "حركة استعراضية للمسار · لا تتبع GPS حقيقي")
+              : t("Route demo paused", "الحركة الاستعراضية متوقفة")}
           </span>
         </div>
 
@@ -112,7 +112,7 @@ export function RoleSwitcher() {
           onClick={toggleSimulation}
           className="btn-ghost text-[10.5px] py-1 px-2.5 rounded-full border border-border-subtle hover:border-brand"
         >
-          {isSimulating ? t("Pause GPS", "إيقاف مؤقت") : t("Resume GPS", "استئناف الحركة")}
+          {isSimulating ? t("Pause demo", "إيقاف العرض") : t("Resume demo", "استئناف العرض")}
         </button>
 
         <span className="hidden text-text-muted lg:inline">|</span>

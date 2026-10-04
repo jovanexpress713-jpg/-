@@ -18,11 +18,18 @@ import { resolveUrdu } from "./localization/ur.glossary";
 import { localizeDataPair, localizeDataText } from "./localization/dataText";
 
 export type { Lang };
-export type Theme = "dark" | "light";
+/**
+ * Appearance preference (§5): «فاتح» · «داكن» · «حسب النظام». The stored value
+ * may be "system"; the document always receives the resolved "light"/"dark".
+ */
+export type Theme = "dark" | "light" | "system";
+export type ResolvedTheme = "dark" | "light";
 
 export interface Settings {
   lang: Lang;
   theme: Theme;
+  /** What the device is actually rendering right now ("system" is resolved). */
+  resolvedTheme: ResolvedTheme;
   dir: "rtl" | "ltr";
   setLang: (l: Lang) => void;
   setTheme: (t: Theme) => void;
@@ -102,13 +109,36 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(initialLang);
   /**
    * Appearance defaults to the light identity (white surfaces, navy ink,
-   * orange accents). The explicit device choice always wins, and dark mode is
-   * one tap away inside Account → Appearance (§26).
+   * orange accents). «حسب النظام» follows the device colour-scheme live; an
+   * explicit choice (light/dark) always wins and survives reloads (§5).
    */
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = read(THEME_KEY, "");
-    return saved === "light" || saved === "dark" ? saved : "light";
+    return saved === "light" || saved === "dark" || saved === "system" ? saved : "light";
   });
+  const [systemDark, setSystemDark] = useState<boolean>(() => {
+    try {
+      return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
+    } catch {
+      return false;
+    }
+  });
+
+  /** Follow the OS colour scheme while «حسب النظام» is active. */
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+      if (!mq) return;
+      const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  const resolvedTheme: ResolvedTheme =
+    theme === "system" ? (systemDark ? "dark" : "light") : theme;
 
   const dir = dirOf(lang);
   const tr = useMemo(() => getDictionary(lang), [lang]);
@@ -152,9 +182,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [lang, dir]);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme", resolvedTheme);
     write(THEME_KEY, theme);
-  }, [theme]);
+  }, [theme, resolvedTheme]);
 
   const t = useCallback(
     (en: string, ar: string, ur?: string) => {
@@ -179,8 +209,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<Settings>(
-    () => ({ lang, theme, dir, setLang, setTheme, t, tk, td, tdp, tr }),
-    [lang, theme, dir, setLang, t, tk, td, tdp, tr],
+    () => ({ lang, theme, resolvedTheme, dir, setLang, setTheme, t, tk, td, tdp, tr }),
+    [lang, theme, resolvedTheme, dir, setLang, t, tk, td, tdp, tr],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

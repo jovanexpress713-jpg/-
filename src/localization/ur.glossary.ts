@@ -17,6 +17,7 @@
 import { UR_SHELL } from "./urdu/shell";
 import { UR_OPS } from "./urdu/ops";
 import { UR_MOBILE } from "./urdu/mobile";
+import { UR_ORGANIZATION } from "./urdu/organization";
 import { urduFromArabic, UR_AR_PHRASES } from "./urdu/data";
 import { urduFromTemplate } from "./urdu/templates";
 
@@ -24,6 +25,7 @@ export const UR_EN: Record<string, string> = {
   ...UR_SHELL,
   ...UR_OPS,
   ...UR_MOBILE,
+  ...UR_ORGANIZATION,
 };
 
 /** Exact Urdu for an Arabic source string, when one was authored. */

@@ -110,9 +110,18 @@ function buildOfflineUser(acc: DemoAccount) {
 export function ConsoleAuthGate({
   onAuthenticated,
   onOpenMobileApp,
+  previewMode = false,
 }: {
   onAuthenticated: (user: any) => void;
-  onOpenMobileApp?: () => void;
+  /** Split launchers (§12): each button opens its own app interface. */
+  onOpenMobileApp?: (kind: "driver" | "client") => void;
+  /**
+   * «معاينة شاشة تسجيل الدخول» (§11): renders the sign-in surface exactly as
+   * an unauthenticated visitor sees it — WITHOUT any entry shortcuts (no direct
+   * control-room entry, no demo account buttons, no app launchers) and without
+   * actually signing anyone in.
+   */
+  previewMode?: boolean;
 }) {
   const { t, tk, lang } = useSettings();
   const activeLanguage = LANGUAGE_OPTIONS.find((option) => option.code === lang);
@@ -125,6 +134,7 @@ export function ConsoleAuthGate({
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   useEffect(() => {
+    if (previewMode) return;
     const restore = async () => {
       if (!getAuthToken()) return;
       try {
@@ -135,9 +145,10 @@ export function ConsoleAuthGate({
       }
     };
     restore();
-  }, [onAuthenticated]);
+  }, [onAuthenticated, previewMode]);
 
   const completeLogin = (user: any, token?: string) => {
+    if (previewMode) return;
     if (token) {
       setAuthToken(token);
     }
@@ -167,6 +178,10 @@ export function ConsoleAuthGate({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (previewMode) {
+      setError(t("Preview mode — sign-in is disabled.", "وضع المعاينة — تسجيل الدخول معطّل."));
+      return;
+    }
     if (!email.trim() || !password) {
       // If empty, allow instant demo entry as Super Admin
       await handleQuickDemoLogin(FALLBACK_DEMO_ACCOUNTS[0]);
@@ -281,15 +296,20 @@ export function ConsoleAuthGate({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h1 className="text-lg font-extrabold text-text-primary">
-                {t("Control Room Sign-in", "تسجيل الدخول لغرفة التحكم")}
+                {previewMode
+                  ? t("Sign-in screen preview", "معاينة شاشة تسجيل الدخول")
+                  : t("Control Room Sign-in", "تسجيل الدخول لغرفة التحكم")}
               </h1>
               <p className="mt-1 text-[12px] text-text-secondary">
-                {t("Instant preview enabled — click below to enter without password.", "وضع الاستعراض المباشر مفعّل — يمكنك الدخول فورا بدون كلمة مرور.")}
+                {previewMode
+                  ? t("Preview only — sign-in and app entry are disabled.", "معاينة فقط — تسجيل الدخول ودخول التطبيقات معطّلة.")
+                  : t("Instant preview enabled — click below to enter without password.", "وضع الاستعراض المباشر مفعّل — يمكنك الدخول فورا بدون كلمة مرور.")}
               </p>
             </div>
           </div>
 
-          {/* Instant Password-Free Entry Button */}
+          {/* Instant Password-Free Entry Button — never inside the preview (§11) */}
+          {!previewMode && (
           <button
             type="button"
             disabled={isSubmitting}
@@ -304,7 +324,9 @@ export function ConsoleAuthGate({
               )}
             </span>
           </button>
+          )}
 
+          {!previewMode && (
           <div className="mt-5 border-t border-border-subtle pt-4">
             <div className="mb-2.5 flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-brand">
@@ -341,16 +363,28 @@ export function ConsoleAuthGate({
               ))}
             </div>
           </div>
+          )}
 
-          {onOpenMobileApp && (
-            <button
-              type="button"
-              onClick={onOpenMobileApp}
-              className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-brand/40 bg-brand/10 text-[12.5px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
-            >
-              <IconTruck size={15} />
-              {t("Open the driver / client mobile app", "فتح تطبيق الجوال (السائق والعميل) مباشرة")}
-            </button>
+          {/* Mobile apps — two separate, explicit launchers (§12). Never in the preview (§11). */}
+          {!previewMode && onOpenMobileApp && (
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => onOpenMobileApp("client")}
+                className="flex h-10 items-center justify-center gap-2 rounded-[12px] border border-accent-2/40 bg-accent-2/10 text-[11.5px] font-bold text-accent-2 transition-colors hover:bg-accent-2 hover:text-white"
+              >
+                <IconProfile size={15} />
+                {t("Open the client app", "فتح تطبيق العميل")}
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenMobileApp("driver")}
+                className="flex h-10 items-center justify-center gap-2 rounded-[12px] border border-brand/40 bg-brand/10 text-[11.5px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
+              >
+                <IconTruck size={15} />
+                {t("Open the driver app", "فتح تطبيق السائق")}
+              </button>
+            </div>
           )}
 
           <form onSubmit={handleSubmit} className="mt-5 border-t border-border-subtle pt-4 space-y-3">

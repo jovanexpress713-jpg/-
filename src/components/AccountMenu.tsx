@@ -2,31 +2,28 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings, type Lang } from "../settings";
 import { LANGUAGE_OPTIONS } from "../localization/i18n";
-import { canSwitchAccounts, type SessionUser } from "../utils/permissions";
-import { FALLBACK_DEMO_ACCOUNTS, type DemoAccount } from "./ConsoleAuthGate";
 import {
   IconArrowRight,
   IconBolt,
   IconCheck,
-  IconChevron,
-  IconCopy,
-  IconDashboard,
-  IconDoc,
   IconGlobe,
+  IconDoc,
+  IconLock,
   IconProfile,
   IconTruck,
 } from "./Icons";
 
 /**
- * Account menu — the single place for everything secondary (§3, §10, §26).
+ * Account menu — the console's single secondary menu (§6).
  *
- * Language, appearance (light/dark), settings, help, role switching and sign-out
- * used to be six separate header buttons competing for one row. They now live
- * here, grouped and permission-gated, so the header carries only the four
- * operational affordances: search, assistant, notifications, account.
+ * Root rows are exactly the organised list:
+ *   حسابي · الإعدادات · تطبيقات الجوال · معاينة شاشة تسجيل الدخول ·
+ *   مساعد إيجاز الذكي · المساعدة والدعم · تسجيل الخروج
  *
- * The language rows always show 🌐 + flag + native name + ✓ on the active one —
- * never a flag alone, and never an ambiguous "EN/عربي" abbreviation.
+ * Language, appearance, notifications and account data are NOT duplicated
+ * here — «الإعدادات» opens the settings center where they live once (§27).
+ * «معاينة شاشة تسجيل الدخول» is a preview-only surface (§11), and the two
+ * mobile apps get separate, explicit launchers (§12).
  */
 
 export function LanguageList({
@@ -80,13 +77,12 @@ export function LanguageList({
 }
 
 interface AccountMenuProps {
-  user: SessionUser | null;
-  /** Active workspace: the control room console or the driver/client mobile app. */
-  view?: "web" | "mobile";
-  onViewChange?: (view: "web" | "mobile") => void;
-  onOpenSettings: (tab?: "profile" | "preferences" | "notifications" | "assistant" | "help") => void;
+  user: any;
+  onOpenSettings: (tab?: "account" | "app" | "apps" | "loginPreview" | "system" | "help") => void;
   onOpenAssistant: () => void;
-  onSwitchDemoAccount: (acc: DemoAccount) => void;
+  /** Open one mobile app in its own interface (§12). */
+  onOpenMobileApp: (kind: "driver" | "client") => void;
+  /** Preview the sign-in screen — preview only (§11). */
   onPreviewLogin: () => void;
   onLogout: () => void;
   className?: string;
@@ -94,18 +90,16 @@ interface AccountMenuProps {
 
 export function AccountMenu({
   user,
-  view,
-  onViewChange,
   onOpenSettings,
   onOpenAssistant,
-  onSwitchDemoAccount,
+  onOpenMobileApp,
   onPreviewLogin,
   onLogout,
   className,
 }: AccountMenuProps) {
-  const { t, tk, theme, setTheme, lang } = useSettings();
+  const { tk, lang } = useSettings();
   const [open, setOpen] = useState(false);
-  const [panel, setPanel] = useState<"root" | "language" | "appearance" | "accounts">("root");
+  const [panel, setPanel] = useState<"root" | "apps">("root");
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -175,7 +169,7 @@ export function AccountMenu({
         <span className="hidden max-w-[110px] truncate text-[11.5px] font-bold text-text-primary sm:block">
           {user?.fullName || user?.email || tk("app.shortName")}
         </span>
-        <IconChevron size={12} className="shrink-0 text-text-muted" />
+        <IconChevronInline />
       </button>
 
       {open && (
@@ -218,74 +212,55 @@ export function AccountMenu({
                     }}
                     className="flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-text-muted transition-colors hover:text-brand"
                   >
-                    {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                    {copied ? <IconCheck size={12} /> : <IconCopyInline />}
                     {copied ? tk("account.copied") : tk("account.copyEmail")}
                   </button>
                 </div>
               </div>
 
-              <button type="button" className="menu-row" onClick={() => { setOpen(false); onOpenSettings("profile"); }}>
+              {/* حسابي (§7) */}
+              <button type="button" className="menu-row" onClick={() => { setOpen(false); onOpenSettings("account"); }}>
                 <IconProfile size={16} className="shrink-0" />
                 <span className="flex-1 text-start">{tk("account.myAccount")}</span>
                 <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
               </button>
 
-              <button type="button" className="menu-row" onClick={() => { setOpen(false); onOpenSettings("preferences"); }}>
+              {/* الإعدادات (§5) */}
+              <button type="button" className="menu-row" onClick={() => { setOpen(false); onOpenSettings("app"); }}>
                 <IconDoc size={16} className="shrink-0" />
                 <span className="flex-1 text-start">{tk("account.settings")}</span>
                 <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
               </button>
 
+              {/* تطبيقات الجوال (§12) */}
+              <button type="button" className="menu-row" onClick={() => setPanel("apps")}>
+                <IconTruck size={16} className="shrink-0" />
+                <span className="flex-1 text-start">{tk("settings.tabApps")}</span>
+                <span className="text-[10px] text-text-muted">2</span>
+                <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
+              </button>
+
               <div className="my-1.5 border-t border-border-subtle" />
 
-              <button type="button" className="menu-row" onClick={() => setPanel("language")}>
-                <IconGlobe size={16} className="shrink-0" />
-                <span className="flex-1 text-start">{tk("account.language")}</span>
-                <span className="flex items-center gap-1.5 text-text-muted">
-                  <span className="text-[13px] leading-none">
-                    {LANGUAGE_OPTIONS.find((o) => o.code === lang)?.flag}
-                  </span>
-                  <IconChevron size={12} className="rtl:rotate-180" />
-                </span>
+              {/* معاينة شاشة تسجيل الدخول (§11) — preview only */}
+              <button type="button" className="menu-row" onClick={() => { setOpen(false); onPreviewLogin(); }}>
+                <IconLock size={16} className="shrink-0" />
+                <span className="flex-1 text-start">{tk("account.previewLogin")}</span>
               </button>
 
-              <button type="button" className="menu-row" onClick={() => setPanel("appearance")}>
-                <IconBolt size={16} className="shrink-0" />
-                <span className="flex-1 text-start">{tk("account.appearance")}</span>
-                <span className="text-[10.5px] font-semibold text-text-muted">
-                  {theme === "dark" ? tk("theme.dark") : tk("theme.light")}
-                </span>
-                <IconChevron size={12} className="text-text-muted rtl:rotate-180" />
-              </button>
-
-              {canSwitchAccounts(user) && (
-                <button type="button" className="menu-row" onClick={() => setPanel("accounts")}>
-                  <IconDashboard size={16} className="shrink-0" />
-                  <span className="flex-1 text-start">{tk("account.switchAccount")}</span>
-                  <IconChevron size={12} className="text-text-muted rtl:rotate-180" />
-                </button>
-              )}
-
+              {/* مساعد إيجاز الذكي */}
               <button type="button" className="menu-row" onClick={() => { setOpen(false); onOpenAssistant(); }}>
                 <IconBolt size={16} className="shrink-0 text-brand" />
                 <span className="flex-1 text-start">{tk("nav.ai")}</span>
               </button>
 
+              {/* المساعدة والدعم */}
               <button type="button" className="menu-row" onClick={() => { setOpen(false); onOpenSettings("help"); }}>
                 <IconDoc size={16} className="shrink-0" />
                 <span className="flex-1 text-start">{tk("account.help")}</span>
               </button>
 
               <div className="my-1.5 border-t border-border-subtle" />
-
-              <button
-                type="button"
-                className="menu-row"
-                onClick={() => { setOpen(false); onPreviewLogin(); }}
-              >
-                <IconProfile size={16} className="shrink-0" />
-                <span className="flex-1 text-start">{tk("account.previewLogin")}</span>
-              </button>
 
               <button
                 type="button"
@@ -298,110 +273,52 @@ export function AccountMenu({
             </>
           )}
 
-          {panel === "language" && (
-            <SettingsPanelShell title={tk("language.choose")} onBack={() => setPanel("root")}>
-              <LanguageList onSelect={() => setOpen(false)} />
-            </SettingsPanelShell>
-          )}
-
-          {panel === "appearance" && (
-            <SettingsPanelShell title={tk("account.appearance")} onBack={() => setPanel("root")}>
-              {(
-                [
-                  { id: "light" as const, label: tk("theme.light"), hint: tk("theme.lightHint") },
-                  { id: "dark" as const, label: tk("theme.dark"), hint: tk("theme.darkHint") },
-                ]
-              ).map((option) => (
+          {panel === "apps" && (
+            <div>
+              <div className="mb-1.5 flex items-center gap-2 border-b border-border-subtle pb-1.5">
                 <button
-                  key={option.id}
                   type="button"
-                  onClick={() => setTheme(option.id)}
-                  className={cn("menu-row justify-between", theme === option.id && "menu-row-on")}
+                  onClick={() => setPanel("root")}
+                  className="btn-icon-sm shrink-0"
+                  aria-label={tk("common.back")}
+                  title={tk("common.back")}
                 >
-                  <span className="min-w-0">
-                    <span className="block font-semibold">{option.label}</span>
-                    <span className="block truncate text-[10.5px] text-text-muted">{option.hint}</span>
-                  </span>
-                  {theme === option.id && <IconCheck size={14} className="shrink-0 text-brand" />}
+                  <IconArrowRight size={14} className="rtl:rotate-180" />
                 </button>
-              ))}
-            </SettingsPanelShell>
-          )}
-
-          {panel === "accounts" && (
-            <SettingsPanelShell title={tk("account.switchAccount")} onBack={() => setPanel("root")}>
-              {view && onViewChange && (
-                <div className="mb-2">
-                  <span className="menu-label px-1">{tk("header.viewLabel")}</span>
-                  <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-                    {(
-                      [
-                        { id: "web" as const, label: tk("header.viewControl") },
-                        { id: "mobile" as const, label: tk("header.viewMobile") },
-                      ]
-                    ).map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => {
-                          setOpen(false);
-                          onViewChange(option.id);
-                        }}
-                        className={cn(
-                          "rounded-[10px] px-2 py-2 text-[11px] font-semibold transition-colors",
-                          view === option.id
-                            ? "bg-brand text-on-brand"
-                            : "bg-surface-2 text-text-secondary hover:bg-surface-3",
-                        )}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="my-2 border-t border-border-subtle" />
-                </div>
-              )}
-              <p className="mb-1.5 px-1 text-[10.5px] leading-relaxed text-text-muted">
-                {tk("account.switchHint")}
-              </p>
-              <div className="max-h-[46vh] space-y-1 overflow-y-auto scroll-thin">
-                {FALLBACK_DEMO_ACCOUNTS.map((acc) => {
-                  const isDriver = acc.role === "DRIVER";
-                  const isClient = acc.role === "CUSTOMER";
-                  const active = user?.email === acc.email;
-                  return (
-                    <button
-                      key={acc.key}
-                      type="button"
-                      onClick={() => {
-                        setOpen(false);
-                        onSwitchDemoAccount(acc);
-                      }}
-                      className={cn("menu-row items-start", active && "menu-row-on")}
-                    >
-                      <span className="mt-0.5 shrink-0">
-                        {isDriver ? (
-                          <IconTruck size={15} className="text-brand" />
-                        ) : isClient ? (
-                          <IconProfile size={15} className="text-accent-2" />
-                        ) : (
-                          <IconDashboard size={15} className="text-status-active" />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[12px] font-bold text-text-primary">
-                          {t(acc.titleEn, acc.titleAr)}
-                        </span>
-                        <span className="block truncate text-[10px] text-text-muted">
-                          {acc.descEn ? t(acc.descEn, acc.descAr) : acc.descAr}
-                        </span>
-                      </span>
-                      {active && <IconCheck size={14} className="mt-0.5 shrink-0 text-brand" />}
-                    </button>
-                  );
-                })}
+                <span className="menu-label">{tk("settings.tabApps")}</span>
               </div>
-            </SettingsPanelShell>
+              <p className="mb-2 px-1 text-[10.5px] leading-relaxed text-text-muted">
+                {tk("settings.appsHint")}
+              </p>
+              <button
+                type="button"
+                onClick={() => { setOpen(false); onOpenMobileApp("client"); }}
+                className="menu-row"
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-2/15 text-accent-2">
+                  <IconProfile size={15} />
+                </span>
+                <span className="flex-1 text-start">
+                  <span className="block font-semibold">{tk("settings.appsClient")}</span>
+                  <span className="block text-[10px] text-text-muted">{tk("settings.appsHint")}</span>
+                </span>
+                <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
+              </button>
+              <button
+                type="button"
+                onClick={() => { setOpen(false); onOpenMobileApp("driver"); }}
+                className="menu-row"
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand/15 text-brand">
+                  <IconTruck size={15} />
+                </span>
+                <span className="flex-1 text-start">
+                  <span className="block font-semibold">{tk("settings.appsDriver")}</span>
+                  <span className="block text-[10px] text-text-muted">{tk("settings.appsHint")}</span>
+                </span>
+                <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -409,31 +326,20 @@ export function AccountMenu({
   );
 }
 
-function SettingsPanelShell({
-  title,
-  onBack,
-  children,
-}: {
-  title: string;
-  onBack: () => void;
-  children: React.ReactNode;
-}) {
-  const { tk } = useSettings();
+/** Inline chevron — kept tiny so the menu row stays balanced. */
+function IconChevronInline() {
   return (
-    <div>
-      <div className="mb-1.5 flex items-center gap-2 border-b border-border-subtle pb-1.5">
-        <button
-          type="button"
-          onClick={onBack}
-          className="btn-icon-sm shrink-0"
-          aria-label={tk("common.back")}
-          title={tk("common.back")}
-        >
-          <IconArrowRight size={14} className="rtl:rotate-180" />
-        </button>
-        <span className="menu-label">{title}</span>
-      </div>
-      <div className="max-h-[60vh] space-y-1 overflow-y-auto scroll-thin pt-0.5">{children}</div>
-    </div>
+    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" className="shrink-0 text-text-muted rtl:rotate-180">
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+function IconCopyInline() {
+  return (
+    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <rect x={9} y={9} width={11} height={11} rx={2} />
+      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+    </svg>
   );
 }

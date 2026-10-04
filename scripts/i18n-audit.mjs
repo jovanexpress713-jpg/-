@@ -46,7 +46,7 @@ for (const file of files) {
 }
 
 /* ── Load the Urdu layer ───────────────────────────────────────────────── */
-const glossaryFiles = ["shell", "ops", "mobile"].map((name) =>
+const glossaryFiles = ["shell", "ops", "mobile", "organization"].map((name) =>
   fs.readFileSync(path.join(root, "src", "localization", "urdu", `${name}.ts`), "utf8"),
 );
 const dataFile = fs.readFileSync(path.join(root, "src", "localization", "urdu", "data.ts"), "utf8");

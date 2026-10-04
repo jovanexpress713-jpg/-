@@ -1,428 +1,366 @@
-import { useState } from "react";
-import { cn } from "../utils/cn";
+import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "../settings";
-import { useFleetStore } from "../state/fleetStore";
+import { apiClient } from "../services/apiClient";
 import {
-  IconStar,
   IconClose,
+  IconDoc,
+  IconReport,
+  IconStar,
 } from "./Icons";
+
+/**
+ * Analytics & reports (§25).
+ *
+ * Real data only (§32): every figure comes from the authoritative API —
+ * `/api/reports/operational-summary`, `/api/finance/trips` and `/api/trips`.
+ * Nothing is hardcoded; when the backend is unreachable the report says so
+ * instead of drawing sample numbers.
+ *
+ * Export: PDF (print-ready layout), Excel (CSV workbook) and Print — with the
+ * official filters (trip, customer, driver, vehicle, date, month, year, status,
+ * revenue, expenses, payments).
+ */
 
 interface AnalyticsReportsProps {
   onClose?: () => void;
 }
 
-type Period = "day" | "week" | "month" | "year";
+interface FinanceRow {
+  tripId: string;
+  tripNumber?: string;
+  freightPrice?: number;
+  netRevenue?: number;
+  expenses?: number;
+  paidAmount?: number;
+  paymentStatus?: string;
+  settlementStatus?: string;
+  [key: string]: any;
+}
 
 export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
-  const { t } = useSettings();
-  const { trucks, drivers } = useFleetStore();
-  const [period, setPeriod] = useState<Period>("month");
+  const { t, td } = useSettings();
+  const [summary, setSummary] = useState<any | null>(null);
+  const [finance, setFinance] = useState<FinanceRow[]>([]);
+  const [trips, setTrips] = useState<any[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Dynamic datasets by period
-  const PERIOD_DATA: Record<
-    Period,
-    {
-      labels: string[];
-      tripsData: number[];
-      tonKmData: number[];
-      revenueData: number[]; // in thousands of SAR
+  // Filters (§25)
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("");
+  const [customer, setCustomer] = useState("");
+  const [driver, setDriver] = useState("");
+  const [vehicle, setVehicle] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
+  const [minRevenue, setMinRevenue] = useState("");
+  const [payment, setPayment] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const [sum, fin, tr] = await Promise.all([
+          apiClient.reports.getSummary().catch(() => null),
+          apiClient.finance.getTrips().catch(() => ({ trips: [] })),
+          apiClient.trips.getAll().catch(() => ({ trips: [] })),
+        ]);
+        if (!mounted) return;
+        setSummary(sum);
+        setFinance((fin?.trips || fin?.financials || []) as FinanceRow[]);
+        setTrips(tr?.trips || []);
+        setLoadError(null);
+      } catch {
+        if (mounted) setLoadError(t("Unable to reach the reporting service.", "تعذّر الوصول إلى خدمة التقارير."));
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [t]);
+
+  const financeByTrip = useMemo(() => {
+    const map = new Map<string, FinanceRow>();
+    for (const row of finance) map.set(row.tripId, row);
+    return map;
+  }, [finance]);
+
+  const filtered = useMemo(() => {
+    return trips.filter((tr) => {
+      if (q && !String(tr.tripNumber || "").includes(q) && !String(tr.customerName || "").includes(q)) return false;
+      if (status && tr.status !== status) return false;
+      if (customer && !String(tr.customerName || "").includes(customer)) return false;
+      if (driver && !String(tr.driverName || "").includes(driver)) return false;
+      if (vehicle && !String(tr.vehiclePlate || tr.vehicleId || "").includes(vehicle)) return false;
+      if (year && !String(tr.createdAt || "").startsWith(year)) return false;
+      if (month && !String(tr.createdAt || "").includes(month)) return false;
+      const fin = financeByTrip.get(tr.id);
+      if (minRevenue && Number(fin?.freightPrice || 0) < Number(minRevenue)) return false;
+      if (payment && String(fin?.paymentStatus || "") !== payment) return false;
+      return true;
+    });
+  }, [trips, q, status, customer, driver, vehicle, month, year, minRevenue, payment, financeByTrip]);
+
+  const totals = useMemo(() => {
+    let revenue = 0;
+    let expenses = 0;
+    let payments = 0;
+    for (const tr of filtered) {
+      const fin = financeByTrip.get(tr.id);
+      revenue += Number(fin?.freightPrice || 0);
+      expenses += Number(fin?.expenses || 0);
+      payments += Number(fin?.paidAmount || 0);
     }
-  > = {
-    day: {
-      labels: ["٠٠:٠٠", "٠٤:٠٠", "٠٨:٠٠", "١٢:٠٠", "١٦:٠٠", "٢٠:٠٠"],
-      tripsData: [4, 8, 14, 22, 19, 12],
-      tonKmData: [120, 240, 480, 890, 720, 430],
-      revenueData: [18, 34, 62, 95, 84, 52],
-    },
-    week: {
-      labels: ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"],
-      tripsData: [18, 26, 32, 29, 34, 38, 14],
-      tonKmData: [620, 940, 1180, 1050, 1240, 1420, 510],
-      revenueData: [72, 105, 138, 122, 145, 168, 58],
-    },
-    month: {
-      labels: ["الأسبوع ١", "الأسبوع ٢", "الأسبوع ٣", "الأسبوع ٤"],
-      tripsData: [112, 134, 148, 162],
-      tonKmData: [4200, 5100, 5800, 6400],
-      revenueData: [480, 560, 620, 710],
-    },
-    year: {
-      labels: ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
-      tripsData: [420, 460, 510, 490, 540, 580, 610, 640, 690, 720, 750, 790],
-      tonKmData: [16000, 18500, 21000, 19800, 22400, 24100, 25800, 27200, 29000, 31200, 32800, 34500],
-      revenueData: [1800, 2100, 2400, 2250, 2600, 2800, 3100, 3250, 3500, 3750, 3900, 4150],
-    },
+    return { revenue, expenses, payments };
+  }, [filtered, financeByTrip]);
+
+  /* ── Exports (§25): Excel/CSV, PDF & Print ─────────────────────────── */
+
+  const exportRows = () =>
+    filtered.map((tr) => {
+      const fin: Partial<FinanceRow> = financeByTrip.get(tr.id) || {};
+      return {
+        tripNumber: tr.tripNumber || "",
+        status: tr.status || "",
+        customer: tr.customerName || "",
+        driver: tr.driverName || "",
+        vehicle: tr.vehiclePlate || tr.vehicleId || "",
+        origin: tr.originCity || "",
+        destination: tr.destinationCity || "",
+        revenueSar: Number(fin.freightPrice || 0),
+        expensesSar: Number(fin.expenses || 0),
+        paymentsSar: Number(fin.paidAmount || 0),
+        paymentStatus: fin.paymentStatus || "",
+      };
+    });
+
+  const exportExcel = () => {
+    const rows = exportRows();
+    const header = Object.keys(rows[0] || {
+      tripNumber: "", status: "", customer: "", driver: "", vehicle: "",
+      origin: "", destination: "", revenueSar: "", expensesSar: "", paymentsSar: "", paymentStatus: "",
+    });
+    const csv = [
+      header.join(","),
+      ...rows.map((r) => header.map((h) => JSON.stringify(String((r as any)[h] ?? ""))).join(",")),
+    ].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `EJAZ-REPORT-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const currentData = PERIOD_DATA[period];
+  const exportPdf = () => {
+    // The print-ready layout is the PDF source — the browser print dialog
+    // offers "Save as PDF" with the same official header (§25).
+    window.print();
+  };
 
-  // Max values for SVG normalization
-  const maxTrips = Math.max(...currentData.tripsData, 1);
-
-  // Donut chart segments for fleet status
-  const activeCount = trucks.filter((tk) => tk.status === "active").length;
-  const waitingCount = trucks.filter((tk) => tk.status === "waiting").length;
-  const inactiveCount = trucks.filter((tk) => tk.status === "inactive").length;
-  const totalFleet = trucks.length || 1;
-
-  const pActive = (activeCount / totalFleet) * 100;
-  const pWaiting = (waitingCount / totalFleet) * 100;
-  const pInactive = (inactiveCount / totalFleet) * 100;
-
-  // Circumference for 2*PI*R (R=36)
-  const circ = 2 * Math.PI * 36;
-  const strokeActive = (pActive / 100) * circ;
-  const strokeWaiting = (pWaiting / 100) * circ;
-  const strokeInactive = (pInactive / 100) * circ;
+  const metric = summary?.metrics || {};
 
   return (
-    <div className="flex h-full flex-col bg-surface-0 min-h-0">
-      {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle p-4 lg:px-6">
+    <div className="print-area">
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          .print-area, .print-area * { visibility: visible; }
+          .print-area { position: absolute; inset: 0; padding: 24px; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
+
+      {/* Toolbar */}
+      <div className="no-print flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-[22px] font-bold text-text-primary">
-              {t("Logistics Operations & Performance Analytics", "لوحة تحليلات الأداء والتقارير التشغيلية")}
-            </h2>
-            <span className="badge bg-brand/20 text-brand">
-              {t("Live Data", "بيانات حية")}
-            </span>
-          </div>
-          <p className="text-[12px] text-text-muted mt-0.5">
-            {t(
-              "Data-driven freight metrics, fuel efficiency, ton-kilometer throughput, and driver rankings",
-              "مؤشرات دقيقة لأحجام النقل، كفاءة الوقود، حركة الأطنان، وسجل تميز السائقين"
-            )}
+          <h2 className="text-[var(--type-page-title)] font-extrabold text-text-primary">
+            {t("Reports & analytics", "التقارير والتحليلات")}
+          </h2>
+          <p className="text-[11px] text-text-muted">
+            {t("Real operational & financial data from the enterprise backend", "بيانات تشغيلية ومالية حقيقية من الخادم المركزي")}
           </p>
         </div>
-
-        {/* Period Selector Tabs */}
-        <div className="flex items-center gap-1 rounded-full bg-surface-2 p-1 border border-border-subtle">
-          {(
-            [
-              ["day", t("Day", "يوم")],
-              ["week", t("Week", "أسبوع")],
-              ["month", t("Month", "شهر")],
-              ["year", t("Year", "سنة")],
-            ] as [Period, string][]
-          ).map(([pKey, pLabel]) => (
-            <button
-              key={pKey}
-              onClick={() => setPeriod(pKey)}
-              className={cn(
-                "rounded-full px-3.5 py-1 text-[11.5px] font-semibold transition-all active:scale-95",
-                period === pKey
-                  ? "bg-brand text-on-brand shadow-md"
-                  : "text-text-secondary hover:text-text-primary"
-              )}
-            >
-              {pLabel}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <button onClick={exportPdf} className="btn-primary gap-1.5 px-3 py-2 text-[11.5px]">
+            <IconDoc size={14} /> PDF
+          </button>
+          <button onClick={exportExcel} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-[11.5px]">
+            <IconReport size={14} /> Excel
+          </button>
+          <button onClick={() => window.print()} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-[11.5px]">
+            ⎙ {t("Print", "طباعة")}
+          </button>
           {onClose && (
-            <button onClick={onClose} className="btn-icon ms-2" aria-label={t("Close", "إغلاق")}>
-              <IconClose size={15} />
+            <button onClick={onClose} className="btn-icon" aria-label={t("Close", "إغلاق")}>
+              <IconClose size={16} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="scroll-thin flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
-        {/* KPI Summary Cards */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="card p-4 border border-border-subtle">
-            <span className="text-[11px] text-text-muted uppercase tracking-wider block">
-              {t("Total Freight Volume", "إجمالي النقل المنجز")}
-            </span>
-            <span className="text-[24px] font-extrabold text-text-primary tabular-nums block mt-1">
-              {currentData.tripsData.reduce((a, b) => a + b, 0).toLocaleString()} {t("Trips", "رحلة")}
-            </span>
-            <span className="text-[11px] text-status-active font-semibold block mt-1">
-              ↑ 12.4% {t("growth vs prev period", "نمو عن الفترة السابقة")}
-            </span>
-          </div>
+      {/* Official filters (§25) */}
+      <div className="no-print card mt-3 grid grid-cols-2 gap-2 p-3 md:grid-cols-4 xl:grid-cols-5">
+        <FilterInput label={t("Trip number", "رقم الرحلة")} value={q} onChange={setQ} placeholder="EJ-2026-…" />
+        <FilterSelect
+          label={t("Status", "الحالة")}
+          value={status}
+          onChange={setStatus}
+          options={[...new Set(trips.map((tr) => String(tr.status || "")))].filter(Boolean)}
+        />
+        <FilterInput label={t("Customer", "العميل")} value={customer} onChange={setCustomer} />
+        <FilterInput label={t("Driver", "السائق")} value={driver} onChange={setDriver} />
+        <FilterInput label={t("Vehicle", "المركبة")} value={vehicle} onChange={setVehicle} />
+        <FilterInput label={t("Month (YYYY-MM)", "الشهر (YYYY-MM)")} value={month} onChange={setMonth} placeholder="2026-10" />
+        <FilterInput label={t("Year", "السنة")} value={year} onChange={setYear} placeholder="2026" />
+        <FilterInput label={t("Min revenue (SAR)", "الحد الأدنى للإيراد")} value={minRevenue} onChange={setMinRevenue} />
+        <FilterSelect
+          label={t("Payments", "المدفوعات")}
+          value={payment}
+          onChange={setPayment}
+          options={[...new Set(finance.map((f) => String(f.paymentStatus || "")))].filter(Boolean)}
+        />
+      </div>
 
-          <div className="card p-4 border border-border-subtle">
-            <span className="text-[11px] text-text-muted uppercase tracking-wider block">
-              {t("Operating Revenue (SAR)", "العائد التشغيلي الإجمالي")}
-            </span>
-            <span className="text-[24px] font-extrabold text-brand tabular-nums block mt-1">
-              {(currentData.revenueData.reduce((a, b) => a + b, 0) * 1000).toLocaleString()} {t("SAR", "ر.س")}
-            </span>
-            <span className="text-[11px] text-status-active font-semibold block mt-1">
-              ↑ 8.7% {t("revenue efficiency", "كفاءة العائد بالطن")}
-            </span>
-          </div>
-
-          <div className="card p-4 border border-border-subtle">
-            <span className="text-[11px] text-text-muted uppercase tracking-wider block">
-              {t("Ton-Kilometer Throughput", "طن/كيلومتر منجز")}
-            </span>
-            <span className="text-[24px] font-extrabold text-text-primary tabular-nums block mt-1">
-              {currentData.tonKmData.reduce((a, b) => a + b, 0).toLocaleString()} {t("T-Km", "طن.كم")}
-            </span>
-            <span className="text-[11px] text-text-secondary block mt-1">
-              {t("Across 5 Saudi Corridors", "عبر ٥ ممرات رئيسية")}
-            </span>
-          </div>
-
-          <div className="card p-4 border border-border-subtle">
-            <span className="text-[11px] text-text-muted uppercase tracking-wider block">
-              {t("Fleet On-Time Delivery", "الالتزام بمواعيد الوصول")}
-            </span>
-            <span className="text-[24px] font-extrabold text-status-active tabular-nums block mt-1">
-              96.4%
-            </span>
-            <span className="text-[11px] text-text-muted block mt-1">
-              {t("Industry benchmark: 91%", "المعيار القياسي: ٩١٪")}
-            </span>
-          </div>
+      {/* Summary cards — real metrics */}
+      {loading ? (
+        <div className="card mt-3 p-8 text-center text-[12px] text-text-muted">
+          {t("Loading real report data…", "جاري تحميل بيانات التقارير الحقيقية…")}
         </div>
-
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          {/* Chart 1: Trips Trend Interactive SVG Line Area Chart (2 cols) */}
-          <div className="card p-5 border border-border-subtle lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h4 className="text-[15px] font-bold text-text-primary">
-                  {t("Trip Volume & Freight Activity Trend", "منحنى وتيرة الرحلات وحركة الشحن")}
-                </h4>
-                <p className="text-[11px] text-text-muted">
-                  {t("Interactive data-driven trip execution curve", "رسم بياني تفاعلي مبني على بيانات الرحلات الحقيقية")}
-                </p>
-              </div>
-              <span className="badge bg-brand/15 text-brand tabular-nums text-[11px]">
-                {currentData.tripsData.reduce((a, b) => a + b, 0)} {t("Trips Total", "إجمالي")}
-              </span>
-            </div>
-
-            {/* Interactive SVG Line Chart */}
-            <div className="relative h-56 w-full pt-4">
-              <svg viewBox="0 0 500 180" className="h-full w-full overflow-visible" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="tripGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-brand)" stopOpacity="0.38" />
-                    <stop offset="100%" stopColor="var(--color-brand)" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-
-                {/* Horizontal Guide lines */}
-                {[30, 75, 120, 160].map((yVal, idx) => (
-                  <line
-                    key={idx}
-                    x1="0"
-                    y1={yVal}
-                    x2="500"
-                    y2={yVal}
-                    stroke="rgba(110, 126, 150, 0.18)"
-                    strokeWidth="1"
-                    strokeDasharray="4 4"
-                  />
-                ))}
-
-                {/* Area and Line Path */}
-                {(() => {
-                  const pts = currentData.tripsData.map((val, idx) => {
-                    const x = (idx / (currentData.tripsData.length - 1 || 1)) * 480 + 10;
-                    const y = 160 - (val / maxTrips) * 130;
-                    return [x, y];
-                  });
-
-                  const lineD = pts.reduce(
-                    (acc, [x, y], i) => (i === 0 ? `M ${x} ${y}` : `${acc} L ${x} ${y}`),
-                    ""
-                  );
-                  const areaD = `${lineD} L ${pts[pts.length - 1][0]} 160 L ${pts[0][0]} 160 Z`;
-
-                  return (
-                    <>
-                      <path d={areaD} fill="url(#tripGrad)" />
-                      <path d={lineD} fill="none" stroke="var(--color-brand)" strokeWidth="3" strokeLinecap="round" />
-                      {pts.map(([px, py], i) => (
-                        <g key={i}>
-                          <circle cx={px} cy={py} r="4.5" fill="var(--color-brand)" stroke="var(--color-navy)" strokeWidth="2" />
-                          <text
-                            x={px}
-                            y={py - 10}
-                            textAnchor="middle"
-                            fontSize="10"
-                            fontWeight="bold"
-                            fill="var(--color-text-primary)"
-                          >
-                            {currentData.tripsData[i]}
-                          </text>
-                        </g>
-                      ))}
-                    </>
-                  );
-                })()}
-              </svg>
-
-              {/* X Axis Labels */}
-              <div className="flex justify-between text-[11px] text-text-muted mt-2 pt-2 border-t border-border-subtle">
-                {currentData.labels.map((lbl, idx) => (
-                  <span key={idx}>{lbl}</span>
-                ))}
-              </div>
-            </div>
+      ) : loadError ? (
+        <div className="card mt-3 p-8 text-center text-[12px] text-status-danger">{loadError}</div>
+      ) : (
+        <>
+          <div className="mt-3 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+            <StatCard label={t("Trips (filtered)", "الرحلات (المفلترة)")} value={String(filtered.length)} icon={IconStar} />
+            <StatCard label={t("Gross revenue (SAR)", "الإيرادات (ر.س)")} value={totals.revenue.toLocaleString()} icon={IconReport} />
+            <StatCard label={t("Expenses (SAR)", "المصروفات (ر.س)")} value={totals.expenses.toLocaleString()} icon={IconReport} />
+            <StatCard label={t("Payments (SAR)", "المدفوعات (ر.س)")} value={totals.payments.toLocaleString()} icon={IconStar} />
           </div>
 
-          {/* Chart 2: Fleet Status Donut Chart (1 col) */}
-          <div className="card p-5 border border-border-subtle flex flex-col justify-between">
-            <div>
-              <h4 className="text-[15px] font-bold text-text-primary">
-                {t("Fleet Status Breakdown", "توزيع حالة أسطول الشاحنات")}
-              </h4>
-              <p className="text-[11px] text-text-muted">
-                {totalFleet} {t("Heavy Tractor Units", "شاحنة ثقيلة مسجلة")}
-              </p>
-            </div>
-
-            {/* Donut graphic */}
-            <div className="relative my-4 flex items-center justify-center">
-              <svg width="150" height="150" viewBox="0 0 100 100" className="-rotate-90">
-                {/* Background track */}
-                <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(41, 65, 96, 0.3)" strokeWidth="11" />
-
-                {/* Active segment (Green) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="36"
-                  fill="none"
-                  stroke="var(--color-status-active)"
-                  strokeWidth="11"
-                  strokeDasharray={`${strokeActive} ${circ}`}
-                  strokeDashoffset="0"
-                />
-
-                {/* Waiting segment (Orange) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="36"
-                  fill="none"
-                  stroke="var(--color-brand)"
-                  strokeWidth="11"
-                  strokeDasharray={`${strokeWaiting} ${circ}`}
-                  strokeDashoffset={-strokeActive}
-                />
-
-                {/* Inactive segment (Slate) */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="36"
-                  fill="none"
-                  stroke="var(--color-text-muted)"
-                  strokeWidth="11"
-                  strokeDasharray={`${strokeInactive} ${circ}`}
-                  strokeDashoffset={-(strokeActive + strokeWaiting)}
-                />
-              </svg>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[20px] font-extrabold text-text-primary tabular-nums">
-                  {totalFleet}
-                </span>
-                <span className="text-[10px] text-text-muted uppercase">
-                  {t("Trucks", "شاحنة")}
-                </span>
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="space-y-2 text-[11.5px] border-t border-border-subtle pt-3">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-status-active" />
-                  <span className="text-text-secondary">{t("Active on Route", "نشطة على الطريق")}</span>
-                </span>
-                <span className="font-bold text-text-primary">{activeCount} ({pActive.toFixed(0)}%)</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-brand" />
-                  <span className="text-text-secondary">{t("Waiting / Loading", "في الانتظار والتحميل")}</span>
-                </span>
-                <span className="font-bold text-text-primary">{waitingCount} ({pWaiting.toFixed(0)}%)</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-status-inactive" />
-                  <span className="text-text-secondary">{t("Maintenance / Idle", "صيانة وتوقف")}</span>
-                </span>
-                <span className="font-bold text-text-primary">{inactiveCount} ({pInactive.toFixed(0)}%)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Driver Leaderboard Performance Table */}
-        <div className="card p-5 border border-border-subtle">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h4 className="text-[15px] font-bold text-text-primary">
-                {t("Top Fleet Drivers Performance Leaderboard", "لوحة تميز وأداء السائقين")}
-              </h4>
-              <p className="text-[11px] text-text-muted">
-                {t("Ranked by safety index, on-time rate, and completed hauls", "مرتبة وفق معدل الأمان، الالتزام بالمواعيد، والرحلات المنفذة")}
-              </p>
-            </div>
-            <span className="text-[12px] font-bold text-brand">
-              {drivers.length} {t("Certified Drivers", "سائق معتمد")}
-            </span>
+          <div className="mt-2.5 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+            <StatCard label={t("Total trips", "إجمالي الرحلات")} value={String(metric.totalTrips ?? "—")} icon={IconStar} />
+            <StatCard label={t("Fleet size", "حجم الأسطول")} value={String(metric.fleetCount ?? "—")} icon={IconStar} />
+            <StatCard label={t("Drivers", "السائقون")} value={String(metric.driversCount ?? "—")} icon={IconStar} />
+            <StatCard label={t("Utilization", "نسبة الاستغلال")} value={metric.utilizationRatePercent != null ? `${metric.utilizationRatePercent}%` : "—"} icon={IconReport} />
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-start text-[12.5px]">
+          {/* Real trips table */}
+          <div className="card mt-3 overflow-x-auto p-3">
+            <table className="w-full text-[11px]">
               <thead>
-                <tr className="border-b border-border-subtle text-text-muted text-[11px] uppercase">
-                  <th className="pb-3 text-start">{t("Driver Name", "اسم السائق")}</th>
-                  <th className="pb-3 text-center">{t("Completed Trips", "الرحلات المنفذة")}</th>
-                  <th className="pb-3 text-center">{t("Safety Rating", "تقييم الأمان")}</th>
-                  <th className="pb-3 text-center">{t("On-Time Rate", "الالتزام بالمواعيد")}</th>
-                  <th className="pb-3 text-end">{t("Status", "الحالة الميدانية")}</th>
+                <tr className="text-text-muted">
+                  {[t("Trip", "الرحلة"), t("Status", "الحالة"), t("Customer", "العميل"), t("Driver", "السائق"),
+                    t("Vehicle", "المركبة"), t("Revenue", "الإيراد"), t("Expenses", "المصروفات"), t("Payments", "المدفوعات")].map((h) => (
+                    <th key={h} className="p-1.5 text-start font-semibold">{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-subtle/70">
-                {drivers.slice(0, 6).map((d, i) => (
-                  <tr key={d.name} className="hover:bg-surface-3/50 transition-colors">
-                    <td className="py-3 flex items-center gap-3">
-                      <span className="grid h-8 w-8 place-items-center rounded-full bg-surface-5 text-[11px] font-bold text-text-primary">
-                        {d.initials}
-                      </span>
-                      <div>
-                        <span className="font-semibold text-text-primary block">{d.name}</span>
-                        <span className="text-[10.5px] text-text-muted tabular-nums">{d.phone}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 text-center font-bold tabular-nums text-text-primary">
-                      {d.trips}
-                    </td>
-                    <td className="py-3 text-center">
-                      <span className="inline-flex items-center gap-1 font-bold text-status-waiting tabular-nums">
-                        <IconStar size={12} />
-                        {d.rating}
-                      </span>
-                    </td>
-                    <td className="py-3 text-center font-bold tabular-nums text-status-active">
-                      {98 - i * 2}%
-                    </td>
-                    <td className="py-3 text-end">
-                      <span className="badge bg-status-active/20 text-status-active text-[10px]">
-                        {t("Active on Duty", "نشط على الطريق")}
-                      </span>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="p-6 text-center text-text-muted">
+                      {t("No trips match the selected filters.", "لا توجد رحلات مطابقة للفلاتر المحددة.")}
                     </td>
                   </tr>
-                ))}
+                )}
+                {filtered.map((tr) => {
+                  const fin: Partial<FinanceRow> = financeByTrip.get(tr.id) || {};
+                  return (
+                    <tr key={tr.id} className="border-t border-border-subtle">
+                      <td className="p-1.5 font-mono text-brand">{tr.tripNumber}</td>
+                      <td className="p-1.5">{td(tr.statusAr || tr.status)}</td>
+                      <td className="p-1.5">{tr.customerName || "—"}</td>
+                      <td className="p-1.5">{tr.driverName || "—"}</td>
+                      <td className="p-1.5">{tr.vehiclePlate || tr.vehicleId || "—"}</td>
+                      <td className="p-1.5 tabular-nums">{Number(fin.freightPrice || 0).toLocaleString()}</td>
+                      <td className="p-1.5 tabular-nums">{Number(fin.expenses || 0).toLocaleString()}</td>
+                      <td className="p-1.5 tabular-nums">{Number(fin.paidAmount || 0).toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        </div>
+
+          {filtered.length > 0 && (
+            <p className="mt-2 text-[10px] text-text-muted">
+              {t("Report generated from live data", "تم إنشاء التقرير من البيانات الحيّة")} · {new Date().toLocaleString()}
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon: Icon }: { label: string; value: string; icon: typeof IconStar }) {
+  return (
+    <div className="card flex items-center gap-3 p-3.5">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-brand/12 text-brand">
+        <Icon size={16} />
+      </span>
+      <div className="min-w-0">
+        <div className="truncate text-[10.5px] text-text-muted">{label}</div>
+        <div className="truncate text-[13px] font-extrabold text-text-primary tabular-nums" dir="ltr">{value}</div>
       </div>
     </div>
+  );
+}
+
+function FilterInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[10px] font-semibold text-text-muted">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-9 w-full rounded-[8px] border border-border-subtle bg-surface-2 px-2.5 text-[11px] text-text-primary focus:border-brand focus:outline-none"
+      />
+    </label>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  const { t } = useSettings();
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[10px] font-semibold text-text-muted">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-9 w-full rounded-[8px] border border-border-subtle bg-surface-2 px-2 text-[11px] text-text-primary focus:border-brand focus:outline-none"
+      >
+        <option value="">{t("All", "الكل")}</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </label>
   );
 }

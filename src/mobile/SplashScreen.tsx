@@ -1,5 +1,6 @@
 import { useSettings } from "../settings";
 import { useBranding } from "../state/brandingStore";
+import { EjazEmblem } from "../components/Logo";
 
 function SquareField() {
   return (
@@ -65,38 +66,15 @@ export function SplashScreen({
             }}
           />
         ) : (
-        <svg width="86" height="86" viewBox="0 0 86 86" fill="none">
-          <rect
-            x="6"
-            y="6"
-            width="74"
-            height="74"
-            rx="24"
-            stroke="var(--color-brand)"
-            strokeWidth="2.6"
-            strokeDasharray="300"
-            className="animate-draw"
-            style={{ ["--dash" as string]: "300" }}
-          />
-          <g className="animate-fade-in" style={{ animationDelay: "1.1s" }}>
-            <path
-              d="M24 38h20v13H24z"
-              stroke="var(--color-brand)"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M44 43h6l6 6v2h-12z"
-              stroke="var(--color-brand)"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <circle cx="31" cy="55.5" r="3" stroke="var(--color-brand)" strokeWidth="2.6" />
-            <circle cx="51" cy="55.5" r="3" stroke="var(--color-brand)" strokeWidth="2.6" />
-          </g>
-        </svg>
+        /* No published logo: the OFFICIAL EJAZ emblem carries the identity. */
+        <div
+          style={{
+            animation:
+              "logo-in 0.9s cubic-bezier(0.22,0.61,0.36,1) both, logo-float 4.5s ease-in-out 0.9s infinite",
+          }}
+        >
+          <EjazEmblem size={92} color="var(--color-brand)" />
+        </div>
         )}
 
         <div className="animate-fade-in mt-8 text-center" style={{ animationDelay: "1.35s" }}>

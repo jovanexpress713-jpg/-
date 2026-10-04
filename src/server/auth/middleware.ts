@@ -11,13 +11,13 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   GENERAL_MANAGER: [
     "trips.view", "trips.approve", "trips.cancel", "trips.reopen", "trips.assign",
     "finance.view", "finance.approve", "finance.settle", "claims.view", "claims.manage",
-    "customers.view", "customers.manage", "notifications.view", "pod.view",
-    "vehicles.view", "drivers.view", "reports.view", "reports.export", "audit.view", "settings.manage",
+    "customers.view", "customers.create", "customers.manage", "notifications.view", "pod.view",
+    "vehicles.view", "drivers.view", "drivers.create", "reports.view", "reports.export", "audit.view", "settings.manage",
     "registrations.view", "registrations.review"
   ],
   OPERATIONS_MANAGER: [
     "trips.view", "trips.create", "trips.assign", "trips.transition", "trips.cancel", "trips.approve",
-    "claims.view", "claims.manage", "customers.view", "customers.manage", "notifications.view", "pod.view",
+    "claims.view", "claims.manage", "customers.view", "customers.create", "customers.manage", "notifications.view", "pod.view",
     "vehicles.view", "vehicles.create", "vehicles.edit", "vehicles.assign",
     "drivers.view", "drivers.create", "drivers.edit",
     "gps.view", "gps.configure", "documents.view", "documents.upload",
@@ -45,7 +45,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "trips.view", "loading.record", "documents.view", "documents.upload", "notifications.view", "pod.view"
   ],
   BROKER: [
-    "trips.view", "trips.create", "documents.view", "customers.view", "notifications.view"
+    "trips.view", "trips.create", "documents.view", "customers.view", "customers.create", "notifications.view"
   ],
   CUSTOMS_BROKER: [
     "trips.view", "documents.upload", "documents.view", "notifications.view"
@@ -140,6 +140,11 @@ function accountIsApproved(user: TokenPayload): boolean {
 }
 
 function effectiveHasPermission(user: TokenPayload, permission: string): boolean {
+  // §21 — an applicant reads their own notifications (approval/rejection
+  // outcomes) even while the registration request is still pending.
+  if (permission === "notifications.view") {
+    return hasPermission(user.role, permission);
+  }
   return accountIsApproved(user) && hasPermission(user.role, permission);
 }
 
@@ -150,10 +155,17 @@ export function requirePermission(...permissions: string[]) {
     }
 
     if (!accountIsApproved(req.user)) {
-      return res.status(403).json({
-        error: "Account access is pending registration approval",
-        code: "ACCOUNT_PENDING_APPROVAL",
-      });
+      // §21 — approval/rejection must reach the applicant inside the app:
+      // reading own notifications stays possible while a request is pending.
+      // Every operational permission remains blocked until approval.
+      const onlyNotifications =
+        permissions.length === 1 && permissions[0] === "notifications.view";
+      if (!onlyNotifications) {
+        return res.status(403).json({
+          error: "Account access is pending registration approval",
+          code: "ACCOUNT_PENDING_APPROVAL",
+        });
+      }
     }
 
     if (req.user.role === "SUPER_ADMIN") {

@@ -15,6 +15,7 @@ import { runNovaDesignTests } from "./novaDesign.test";
 import { runI18nTests } from "./i18n.test";
 import { runRoleRoutingTests } from "./roles.test";
 import { runLanguageSwitchTests } from "./languageSwitch.test";
+import { runOrganizationTests } from "./organization.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -39,9 +40,10 @@ async function runAll() {
     await runI18nTests();
     await runRoleRoutingTests();
     await runLanguageSwitchTests();
+    await runOrganizationTests();
 
     console.log("============================================================");
-    console.log("  ✅ ALL 17 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 18 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {

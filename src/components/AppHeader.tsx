@@ -6,7 +6,6 @@ import { GlobalSearch } from "./GlobalSearch";
 import { AccountMenu } from "./AccountMenu";
 import type { SettingsTab } from "./SettingsCenter";
 import type { SessionUser } from "../utils/permissions";
-import type { DemoAccount } from "./ConsoleAuthGate";
 import { IconBolt, IconBell, IconMenu } from "./Icons";
 
 /**
@@ -16,7 +15,7 @@ import { IconBolt, IconBell, IconMenu } from "./Icons";
  *   • ONE row, 58px, never wraps — no element can push another out of place.
  *   • Exactly five affordances: identity, current page, search, notifications,
  *     assistant + account. Language, theme, role switching, sign-out, settings
- *     and the demo accounts moved into the account menu (§3, §10, §26).
+ *     and the mobile apps live inside the account menu / settings center (§6).
  *   • The logo is balanced (34px emblem, name + tagline at text scale) and
  *     collapses to the emblem alone on phones, so nothing crowds.
  *   • Sticky, frosted, hairline-bottom: it reads as an app chrome, not a
@@ -31,13 +30,11 @@ export function AppHeader({
   onOpenAssistant,
   onOpenAlerts,
   onOpenSettings,
-  onSwitchDemoAccount,
   onPreviewLogin,
   onLogout,
   onNavigate,
+  onOpenMobileApp,
   showMenuButton = false,
-  view,
-  onViewChange,
 }: {
   user: SessionUser | null;
   pageTitle: string;
@@ -47,14 +44,12 @@ export function AppHeader({
   onOpenAssistant: () => void;
   onOpenAlerts: () => void;
   onOpenSettings: (tab?: SettingsTab) => void;
-  onSwitchDemoAccount: (acc: DemoAccount) => void;
   onPreviewLogin: () => void;
   onLogout: () => void;
   onNavigate: (targetView: string, entityId?: string) => void;
+  /** Open one mobile app in its own interface (§12). */
+  onOpenMobileApp?: (kind: "driver" | "client") => void;
   showMenuButton?: boolean;
-  /** Active workspace (control room vs mobile app) — switched from the account menu. */
-  view?: "web" | "mobile";
-  onViewChange?: (view: "web" | "mobile") => void;
 }) {
   const { tk, lang } = useSettings();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -143,11 +138,9 @@ export function AppHeader({
         <AccountMenu
           className="shrink-0"
           user={user}
-          view={view}
-          onViewChange={onViewChange}
           onOpenSettings={onOpenSettings}
           onOpenAssistant={onOpenAssistant}
-          onSwitchDemoAccount={onSwitchDemoAccount}
+          onOpenMobileApp={onOpenMobileApp ?? (() => {})}
           onPreviewLogin={onPreviewLogin}
           onLogout={onLogout}
         />
