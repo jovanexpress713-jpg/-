@@ -7,14 +7,43 @@ import {
   type AuthenticatedRequest,
 } from "../auth/middleware";
 import { generateTripNumber } from "../services/tripNumberGenerator";
-import { validateTransition, type TripLifecycleStatus, STATUS_LABELS } from "../services/tripLifecycleService";
-import { initTripFinancials, getTripFinancials } from "../services/financeService";
+import {
+  validateTransition,
+  availableTransitions,
+  canCancelTrip,
+  type TripLifecycleStatus,
+  STATUS_LABELS,
+} from "../services/tripLifecycleService";
+import { advanceTripStatus } from "../services/tripStatusWriter";
+import { hasPermission } from "../auth/middleware";
+import { initTripFinancials, getTripFinancials, repriceTripFinancials, serializeFinancials } from "../services/financeService";
 import { logAuditEvent } from "../services/auditService";
 import { dispatchNotification } from "../services/notificationService";
 import { resolveQuote } from "../services/tariffService";
 import { computeRoadDistance } from "../services/cityRegistry";
 
 const router = Router();
+
+/** Trip fields that are financial data, not operational data. */
+const FINANCIAL_TRIP_FIELDS = ["tripPrice", "currency", "priceStatus", "tariffId"] as const;
+
+/**
+ * Strips the financial side of a trip for a caller who does not hold
+ * `finance.view`.
+ *
+ * Separating the money from the operation is a permission decision, not a UI
+ * one: an operations manager may run a shipment end to end without ever seeing
+ * its price, margin or settlement. The field is removed from the payload, so no
+ * client can read it out of a response it was never meant to receive.
+ */
+function scrubFinancial<T extends Record<string, any>>(trip: T, canViewFinance: boolean): T {
+  if (canViewFinance) return trip;
+  const copy: Record<string, any> = { ...trip };
+  for (const field of FINANCIAL_TRIP_FIELDS) delete copy[field];
+  copy.financialsRedacted = true;
+  return copy as T;
+}
+
 
 // GET /api/trips
 router.get("/", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
@@ -47,9 +76,12 @@ router.get("/", authenticate, requirePermission("trips.view"), (req: Authenticat
   // Sort by createdAt descending
   list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  const canViewFinance = hasPermission(req.user?.role, "finance.view", req.user?.permissions);
+
   return res.json({
     total: list.length,
-    trips: list,
+    financialsVisible: canViewFinance,
+    trips: list.map((t) => scrubFinancial(t, canViewFinance)),
   });
 });
 
@@ -65,7 +97,12 @@ router.get("/client/trips", authenticate, requirePermission("trips.view"), (req:
   }
 
   list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  return res.json({ total: list.length, trips: list });
+  const clientCanViewFinance = hasPermission(req.user?.role, "finance.view", req.user?.permissions);
+  return res.json({
+    total: list.length,
+    financialsVisible: clientCanViewFinance,
+    trips: list.map((t) => scrubFinancial(t, clientCanViewFinance)),
+  });
 });
 
 // GET /api/driver/trips - Trips for driver with tab support (all | available | confirmed | active | completed)
@@ -129,7 +166,13 @@ router.get("/driver/trips", authenticate, requirePermission("trips.view"), (req:
   }
 
   filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  return res.json({ total: filtered.length, trips: filtered, tab });
+  const driverCanViewFinance = hasPermission(req.user?.role, "finance.view", req.user?.permissions);
+  return res.json({
+    total: filtered.length,
+    financialsVisible: driverCanViewFinance,
+    tab,
+    trips: filtered.map((t) => scrubFinancial(t, driverCanViewFinance)),
+  });
 });
 
 // POST /api/driver/trips/:id/request - Driver requests an available trip
@@ -392,6 +435,10 @@ router.get("/:id", authenticate, requirePermission("trips.view"), (req: Authenti
 
   const vehicle = db.vehicles.get(trip.vehicleId);
   const driver = db.drivers.get(trip.driverId);
+  /* Object-level authorization: listing is scoped and so is reading. A client
+     may only open a shipment that belongs to them, a driver only a trip
+     assigned to them (or still open for requests) — guessing another party's
+     trip number or id is refused here, not merely hidden in the UI. */
   if (!canAccessTrip(req.user, trip)) {
     return res.status(403).json({ error: "You are not authorized to access this trip", code: "TRIP_ACCESS_DENIED" });
   }
@@ -403,17 +450,33 @@ router.get("/:id", authenticate, requirePermission("trips.view"), (req: Authenti
   const pod = Array.from(db.podRecords.values()).filter((p) => p.tripId === trip.id);
   const claims = Array.from(db.claims.values()).filter((c) => c.tripId === trip.id);
 
+  const role = req.user?.role || "GUEST";
+  const currentStatus = trip.status as TripLifecycleStatus;
+  const canViewFinance = hasPermission(req.user?.role, "finance.view", req.user?.permissions);
+
   return res.json({
-    trip,
+    trip: scrubFinancial(trip, canViewFinance),
     vehicle,
     driver,
     customer,
     events,
-    financials,
+    /* Carries the derived `expenses` total so this screen and the finance
+       screen can never disagree about what a trip cost — and is omitted
+       entirely for a caller without `finance.view`. */
+    financials: canViewFinance ? (financials ? serializeFinancials(financials) : null) : null,
+    financialsVisible: canViewFinance,
     documents,
     pod,
     claims,
-    statusMeta: STATUS_LABELS[trip.status as TripLifecycleStatus] || { ar: trip.status, en: trip.status, badgeColor: "#FF6B1A" },
+    statusMeta: STATUS_LABELS[currentStatus] || { ar: trip.status, en: trip.status, badgeColor: "#FF6B1A" },
+    /* The legal next steps for THIS role — the console renders its milestone
+       buttons from this instead of guessing. */
+    nextStates: availableTransitions(currentStatus, role, trip).map((st) => ({
+      status: st,
+      labelAr: STATUS_LABELS[st]?.ar,
+      labelEn: STATUS_LABELS[st]?.en,
+    })),
+    cancellable: canCancelTrip(currentStatus, role).allowed,
   });
 });
 
@@ -528,7 +591,11 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
   };
 
   db.trips.set(tripId, newTrip);
-  initTripFinancials(tripId, tripNumber, newTrip.tripPrice);
+  initTripFinancials(tripId, tripNumber, newTrip.tripPrice, {
+    priceStatus,
+    tariffId: resolvedTariffId,
+    currency: resolvedCurrency,
+  });
 
   // Record initial creation event
   const createEvent: TripEventEntity = {
@@ -582,6 +649,117 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
 });
 
 // POST /api/trips/:id/transition - Authoritative State Machine Transition
+/**
+ * POST /api/trips/:id/price — apply the authoritative price to a trip.
+ *
+ * A trip created without a matching tariff stays «بانتظار عرض سعر». Until a
+ * price exists there is no invoice, no cost derivation and no settlement — the
+ * money is never invented. This endpoint closes that loop: the price MUST come
+ * from an ACTIVE tariff record (or from a live quote resolved against the
+ * tariff book), and applying it re-derives every cost line of the trip's
+ * financial record so the invoice, the margin and the reports move together.
+ */
+router.post("/:id/price", authenticate, requirePermission("tariffs.manage", "finance.view"), (req: AuthenticatedRequest, res: Response) => {
+  const trip = db.trips.get(String(req.params.id));
+  if (!trip) return res.status(404).json({ error: "Trip not found" });
+
+  const { tariffId, price, notes } = req.body || {};
+
+  let resolvedPrice = Number(price);
+  let resolvedTariffId: string | undefined = tariffId ? String(tariffId) : undefined;
+  let resolvedCurrency = trip.currency || "SAR";
+
+  const tariff = resolvedTariffId ? db.tariffs.get(resolvedTariffId) : undefined;
+  if (tariff && tariff.status === "ACTIVE") {
+    // The tariff book is authoritative over any typed amount.
+    resolvedPrice = Number(tariff.price);
+    resolvedCurrency = tariff.currency || resolvedCurrency;
+  } else if (!Number.isFinite(resolvedPrice) || resolvedPrice <= 0) {
+    // No tariff supplied: the quote must be resolved against the tariff book.
+    const quote = resolveQuote(Array.from(db.tariffs.values()), {
+      truckType: trip.cargoType,
+      originCity: trip.originCity,
+      destinationCity: trip.destinationCity,
+      weightTons: trip.cargoWeightTons,
+    });
+    if (!quote.available || !quote.tariff) {
+      return res.status(422).json({
+        error: "No active tariff matches this shipment. Create the tariff first — a trip price can never be typed in without a tariff behind it.",
+        code: "NO_TARIFF_MATCH",
+      });
+    }
+    resolvedPrice = Number(quote.price);
+    resolvedTariffId = quote.tariff.id;
+    resolvedCurrency = quote.tariff.currency || resolvedCurrency;
+  }
+
+  /**
+   * The price stays editable while nothing has been billed against it — a
+   * shipment may well be delivered while its quote is still pending. It locks
+   * the moment money has been collected or an invoice has gone out, because
+   * changing it then would silently rewrite a document the customer holds.
+   */
+  const existingFinancials = getTripFinancials(trip.id);
+  const priceLocked =
+    !!existingFinancials &&
+    (existingFinancials.paidAmount > 0 || ["SENT", "PAID", "OVERDUE"].includes(existingFinancials.invoiceStatus));
+  if (priceLocked) {
+    return res.status(422).json({
+      error: `The price of ${trip.tripNumber} can no longer be changed: ${existingFinancials!.paidAmount > 0 ? "a payment has already been recorded" : "the invoice has already been issued"}. Adjust it through the financial review flow instead.`,
+      code: "PRICE_LOCKED",
+      currentStatus: trip.status,
+      paidAmount: existingFinancials!.paidAmount,
+      invoiceStatus: existingFinancials!.invoiceStatus,
+    });
+  }
+
+  const previousPrice = trip.tripPrice;
+  trip.tripPrice = resolvedPrice;
+  trip.currency = resolvedCurrency;
+  trip.priceStatus = "TARIFF";
+  trip.tariffId = resolvedTariffId;
+  trip.updatedAt = new Date().toISOString();
+
+  const financial = repriceTripFinancials(trip.id, resolvedPrice, {
+    tariffId: resolvedTariffId,
+    currency: resolvedCurrency,
+    priceStatus: "TARIFF",
+  });
+
+  db.tripEvents.push({
+    id: `ev-${Date.now()}-price`,
+    tripId: trip.id,
+    eventType: "TRIP_PRICED",
+    fromStatus: trip.status,
+    toStatus: trip.status,
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    notes: `تم اعتماد سعر الرحلة ${resolvedPrice} ${resolvedCurrency} من التعرفة (${resolvedTariffId || "quote"})`,
+    metadata: { previousPrice, resolvedPrice, resolvedTariffId, resolvedCurrency },
+    timestamp: new Date().toISOString(),
+  });
+
+  logAuditEvent({
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    action: "TRIP_PRICED",
+    entity: "trips",
+    entityId: trip.id,
+    tripId: trip.id,
+    oldValues: { tripPrice: previousPrice, priceStatus: "PENDING_QUOTE" },
+    newValues: { tripPrice: resolvedPrice, tariffId: resolvedTariffId, currency: resolvedCurrency },
+    reason: notes,
+  });
+
+  return res.json({
+    message: `Trip priced at ${resolvedPrice} ${resolvedCurrency} from tariff ${resolvedTariffId || "quote"}`,
+    trip,
+    financial: financial ? serializeFinancials(financial) : null,
+  });
+});
+
 router.post("/:id/transition", authenticate, requirePermission("trips.transition"), (req: AuthenticatedRequest, res: Response) => {
   const trip = db.trips.get(String(req.params.id));
   if (!trip) {
@@ -597,80 +775,72 @@ router.post("/:id/transition", authenticate, requirePermission("trips.transition
     return res.status(400).json({ error: "targetStatus is required" });
   }
 
-  const userRole = req.user?.role || "GUEST";
-  const validation = validateTransition(
-    trip.status as TripLifecycleStatus,
-    targetStatus as TripLifecycleStatus,
-    userRole,
+  const oldStatus = trip.status;
+
+  /**
+   * The state machine stays the authority: the request is planned hop by hop
+   * and every hop is validated for this role. A dispatch milestone such as
+   * «بدء الانطلاق» therefore walks CONFIRMED → ASSIGNED → HEADING_TO_LOADING →
+   * ARRIVED_LOADING → LOADED → IN_TRANSIT instead of jumping, and the response
+   * reports the whole chain so the operator sees exactly what was written.
+   */
+  const result = advanceTripStatus(
     trip,
-    reason || notes
+    targetStatus as TripLifecycleStatus,
+    { userId: req.user?.userId, fullName: req.user?.fullName, role: req.user?.role },
+    { notes, reason, latitude, longitude }
   );
 
-  if (!validation.isValid) {
+  if (!result.ok) {
     return res.status(422).json({
-      error: validation.error,
-      code: "INVALID_TRANSITION",
-      currentStatus: trip.status,
+      error: result.error,
+      code: result.code || "INVALID_TRANSITION",
+      currentStatus: oldStatus,
       targetStatus,
+      /** Legal next steps for this role, so the UI can offer a valid action. */
+      availableNext: availableTransitions(oldStatus as TripLifecycleStatus, req.user?.role || "GUEST", trip),
     });
   }
 
-  const oldStatus = trip.status;
-  trip.status = targetStatus;
-  trip.updatedAt = new Date().toISOString();
+  return res.json({
+    message: result.applied.length > 1
+      ? `Advanced through ${result.applied.length} lifecycle steps to ${targetStatus}`
+      : "Transition successful",
+    trip,
+    event: result.applied.length ? db.tripEvents.filter((e) => e.tripId === trip.id).slice(-1)[0] : null,
+    appliedTransitions: result.applied,
+    fromStatus: oldStatus,
+  });
+});
 
-  // If vehicle reached loading or delivery, update coordinates
-  if (latitude && longitude) {
-    trip.currentLat = latitude;
-    trip.currentLng = longitude;
+/**
+ * GET /api/trips/:id/next-states — the legal next steps of a trip for the
+ * calling role. The console uses it to enable/disable its milestone buttons
+ * instead of letting an operator click into a 422.
+ */
+router.get("/:id/next-states", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
+  const trip = db.trips.get(String(req.params.id));
+  if (!trip) return res.status(404).json({ error: "Trip not found" });
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "You are not authorized to view this trip", code: "TRIP_ACCESS_DENIED" });
   }
 
-  // Create authoritative event record
-  const event: TripEventEntity = {
-    id: `ev-${Date.now()}`,
-    tripId: trip.id,
-    eventType: "STATUS_TRANSITION",
-    fromStatus: oldStatus,
-    toStatus: targetStatus,
-    actorId: req.user?.userId,
-    actorName: req.user?.fullName,
-    actorRole: req.user?.role,
-    notes: notes || reason || `Transitioned from ${oldStatus} to ${targetStatus}`,
-    latitude: latitude || trip.currentLat,
-    longitude: longitude || trip.currentLng,
-    timestamp: new Date().toISOString(),
-  };
-  db.tripEvents.push(event);
-
-  logAuditEvent({
-    actorId: req.user?.userId,
-    actorName: req.user?.fullName,
-    actorRole: req.user?.role,
-    action: "TRIP_STATUS_TRANSITION",
-    entity: "trips",
-    entityId: trip.id,
-    tripId: trip.id,
-    oldValues: { status: oldStatus },
-    newValues: { status: targetStatus, notes },
-    reason,
-  });
-
-  dispatchNotification({
-    targetRole: "ALL",
-    titleAr: `تحديث مسار الرحلة ${trip.tripNumber}`,
-    titleEn: `Trip Status Update: ${trip.tripNumber}`,
-    messageAr: `تم تحديث حالة الرحلة إلى: ${STATUS_LABELS[targetStatus as TripLifecycleStatus]?.ar || targetStatus}`,
-    messageEn: `Trip transitioned to: ${STATUS_LABELS[targetStatus as TripLifecycleStatus]?.en || targetStatus}`,
-    type: "SUCCESS",
-    entityType: "trip",
-    entityId: trip.id,
-    tripId: trip.id,
-  });
+  const role = req.user?.role || "GUEST";
+  const current = trip.status as TripLifecycleStatus;
+  const next = availableTransitions(current, role, trip);
+  const cancellable = canCancelTrip(current, role).allowed;
 
   return res.json({
-    message: "Transition successful",
-    trip,
-    event,
+    tripId: trip.id,
+    currentStatus: current,
+    currentLabelAr: STATUS_LABELS[current]?.ar,
+    currentLabelEn: STATUS_LABELS[current]?.en,
+    nextStates: next.map((s) => ({
+      status: s,
+      labelAr: STATUS_LABELS[s]?.ar,
+      labelEn: STATUS_LABELS[s]?.en,
+    })),
+    cancellable,
   });
 });
 

@@ -27,6 +27,8 @@ import { AIAssistant } from "./AIAssistant";
 import { AlertsCenter } from "./AlertsCenter";
 import { BrandingSettings } from "./BrandingSettings";
 import { useToast } from "./Toast";
+import { usePermissions } from "../state/permissionStore";
+import { NAV_PAGES, NAV_ALIASES } from "../utils/permissions";
 
 /**
  * Console section titles for the mobile section bar. The dashboard renders its
@@ -78,11 +80,41 @@ export function WebConsole({
     selectTruck,
   } = useFleetStore();
 
+  const { pageVisible, can, ready } = usePermissions();
+
   const [internalNav, setInternalNav] = useState("overview");
-  const nav = page ?? internalNav;
+
+  /**
+   * Permission clamp.
+   *
+   * A section this role may not see is never rendered — not even behind a
+   * direct navigation attempt. Instead the console lands on the first page the
+   * role *does* own, so the experience is "this page does not exist for you"
+   * rather than "this page exists but you may not open it".
+   */
+  const requested = NAV_ALIASES[page ?? internalNav] ?? (page ?? internalNav);
+  const visiblePages = useMemo(
+    () => NAV_PAGES.filter((p) => pageVisible(p.id)).map((p) => p.id),
+    [pageVisible]
+  );
+  const landing = visiblePages[0] ?? "settings";
+  const navIsAllowed =
+    !ready ||
+    requested === "branding" ||
+    requested === "settings" ||
+    pageVisible(requested);
+  const nav = navIsAllowed ? requested : landing;
+
+  useEffect(() => {
+    // Keep the owner's controlled state in sync when a page is revoked live.
+    if (!navIsAllowed && onPageChange) onPageChange(landing);
+  }, [navIsAllowed, landing, onPageChange]);
+
   const setNav = (next: string) => {
-    if (onPageChange) onPageChange(next);
-    else setInternalNav(next);
+    const canonical = NAV_ALIASES[next] ?? next;
+    if (ready && !pageVisible(canonical) && canonical !== "settings" && canonical !== "branding") return;
+    if (onPageChange) onPageChange(canonical);
+    else setInternalNav(canonical);
   };
   const [modalKind, setModalKind] = useState<RequestKind | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -107,7 +139,7 @@ export function WebConsole({
       cargos: trips.filter((t) => t.status === "on_road").length,
       repair: trucks.filter((v) => v.status !== "active").length,
       drivers: drivers.length,
-      reports: 6,
+      reports: 0,
     }),
     [trucks, trips, drivers]
   );
@@ -138,6 +170,7 @@ export function WebConsole({
       return;
     }
     if (key === "branding") {
+      if (!can("branding.manage")) return;
       setShowBrandingModal(true);
       return;
     }

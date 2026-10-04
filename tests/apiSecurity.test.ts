@@ -214,8 +214,105 @@ export async function runApiSecurityTests() {
     const duplicatePod = await api("POST", "/api/pod", { token: admin.token, body: { tripId, recipientName: "مكرر" } });
     assert.strictEqual(duplicatePod.status, 409, "Duplicate POD records must be rejected");
 
-    const settlement = await api("POST", "/api/finance/settle", { token: admin.token, body: { tripId, paidAmount: 5000 } });
-    assert.strictEqual(settlement.status, 200, "Settlement must succeed after delivery");
+    // ── An unpriced shipment can never be settled ────────────────────────
+    // This corridor is deliberately outside the company's rate card, so the
+    // trip is created «بانتظار عرض سعر» with no invoice behind it.
+    const unserved = await api("POST", "/api/trips", {
+      token: admin.token,
+      body: {
+        originCity: "عرعر",
+        destinationCity: "الباحة",
+        cargoDescription: "مسار خارج دفتر التعرفة",
+        cargoType: "جاف",
+        cargoWeightTons: 12,
+        vehicleId: "v2",
+        driverId: "d2",
+      },
+    });
+    assert.strictEqual(unserved.status, 201, "creating the unserved-corridor trip");
+    assert.strictEqual(unserved.body.trip.priceStatus, "PENDING_QUOTE", "an unserved corridor must not invent a price");
+    assert.strictEqual(unserved.body.trip.tripPrice, 0);
+
+    for (const target of ["PENDING_APPROVAL", "CONFIRMED", "ASSIGNED", "HEADING_TO_LOADING", "ARRIVED_LOADING", "LOADED", "IN_TRANSIT", "ARRIVED_DESTINATION", "DELIVERED"]) {
+      await api("POST", `/api/trips/${unserved.body.trip.id}/transition`, { token: admin.token, body: { targetStatus: target, notes: "آلي" } });
+    }
+    const unpricedSettlement = await api("POST", "/api/finance/settle", { token: admin.token, body: { tripId: unserved.body.trip.id, paidAmount: 5000 } });
+    assert.strictEqual(
+      unpricedSettlement.status,
+      422,
+      "Settling a trip with no authoritative price must be rejected, got " +
+        unpricedSettlement.status + ": " + (unpricedSettlement.body?.error || "")
+    );
+    assert.strictEqual(unpricedSettlement.body.code, "TRIP_UNPRICED");
+
+    // With no matching tariff the system refuses to invent a price…
+    const noTariff = await api("POST", `/api/trips/${unserved.body.trip.id}/price`, { token: admin.token, body: { notes: "بلا تعرفة" } });
+    assert.strictEqual(noTariff.status, 422, "Pricing without a matching tariff must be refused");
+
+    // …so the tariff is created first, and the price is then derived from it.
+    const tariff = await api("POST", "/api/tariffs", {
+      token: admin.token,
+      body: {
+        truckType: "جاف",
+        originCity: "عرعر",
+        destinationCity: "الباحة",
+        minDistanceKm: 0,
+        maxDistanceKm: null,
+        minWeight: 0,
+        maxWeight: 30,
+        weightUnit: "TON",
+        price: 4200,
+        currency: "SAR",
+        status: "ACTIVE",
+        validFrom: "2026-01-01",
+        validTo: null,
+        reason: "تعرفة مسار عرعر - الباحة للاختبار",
+      },
+    });
+    assert.strictEqual(tariff.status, 201, "Creating the corridor tariff must succeed: " + (tariff.body?.error || ""));
+
+    const priced = await api("POST", `/api/trips/${unserved.body.trip.id}/price`, {
+      token: admin.token,
+      body: { tariffId: tariff.body.tariff.id, notes: "اعتماد السعر" },
+    });
+    assert.strictEqual(priced.status, 200, "Pricing a trip from the tariff book must succeed: " + (priced.body?.error || ""));
+    assert.strictEqual(
+      priced.body.trip.tripPrice,
+      tariff.body.tariff.price,
+      "The trip price must be exactly the tariff price — never a typed-in figure"
+    );
+    assert.strictEqual(priced.body.financial.invoiceNumber, `INV-${priced.body.trip.tripNumber.replace("EJ-", "")}`,
+      "The invoice exists only once the trip has an authoritative price");
+
+    // The main trip was priced from the rate card at creation time.
+    assert(created.body.trip.tripPrice > 0, "A corridor inside the rate card is priced automatically at creation");
+    assert.strictEqual(created.body.trip.priceStatus, "TARIFF");
+
+    const settlement = await api("POST", "/api/finance/settle", { token: admin.token, body: { tripId, paidAmount: created.body.trip.tripPrice } });
+    assert.strictEqual(settlement.status, 200, "Settlement must succeed after delivery: " + (settlement.body?.error || ""));
+    assert.strictEqual(
+      settlement.body.financial.paymentStatus,
+      "PARTIALLY_PAID",
+      "Paying the net freight leaves the 15% VAT outstanding, so the trip is partially paid"
+    );
+    assert.strictEqual(
+      settlement.body.financial.balanceDue,
+      settlement.body.financial.taxVat,
+      "The outstanding balance must equal the VAT that has not been collected"
+    );
+
+    // A real cost line moves the margin of the same trip.
+    const expense = await api("POST", `/api/finance/trips/${tripId}/expenses`, {
+      token: admin.token,
+      body: { category: "TOLL", amount: 150, notes: "رسوم طريق" },
+    });
+    assert.strictEqual(expense.status, 200, "Recording a toll must succeed: " + (expense.body?.error || ""));
+    assert.strictEqual(expense.body.financial.tollFees, 150);
+    assert.strictEqual(
+      expense.body.financial.expenses,
+      expense.body.financial.driverFee + expense.body.financial.fuelCost + 150,
+      "The reported expenses total must equal the sum of its cost lines"
+    );
 
     // ------------------------------------------------------------------
     // 7. Driver request → operations approval flow (mobile app contract)

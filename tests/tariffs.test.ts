@@ -131,10 +131,15 @@ export async function runTariffTests() {
   const quoteReefer = await api("GET", "/api/tariffs/quote?truckType=براد&origin=جدة&destination=الرياض&weightTons=3", { token: client });
   assert.strictEqual(quoteReefer.body.price, 6000, "reefer must price 6000 (price changes with truck type)");
 
-  // Route change → no tariff on Riyadh→Dammam → honest "no price"
-  const quoteNo = await api("GET", "/api/tariffs/quote?truckType=ستارة&origin=الرياض&destination=الدمام&weightTons=8", { token: client });
+  // Route outside the company's rate card → honest "no price"
+  const quoteNo = await api("GET", "/api/tariffs/quote?truckType=ستارة&origin=سكاكا&destination=نجران&weightTons=8", { token: client });
   assert.strictEqual(quoteNo.body.available, false, "no invented price when no tariff matches");
   assert(quoteNo.body.price === undefined, "price must not exist without a tariff");
+
+  // A corridor inside the shipped rate card resolves without any manual entry.
+  const quoteSeeded = await api("GET", "/api/tariffs/quote?truckType=براد&origin=الرياض&destination=جدة&weightTons=18", { token: client });
+  assert.strictEqual(quoteSeeded.body.available, true, "the official rate card must price the main corridors");
+  assert(quoteSeeded.body.price > 0, "a rate-card corridor must resolve a real positive price");
 
   // Unknown city → not resolvable, still no invented price
   const quoteBad = await api("GET", "/api/tariffs/quote?truckType=ستارة&origin=أطلانطس&destination=الرياض&weightTons=8", { token: client });
@@ -144,7 +149,7 @@ export async function runTariffTests() {
   // ── 6. Quote request when no tariff matches (client → control room) ──────
   const qr = await api("POST", "/api/tariffs/quote-requests", {
     token: client,
-    body: { truckType: "ستارة", originCity: "الرياض", destinationCity: "الدمام", weightTons: 8 },
+    body: { truckType: "ستارة", originCity: "سكاكا", destinationCity: "نجران", weightTons: 8 },
   });
   assert.strictEqual(qr.status, 201, "quote request must be accepted");
   const qrList = await api("GET", "/api/tariffs/quote-requests?status=OPEN", { token: admin });
@@ -204,8 +209,8 @@ export async function runTariffTests() {
   const tripNo = await api("POST", "/api/trips", {
     token: client,
     body: {
-      originCity: "الرياض",
-      destinationCity: "الدمام",
+      originCity: "سكاكا",
+      destinationCity: "نجران",
       cargoDescription: "شحنة تجريبية بدون تعرفة",
       cargoType: "جاف",
       cargoWeightTons: 12,

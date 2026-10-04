@@ -6,6 +6,8 @@ import { can, canSwitchAccounts, type SessionUser } from "../utils/permissions";
 import { LanguageList } from "./AccountMenu";
 import { useToast } from "./Toast";
 import { apiClient } from "../services/apiClient";
+import { RolePermissionsManager } from "./RolePermissionsManager";
+import { usePermissions } from "../state/permissionStore";
 import {
   IconArrowRight,
   IconBolt,
@@ -41,7 +43,7 @@ import {
  * account menu links in, it does not re-implement them.
  */
 
-export type SettingsTab = "account" | "app" | "apps" | "loginPreview" | "system" | "help";
+export type SettingsTab = "account" | "app" | "apps" | "loginPreview" | "system" | "permissions" | "help";
 
 const TABS: { id: SettingsTab; labelEn: string; labelAr: string; icon: typeof IconProfile }[] = [
   { id: "account", labelEn: "My account", labelAr: "حسابي", icon: IconProfile },
@@ -49,6 +51,7 @@ const TABS: { id: SettingsTab; labelEn: string; labelAr: string; icon: typeof Ic
   { id: "apps", labelEn: "Mobile apps", labelAr: "التطبيقات", icon: IconTruck },
   { id: "loginPreview", labelEn: "Sign-in preview", labelAr: "معاينة تسجيل الدخول", icon: IconLock },
   { id: "system", labelEn: "System settings", labelAr: "إعدادات النظام", icon: IconDashboard },
+  { id: "permissions", labelEn: "Roles & permissions", labelAr: "الأدوار والصلاحيات", icon: IconLock },
   { id: "help", labelEn: "Help & support", labelAr: "المساعدة والدعم", icon: IconInfo },
 ];
 
@@ -82,8 +85,14 @@ export function SettingsCenter({
 
   useEffect(() => {
     if (isOpen) {
-      const allowed = can(user, "settings.manage") || can(user, "registrations.review") || canSwitchAccounts(user);
-      setTab(initialTab === "system" && !allowed ? "account" : initialTab);
+      const maySeeSystem = can(user, "settings.manage") || can(user, "registrations.review") || canSwitchAccounts(user);
+      const next =
+        initialTab === "system" && !maySeeSystem
+          ? "account"
+          : initialTab === "permissions" && !isPermissionAdmin
+            ? "account"
+            : initialTab;
+      setTab(next);
     }
   }, [isOpen, initialTab, user]);
 
@@ -131,7 +140,11 @@ export function SettingsCenter({
     return checks.map((c) => ({ ...c, granted: can(user, c.capability) }));
   }, [user]);
 
+  const { can: allowed, canManagePermissions } = usePermissions();
   const isAdmin = can(user, "settings.manage") || can(user, "registrations.review") || canSwitchAccounts(user);
+  /* Only the system administrator (or a role explicitly granted
+     `permissions.manage`) ever sees the permissions tab. */
+  const isPermissionAdmin = canManagePermissions || allowed("permissions.manage");
 
   if (!isOpen) return null;
 
@@ -164,7 +177,7 @@ export function SettingsCenter({
           {/* Tab rail: horizontal scroller on phones, vertical rail on desktop */}
           <div className="scroll-x shrink-0 gap-1.5 border-b border-border-subtle p-2.5 sm:w-[214px] sm:overflow-y-auto sm:border-b-0 sm:border-e sm:p-3">
             <div className="flex gap-1.5 sm:flex-col">
-              {TABS.filter((tb) => tb.id !== "system" || isAdmin).map(({ id, labelEn, labelAr, icon: Icon }) => {
+              {TABS.filter((tb) => (tb.id === "system" ? isAdmin : tb.id === "permissions" ? isPermissionAdmin : true)).map(({ id, labelEn, labelAr, icon: Icon }) => {
                 const active = tab === id;
                 return (
                   <button
@@ -187,6 +200,9 @@ export function SettingsCenter({
 
           {/* Panels */}
           <div className="scroll-thin min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+            {/* ── الأدوار والصلاحيات ─────────────────────────────── */}
+            {tab === "permissions" && isPermissionAdmin && <RolePermissionsManager />}
+
             {/* ── حسابي (§7) ───────────────────────────────────────── */}
             {tab === "account" && (
               <section className="space-y-4">
@@ -534,37 +550,31 @@ export function SettingsCenter({
                   </div>
                 </div>
 
-                {/* الأدوار والصلاحيات */}
-                <div>
-                  <h3 className="mb-2 text-[var(--type-card-title)] font-bold text-text-primary">
-                    {t("Roles & permissions (RBAC)", "الأدوار والصلاحيات")}
-                  </h3>
-                  <div className="card overflow-x-auto p-3">
-                    <table className="w-full text-[11px]">
-                      <thead>
-                        <tr className="text-text-muted">
-                          <th className="p-1.5 text-start font-semibold">{t("Role", "الدور")}</th>
-                          <th className="p-1.5 text-start font-semibold">{t("Trips", "الرحلات")}</th>
-                          <th className="p-1.5 text-start font-semibold">{t("Create driver", "إضافة سائق")}</th>
-                          <th className="p-1.5 text-start font-semibold">{t("Create customer", "إضافة عميل")}</th>
-                          <th className="p-1.5 text-start font-semibold">{t("Review", "المراجعة")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER", "DISPATCHER", "ACCOUNTANT", "DRIVER", "CUSTOMER", "BROKER", "WAREHOUSE"].map((role) => {
-                          const probe = { role, permissions: role === "SUPER_ADMIN" ? ["*"] : undefined } as SessionUser;
-                          return (
-                            <tr key={role} className="border-t border-border-subtle">
-                              <td className="p-1.5 font-mono text-[10px] text-text-secondary">{role}</td>
-                              <td className="p-1.5">{can(probe, "trips.view") ? "✓" : "—"}</td>
-                              <td className="p-1.5">{can(probe, "drivers.create") ? "✓" : "—"}</td>
-                              <td className="p-1.5">{can(probe, "customers.create") ? "✓" : "—"}</td>
-                              <td className="p-1.5">{can(probe, "registrations.review") ? "✓" : "—"}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                {/* الأدوار والصلاحيات — live administration, not a static table */}
+                {isPermissionAdmin && (
+                  <div>
+                    <h3 className="mb-2 text-[var(--type-card-title)] font-bold text-text-primary">
+                      {t("Roles & permissions (RBAC)", "الأدوار والصلاحيات")}
+                    </h3>
+                    <div className="card flex flex-wrap items-center gap-3 p-3.5">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-brand/12 text-brand">
+                        <IconLock size={17} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[12px] font-semibold text-text-primary">
+                          {t("Roles & permissions", "إدارة الأدوار والصلاحيات")}
+                        </div>
+                        <div className="text-[10.5px] text-text-muted">
+                          {t(
+                            "Show or hide any section, page or function for any role — applied on save.",
+                            "إظهار أو إخفاء أي قسم أو صفحة أو وظيفة لأي دور — يسري فور الحفظ.",
+                          )}
+                        </div>
+                      </div>
+                      <button onClick={() => setTab("permissions")} className="btn-primary px-3.5 py-2 text-[11.5px]">
+                        {t("Open", "فتح")}
+                      </button>
+                    </div>
                     <p className="mt-2 text-[10px] text-text-muted">
                       {t(
                         "Enforced in the API on every call — hiding a button is never the protection.",
@@ -572,7 +582,7 @@ export function SettingsCenter({
                       )}
                     </p>
                   </div>
-                </div>
+                )}
 
                 {/* إعدادات الرحلات (§22) */}
                 <div>
