@@ -6,13 +6,13 @@ import { useToast } from "./Toast";
 import { TruckImage } from "./TruckImage";
 import { CapacityTruck } from "./CapacityTruck";
 import { TruckTypeBadge } from "./TruckTypeIcon";
-import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch } from "./Icons";
+import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconGauge, IconFuel, IconThermo } from "./Icons";
 import { KpiCards } from "./overview/KpiCards";
 import { CargoDonut } from "./overview/CargoDonut";
 import { TripBars } from "./overview/TripBars";
 import { ActivitiesTable } from "./overview/ActivitiesTable";
 import { statusGroup, STATUS_LABEL } from "./overview/shared";
-import { getVehicleTypeMeta } from "../data/vehicleTypes";
+import { APPROVED_VEHICLE_TYPES_LIST } from "../data/vehicleTypes";
 
 interface Props {
   userName?: string;
@@ -71,6 +71,21 @@ function MetricCard({
   );
 }
 
+function SpeedDial({ value, t }: { value: number | null; t: (en: string, ar: string) => string }) {
+  const maximum = 160;
+  const normalized = value === null ? 0 : Math.max(0, Math.min(100, (value / maximum) * 100));
+  return <div className="min-w-0 rounded-lg bg-surface-2/80 px-2 py-1.5 text-center">
+    <svg viewBox="0 0 160 94" className="mx-auto h-12 w-full max-w-[104px]" role="img" aria-label={value === null ? t("Speed unavailable without GPS", "السرعة غير متاحة دون GPS") : `${Math.round(value)} km/h`}>
+      <path d="M14 82 A66 66 0 0 1 146 82" fill="none" stroke="var(--color-surface-5)" strokeWidth="9" strokeLinecap="round" />
+      <path d="M14 82 A66 66 0 0 1 146 82" fill="none" stroke="var(--color-brand)" strokeWidth="9" strokeLinecap="round" pathLength="100" strokeDasharray={`${normalized} 100`} />
+      {value !== null && <line x1="80" y1="82" x2="80" y2="30" stroke="var(--color-text-primary)" strokeWidth="2" strokeLinecap="round" transform={`rotate(${-90 + normalized * 1.8} 80 82)`} />}
+      <circle cx="80" cy="82" r="4" fill="var(--color-brand)" />
+    </svg>
+    <div className="-mt-1 text-[12px] font-bold tabular-nums text-text-primary">{value === null ? "—" : Math.round(value)} <span className="text-[8px] font-medium text-text-muted">km/h</span></div>
+    <div className="mt-0.5 flex items-center justify-center gap-1 text-[8px] text-text-muted"><IconGauge size={10} />{t("Speed", "السرعة")}</div>
+  </div>;
+}
+
 export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, onOpenTracking, onOpenMaintenance }: Props) {
   const { t } = useSettings();
   const toast = useToast();
@@ -117,6 +132,9 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
   const loadPercent = selected && selected.maxCapacityTons > 0
     ? Math.max(0, Math.min(100, (selected.cargoWeightTons / selected.maxCapacityTons) * 100))
     : 0;
+  const speedValue = gpsState === "configured" && selected && Number.isFinite(selected.speedKmH)
+    ? selected.speedKmH
+    : null;
   const [countedLoadPercent, setCountedLoadPercent] = useState(0);
   useEffect(() => {
     if (!selected) {
@@ -215,12 +233,15 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                   <span><span className="block text-[9px] text-text-muted">{t("Truck load", "حمولة الشاحنة")}</span><strong className="mt-0.5 block text-[10px] tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}</strong></span>
                 </div>
                 <TruckImage vehicle={truck} body={selected.cargoType} alt={truck ? `${truck.brand} ${truck.model}` : t("EJAZ fleet truck", "شاحنة أسطول إيجاز")} loading="eager" className="relative z-[1] h-[190px] w-full max-w-[680px] object-contain drop-shadow-[0_22px_26px_rgba(0,0,0,.2)] sm:h-[230px]" />
-                {truck && <div className="absolute bottom-8 end-4 z-20 hidden w-[190px] rounded-xl border border-border-subtle bg-surface-1/95 p-3 shadow-xl backdrop-blur-sm sm:block">
-                  <div className="flex items-center justify-between gap-2"><span className="text-[9px] text-text-muted">{t("Fuel", "الوقود")}</span><strong className="text-[11px] tabular-nums text-text-primary">{truck.fuel}%</strong></div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-5"><div className="h-full rounded-full bg-status-active transition-[width] duration-500" style={{ width: `${Math.max(0, Math.min(100, truck.fuel))}%` }} /></div>
-                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-border-subtle pt-2"><span className="text-[9px] text-text-muted">{t("Engine temp", "حرارة المحرك")}</span><strong className="text-[11px] tabular-nums text-text-primary">{truck.engineTemp} °C</strong></div>
-                  {truck.boxTemp !== undefined && <div className="mt-2 flex items-center justify-between gap-2"><span className="text-[9px] text-text-muted">{t("Cargo temperature", "حرارة الحمولة")}</span><strong className="text-[11px] tabular-nums text-text-primary">{truck.boxTemp} °C</strong></div>}
-                  <div className="mt-2 flex items-center justify-between gap-2"><span className="text-[9px] text-text-muted">{t("Vehicle status", "حالة المركبة")}</span><strong className={`text-[10px] ${truck.status === "active" ? "text-status-active" : "text-status-waiting"}`}>{truck.status === "active" ? t("Active", "نشطة") : truck.status === "waiting" ? t("Waiting", "بالانتظار") : t("Inactive", "متوقفة")}</strong></div>
+                {truck && <div className="absolute bottom-8 end-4 z-20 hidden w-[252px] rounded-xl border border-border-subtle bg-surface-1/95 p-3 shadow-xl backdrop-blur-sm sm:block">
+                  <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-[9px] text-text-muted"><IconFuel size={12} />{t("Fuel level", "مستوى الوقود")}</span><strong className="text-[11px] tabular-nums text-text-primary">{truck.fuel}%</strong></div>
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-5"><div className={`h-full rounded-full transition-[width] duration-500 ${truck.fuel <= 20 ? "bg-status-danger" : "bg-status-active"}`} style={{ width: `${Math.max(0, Math.min(100, truck.fuel))}%` }} /></div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <SpeedDial value={speedValue} t={t} />
+                    <div className="rounded-lg bg-surface-2/80 px-2 py-1.5 text-center"><IconThermo size={14} className="mx-auto text-brand" /><div className="mt-0.5 text-[12px] font-bold tabular-nums text-text-primary">{truck.engineTemp}°C</div><div className="mt-0.5 text-[8px] text-text-muted">{t("Engine temperature", "حرارة المحرك")}</div></div>
+                  </div>
+                  {truck.boxTemp !== undefined && <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-surface-2/80 px-2 py-1.5"><span className="text-[9px] text-text-muted">{t("Cargo temperature", "حرارة الحمولة")}</span><strong className="text-[10px] tabular-nums text-text-primary">{truck.boxTemp} °C</strong></div>}
+                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-border-subtle pt-2"><span className="text-[9px] text-text-muted">{t("Vehicle status", "حالة المركبة")}</span><strong className={`text-[10px] ${truck.status === "active" ? "text-status-active" : "text-status-waiting"}`}>{truck.status === "active" ? t("Active", "نشطة") : truck.status === "waiting" ? t("Waiting", "بالانتظار") : t("Inactive", "متوقفة")}</strong></div>
                   <button onClick={onOpenMaintenance} className="mt-2 w-full border-t border-border-subtle pt-2 text-start text-[10px] font-semibold text-brand hover:text-brand-soft">{t("Maintenance & repairs", "الصيانة والإصلاحات")} →</button>
                 </div>}
                 <div className="absolute inset-x-8 bottom-5 h-px bg-gradient-to-r from-transparent via-border-strong to-transparent" />
@@ -304,19 +325,27 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
         </div>
 
         <section className="card p-4 sm:p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-[14px] font-semibold text-text-primary">{t("Fleet vehicles", "مركبات الأسطول")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{t("Select a trip to inspect its assigned vehicle and approved cargo type.", "اختر رحلة لمعاينة المركبة المخصصة ونوع الشاحنة المعتمد.")}</p></div><span className="text-[10px] text-text-muted">{trucks.length} {t("vehicles", "مركبة")}</span></div>
-          {filteredTrips.length ? <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-            {filteredTrips.slice(0, 8).map((trip) => {
-              const vehicle = trucks.find((item) => item.id === trip.truckId);
-              const meta = getVehicleTypeMeta(trip.cargoType);
-              const active = trip.id === selected?.id;
-              return <button key={trip.id} onClick={() => handleSelect(trip.id)} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-xl border p-2 text-start transition hover:border-brand/50 ${active ? "border-brand/55 bg-brand/5" : "border-border-subtle bg-surface-2/50"}`}>
-                <div className="flex h-[82px] items-center justify-center"><TruckImage vehicle={vehicle} body={trip.cargoType} alt={`${meta.englishName} ${vehicle?.brand ?? ""} ${vehicle?.model ?? ""}`} className="h-full w-full object-contain transition-transform group-hover:scale-[1.04]" /></div>
-                <div className="mt-1 flex min-w-0 items-center justify-between gap-1"><span className="truncate text-[10px] font-bold text-text-primary">{trip.tripNumber}</span><span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} /></div>
-                <div className="mt-0.5 truncate text-[9px] text-text-muted">{vehicle?.plate || "—"} · {vehicle?.brand || "—"}</div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-[14px] font-semibold text-text-primary">{t("EJAZ truck types", "أنواع شاحنات إيجاز")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنته.")}</p></div><span className="rounded-full bg-surface-3 px-2.5 py-1 text-[10px] font-semibold text-text-secondary">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span></div>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+            {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
+              const vehicle = trucks.find((item) => item.body === meta.id);
+              const matchingTrip = trips.find((trip) => trip.cargoType === meta.id && (!vehicle || trip.truckId === vehicle.id)) ?? trips.find((trip) => trip.cargoType === meta.id);
+              const count = trucks.filter((item) => item.body === meta.id).length;
+              const active = cargo === meta.id;
+              return <button key={meta.id} onClick={() => {
+                setCargo(meta.id);
+                setGroup("all");
+                setCustomer("all");
+                setDriverFilter("all");
+                setQuery("");
+                if (matchingTrip) handleSelect(matchingTrip.id);
+              }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-xl border p-2.5 text-start transition hover:border-brand/55 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
+                <div className="flex h-[92px] items-center justify-center overflow-hidden rounded-lg bg-surface-2"><TruckImage vehicle={vehicle} body={meta.id} alt={`${meta.englishName} EJAZ truck`} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]" /></div>
+                <div className="mt-2 flex min-w-0 items-center justify-between gap-1"><span className="truncate text-[11px] font-bold text-text-primary">{t(meta.englishName, meta.arabicName)}</span><span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} /></div>
+                <div className="mt-0.5 truncate text-[9px] text-text-muted">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</div>
               </button>;
             })}
-          </div> : <p className="py-8 text-center text-xs text-text-muted">{t("No vehicles match these filters.", "لا توجد مركبات تطابق هذه الفلاتر.")}</p>}
+          </div>
         </section>
 
         <section className="card overflow-hidden p-0">

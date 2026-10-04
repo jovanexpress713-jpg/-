@@ -548,4 +548,9 @@ Object.assign(UR_OPS, {
   "Cargo temperature": "کارگو کا درجۂ حرارت",
   "Vehicle status": "گاڑی کی حالت",
   "Maintenance & repairs": "مرمت اور دیکھ بھال",
+  "Speed unavailable without GPS": "جی پی ایس کے بغیر رفتار دستیاب نہیں",
+  "Engine temperature": "انجن کا درجۂ حرارت",
+  "EJAZ truck types": "اعجاز ٹرک کی اقسام",
+  "Four approved types · select one to filter trips and focus its assigned truck.": "چار منظور شدہ اقسام · ٹرپس فلٹر کرنے اور متعلقہ گاڑی دیکھنے کے لیے ایک قسم منتخب کریں۔",
+  "approved types": "منظور شدہ اقسام",
 });

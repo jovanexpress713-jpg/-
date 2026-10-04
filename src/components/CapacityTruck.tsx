@@ -119,10 +119,11 @@ export const LOAD_BLUE = { from: "#2f67ff", to: "#245bff" } as const;
 export const LOAD_EMPTY = "#4a5468";
 
 const TYPE_GAUGE_SHAPES: Record<CanonicalVehicleTypeId, { clip: string; top: number; bottom: number; centerX: number }> = {
-  flatbed: { clip: "M 690 615 L 1452 650 L 1450 702 L 706 688 Z", top: 614, bottom: 700, centerX: 1070 },
-  reefer: { clip: "M 680 218 L 1450 438 L 1450 628 L 712 690 Z", top: 218, bottom: 688, centerX: 1060 },
-  dry: { clip: "M 680 218 L 1450 438 L 1450 628 L 712 690 Z", top: 218, bottom: 688, centerX: 1060 },
-  curtain: { clip: "M 680 218 L 1450 438 L 1450 628 L 712 690 Z", top: 218, bottom: 688, centerX: 1060 },
+  // Each mask is measured for the cargo area of its own shipped EJAZ photo.
+  flatbed: { clip: "M 696 624 L 1452 650 L 1450 702 L 708 688 Z", top: 624, bottom: 700, centerX: 1080 },
+  reefer: { clip: "M 718 232 L 1450 449 L 1450 646 L 720 687 Z", top: 232, bottom: 686, centerX: 1080 },
+  dry: { clip: "M 688 220 L 1450 450 L 1450 647 L 710 685 Z", top: 220, bottom: 684, centerX: 1070 },
+  curtain: { clip: "M 676 218 L 1450 442 L 1450 630 L 710 676 Z", top: 218, bottom: 675, centerX: 1060 },
 };
 
 function waterAreaPath(y: number, bottom: number, amplitude = 28) {
