@@ -304,6 +304,9 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
               const vehicle = trucks.find((item) => item.body === meta.id);
               const matchingTrip = trips.find((trip) => trip.cargoType === meta.id && (!vehicle || trip.truckId === vehicle.id)) ?? trips.find((trip) => trip.cargoType === meta.id);
               const count = trucks.filter((item) => item.body === meta.id).length;
+              const typeLoadPercent = matchingTrip && matchingTrip.maxCapacityTons > 0
+                ? Math.max(0, Math.min(100, matchingTrip.cargoWeightTons / matchingTrip.maxCapacityTons * 100))
+                : 0;
               const active = cargo === meta.id;
               return <button key={meta.id} onClick={() => {
                 setCargo(meta.id);
@@ -313,9 +316,20 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                 setQuery("");
                 if (matchingTrip) handleSelect(matchingTrip.id);
               }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-xl border p-2.5 text-start transition hover:border-brand/55 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
-                <div className="flex h-[92px] items-center justify-center overflow-hidden rounded-lg bg-surface-2"><TruckImage body={meta.id} alt={`${meta.englishName} EJAZ truck`} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]" /></div>
+                <div className="overflow-hidden rounded-lg bg-surface-2/70 p-1">
+                  <CapacityTruck
+                    pct={typeLoadPercent}
+                    countUp={Boolean(matchingTrip)}
+                    truckType={meta.id}
+                    className="w-full transition-transform duration-300 group-hover:scale-[1.02]"
+                    label={t(meta.englishName, meta.arabicName)}
+                  />
+                </div>
                 <div className="mt-2 flex min-w-0 items-center justify-between gap-1"><span className="truncate text-[11px] font-bold text-text-primary">{t(meta.englishName, meta.arabicName)}</span><span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} /></div>
-                <div className="mt-0.5 truncate text-[9px] text-text-muted">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</div>
+                <div className="mt-0.5 flex min-w-0 items-center justify-between gap-1 text-[9px] text-text-muted">
+                  <span className="truncate">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</span>
+                  {matchingTrip && <strong className="shrink-0 tabular-nums text-text-primary">{matchingTrip.cargoWeightTons.toLocaleString()} / {matchingTrip.maxCapacityTons} {t("tons", "طن")} · {Math.round(typeLoadPercent)}%</strong>}
+                </div>
               </button>;
             })}
           </div>

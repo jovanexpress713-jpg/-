@@ -427,6 +427,10 @@ export async function runNovaDesignTests() {
       const view = await mount(React.createElement(CapacityTruck, { pct: 63, truckType: type }));
       assert.ok((view.query("image")[0]?.getAttribute("href") ?? "").endsWith(imageName), `${type} meter uses its own approved truck image`);
       assert.ok(view.query("clipPath").length > 0, `${type} liquid overlay is clipped to the vehicle cargo area`);
+      const mask = view.query("clipPath path")[0]?.getAttribute("d") ?? "";
+      assert.ok(mask.startsWith("M "), `${type} has an explicit body-shaped fill mask`);
+      if (type === "reefer") assert.ok(mask.startsWith("M 804 226"), "reefer fill starts behind the refrigeration unit, not over it");
+      if (type === "dry") assert.ok(mask.startsWith("M 692 226"), "dry-van fill follows the dry box, not another body's mask");
       await view.unmount();
     }
   }

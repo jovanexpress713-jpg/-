@@ -121,7 +121,8 @@ export const LOAD_EMPTY = "#4a5468";
 const TYPE_GAUGE_SHAPES: Record<CanonicalVehicleTypeId, { clip: string; top: number; bottom: number; centerX: number; amplitude: number }> = {
   // Inner cargo-area masks follow the photographed outline of each official asset.
   flatbed: { clip: "M 702 628 L 1450 650 L 1448 674 L 710 653 Z", top: 628, bottom: 674, centerX: 1080, amplitude: 5 },
-  reefer: { clip: "M 720 242 L 1438 458 L 1438 644 L 724 674 Z", top: 242, bottom: 674, centerX: 1080, amplitude: 16 },
+  // The reefer side begins behind its refrigeration unit; keep the cooling unit visible.
+  reefer: { clip: "M 804 226 L 1442 452 L 1442 675 L 804 660 Z", top: 226, bottom: 675, centerX: 1120, amplitude: 16 },
   dry: { clip: "M 692 226 L 1438 455 L 1438 632 L 718 660 Z", top: 226, bottom: 660, centerX: 1070, amplitude: 17 },
   curtain: { clip: "M 690 232 L 1438 451 L 1438 613 L 714 627 Z", top: 232, bottom: 627, centerX: 1060, amplitude: 16 },
 };
