@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "../settings";
 import { apiClient, getAuthToken } from "../services/apiClient";
-import { useFleetStore, type Trip } from "../state/fleetStore";
+import { useFleetStore } from "../state/fleetStore";
 import { useToast } from "./Toast";
 import { CapacityTruck } from "./CapacityTruck";
-import { TruckTypeBadge, TruckTypeIcon } from "./TruckTypeIcon";
-import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconGauge, IconFuel, IconThermo } from "./Icons";
+import { TruckTypeIcon } from "./TruckTypeIcon";
+import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconSnowflake } from "./Icons";
 import { KpiCards } from "./overview/KpiCards";
 import { CargoDonut } from "./overview/CargoDonut";
 import { TripBars } from "./overview/TripBars";
 import { ActivitiesTable } from "./overview/ActivitiesTable";
-import { statusGroup, STATUS_LABEL } from "./overview/shared";
+import { statusGroup } from "./overview/shared";
 import { APPROVED_VEHICLE_TYPES_LIST, normalizeVehicleType } from "../data/vehicleTypes";
 
 interface Props {
@@ -29,11 +29,6 @@ function greeting(t: (en: string, ar: string) => string) {
   if (h < 12) return t("Good morning", "صباح الخير");
   if (h < 18) return t("Good afternoon", "مساء الخير");
   return t("Good evening", "مساء النور");
-}
-
-function tripStatusLabel(trip: Trip, t: (en: string, ar: string) => string) {
-  const entry = STATUS_LABEL[trip.status];
-  return t(entry[0], entry[1]);
 }
 
 function MetricCard({
@@ -70,22 +65,7 @@ function MetricCard({
   );
 }
 
-function SpeedDial({ value, t }: { value: number | null; t: (en: string, ar: string) => string }) {
-  const maximum = 160;
-  const normalized = value === null ? 0 : Math.max(0, Math.min(100, (value / maximum) * 100));
-  return <div className="min-w-0 rounded-lg bg-surface-2/80 px-2 py-1.5 text-center">
-    <svg viewBox="0 0 160 94" className="mx-auto h-12 w-full max-w-[104px]" role="img" aria-label={value === null ? t("Speed unavailable without GPS", "السرعة غير متاحة دون GPS") : `${Math.round(value)} km/h`}>
-      <path d="M14 82 A66 66 0 0 1 146 82" fill="none" stroke="var(--color-surface-5)" strokeWidth="9" strokeLinecap="round" />
-      <path d="M14 82 A66 66 0 0 1 146 82" fill="none" stroke="var(--color-brand)" strokeWidth="9" strokeLinecap="round" pathLength="100" strokeDasharray={`${normalized} 100`} />
-      {value !== null && <line x1="80" y1="82" x2="80" y2="30" stroke="var(--color-text-primary)" strokeWidth="2" strokeLinecap="round" transform={`rotate(${-90 + normalized * 1.8} 80 82)`} />}
-      <circle cx="80" cy="82" r="4" fill="var(--color-brand)" />
-    </svg>
-    <div className="-mt-1 text-[12px] font-bold tabular-nums text-text-primary">{value === null ? "—" : Math.round(value)} <span className="text-[8px] font-medium text-text-muted">km/h</span></div>
-    <div className="mt-0.5 flex items-center justify-center gap-1 text-[8px] text-text-muted"><IconGauge size={10} />{t("Speed", "السرعة")}</div>
-  </div>;
-}
-
-export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, onOpenTracking, onOpenMaintenance }: Props) {
+export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, onOpenTracking }: Props) {
   const { t } = useSettings();
   const toast = useToast();
   const { trips, trucks, drivers, selectedTripId, selectTrip, selectTruck } = useFleetStore();
@@ -126,14 +106,9 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
   }, [trips, trucks, drivers, group, cargo, customer, driverFilter, query]);
 
   const selected = filteredTrips.find((trip) => trip.id === selectedTripId) ?? filteredTrips[0];
-  const truck = selected ? trucks.find((item) => item.id === selected.truckId) : undefined;
-  const driver = selected ? drivers.find((item) => item.id === selected.driverId) : undefined;
   const loadPercent = selected && selected.maxCapacityTons > 0
     ? Math.max(0, Math.min(100, (selected.cargoWeightTons / selected.maxCapacityTons) * 100))
     : 0;
-  const speedValue = gpsState === "configured" && selected && Number.isFinite(selected.speedKmH)
-    ? selected.speedKmH
-    : null;
   const onToast = (text: string, sub?: string) => toast(text, sub);
 
   const handleSelect = (id: string) => {
@@ -196,62 +171,33 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
 
         <section className="card overflow-hidden border border-border-subtle p-0">
           {selected ? (
-            <div className="grid min-h-[300px] lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,.85fr)]">
-              <div className="relative flex min-h-[230px] items-center justify-center overflow-hidden bg-surface-2 px-5 py-6 sm:px-8">
-                <div className="pointer-events-none absolute inset-0 opacity-50" style={{ backgroundImage: "radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--color-brand) 11%, transparent), transparent 58%)" }} />
-                <div className="absolute start-5 top-5 z-10 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-border-subtle bg-surface-1/90 px-3 py-1.5 text-[11px] font-semibold text-text-primary">#{selected.tripNumber}</span>
-                  <span className="rounded-full bg-brand/12 px-3 py-1.5 text-[10px] font-semibold text-brand">{tripStatusLabel(selected, t)}</span>
-                </div>
+            <div className="relative flex min-h-[510px] flex-col overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,color-mix(in_srgb,var(--color-brand)_7%,transparent),transparent_60%)] px-5 py-5 sm:min-h-[590px] sm:px-8 sm:py-6">
+              <div className="flex items-start justify-between gap-4" dir="ltr">
+                <strong className="pt-0.5 text-start text-[16px] font-bold tabular-nums text-text-primary sm:text-[18px]">
+                  {selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}
+                </strong>
+                <h2 className="pt-0.5 text-end text-[17px] font-bold text-text-primary sm:text-[21px]" dir="rtl">{t("Truck load capacity", "حمولة الشاحنة")}</h2>
+              </div>
+
+              <div className="flex flex-1 items-center justify-center py-3 sm:py-4">
                 <CapacityTruck
                   key={`hero-${selected.id}`}
                   pct={loadPercent}
                   countUp
                   truckType={selected.cargoType}
-                  vehicle={truck}
-                  className="relative z-[1] w-full max-w-[465px] drop-shadow-[0_22px_26px_rgba(0,0,0,.2)]"
+                  vehicle={trucks.find((item) => item.id === selected.truckId)}
+                  className="w-full max-w-[810px] drop-shadow-[0_22px_26px_rgba(0,0,0,.22)]"
                   label={t(`Truck load ${Math.round(loadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(loadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
                 />
-
-                <div className="absolute inset-x-8 bottom-5 h-px bg-gradient-to-r from-transparent via-border-strong to-transparent" />
-                {truck && <div className="absolute bottom-2 z-10 rounded-full border border-border-subtle bg-surface-1/90 px-3 py-1 text-[10px] text-text-secondary">{truck.brand} · {truck.model}</div>}
               </div>
-              <div className="flex min-w-0 flex-col justify-between p-5 sm:p-6">
-                <div>
-                  <div className="flex items-start justify-between gap-3">
-                    <div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-brand">{t("Selected trip", "الرحلة المحددة")}</p><h2 className="mt-1 text-xl font-bold text-text-primary">{selected.originCity}<span className="mx-2 text-brand">→</span>{selected.destinationCity}</h2></div>
-                    {selected.cargoType && <TruckTypeBadge truckType={selected.cargoType} size={13} />}
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border-subtle py-4 text-[11px]">
-                    <div><span className="block text-text-muted">{t("Customer", "العميل")}</span><span className="mt-1 block truncate font-semibold text-text-primary">{selected.shipper || "—"}</span></div>
-                    <div><span className="block text-text-muted">{t("Driver", "السائق")}</span><span className="mt-1 block truncate font-semibold text-text-primary">{driver?.name || "—"}</span></div>
-                    <div><span className="block text-text-muted">{t("Pickup", "التحميل")}</span><span className="mt-1 block truncate text-text-secondary">{selected.originTerminal || selected.originCity}</span></div>
-                    <div><span className="block text-text-muted">{t("Delivery", "التفريغ")}</span><span className="mt-1 block truncate text-text-secondary">{selected.destinationTerminal || selected.destinationCity}</span></div>
-                  </div>
-                  <div className="mt-4 flex items-end justify-between gap-3"><div><span className="text-[10px] text-text-muted">{t("Route progress", "تقدم المسار")}</span><div className="mt-1 text-lg font-bold tabular-nums text-text-primary">{Math.round(selected.progressPct)}%</div></div><div className="text-end"><span className="text-[10px] text-text-muted">{t("Distance remaining", "المسافة المتبقية")}</span><div className="mt-1 text-[13px] font-semibold tabular-nums text-text-primary">{Math.round(selected.distanceRemainingKm).toLocaleString()} {t("km", "كم")}</div></div></div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-5" role="progressbar" aria-valuenow={Math.round(selected.progressPct)} aria-valuemin={0} aria-valuemax={100}><div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${Math.max(0, Math.min(100, selected.progressPct))}%` }} /></div>
-                  <div className="mt-3 flex items-center justify-between gap-2 text-[10px] text-text-muted"><span>{selected.originCity}</span><span className="h-px flex-1 border-t border-dashed border-border-strong" /><span>{selected.destinationCity}</span></div>
-                  <div className="mt-4 rounded-xl border border-border-subtle bg-surface-2/70 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[10px] font-semibold text-text-secondary">{t("Truck load capacity", "حمولة الشاحنة")}</span>
-                      <span className="text-[11px] font-bold tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}</span>
-                    </div>
-                    {truck && <div className="mt-3 grid grid-cols-2 gap-2">
-                      <div className="col-span-2 rounded-lg bg-surface-2/80 px-2.5 py-2">
-                        <div className="flex items-center justify-between gap-2 text-[9px] text-text-muted"><span className="flex items-center gap-1.5"><IconFuel size={12} />{t("Fuel level", "مستوى الوقود")}</span><strong className="text-[10px] tabular-nums text-text-primary">{truck.fuel}%</strong></div>
-                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-5"><div className={`h-full rounded-full transition-[width] duration-500 ${truck.fuel <= 20 ? "bg-status-danger" : "bg-status-active"}`} style={{ width: `${Math.max(0, Math.min(100, truck.fuel))}%` }} /></div>
-                      </div>
-                      <SpeedDial value={speedValue} t={t} />
-                      <div className="rounded-lg bg-surface-2/80 px-2 py-1.5 text-center"><IconThermo size={14} className="mx-auto text-brand" /><div className="mt-0.5 text-[12px] font-bold tabular-nums text-text-primary">{truck.engineTemp}°C</div><div className="mt-0.5 text-[8px] text-text-muted">{t("Engine temperature", "حرارة المحرك")}</div></div>
-                      {truck.boxTemp !== undefined && <div className="col-span-2 flex items-center justify-between gap-2 rounded-lg bg-surface-2/80 px-2 py-1.5"><span className="text-[9px] text-text-muted">{t("Cargo temperature", "حرارة الحمولة")}</span><strong className="text-[10px] tabular-nums text-text-primary">{truck.boxTemp} °C</strong></div>}
-                      <div className="col-span-2 flex items-center justify-between gap-2 border-t border-border-subtle pt-2"><span className="text-[9px] text-text-muted">{t("Vehicle status", "حالة المركبة")}</span><strong className={`text-[10px] ${truck.status === "active" ? "text-status-active" : "text-status-waiting"}`}>{truck.status === "active" ? t("Active", "نشطة") : truck.status === "waiting" ? t("Waiting", "بالانتظار") : t("Inactive", "متوقفة")}</strong></div>
-                      <button onClick={onOpenMaintenance} className="col-span-2 border-t border-border-subtle pt-2 text-start text-[10px] font-semibold text-brand hover:text-brand-soft">{t("Maintenance & repairs", "الصيانة والإصلاحات")} →</button>
-                    </div>}
-                  </div>
-                </div>
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex gap-4 text-[10px]"><span><span className="text-text-muted">{t("Distance", "المسافة")}</span><strong className="ms-1.5 text-text-primary">{Math.round(selected.distanceTotalKm).toLocaleString()} {t("km", "كم")}</strong></span><span><span className="text-text-muted">ETA</span><strong className="ms-1.5 text-text-primary">{selected.etaMinutes > 0 ? `${Math.floor(selected.etaMinutes / 60)}h ${selected.etaMinutes % 60}m` : "—"}</strong></span></div>
-                  <button onClick={() => onOpenTripDetails?.(selected.id)} className="btn-primary rounded-lg px-4 py-2 text-[11px]">{t("Trip details", "تفاصيل الرحلة")}</button>
+
+              <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-2" dir="ltr">
+                <button onClick={() => onOpenTripDetails?.(selected.id)} className="btn-primary min-h-[54px] rounded-xl px-7 py-3 text-[14px] font-bold sm:min-h-[60px] sm:px-8 sm:text-[16px]">
+                  {t("Trip details", "تفاصيل الرحلة")}
+                </button>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] sm:gap-x-8 sm:text-[15px]" dir="ltr">
+                  <span className="flex items-center gap-2 whitespace-nowrap"><span className="text-text-muted">ETA</span><strong className="font-semibold text-text-primary">{selected.etaMinutes > 0 ? `${Math.floor(selected.etaMinutes / 60)}h ${String(selected.etaMinutes % 60).padStart(2, "0")}m` : "—"}</strong></span>
+                  <span className="flex items-center gap-2 whitespace-nowrap"><span className="text-text-muted" dir="rtl">{t("Distance", "المسافة")}</span><strong className="font-semibold tabular-nums text-text-primary">{Math.round(selected.distanceTotalKm).toLocaleString()} {t("km", "كم")}</strong></span>
                 </div>
               </div>
             </div>
@@ -259,8 +205,14 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
         </section>
 
         <section className="card p-4 sm:p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-[14px] font-semibold text-text-primary">{t("Truck load capacity", "حمولة الشاحنة")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنته.")}</p></div><span className="rounded-full bg-surface-3 px-2.5 py-1 text-[10px] font-semibold text-text-secondary">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span></div>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <div className="mb-4 flex items-start justify-between gap-4" dir="ltr">
+            <span className="pt-1 text-[11px] font-medium text-text-secondary" dir="rtl">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span>
+            <div className="text-end" dir="rtl">
+              <h2 className="text-[18px] font-bold text-text-primary sm:text-[21px]">{t("Truck load capacity", "حمولة الشاحنة")}</h2>
+              <p className="mt-1 text-[10px] text-text-muted sm:text-[12px]">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنتك.")}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
               const vehicle = trucks.find((item) => normalizeVehicleType(item.body) === meta.id);
               const matchingTypeTrips = trips.filter((trip) => normalizeVehicleType(trip.cargoType) === meta.id);
@@ -280,8 +232,8 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                 setDriverFilter("all");
                 setQuery("");
                 if (matchingTrip) handleSelect(matchingTrip.id);
-              }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-xl border p-2.5 text-start transition hover:border-brand/55 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
-                <div className="overflow-hidden rounded-lg bg-surface-2/70 p-1">
+              }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-xl border p-2.5 text-start transition hover:border-brand/55 sm:p-3 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
+                <div className="relative overflow-hidden rounded-lg bg-surface-2/70 p-1">
                   <CapacityTruck
                     pct={typeLoadPercent}
                     countUp={Boolean(matchingTrip)}
@@ -289,11 +241,19 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                     className="w-full transition-transform duration-300 group-hover:scale-[1.02]"
                     label={t(meta.englishName, meta.arabicName)}
                   />
+                  <span className="absolute right-3 top-3 grid h-8 w-8 place-items-center transition-transform duration-200 group-hover:scale-110" style={{ color: meta.accentColor }} title={t(meta.englishName, meta.arabicName)} aria-label={t(meta.englishName, meta.arabicName)} role="img">
+                    {meta.id === "reefer" ? <IconSnowflake size={26} /> : <TruckTypeIcon truckType={meta.id} size={25} />}
+                  </span>
                 </div>
-                <div className="mt-2 flex min-w-0 items-center justify-between gap-1"><span className="truncate text-[11px] font-bold text-text-primary">{t(meta.englishName, meta.arabicName)}</span><span className="shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ color: meta.accentColor }}><TruckTypeIcon truckType={meta.id} size={18} /></span></div>
-                <div className="mt-0.5 flex min-w-0 items-center justify-between gap-1 text-[9px] text-text-muted">
-                  <span className="truncate">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</span>
-                  {matchingTrip && <strong className="shrink-0 tabular-nums text-text-primary">{matchingTrip.cargoWeightTons.toLocaleString()} / {matchingTrip.maxCapacityTons} {t("tons", "طن")} · {Math.round(typeLoadPercent)}%</strong>}
+                <div className="mt-2 flex min-w-0 items-center justify-between gap-2" dir="ltr">
+                  <span className="h-4 w-4 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} aria-hidden="true" />
+                  <span className="truncate text-[16px] font-bold text-text-primary sm:text-[18px]" dir="rtl">{t(meta.englishName, meta.arabicName)}</span>
+                </div>
+                <div className="mt-1 flex min-w-0 items-center justify-between gap-2 text-[10px] text-text-muted sm:text-[11px]" dir="ltr">
+                  <span className="truncate" dir="rtl">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</span>
+                  {matchingTrip
+                    ? <strong className="shrink-0 tabular-nums text-text-primary" dir="ltr">{matchingTrip.cargoWeightTons.toLocaleString()} / {matchingTrip.maxCapacityTons} · {Math.round(typeLoadPercent)}%</strong>
+                    : <span className="shrink-0 text-text-muted">—</span>}
                 </div>
               </button>;
             })}
