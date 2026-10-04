@@ -155,6 +155,11 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify({ notes }),
       }),
+    declineTrip: (tripId: string, reason?: string) =>
+      request<any>(`/api/driver/trips/${tripId}/decline`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
     approveRequest: (tripId: string) =>
       request<any>(`/api/trips/${tripId}/approve-request`, {
         method: "POST",

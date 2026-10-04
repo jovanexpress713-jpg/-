@@ -6,6 +6,7 @@ import { apiClient } from "../services/apiClient";
 import { InteractiveMap } from "../components/InteractiveMap";
 import { normalizeVehicleType, getVehicleTypeMeta } from "../data/vehicleTypes";
 import { TruckTypeAvatar, TruckTypeBadge } from "../components/TruckTypeIcon";
+import { statusMeta } from "../data/tripStatusMeta";
 import { MobileNotificationsList, useMobileNotifications, MobileSection, MobileRow } from "./MobileShared";
 import { MobileUserManagement } from "./MobileUserManagement";
 import {
@@ -119,11 +120,33 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
       setActionSuccessMsg(t("Trip requested successfully! Sent to Operations for approval.", "تم إرسال طلب الرحلة لغرفة العمليات للموافقة بنجاح!"));
       const res = await apiClient.trips.getDriverTrips(tripsSubTab);
       if (res?.trips) setDriverTrips(res.trips);
-    } catch {
-      setActionErrorMsg(t("Unable to send the trip request right now.", "تعذّر إرسال طلب الرحلة حاليًا."));
+    } catch (e: any) {
+      setActionErrorMsg(String(e?.message || t("Unable to send the trip request right now.", "تعذّر إرسال طلب الرحلة حاليًا.")));
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDeclineTrip = async (tripId: string) => {
+    setIsSubmitting(true);
+    setActionSuccessMsg(null);
+    setActionErrorMsg(null);
+    try {
+      await apiClient.trips.declineTrip(tripId);
+      setActionSuccessMsg(t("Trip declined — it will no longer appear in your available list.", "تم رفض الرحلة — لن تظهر بعد الآن في قائمة الرحلات المتاحة لك."));
+      const res = await apiClient.trips.getDriverTrips(tripsSubTab);
+      if (res?.trips) setDriverTrips(res.trips);
+    } catch (e: any) {
+      setActionErrorMsg(String(e?.message || t("Unable to decline the trip right now.", "تعذّر رفض الرحلة حاليًا.")));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /** Canonical lifecycle status → localized human label. */
+  const statusLabel = (s: string | undefined) => {
+    const m = statusMeta(s);
+    return t(m.en, m.ar);
   };
 
   const active = currentTrip || driverTrips[0] || null;
@@ -376,7 +399,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                 <div className="grid grid-cols-3 gap-2 text-center text-[10px] rounded-[10px] bg-surface-2 p-2.5 border border-white/5 tabular-nums">
                   <div>
                     <div className="text-text-muted">{t("Status", "الحالة")}</div>
-                    <div className="font-bold text-white">{td(active.statusAr || active.status)}</div>
+                    <div className="font-bold text-white">{statusLabel(active.status)}</div>
                   </div>
                   <div>
                     <div className="text-text-muted">{t("Cargo", "الحمولة")}</div>
@@ -437,41 +460,80 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                   : t("No trips in this list.", "لا توجد رحلات في هذه القائمة.")}
               </div>
             ) : (
-              driverTrips.map((tr) => (
-                <div key={tr.id} className="rounded-[14px] border border-border-subtle bg-surface-1 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-brand tabular-nums">{tr.tripNumber}</span>
-                    <TruckTypeBadge truckType={tr.cargoType || "flatbed"} size={10} />
-                  </div>
-                  <div className="text-[12px] font-semibold text-white">
-                    {td(tr.originCity)} ← {td(tr.destinationCity)}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-text-muted">{td(tr.statusAr || tr.status)}</span>
-                    <div className="flex gap-1.5">
+              driverTrips.map((tr) => {
+                const meta = statusMeta(tr.status);
+                return (
+                  <div key={tr.id} className="rounded-[14px] border border-border-subtle bg-surface-1 p-3 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <TruckTypeAvatar truckType={tr.cargoType || "flatbed"} size={26} iconSize={13} showBadge />
+                        <span className="text-[11px] font-bold text-brand tabular-nums">{tr.tripNumber}</span>
+                      </span>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[9.5px] font-bold"
+                        style={{ backgroundColor: `${meta.badgeColor}26`, color: meta.badgeColor }}
+                      >
+                        {td(tr.statusAr || meta.ar || tr.status)}
+                      </span>
+                    </div>
+
+                    {/* Route — the strongest visual on the card */}
+                    <div className="flex items-center gap-2 rounded-[10px] bg-surface-0/60 border border-border-subtle/60 px-2.5 py-2">
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
+                      <span className="truncate text-[12px] font-extrabold text-white">{td(tr.originCity)}</span>
+                      <span className="shrink-0 text-brand font-black leading-none">←</span>
+                      <span className="truncate text-[12px] font-extrabold text-white">{td(tr.destinationCity)}</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5 text-center text-[9.5px] tabular-nums">
+                      <span className="rounded-[8px] bg-surface-2/70 py-1">
+                        <span className="block text-text-muted">{t("Distance", "المسافة")}</span>
+                        <span className="block font-bold text-text-secondary">{tr.distanceKm ? `${tr.distanceKm} ${t("km", "كم")}` : "—"}</span>
+                      </span>
+                      <span className="rounded-[8px] bg-surface-2/70 py-1">
+                        <span className="block text-text-muted">{t("Weight", "الوزن")}</span>
+                        <span className="block font-bold text-text-secondary">{tr.cargoWeightTons ? `${tr.cargoWeightTons} ${t("t", "طن")}` : "—"}</span>
+                      </span>
+                      <span className="rounded-[8px] bg-surface-2/70 py-1">
+                        <span className="block text-text-muted">{t("Type", "النوع")}</span>
+                        <span className="block font-bold text-text-secondary">{getVehicleTypeMeta(tr.cargoType || "flatbed").arabicName}</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-1.5">
                       {tripsSubTab === "available" ? (
-                        <button
-                          onClick={() => handleRequestTrip(tr.id)}
-                          disabled={isSubmitting}
-                          className="rounded-[8px] bg-brand px-3 py-1 text-[10px] font-bold text-on-brand disabled:opacity-50"
-                        >
-                          {t("Accept trip", "طلب الرحلة")}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleRequestTrip(tr.id)}
+                            disabled={isSubmitting}
+                            className="flex-1 rounded-[8px] bg-brand px-2 py-1.5 text-[10px] font-bold text-on-brand disabled:opacity-50 flex items-center justify-center gap-1"
+                          >
+                            <IconCheck size={12} />
+                            {t("Accept trip", "قبول الرحلة")}
+                          </button>
+                          <button
+                            onClick={() => handleDeclineTrip(tr.id)}
+                            disabled={isSubmitting}
+                            className="rounded-[8px] bg-status-danger/15 border border-status-danger/30 px-2.5 py-1.5 text-[10px] font-bold text-status-danger hover:bg-status-danger hover:text-white transition-all disabled:opacity-50"
+                          >
+                            {t("Decline", "رفض الرحلة")}
+                          </button>
+                        </>
                       ) : (
                         <button
                           onClick={() => {
                             setCurrentTrip(tr);
                             setActiveTab("trip");
                           }}
-                          className="rounded-[8px] bg-surface-2 px-3 py-1 text-[10px] font-bold text-white hover:bg-brand hover:text-on-brand"
+                          className="w-full rounded-[8px] bg-surface-2 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-brand hover:text-on-brand"
                         >
                           {t("Open", "فتح")}
                         </button>
                       )}
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -493,7 +555,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-text-muted">{t("Status", "الحالة")}</span>
-                    <span className="font-semibold text-white">{td(active.statusAr || active.status)}</span>
+                    <span className="font-semibold text-white">{statusLabel(active.status)}</span>
                   </div>
                 </div>
 

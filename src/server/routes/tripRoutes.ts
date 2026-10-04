@@ -70,7 +70,7 @@ router.get("/client/trips", authenticate, requirePermission("trips.view"), (req:
 
 // GET /api/driver/trips - Trips for driver with tab support (all | available | confirmed | active | completed)
 router.get("/driver/trips", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
-  const driverId = req.user?.driverId || req.user?.userId;
+  const driverId = req.user?.driverId || req.user?.userId || "";
   const userRole = req.user?.role;
   const tab = (req.query.tab as string) || "all";
   let allTrips = Array.from(db.trips.values());
@@ -78,14 +78,16 @@ router.get("/driver/trips", authenticate, requirePermission("trips.view"), (req:
   let filtered = allTrips;
 
   if (tab === "available") {
-    // Available trips: unassigned or open for driver requests
+    // Available trips: unassigned or open for driver requests (declined ones stay hidden)
     filtered = allTrips.filter(
       (t) =>
-        t.status === "DRAFT_CREATED" ||
-        t.status === "PENDING_APPROVAL" ||
-        !t.driverId ||
-        t.driverId === "unassigned" ||
-        (t.status === "CONFIRMED" && !t.driverId)
+        !t.declinedDriverIds?.includes(driverId) &&
+        (t.status === "DRAFT_CREATED" ||
+          t.status === "PENDING_APPROVAL" ||
+          t.status === "REOPENED" ||
+          !t.driverId ||
+          t.driverId === "unassigned" ||
+          (t.status === "CONFIRMED" && !t.driverId))
     );
   } else if (tab === "confirmed") {
     // Confirmed/assigned to this driver
@@ -111,15 +113,17 @@ router.get("/driver/trips", authenticate, requirePermission("trips.view"), (req:
         completedStates.includes(t.status)
     );
   } else {
-    // "all": Trips assigned to driver OR available
+    // "all": Trips assigned to driver OR available (declined ones stay hidden)
     if (userRole === "DRIVER") {
       filtered = allTrips.filter(
         (t) =>
           t.driverId === driverId ||
           t.additionalDriverId === driverId ||
-          t.status === "DRAFT_CREATED" ||
-          t.status === "PENDING_APPROVAL" ||
-          !t.driverId
+          (!t.declinedDriverIds?.includes(driverId) &&
+            (t.status === "DRAFT_CREATED" ||
+              t.status === "PENDING_APPROVAL" ||
+              t.status === "REOPENED" ||
+              !t.driverId))
       );
     }
   }
@@ -196,6 +200,72 @@ router.post("/driver/trips/:id/request", authenticate, requirePermission("trips.
     message: "Trip requested successfully and sent to Operations for approval",
     trip,
   });
+});
+
+// POST /api/driver/trips/:id/decline - Driver declines an available trip
+// The trip stays in the system untouched; it simply stops being offered to this
+// driver. Existing conditions apply: only genuinely open trips can be declined.
+router.post("/driver/trips/:id/decline", authenticate, requirePermission("trips.request", "trips.assign"), (req: AuthenticatedRequest, res: Response) => {
+  const tripId = String(req.params.id);
+  const trip = db.trips.get(tripId);
+  if (!trip) {
+    return res.status(404).json({ error: "Trip not found" });
+  }
+
+  if (req.user?.role !== "DRIVER" && req.user?.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ error: "Only a driver can decline a trip", code: "FORBIDDEN" });
+  }
+
+  const driverId = req.user?.driverId || req.user?.userId || "";
+  const isOpen =
+    !trip.driverId ||
+    trip.driverId === "unassigned" ||
+    ["DRAFT_CREATED", "PENDING_APPROVAL", "CONFIRMED", "REOPENED"].includes(trip.status);
+  if (!isOpen) {
+    return res.status(409).json({
+      error: "هذه الرحلة لم تعد متاحة للرفض — تم إسنادها أو دخلت مرحلة تنفيذية",
+      code: "TRIP_NOT_OPEN",
+    });
+  }
+  if (trip.requestedByDriverId === driverId && trip.driverRequestStatus === "PENDING") {
+    return res.status(409).json({
+      error: "لديك طلب معلّق على هذه الرحلة — لا يمكن رفضها أثناء انتظار الموافقة",
+      code: "REQUEST_ALREADY_PENDING",
+    });
+  }
+  if (trip.declinedDriverIds?.includes(driverId)) {
+    return res.status(409).json({ error: "سبق رفض هذه الرحلة من قبلك", code: "ALREADY_DECLINED" });
+  }
+
+  trip.declinedDriverIds = [...(trip.declinedDriverIds || []), driverId];
+  trip.updatedAt = new Date().toISOString();
+
+  const { reason } = req.body || {};
+  db.tripEvents.push({
+    id: `ev-${Date.now()}`,
+    tripId: trip.id,
+    eventType: "TRIP_DECLINED_BY_DRIVER",
+    fromStatus: trip.status,
+    toStatus: trip.status,
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: "DRIVER",
+    notes: `رفض السائق ${req.user?.fullName || driverId} الرحلة المتاحة${reason ? `. السبب: ${reason}` : ""}`,
+    timestamp: new Date().toISOString(),
+  });
+
+  logAuditEvent({
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: "DRIVER",
+    action: "TRIP_DECLINED_BY_DRIVER",
+    entity: "trips",
+    entityId: trip.id,
+    tripId: trip.id,
+    newValues: { declinedDriverIds: trip.declinedDriverIds, reason },
+  });
+
+  return res.json({ message: "Trip declined — it will no longer appear in your available list", trip });
 });
 
 // POST /api/trips/:id/approve-request - Admin approves driver trip request

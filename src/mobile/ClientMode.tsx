@@ -6,6 +6,7 @@ import type { Trip } from "../state/fleetStore";
 import { InteractiveMap } from "../components/InteractiveMap";
 import { normalizeVehicleType } from "../data/vehicleTypes";
 import { TruckTypeAvatar, TruckTypeBadge } from "../components/TruckTypeIcon";
+import { statusMeta } from "../data/tripStatusMeta";
 import { MobileNotificationsList, useMobileNotifications, MobileSection, MobileRow } from "./MobileShared";
 import { MobileUserManagement } from "./MobileUserManagement";
 import {
@@ -202,6 +203,12 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
       tr.destinationCity?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  /** Canonical lifecycle status → localized human label. */
+  const statusLabel = (s: string | undefined) => {
+    const m = statusMeta(s);
+    return t(m.en, m.ar);
+  };
+
   const submitTripRequest = async () => {
     setReqMsg(null);
     if (
@@ -296,7 +303,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                     {activeTrip.tripNumber}
                   </span>
                   <span className="text-[11px] font-semibold text-status-active">
-                    {td(activeTrip.statusAr || activeTrip.status)}
+                    {statusLabel(activeTrip.status)}
                   </span>
                 </div>
 
@@ -373,7 +380,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                       <span className="font-bold text-brand">{tr.tripNumber}</span>
                     </div>
                     <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-text-secondary">
-                      {td(tr.statusAr || tr.status)}
+                      {statusLabel(tr.status)}
                     </span>
                   </div>
                   <div className="mt-1 text-[11.5px] text-white">
@@ -552,7 +559,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                   <div className="flex items-center gap-1.5">
                     <TruckTypeBadge truckType={tr.cargoType} size={11} />
                     <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-[10px] font-bold text-brand">
-                      {td(tr.statusAr || tr.status)}
+                      {statusLabel(tr.status)}
                     </span>
                   </div>
                 </div>
@@ -628,7 +635,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
               {activeTrip && (
                 <div className="text-end">
                   <span className="rounded-full bg-status-active/15 border border-status-active/30 px-2.5 py-0.5 text-[10.5px] font-bold text-status-active">
-                    {td(activeTrip.statusAr || activeTrip.status)}
+                    {statusLabel(activeTrip.status)}
                   </span>
                 </div>
               )}

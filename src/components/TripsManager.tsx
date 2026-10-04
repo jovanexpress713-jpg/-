@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { useFleetStore, type Trip, type TripStatus } from "../state/fleetStore";
@@ -6,13 +6,15 @@ import { apiClient } from "../services/apiClient";
 import { useToast } from "./Toast";
 import { EjazEmblem } from "./Logo";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
-import { getVehicleTypeMeta } from "../data/vehicleTypes";
+import { getVehicleTypeMeta, APPROVED_VEHICLE_TYPES_LIST } from "../data/vehicleTypes";
 import { TruckTypeIcon, TruckTypeAvatar, TruckTypeBadge } from "./TruckTypeIcon";
+import { TRIP_TABS, tabOfStatus, tabOfLegacyStatus, statusMeta, type TripTab } from "../data/tripStatusMeta";
 import {
   IconCheck,
   IconClose,
   IconDoc,
   IconLayers,
+  IconSearch,
 } from "./Icons";
 import { palette } from "../utils/palette";
 
@@ -21,6 +23,16 @@ interface TripsManagerProps {
   onOpenLiveTracking?: (tripId: string) => void;
 }
 
+/**
+ * إدارة الرحلات (Phase 2)
+ *
+ * The same screen, reorganised around the real lifecycle: a tabbed card list
+ * (الكل · متاحة · مؤكدة · جارية · مكتملة) wired to the canonical 18 states,
+ * a strong «من ← إلى» route visual, live metrics (distance · weight · date ·
+ * time) and the tariff-resolved price. Every row comes from the backend sync —
+ * there are no mock trips — and every action (waybill, POD, replacements,
+ * lifecycle steps) keeps working against the authoritative API.
+ */
 export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps) {
   const { t, td } = useSettings();
   const toast = useToast();
@@ -31,31 +43,110 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
     updateTripStatus,
   } = useFleetStore();
 
+  const [tab, setTab] = useState<TripTab>("all");
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("ALL");
   const [activeTripId, setActiveTripId] = useState(selectedTripId || trips[0]?.id);
+  const [details, setDetails] = useState<any | null>(null);
+  const [driversList, setDriversList] = useState<any[]>([]);
+  const [vehiclesList, setVehiclesList] = useState<any[]>([]);
+
   const [showWaybillModal, setShowWaybillModal] = useState(false);
   const [showSignModal, setShowSignModal] = useState(false);
   const [signDataUrl, setSignDataUrl] = useState<string | null>(null);
   const signCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [showReplaceDriverModal, setShowReplaceDriverModal] = useState(false);
-  const [newDriverName, setNewDriverName] = useState("سالم المري");
-  const [driverReplaceReason, setDriverReplaceReason] = useState("استبدال نظامي لساعات الراحة المجدولة");
-  const [showReplaceVehicleModal, setShowReplaceVehicleModal] = useState(false);
-  const [newVehiclePlate, setNewVehiclePlate] = useState("ب ر د ٩١٠٤ (براد)");
-  const [vehicleReplaceReason, setVehicleReplaceReason] = useState("صيانة دورية لوحدة التبريد قبل دخول الممر الجبلي");
-  const [replacementNotice, setReplacementNotice] = useState<string | null>(null);
 
-  const currentTrip: Trip = trips.find((tr) => tr.id === activeTripId) || trips[0];
+  const [showReplaceDriverModal, setShowReplaceDriverModal] = useState(false);
+  const [newDriverId, setNewDriverId] = useState("");
+  const [driverReplaceReason, setDriverReplaceReason] = useState("");
+  const [showReplaceVehicleModal, setShowReplaceVehicleModal] = useState(false);
+  const [newVehicleId, setNewVehicleId] = useState("");
+  const [vehicleReplaceReason, setVehicleReplaceReason] = useState("");
+  const [replacementBusy, setReplacementBusy] = useState(false);
+  const [replacementNotice, setReplacementNotice] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const currentTrip: Trip | undefined = trips.find((tr) => tr.id === activeTripId) || trips[0];
+
+  /* Real fleet rosters for the replacement dialogs (no hardcoded names). */
+  useEffect(() => {
+    apiClient.drivers.getAll().then((r) => setDriversList(r?.drivers || [])).catch(() => {});
+    apiClient.vehicles.getAll().then((r) => setVehiclesList(r?.vehicles || [])).catch(() => {});
+  }, []);
+
+  /* Authoritative trip file: trip + vehicle + driver + events + financials. */
+  const refreshDetails = useCallback(async (tripId: string) => {
+    try {
+      const res = await apiClient.trips.getById(tripId);
+      setDetails(res);
+    } catch {
+      setDetails(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentTrip?.id) refreshDetails(currentTrip.id);
+  }, [currentTrip?.id, refreshDetails]);
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<TripTab, number> = { all: trips.length, available: 0, confirmed: 0, active: 0, completed: 0 };
+    for (const tr of trips) {
+      const g = tabOfStatus((tr as any).canonicalStatus) ?? tabOfLegacyStatus(tr.status);
+      if (g) counts[g] += 1;
+    }
+    return counts;
+  }, [trips]);
+
+  const visibleTrips = useMemo(() => {
+    return trips.filter((tr) => {
+      if (tab !== "all") {
+        const g = tabOfStatus((tr as any).canonicalStatus) ?? tabOfLegacyStatus(tr.status);
+        if (g !== tab) return false;
+      }
+      if (typeFilter !== "ALL" && tr.cargoType !== typeFilter) return false;
+      if (query) {
+        const q = query.toLowerCase();
+        const hay = `${tr.tripNumber} ${tr.originCity} ${tr.destinationCity} ${tr.shipper} ${tr.consignee}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [trips, tab, typeFilter, query]);
+
+  /* ── Actions (all hit the authoritative backend) ─────────────────────── */
 
   const handleExecuteDriverReplacement = async () => {
+    if (!currentTrip || !newDriverId) return;
+    setReplacementBusy(true);
     try {
-      await apiClient.trips.replaceDriver(currentTrip.id, "d2", driverReplaceReason);
-      setReplacementNotice(`تم استبدال السائق بنجاح إلى: ${newDriverName}. تم توثيق العملية والسبب في سجل التدقيق.`);
+      await apiClient.trips.replaceDriver(currentTrip.id, newDriverId, driverReplaceReason.trim());
+      const d = driversList.find((x) => x.id === newDriverId);
+      setReplacementNotice({ ok: true, text: t("Driver replaced successfully and recorded in the trip file.", "تم استبدال السائق بنجاح وتوثيق العملية في ملف الرحلة.") + (d ? ` (${d.fullName})` : "") });
       setShowReplaceDriverModal(false);
-    } catch {
-      setReplacementNotice(`تم توثيق استبدال السائق (${newDriverName}) في سجل الرحلة والتدقيق.`);
-      setShowReplaceDriverModal(false);
+      setDriverReplaceReason("");
+      refreshDetails(currentTrip.id);
+    } catch (e: any) {
+      setReplacementNotice({ ok: false, text: String(e?.message || t("Replacement failed", "فشل الاستبدال")) });
+    } finally {
+      setReplacementBusy(false);
+    }
+  };
+
+  const handleExecuteVehicleReplacement = async () => {
+    if (!currentTrip || !newVehicleId) return;
+    setReplacementBusy(true);
+    try {
+      await apiClient.trips.replaceVehicle(currentTrip.id, newVehicleId, vehicleReplaceReason.trim());
+      const v = vehiclesList.find((x) => x.id === newVehicleId);
+      setReplacementNotice({ ok: true, text: t("Vehicle replaced successfully and recorded in the trip file.", "تم استبدال الشاحنة بنجاح وتوثيق العملية في ملف الرحلة.") + (v ? ` (${v.plate})` : "") });
+      setShowReplaceVehicleModal(false);
+      setVehicleReplaceReason("");
+      refreshDetails(currentTrip.id);
+    } catch (e: any) {
+      setReplacementNotice({ ok: false, text: String(e?.message || t("Replacement failed", "فشل الاستبدال")) });
+    } finally {
+      setReplacementBusy(false);
     }
   };
 
@@ -63,8 +154,9 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
     try {
       await apiClient.trips.approveRequest(tripId);
       const msg = t("Driver trip request approved successfully! Trip is now confirmed.", "تمت الموافقة على طلب السائق وإسناد الرحلة رسمياً بنجاح!");
-      setReplacementNotice(msg);
+      setReplacementNotice({ ok: true, text: msg });
       toast(msg);
+      refreshDetails(tripId);
     } catch (err: any) {
       toast(t("Failed to approve driver request", "فشلت الموافقة على طلب السائق"), err.message || "Error");
     }
@@ -72,27 +164,18 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
 
   const handleRejectDriverRequest = async (tripId: string) => {
     try {
-      await apiClient.trips.rejectRequest(tripId, "عدم تطابق نوع المركبة أو جدول الراحة");
+      await apiClient.trips.rejectRequest(tripId, t("Operational priorities", "أولويات تشغيلية"));
       const msg = t("Driver trip request rejected.", "تم رفض طلب الرحلة وإعادتها لقائمة الرحلات المتاحة.");
-      setReplacementNotice(msg);
+      setReplacementNotice({ ok: true, text: msg });
       toast(msg);
+      refreshDetails(tripId);
     } catch (err: any) {
       toast(t("Failed to reject driver request", "فشل رفض طلب السائق"), err.message || "Error");
     }
   };
 
-  const handleExecuteVehicleReplacement = async () => {
-    try {
-      await apiClient.trips.replaceVehicle(currentTrip.id, "v2", vehicleReplaceReason);
-      setReplacementNotice(`تم استبدال الشاحنة بنجاح إلى المركبة: ${newVehiclePlate}. تم توثيق العملية في سجل التدقيق.`);
-      setShowReplaceVehicleModal(false);
-    } catch {
-      setReplacementNotice(`تم توثيق استبدال الشاحنة (${newVehiclePlate}) في سجل الرحلة والتدقيق.`);
-      setShowReplaceVehicleModal(false);
-    }
-  };
-
   const handleAdvanceStatus = (nextStatus: TripStatus, noteAr: string, noteEn: string) => {
+    if (!currentTrip) return;
     updateTripStatus(currentTrip.id, nextStatus, noteAr, noteEn, signDataUrl || undefined);
   };
 
@@ -121,7 +204,6 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
     const y = "touches" in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
-    /* The signature ink follows the brand token, not a private copy of it. */
     ctx.strokeStyle = palette()["--color-brand"];
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -145,6 +227,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
   };
 
   const copyShareLink = () => {
+    if (!currentTrip) return;
     navigator.clipboard?.writeText?.(
       `${window.location.origin}/?track=${currentTrip.tripNumber}`
     );
@@ -152,7 +235,45 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
     setTimeout(() => setCopiedLink(false), 2400);
   };
 
+  const fmtDate = (iso?: string) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("ar-SA", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+  const fmtTime = (iso?: string) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+  };
 
+  const priceLabel = (tr: Trip) => {
+    const price = (tr as any).tripPrice as number | undefined;
+    if (price && price > 0) return `${Number(price).toLocaleString()} ${(tr as any).currency || "SAR"}`;
+    if ((tr as any).priceStatus === "PENDING_QUOTE") return t("Awaiting quote", "بانتظار عرض سعر");
+    return "—";
+  };
+
+  const tripStatusMeta = (tr: Trip) => statusMeta((tr as any).canonicalStatus || undefined);
+
+  const timelineEvents: any[] = useMemo(() => {
+    if (Array.isArray(details?.events) && details.events.length > 0) {
+      return [...details.events].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    }
+    return currentTrip?.timeline || [];
+  }, [details, currentTrip]);
+
+  if (!currentTrip) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 bg-surface-0 text-center">
+        <div className="text-[15px] font-bold text-text-primary">{t("No trips in the system yet", "لا توجد رحلات في النظام بعد")}</div>
+        <p className="text-[12px] text-text-muted">{t("Trips appear here automatically the moment they are created.", "تظهر الرحلات هنا تلقائيًا فور إنشائها في النظام.")}</p>
+      </div>
+    );
+  }
+
+  const selMeta = tripStatusMeta(currentTrip);
 
   return (
     <div className="flex h-full flex-col bg-surface-0 min-h-0">
@@ -196,82 +317,126 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
       </div>
 
       {/* Main 2-column view */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,232px)_minmax(0,1fr)] overflow-hidden lg:grid-cols-[340px_1fr] lg:grid-rows-none">
-        {/* Left Trips Selector List */}
-        <div className="scroll-thin min-h-0 overflow-y-auto border-b border-border-subtle p-3 space-y-2 bg-surface-1 lg:min-h-full lg:border-b-0 lg:border-e">
-          <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider px-2 block mb-2">
-            {t("Active Fleet Consignments", "الشحنات والرحلات النشطة")}
-          </span>
-
-          {trips.map((tr) => {
-            const isSelected = tr.id === activeTripId;
-            return (
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,300px)_minmax(0,1fr)] overflow-hidden lg:grid-cols-[380px_1fr] lg:grid-rows-none">
+        {/* Left: tabs + filters + trip cards */}
+        <div className="flex min-h-0 flex-col border-b border-border-subtle bg-surface-1 lg:min-h-full lg:border-b-0 lg:border-e">
+          {/* Tabs — wired to the canonical lifecycle groups */}
+          <div className="flex gap-1.5 overflow-x-auto px-3 pt-3 pb-2 scroll-x">
+            {TRIP_TABS.map((tb) => (
               <button
-                key={tr.id}
-                onClick={() => {
-                  setActiveTripId(tr.id);
-                  selectTrip(tr.id);
-                }}
+                key={tb.id}
+                onClick={() => setTab(tb.id)}
                 className={cn(
-                  "w-full min-w-0 rounded-[12px] p-3 text-start transition-all border",
-                  isSelected
-                    ? "bg-surface-3 border-brand shadow-lg selected-ring"
-                    : "bg-surface-2 border-border-subtle hover:bg-surface-3 hover:border-border-subtle/80"
+                  "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors flex items-center gap-1.5",
+                  tab === tb.id ? "bg-brand text-on-brand" : "bg-surface-2 text-text-muted hover:text-white"
                 )}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="flex min-w-0 items-center gap-2">
-                    {/* Dynamic truck-type circular avatar — resolves from the trip's own
-                        cargoType, so each card shows its real category in a distinct colored circle. */}
-                    <TruckTypeAvatar
-                      truckType={tr.cargoType}
-                      size={32}
-                      iconSize={16}
-                      showBadge
-                      className="shrink-0"
-                    />
-                    <span className="truncate font-bold text-[14px] text-text-primary tracking-wide">
-                      {tr.tripNumber}
-                    </span>
-                  </span>
-                  <span
-                    className={cn(
-                      "badge shrink-0 text-[10.5px]",
-                      tr.status === "on_road"
-                        ? "bg-status-active/20 text-status-active font-bold"
-                        : tr.status === "arrived" || tr.status === "delivered"
-                        ? "bg-brand/20 text-brand"
-                        : "bg-surface-5 text-text-muted"
-                    )}
-                  >
-                    {tr.status === "on_road" ? t("On Road", "على الطريق") : tr.status}
-                  </span>
-                </div>
-
-                <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-text-secondary font-medium">
-                  <span className="truncate">
-                    {td(tr.originCity)} → {td(tr.destinationCity)}
-                  </span>
-                  <span className="shrink-0 text-[11px] font-bold" style={{ color: getVehicleTypeMeta(tr.cargoType).accentColor }}>
-                    {getVehicleTypeMeta(tr.cargoType).arabicName}
-                  </span>
-                </div>
-
-                <div className="mt-2 flex items-center justify-between text-[11px] text-text-muted tabular-nums">
-                  <span>{tr.cargoWeightTons} {t("tons", "طن")} · {tr.cargoType}</span>
-                  <span className="font-semibold text-brand">{tr.progressPct}%</span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="mt-1.5 h-1.5 w-full rounded-full bg-surface-5 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-brand transition-all duration-500"
-                    style={{ width: `${tr.progressPct}%` }}
-                  />
-                </div>
+                {t(tb.en, tb.ar)}
+                <span className={cn("tabular-nums text-[10px]", tab === tb.id ? "opacity-80" : "opacity-60")}>{tabCounts[tb.id]}</span>
               </button>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Search + type filter */}
+          <div className="flex items-center gap-2 px-3 pb-3">
+            <div className="flex flex-1 items-center gap-2 rounded-[10px] bg-surface-2 border border-border-subtle px-2.5 py-1.5 focus-within:border-brand">
+              <IconSearch size={13} className="text-text-muted shrink-0" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("Search trip number, city, client…", "ابحث برقم الرحلة أو المدينة أو العميل…")}
+                className="w-full bg-transparent text-[11.5px] text-white outline-none"
+              />
+            </div>
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="field !py-1.5 !text-[11px] max-w-[120px]">
+              <option value="ALL">{t("All types", "كل الأنواع")}</option>
+              {APPROVED_VEHICLE_TYPES_LIST.map((v) => (
+                <option key={v.id} value={v.id}>{v.arabicName}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Trip cards */}
+          <div className="scroll-thin min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3">
+            {visibleTrips.length === 0 && (
+              <div className="rounded-[12px] border border-border-subtle bg-surface-2 p-6 text-center text-[11.5px] text-text-muted">
+                {t("No trips match this view.", "لا توجد رحلات مطابقة لهذا العرض.")}
+              </div>
+            )}
+
+            {visibleTrips.map((tr) => {
+              const isSelected = tr.id === activeTripId;
+              const meta = tripStatusMeta(tr);
+              return (
+                <button
+                  key={tr.id}
+                  onClick={() => {
+                    setActiveTripId(tr.id);
+                    selectTrip(tr.id);
+                  }}
+                  className={cn(
+                    "w-full min-w-0 rounded-[14px] p-3 text-start transition-all border",
+                    isSelected
+                      ? "bg-surface-3 border-brand shadow-lg selected-ring"
+                      : "bg-surface-2 border-border-subtle hover:bg-surface-3 hover:border-border-subtle/80"
+                  )}
+                >
+                  {/* Row 1: avatar + number + status */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <TruckTypeAvatar truckType={tr.cargoType} size={34} iconSize={17} showBadge className="shrink-0" />
+                      <span className="min-w-0">
+                        <span className="block truncate font-bold text-[13.5px] text-text-primary tracking-wide tabular-nums">{tr.tripNumber}</span>
+                        <span className="block text-[10px] text-text-muted">{getVehicleTypeMeta(tr.cargoType).arabicName} · {getVehicleTypeMeta(tr.cargoType).englishName}</span>
+                      </span>
+                    </span>
+                    <span
+                      className="badge shrink-0 text-[10px] font-bold"
+                      style={{ backgroundColor: `${meta.badgeColor}26`, color: meta.badgeColor }}
+                    >
+                      {t(meta.en, meta.ar)}
+                    </span>
+                  </div>
+
+                  {/* Row 2: the route — the strongest visual on the card */}
+                  <div className="mt-2.5 flex items-center gap-2 rounded-[10px] bg-surface-0/60 border border-border-subtle/60 px-2.5 py-2">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-brand" />
+                    <span className="truncate text-[13px] font-extrabold text-text-primary">{td(tr.originCity)}</span>
+                    <span className="shrink-0 text-brand font-black text-[15px] leading-none">←</span>
+                    <span className="truncate text-[13px] font-extrabold text-text-primary">{td(tr.destinationCity)}</span>
+                  </div>
+
+                  {/* Row 3: metrics */}
+                  <div className="mt-2 grid grid-cols-4 gap-1.5 text-center text-[10px] tabular-nums">
+                    <span className="rounded-[8px] bg-surface-0/50 py-1">
+                      <span className="block text-text-muted">{t("Distance", "المسافة")}</span>
+                      <span className="block font-bold text-text-secondary">{(tr as any).distanceKm ? `${(tr as any).distanceKm} ${t("km", "كم")}` : "—"}</span>
+                    </span>
+                    <span className="rounded-[8px] bg-surface-0/50 py-1">
+                      <span className="block text-text-muted">{t("Weight", "الوزن")}</span>
+                      <span className="block font-bold text-text-secondary">{tr.cargoWeightTons} {t("t", "طن")}</span>
+                    </span>
+                    <span className="rounded-[8px] bg-surface-0/50 py-1">
+                      <span className="block text-text-muted">{t("Date", "التاريخ")}</span>
+                      <span className="block font-bold text-text-secondary">{fmtDate((tr as any).createdAtISO || tr.createdAt)}</span>
+                    </span>
+                    <span className="rounded-[8px] bg-surface-0/50 py-1">
+                      <span className="block text-text-muted">{t("Time", "الوقت")}</span>
+                      <span className="block font-bold text-text-secondary">{fmtTime((tr as any).departureTimeISO || (tr as any).createdAtISO)}</span>
+                    </span>
+                  </div>
+
+                  {/* Row 4: price (tariff-resolved) */}
+                  <div className="mt-2 flex items-center justify-between text-[11px]">
+                    <span className="text-text-muted">{t("Price", "السعر")}: <span className="font-bold text-brand tabular-nums">{priceLabel(tr)}</span></span>
+                    {(tr as any).driverRequestStatus === "PENDING" && (
+                      <span className="badge bg-status-waiting/20 text-status-waiting text-[9.5px]">{t("Driver request pending", "طلب سائق معلّق")}</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Right Trip Details & Lifecycle Controller */}
@@ -283,7 +448,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 <TruckTypeAvatar truckType={currentTrip.cargoType} size={46} iconSize={24} showBadge />
                 <div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <span className="text-[22px] font-extrabold text-text-primary tracking-tight sm:text-[26px]">
+                    <span className="text-[22px] font-extrabold text-text-primary tracking-tight sm:text-[26px] tabular-nums">
                       {currentTrip.tripNumber}
                     </span>
                     <span
@@ -296,8 +461,11 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                       <TruckTypeIcon truckType={currentTrip.cargoType} size={14} />
                       <span className="ms-1">{currentTrip.cargoType}</span>
                     </span>
-                    <span className="badge bg-status-active/20 text-status-active text-[11.5px] px-2.5 py-1 font-bold">
-                      {currentTrip.status === "on_road" ? t("Live On Route", "نشطة على الطريق") : currentTrip.status}
+                    <span
+                      className="badge text-[11.5px] px-2.5 py-1 font-bold"
+                      style={{ backgroundColor: `${selMeta.badgeColor}26`, color: selMeta.badgeColor }}
+                    >
+                      {t(selMeta.en, selMeta.ar)}
                     </span>
                   </div>
                   <p className="text-[12.5px] text-text-secondary mt-1">
@@ -369,23 +537,23 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                   {t("Corridor & Route", "الممر والمسار")}
                 </span>
                 <span className="text-[13.5px] font-bold text-text-primary mt-0.5 block">
-                  {td(currentTrip.originCity)} → {td(currentTrip.destinationCity)}
+                  {td(currentTrip.originCity)} ← {td(currentTrip.destinationCity)}
                 </span>
               </div>
               <div>
                 <span className="text-[10.5px] text-text-muted block uppercase">
-                  {t("Remaining Distance", "المسافة المتبقية")}
+                  {t("Route Distance", "مسافة المسار")}
                 </span>
                 <span className="text-[13.5px] font-bold text-brand mt-0.5 block tabular-nums">
-                  {currentTrip.distanceRemainingKm} {t("km", "كم")}
+                  {(currentTrip as any).distanceKm ? `${(currentTrip as any).distanceKm} ${t("km", "كم")}` : `${currentTrip.distanceRemainingKm} ${t("km", "كم")}`}
                 </span>
               </div>
               <div>
                 <span className="text-[10.5px] text-text-muted block uppercase">
-                  {t("Ground Speed", "السرعة الميدانية")}
+                  {t("Trip Price (Tariff)", "سعر الرحلة (التعرفة)")}
                 </span>
                 <span className="text-[13.5px] font-bold text-status-active mt-0.5 block tabular-nums">
-                  {currentTrip.speedKmH} {t("km/h", "كم/س")}
+                  {priceLabel(currentTrip)}
                 </span>
               </div>
               <div>
@@ -401,13 +569,16 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
 
           {/* Replacement Notification Banner */}
           {replacementNotice && (
-            <div className="rounded-[12px] bg-status-active/15 border border-status-active/30 p-3 text-[12px] text-status-active font-bold flex items-center justify-between animate-fade-in">
-              <span>✓ {replacementNotice}</span>
+            <div className={cn(
+              "rounded-[12px] border p-3 text-[12px] font-bold flex items-center justify-between animate-fade-in",
+              replacementNotice.ok ? "bg-status-active/15 border-status-active/30 text-status-active" : "bg-status-danger/15 border-status-danger/30 text-status-danger"
+            )}>
+              <span>{replacementNotice.ok ? "✓" : "✕"} {replacementNotice.text}</span>
               <button onClick={() => setReplacementNotice(null)} className="text-white hover:text-status-danger text-[14px]">✕</button>
             </div>
           )}
 
-          {/* SECTION: VEHICLE & DRIVER ASSIGNMENT & REPLACEMENT */}
+          {/* SECTION: VEHICLE & DRIVER ASSIGNMENT & REPLACEMENT (real data) */}
           <div className="card p-5 border border-border-subtle space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
               <div className="flex items-center gap-2">
@@ -420,14 +591,14 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Primary & Additional Driver Block */}
+              {/* Primary Driver Block — from the trip file */}
               <div className="rounded-[14px] bg-surface-1 p-4 border border-border-subtle space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-text-muted uppercase font-bold tracking-wider">
                     {t("Primary Driver", "السائق الأساسي")}
                   </span>
                   <button
-                    onClick={() => setShowReplaceDriverModal(true)}
+                    onClick={() => { setNewDriverId(""); setDriverReplaceReason(""); setShowReplaceDriverModal(true); }}
                     className="rounded-[8px] bg-brand/15 hover:bg-brand hover:text-navy text-brand px-2.5 py-1 text-[11px] font-bold transition-all"
                   >
                     {t("Replace Driver", "استبدال السائق")} ↻
@@ -435,24 +606,26 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 </div>
 
                 <div>
-                  <div className="text-[14px] font-bold text-white">{t("Fahd Al-Shamri", "فهد الشمري")}</div>
-                  <div className="text-[11px] text-text-muted">+966 55 123 4567 · {t("Licence", "رخصة")} DL-SA-91823</div>
+                  <div className="text-[14px] font-bold text-white">{details?.driver?.fullName || (currentTrip as any).driverName || t("Not assigned", "غير معيّن")}</div>
+                  <div className="text-[11px] text-text-muted">{details?.driver?.phone || "—"}{details?.driver?.licenseNumber ? ` · ${t("Licence", "رخصة")} ${details.driver.licenseNumber}` : ""}</div>
                 </div>
 
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10.5px]">
                   <span className="text-status-active font-semibold">✓ {t("Driving licence valid & verified", "رخصة القيادة سارية ومحققة")}</span>
-                  <span className="text-brand font-bold">{t("Additional driver", "سائق إضافي")}: {t("Majed Al-Balawi", "ماجد البلوي")}</span>
+                  {(currentTrip as any).additionalDriverName && (
+                    <span className="text-brand font-bold">{t("Additional driver", "سائق إضافي")}: {(currentTrip as any).additionalDriverName}</span>
+                  )}
                 </div>
               </div>
 
-              {/* Vehicle Block with 3D Viewer */}
+              {/* Vehicle Block with 3D Viewer — from the trip file */}
               <div className="rounded-[14px] bg-surface-1 p-4 border border-border-subtle space-y-3 overflow-hidden">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-text-muted uppercase font-bold tracking-wider">
                     {t("Current Truck", "الشاحنة المخصصة")}
                   </span>
                   <button
-                    onClick={() => setShowReplaceVehicleModal(true)}
+                    onClick={() => { setNewVehicleId(""); setVehicleReplaceReason(""); setShowReplaceVehicleModal(true); }}
                     className="rounded-[8px] bg-brand/15 hover:bg-brand hover:text-navy text-brand px-2.5 py-1 text-[11px] font-bold transition-all"
                   >
                     {t("Replace Truck", "استبدال الشاحنة")} ↻
@@ -472,8 +645,8 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-[14px] font-bold text-white">{t("R J D 4821", "ر ج د ٤٨٢١")}</div>
-                    <div className="text-[11px] text-text-muted">Mercedes-Benz Actros L 1863</div>
+                    <div className="text-[14px] font-bold text-white">{details?.vehicle?.plate || t("Not assigned", "غير معيّنة")}</div>
+                    <div className="text-[11px] text-text-muted">{details?.vehicle?.model || "—"}</div>
                   </div>
                   <span className="badge bg-brand/20 text-brand text-[11px] font-bold uppercase">
                     {getVehicleTypeMeta(currentTrip.cargoType).arabicName} ({getVehicleTypeMeta(currentTrip.cargoType).englishName})
@@ -482,7 +655,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
 
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10.5px]">
                   <span className="text-status-active font-semibold">✓ {t("Registration, inspection & insurance valid", "استمارة وفحص دوري وتأمين ساري")}</span>
-                  <span className="text-white/60">GPS: AVL-MB-4821</span>
+                  <span className="text-white/60">{details?.vehicle?.gpsDeviceId ? `GPS: ${details.vehicle.gpsDeviceId}` : "GPS: —"}</span>
                 </div>
               </div>
             </div>
@@ -556,7 +729,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
             </div>
           </div>
 
-          {/* Trip Milestone Timeline */}
+          {/* Trip Milestone Timeline — real events from the trip file */}
           <div className="card p-5 border border-border-subtle">
             <span className="text-[12px] font-bold text-text-primary block mb-4 uppercase tracking-wider">
               {t("Trip Event Audit & Milestone Timeline", "سجل أحداث ومحطات الرحلة الميدانية")}
@@ -565,24 +738,26 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
             <div className="relative ps-6 space-y-4">
               <span className="absolute top-2 bottom-2 start-[7px] w-0.5 bg-border-subtle" />
 
-              {currentTrip.timeline.map((ev) => (
+              {timelineEvents.map((ev: any) => (
                 <div key={ev.id} className="relative flex items-start justify-between gap-3">
                   <span className="absolute -start-6 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-surface-0 bg-brand shadow-sm" />
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[13px] font-semibold text-text-primary">
-                        {t(ev.titleEn, ev.titleAr)}
+                        {ev.titleAr ? t(ev.titleEn || ev.titleAr, ev.titleAr) : ev.notes || ev.eventType}
                       </span>
                       <span className="badge bg-surface-5 text-text-muted text-[10px]">
-                        {ev.actor}
+                        {ev.actor || ev.actorName || t("System", "النظام")}
                       </span>
                     </div>
-                    {ev.notes && (
+                    {(ev.notes && ev.titleAr) && (
                       <p className="text-[11.5px] text-text-muted mt-0.5">{ev.notes}</p>
                     )}
                   </div>
                   <span className="text-[11px] text-text-muted tabular-nums shrink-0 font-medium">
-                    {td(ev.timestamp)}
+                    {ev.timestamp && !Number.isNaN(new Date(ev.timestamp).getTime())
+                      ? new Date(ev.timestamp).toLocaleString("ar-SA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                      : td(ev.timestamp)}
                   </span>
                 </div>
               ))}
@@ -659,8 +834,8 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 <span className="font-bold text-brand tabular-nums">{currentTrip.cargoWeightTons} {t("t", "طن")}</span>
               </div>
               <div>
-                <span className="text-[10.5px] text-navy/60 block font-medium">{t("Estimated distance", "المسافة المقدرة")}</span>
-                <span className="font-bold text-navy tabular-nums">{currentTrip.distanceTotalKm} {t("km", "كم")}</span>
+                <span className="text-[10.5px] text-navy/60 block font-medium">{t("Trip price (tariff)", "سعر الرحلة (التعرفة)")}</span>
+                <span className="font-bold text-navy tabular-nums">{priceLabel(currentTrip)}</span>
               </div>
             </div>
 
@@ -794,7 +969,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
         </div>
       )}
 
-      {/* MODAL 3: Replace Driver with Audit Logging */}
+      {/* MODAL 3: Replace Driver — real driver roster, audited */}
       {showReplaceDriverModal && (
         <div
           className="animate-fade-in fixed inset-0 z-[90] grid place-items-center bg-black/80 p-4 backdrop-blur-md"
@@ -807,7 +982,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
                 <span>{t("Replace the official trip driver", "استبدال سائق الرحلة الرسمي")}</span>
-                <span className="badge bg-brand/20 text-brand text-[10px]">{currentTrip.tripNumber}</span>
+                <span className="badge bg-brand/20 text-brand text-[10px] tabular-nums">{currentTrip.tripNumber}</span>
               </h3>
               <button onClick={() => setShowReplaceDriverModal(false)} className="btn-icon" aria-label={t("Close", "إغلاق")}>
                 <IconClose size={16} />
@@ -818,21 +993,25 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
               <div>
                 <label className="block text-text-muted text-[11px] mb-1">{t("Driver being unassigned", "السائق الحالي المفرغ")}:</label>
                 <div className="p-2.5 rounded-[10px] bg-surface-2 text-white font-bold border border-white/5">
-                  {t("Fahd Al-Shamri", "فهد الشمري")} (DL-SA-91823)
+                  {details?.driver?.fullName || (currentTrip as any).driverName || "—"}
                 </div>
               </div>
 
               <div>
                 <label className="block text-text-muted text-[11px] mb-1">{t("New driver assigned to the trip", "السائق الجديد المكلف بالرحلة")} *</label>
                 <select
-                  value={newDriverName}
-                  onChange={(e) => setNewDriverName(e.target.value)}
+                  value={newDriverId}
+                  onChange={(e) => setNewDriverId(e.target.value)}
                   className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-white border border-border-subtle outline-none"
                 >
-                  <option value="سالم المري">{t("Salem Al-Marri", "سالم المري")} ({t("licence valid to", "رخصة سارية حتى")} 2027)</option>
-                  <option value="ماجد البلوي">{t("Majed Al-Balawi", "ماجد البلوي")} ({t("licence valid to", "رخصة سارية حتى")} 2028)</option>
-                  <option value="عبدالله الدوسري">{t("Abdullah Al-Dosari", "عبدالله الدوسري")} ({t("licence valid to", "رخصة سارية حتى")} 2029)</option>
-                  <option value="يوسف العتيبي">{t("Yousef Al-Otaibi", "يوسف العتيبي")} ({t("licence valid to", "رخصة سارية حتى")} 2027)</option>
+                  <option value="">{t("Select a driver from the fleet roster…", "اختر سائقًا من سجل الأسطول…")}</option>
+                  {driversList
+                    .filter((d) => d.id !== details?.driver?.id)
+                    .map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.fullName} — {d.phone} ({t("rating", "التقييم")} {d.rating})
+                      </option>
+                    ))}
                 </select>
               </div>
 
@@ -854,7 +1033,8 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
               </button>
               <button
                 onClick={handleExecuteDriverReplacement}
-                className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg"
+                disabled={replacementBusy || !newDriverId || driverReplaceReason.trim().length < 4}
+                className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg disabled:opacity-50"
               >
                 {t("Confirm the swap & record it", "تأكيد الاستبدال وتوثيق السجل")}
               </button>
@@ -863,7 +1043,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
         </div>
       )}
 
-      {/* MODAL 4: Replace Vehicle with Audit Logging */}
+      {/* MODAL 4: Replace Vehicle — real fleet, audited */}
       {showReplaceVehicleModal && (
         <div
           className="animate-fade-in fixed inset-0 z-[90] grid place-items-center bg-black/80 p-4 backdrop-blur-md"
@@ -876,7 +1056,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
                 <span>{t("Replace the approved trip vehicle", "استبدال شاحنة الرحلة المعتمدة")}</span>
-                <span className="badge bg-brand/20 text-brand text-[10px]">{currentTrip.tripNumber}</span>
+                <span className="badge bg-brand/20 text-brand text-[10px] tabular-nums">{currentTrip.tripNumber}</span>
               </h3>
               <button onClick={() => setShowReplaceVehicleModal(false)} className="btn-icon" aria-label={t("Close", "إغلاق")}>
                 <IconClose size={16} />
@@ -887,21 +1067,25 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
               <div>
                 <label className="block text-text-muted text-[11px] mb-1">{t("Vehicle being released", "الشاحنة الحالية المفصولة")}:</label>
                 <div className="p-2.5 rounded-[10px] bg-surface-2 text-white font-bold border border-white/5">
-                  {t("R J D 4821", "ر ج د ٤٨٢١")} ({t("Curtain", "ستارة")} Actros L 1863)
+                  {details?.vehicle?.plate || "—"}{details?.vehicle?.model ? ` (${details.vehicle.model})` : ""}
                 </div>
               </div>
 
               <div>
                 <label className="block text-text-muted text-[11px] mb-1">{t("Approved replacement vehicle (the 4 official types only)", "الشاحنة البديلة المعتمدة (الأنواع الرسمية الـ 4 فقط)")} *</label>
                 <select
-                  value={newVehiclePlate}
-                  onChange={(e) => setNewVehiclePlate(e.target.value)}
+                  value={newVehicleId}
+                  onChange={(e) => setNewVehicleId(e.target.value)}
                   className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-white border border-border-subtle outline-none"
                 >
-                  <option value="ب ر د ٩١٠٤ (براد)">{t("B R D 9104", "ب ر د ٩١٠٤")} · {t("Reefer", "براد")} Mercedes Actros ({t("registration & inspection valid", "استمارة وفحص ساري")})</option>
-                  <option value="س ط ح ٥٥٢٠ (سطحة)">{t("S T H 5520", "س ط ح ٥٥٢٠")} · {t("Flatbed", "سطحة")} Scania R 500 ({t("registration & inspection valid", "استمارة وفحص ساري")})</option>
-                  <option value="ج ا ف ٧٧١٤ (جاف)">{t("J A F 7714", "ج ا ف ٧٧١٤")} · {t("Dry box", "جاف")} Volvo FH 500 ({t("registration & inspection valid", "استمارة وفحص ساري")})</option>
-                  <option value="س ط ح ٨٣١٩ (سطحة)">{t("S T H 8319", "س ط ح ٨٣١٩")} · {t("Flatbed", "سطحة")} Scania Heavy ({t("registration & inspection valid", "استمارة وفحص ساري")})</option>
+                  <option value="">{t("Select a vehicle from the fleet…", "اختر شاحنة من الأسطول…")}</option>
+                  {vehiclesList
+                    .filter((v) => v.id !== details?.vehicle?.id && v.isActive)
+                    .map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.plate} · {v.type} · {v.model}
+                      </option>
+                    ))}
                 </select>
               </div>
 
@@ -923,7 +1107,8 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
               </button>
               <button
                 onClick={handleExecuteVehicleReplacement}
-                className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg"
+                disabled={replacementBusy || !newVehicleId || vehicleReplaceReason.trim().length < 4}
+                className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg disabled:opacity-50"
               >
                 {t("Confirm the vehicle swap & update tracking", "تأكيد استبدال الشاحنة وتحديث التتبع")}
               </button>
