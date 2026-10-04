@@ -149,7 +149,7 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
           <button
             onClick={onClose}
             className="btn-icon-sm rounded-full hover:bg-surface-3"
-            aria-label="Close"
+            aria-label={t("Close", "إغلاق")}
           >
             <IconClose size={18} />
           </button>
@@ -193,7 +193,7 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}
-                  alt="Official Logo"
+                  alt={t("Official logo", "الشعار الرسمي")}
                   className="max-h-full max-w-full object-contain"
                 />
               ) : (

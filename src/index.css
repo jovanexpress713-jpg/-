@@ -12,9 +12,14 @@
    call sites re-skin without being edited one by one.
    ============================================================ */
 @theme {
-  /* IBM Plex Sans Arabic for prose, IBM Plex Mono for every figure. */
-  --font-sans: "IBM Plex Sans Arabic", "Tajawal", "Noto Sans Arabic", "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* «مراعي» (Almarai) is the single typeface of the product: headings,
+     buttons, tables, forms, dialogs, notifications and the assistant all use
+     it. Figures keep the same family with tabular numerals, so there is
+     exactly one voice across every screen — no third-party display face.
+     IBM Plex Sans Arabic stays as the metrics-compatible fallback while the
+     webfont streams in, and for offline/air-gapped deployments. */
+  --font-sans: "Almarai", "IBM Plex Sans Arabic", "Tajawal", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Almarai", "IBM Plex Sans Arabic", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* ---- NOVA navy system (spec §1) ---- */
   --color-bg-deep: #050b18;
@@ -254,6 +259,19 @@
 
   --ds-text-display: clamp(1.5rem, 1.1rem + 1.8vw, 2.25rem);
   --ds-text-title: clamp(1.125rem, 0.95rem + 0.8vw, 1.5rem);
+
+  /* Unified typography scale (§5) — every new surface picks from these five
+     steps so headings, body, captions and chips stay in one rhythm. */
+  --type-page-title: 16px;   /* header / section title          */
+  --type-card-title: 14px;   /* card + dialog title             */
+  --type-body: 13px;         /* body copy, table cells, forms   */
+  --type-label: 11.5px;      /* labels, chips, meta             */
+  --type-micro: 10.5px;      /* overlines, timestamps           */
+  --type-tagline: 12.5px;    /* «نقلكم .. مسؤوليتنا»            */
+
+  /* Elevated surface used by the header, account menu and settings center. */
+  --surface-chrome: color-mix(in oklab, var(--color-surface-1) 92%, transparent);
+  --header-height: 58px;
 }
 
 /* ============================================================
@@ -747,6 +765,49 @@
     background-color: color-mix(in oklab, var(--color-navy) 55%, transparent);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
+  }
+
+  /* «نقلكم .. مسؤوليتنا» — elegant, on-brand, never oversized (§4). */
+  .tagline {
+    font-size: var(--type-tagline);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    background: linear-gradient(90deg, var(--color-brand), var(--color-brand-glow));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    white-space: nowrap;
+  }
+  [dir="rtl"] .tagline { letter-spacing: 0; }
+
+  /* The one sticky application bar: hairline, frosted, 58px tall. */
+  .app-header {
+    background-color: var(--surface-chrome);
+    backdrop-filter: blur(14px) saturate(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  /* Account / language / notification popovers share one shell so they can
+     never drift apart visually or land off-screen on a phone. */
+  .menu-pop {
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 14px;
+    box-shadow: var(--ds-shadow-xl);
+    animation: fade-up 0.18s var(--ds-ease) both;
+  }
+  .menu-row {
+    display: flex; align-items: center; gap: 0.625rem; width: 100%;
+    border-radius: 10px; padding: 0.5rem 0.625rem;
+    font-size: var(--type-body); color: var(--color-text-secondary);
+    text-align: start;
+    transition: background-color var(--ds-duration) ease, color var(--ds-duration) ease;
+  }
+  .menu-row:hover { background-color: var(--color-surface-3); color: var(--color-text-primary); }
+  .menu-row-on { background-color: color-mix(in oklab, var(--color-brand) 14%, transparent); color: var(--color-text-primary); font-weight: 700; }
+  .menu-label {
+    font-size: var(--type-micro); font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--color-text-muted);
   }
 
   .text-display { font-size: var(--ds-text-display); line-height: 1.15; font-weight: 800; }

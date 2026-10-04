@@ -240,7 +240,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
       <div className="absolute inset-0 h-full w-full overflow-hidden select-none pointer-events-none z-0">
         <img
           src={LOGIN_BACKDROP}
-          alt="شاحنة مرسيدس-بنز أكتوس من أسطول مؤسسة إيجاز للنقليات"
+          alt={t("Mercedes-Benz Actros from the EJAZ Transport fleet", "شاحنة مرسيدس-بنز أكتوس من أسطول مؤسسة إيجاز للنقليات")}
           className="h-full w-full object-cover object-top sm:object-center transform scale-100 transition-transform duration-700"
           referrerPolicy="no-referrer"
           loading="eager"

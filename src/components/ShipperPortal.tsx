@@ -13,7 +13,7 @@ import {
 } from "./Icons";
 
 export function ShipperPortal() {
-  const { t } = useSettings();
+  const { t, td } = useSettings();
   const { trips, selectedTripId, selectTrip, sendChatMessage } = useFleetStore();
 
   const [activeTripId, setActiveTripId] = useState(selectedTripId || trips[0]?.id);
@@ -172,7 +172,7 @@ export function ShipperPortal() {
                       <span className="font-bold text-brand tabular-nums">{tr.progressPct}%</span>
                     </div>
                     <div className="text-[11.5px] text-text-muted mt-1">
-                      {tr.originCity} → {tr.destinationCity} · {tr.cargoWeightTons} {t("t", "طن")}
+                      {td(tr.originCity)} → {td(tr.destinationCity)} · {tr.cargoWeightTons} {t("t", "طن")}
                     </div>
                   </button>
                 );

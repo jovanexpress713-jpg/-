@@ -402,7 +402,7 @@ export function ShipmentsManager({
               <button
                 onClick={() => setSelectedShipmentTrip(null)}
                 className="btn-icon-sm"
-                aria-label="Close"
+                aria-label={t("Close", "إغلاق")}
               >
                 <IconClose size={16} />
               </button>

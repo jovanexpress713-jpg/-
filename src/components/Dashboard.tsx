@@ -153,7 +153,7 @@ export function Dashboard({
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col bg-surface-0">
       <header className="flex items-center gap-3 border-b border-border-subtle px-4 py-4 lg:px-5">
-        <button onClick={onOpenSidebar} className="btn-icon lg:hidden" aria-label="Menu">
+        <button onClick={onOpenSidebar} className="btn-icon lg:hidden" aria-label={t("Menu", "القائمة")}>
           <IconMenu size={17} />
         </button>
         <div className="min-w-0 flex-1">
@@ -194,7 +194,7 @@ export function Dashboard({
               if (searching) setQuery("");
             }}
             className="btn-icon-sm bg-transparent"
-            aria-label="Search"
+            aria-label={t("Search", "بحث")}
           >
             {searching ? <IconClose size={15} /> : <IconSearch size={16} />}
           </button>

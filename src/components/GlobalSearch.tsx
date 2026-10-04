@@ -17,7 +17,7 @@ interface GlobalSearchProps {
 }
 
 export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
-  const { t } = useSettings();
+  const { t, td } = useSettings();
   const { trips, trucks, drivers, selectTrip, selectTruck } = useFleetStore();
 
   const [query, setQuery] = useState("");
@@ -179,7 +179,7 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
                             {tr.tripNumber}
                           </div>
                           <div className="text-[10.5px] text-text-muted">
-                            {tr.originCity} → {tr.destinationCity}
+                            {td(tr.originCity)} → {td(tr.destinationCity)}
                           </div>
                         </div>
                       </div>

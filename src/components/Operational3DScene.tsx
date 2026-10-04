@@ -12,7 +12,7 @@ interface Operational3DSceneProps {
 }
 
 export function Operational3DScene({ trip, className }: Operational3DSceneProps) {
-  const { t } = useSettings();
+  const { t, tdp } = useSettings();
 
   // Determine authoritative operational state derived purely from backend trip status
   const sceneState = useMemo(() => {
@@ -196,7 +196,7 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
         </div>
         <div className="rounded-[8px] bg-surface-2 p-2.5 border border-white/5">
           <div className="text-white/50 text-[10px]">{t("Next Station", "المحطة التالية")}</div>
-          <div className="font-semibold text-white truncate mt-0.5">{trip.nextWaypointAr}</div>
+          <div className="font-semibold text-white truncate mt-0.5">{tdp(trip.nextWaypointAr, trip.nextWaypointEn)}</div>
         </div>
       </div>
     </div>

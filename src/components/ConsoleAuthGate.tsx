@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
+import { LANGUAGE_OPTIONS } from "../localization/i18n";
+import { LanguageList } from "./AccountMenu";
 import { BrandLogo } from "./Logo";
 import { apiClient, setAuthToken, getAuthToken } from "../services/apiClient";
 import { IconLock, IconProfile, IconEye, IconEyeOff, IconAlertCircle, IconTruck, IconBolt } from "./Icons";
@@ -11,7 +13,7 @@ import { IconLock, IconProfile, IconEye, IconEyeOff, IconAlertCircle, IconTruck,
  * presentation/demo access so clients can preview all roles seamlessly.
  */
 
-interface DemoAccount {
+export interface DemoAccount {
   key: string;
   role: string;
   titleAr: string;
@@ -19,6 +21,7 @@ interface DemoAccount {
   email: string;
   password: string;
   descAr: string;
+  descEn?: string;
   fullName?: string;
   driverId?: string;
   customerId?: string;
@@ -34,6 +37,7 @@ export const FALLBACK_DEMO_ACCOUNTS: DemoAccount[] = [
     password: "Ejaz@2026Admin",
     fullName: "فهد بن عبد العزيز السبيعي",
     descAr: "التحكم الكامل بمنظومة إيجاز: الأسطول، الرحلات، المالية، التدقيق",
+    descEn: "Full control of the EJAZ platform: fleet, trips, finance, audit",
   },
   {
     key: "ops",
@@ -44,6 +48,7 @@ export const FALLBACK_DEMO_ACCOUNTS: DemoAccount[] = [
     password: "Ejaz@2026Admin",
     fullName: "سلطان بن حمد العتيبي",
     descAr: "إدارة الرحلات والسائقين والشاحنات وطلبات النقل",
+    descEn: "Trips, drivers, vehicles and transport requests",
   },
   {
     key: "accountant",
@@ -54,6 +59,7 @@ export const FALLBACK_DEMO_ACCOUNTS: DemoAccount[] = [
     password: "Ejaz@2026Admin",
     fullName: "عمر بن إبراهيم القحطاني",
     descAr: "الفواتير والتسويات المالية ومراجعة المطالبات",
+    descEn: "Invoices, settlements and claims review",
   },
   {
     key: "driver",
@@ -65,6 +71,7 @@ export const FALLBACK_DEMO_ACCOUNTS: DemoAccount[] = [
     fullName: "فهد الشمري (كابتن أسطول)",
     driverId: "d1",
     descAr: "بوابة السائق الميدانية وتنفيذ الرحلات وإثبات التسليم",
+    descEn: "Field driver portal, trip execution and POD",
   },
   {
     key: "client",
@@ -76,6 +83,7 @@ export const FALLBACK_DEMO_ACCOUNTS: DemoAccount[] = [
     fullName: "شركة سدافكو للأغذية والمشروبات",
     customerId: "cust-1",
     descAr: "بوابة العميل لمتابعة الشحنات والتتبع المباشر وبوليصة الشحن",
+    descEn: "Client portal: shipments, live tracking and waybill",
   },
 ];
 
@@ -106,13 +114,15 @@ export function ConsoleAuthGate({
   onAuthenticated: (user: any) => void;
   onOpenMobileApp?: () => void;
 }) {
-  const { t } = useSettings();
+  const { t, tk, lang } = useSettings();
+  const activeLanguage = LANGUAGE_OPTIONS.find((option) => option.code === lang);
   const [email, setEmail] = useState("admin@ejaz.sa");
   const [password, setPassword] = useState("Ejaz@2026Admin");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [demoAccounts] = useState<DemoAccount[]>(FALLBACK_DEMO_ACCOUNTS);
+  const [showLangMenu, setShowLangMenu] = useState(false);
 
   useEffect(() => {
     const restore = async () => {
@@ -197,10 +207,36 @@ export function ConsoleAuthGate({
         <div className="absolute -bottom-32 -end-16 h-96 w-96 rounded-full bg-brand/5 blur-3xl" />
       </div>
 
+      {/* Language — reachable before signing in, in all three languages. */}
+      <div className="absolute end-4 top-4 z-20">
+        <button
+          type="button"
+          onClick={() => setShowLangMenu((v) => !v)}
+          className="flex h-9 items-center gap-2 rounded-full border border-border-subtle bg-surface-1/90 px-3 text-[11.5px] font-semibold text-text-secondary backdrop-blur transition-colors hover:border-brand/60 hover:text-text-primary"
+          aria-haspopup="listbox"
+          aria-expanded={showLangMenu}
+          title={tk("language.choose")}
+        >
+          <span className="text-[14px] leading-none">{activeLanguage?.flag}</span>
+          <span>{tk(activeLanguage?.labelKey ?? "language.ar")}</span>
+        </button>
+        {showLangMenu && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setShowLangMenu(false)} />
+            <div className="menu-pop absolute end-0 z-20 mt-2 w-[236px] p-2">
+              <LanguageList onSelect={() => setShowLangMenu(false)} />
+            </div>
+          </>
+        )}
+      </div>
+
       <div className="relative z-10 grid w-full max-w-5xl gap-6 lg:grid-cols-[1.1fr_1fr]">
         {/* Identity panel */}
         <div className="hidden flex-col justify-between rounded-[20px] border border-border-subtle bg-surface-1 p-8 lg:flex">
-          <BrandLogo size={48} sub={t("Heavy Fleet & Logistics Control", "إدارة أسطول النقل الثقيل والرحلات")} />
+          <div>
+            <BrandLogo size={46} sub={tk("app.subtitle")} />
+            <p className="tagline mt-2.5">{tk("app.tagline")}</p>
+          </div>
 
           <div className="space-y-4">
             <h2 className="text-2xl font-extrabold text-text-primary">
@@ -238,7 +274,8 @@ export function ConsoleAuthGate({
         {/* Credentials panel */}
         <div className="rounded-[20px] border border-border-subtle bg-surface-1 p-6 sm:p-8">
           <div className="mb-6 lg:hidden">
-            <BrandLogo size={40} sub={t("Control Room", "غرفة التحكم")} />
+            <BrandLogo size={38} sub={tk("app.subtitle")} />
+            <p className="tagline mt-2">{tk("app.tagline")}</p>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -297,7 +334,9 @@ export function ConsoleAuthGate({
                       {t("Enter Now →", "دخول فوري ←")}
                     </span>
                   </div>
-                  <div className="mt-1 text-[10.5px] leading-relaxed text-text-muted">{acc.descAr}</div>
+                  <div className="mt-1 text-[10.5px] leading-relaxed text-text-muted">
+                    {acc.descEn ? t(acc.descEn, acc.descAr) : acc.descAr}
+                  </div>
                 </button>
               ))}
             </div>
@@ -357,7 +396,7 @@ export function ConsoleAuthGate({
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute inset-y-0 end-2 flex items-center px-2 text-text-muted hover:text-text-primary"
-                  aria-label="Toggle password visibility"
+                  aria-label={t("Toggle password visibility", "إظهار كلمة المرور أو إخفاؤها")}
                 >
                   {showPassword ? <IconEyeOff size={15} /> : <IconEye size={15} />}
                 </button>

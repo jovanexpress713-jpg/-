@@ -21,7 +21,7 @@ interface ClientModeProps {
 }
 
 export function ClientMode({ user, onLogout }: ClientModeProps) {
-  const { t } = useSettings();
+  const { t, td } = useSettings();
   const { trips } = useFleetStore();
   const [activeTab, setActiveTab] = useState<"home" | "trips" | "track" | "docs" | "profile">("home");
   const [clientTrips, setClientTrips] = useState<any[]>([]);
@@ -239,7 +239,7 @@ export function ClientMode({ user, onLogout }: ClientModeProps) {
                     </span>
                   </div>
                   <div className="mt-1 text-[11.5px] text-white">
-                    {tr.originCity} → {tr.destinationCity}
+                    {td(tr.originCity)} → {td(tr.destinationCity)}
                   </div>
                   <div className="mt-1 text-[10px] text-text-muted flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
@@ -378,7 +378,9 @@ export function ClientMode({ user, onLogout }: ClientModeProps) {
                 </div>
                 <div>
                   <div className="text-[12px] font-bold text-white">{t("Electronic Waybill (BOL)", "بوليصة الشحن الرسمية")}</div>
-                  <div className="text-[10px] text-text-muted">PDF · 245 KB · معتمدة من هيئة النقل</div>
+                  <div className="text-[10px] text-text-muted">
+                  PDF · 245 KB · {t("certified by the Transport Authority", "معتمدة من هيئة النقل")}
+                </div>
                 </div>
               </div>
               <span className="rounded-full bg-status-active/20 px-2 py-0.5 text-[9.5px] font-bold text-status-active">
@@ -399,7 +401,7 @@ export function ClientMode({ user, onLogout }: ClientModeProps) {
                 )}
               </p>
               <div className="rounded-[10px] bg-surface-2 p-2.5 text-[10.5px] flex items-center justify-between">
-                <span>{t("Recipient:", "المستلم:")} <strong className="text-white">طارق منصور (سدافكو)</strong></span>
+                <span>{t("Recipient:", "المستلم:")} <strong className="text-white">{t("Tarek Mansour (SADAFCO)", "طارق منصور (سدافكو)")}</strong></span>
                 <span className="text-status-active font-bold">✓ {t("Signed Digitally", "موقع رقمياً")}</span>
               </div>
             </div>

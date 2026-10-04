@@ -257,14 +257,14 @@ export function MapPanel({
             <button
               onClick={() => setZoom((z) => Math.min(1.8, +(z + 0.2).toFixed(2)))}
               className="btn-icon-sm bg-navy/70 text-white backdrop-blur-md"
-              aria-label="Zoom in"
+              aria-label={t("Zoom in", "تكبير")}
             >
               <IconZoomIn size={14} />
             </button>
             <button
               onClick={() => setZoom((z) => Math.max(1, +(z - 0.2).toFixed(2)))}
               className="btn-icon-sm bg-navy/70 text-white backdrop-blur-md"
-              aria-label="Zoom out"
+              aria-label={t("Zoom out", "تصغير")}
             >
               <IconZoomOut size={14} />
             </button>
@@ -273,7 +273,7 @@ export function MapPanel({
         <button
           onClick={() => setLayer((l) => (l === "vector" ? "google" : "vector"))}
           className="btn-icon-sm bg-navy/70 text-white backdrop-blur-md"
-          aria-label="Map layer"
+          aria-label={t("Map layer", "طبقة الخريطة")}
           title={t("Switch to Google Maps", "التبديل إلى خرائط جوجل")}
         >
           <IconLayers size={14} />

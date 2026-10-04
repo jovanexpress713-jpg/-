@@ -120,7 +120,7 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
             </button>
           ))}
           {onClose && (
-            <button onClick={onClose} className="btn-icon ms-2" aria-label="Close">
+            <button onClick={onClose} className="btn-icon ms-2" aria-label={t("Close", "إغلاق")}>
               <IconClose size={15} />
             </button>
           )}

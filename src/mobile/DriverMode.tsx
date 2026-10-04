@@ -23,7 +23,7 @@ interface DriverModeProps {
 }
 
 export function DriverMode({ user, onLogout }: DriverModeProps) {
-  const { t } = useSettings();
+  const { t, td } = useSettings();
   const { trips, updateTripStatus } = useFleetStore();
   const [activeTab, setActiveTab] = useState<"home" | "trips" | "trip" | "gps" | "pod" | "profile">("home");
   const [tripsSubTab, setTripsSubTab] = useState<"all" | "available" | "confirmed" | "active" | "completed">("all");
@@ -297,7 +297,7 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
             <div className="flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-semibold border border-white/10">
               <span className="text-brand font-bold">★ 4.95</span>
               <span className="text-white/40">·</span>
-              <span className="text-status-active">مناوب</span>
+              <span className="text-status-active">{t("On duty", "مناوب")}</span>
             </div>
           </div>
 
@@ -409,16 +409,16 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
               {gpsTelemetry && (
                 <div className="grid grid-cols-3 gap-2 text-center text-[10px] rounded-[10px] bg-surface-2 p-2.5 border border-white/5 tabular-nums">
                   <div>
-                    <span className="text-text-muted block">السرعة</span>
+                    <span className="text-text-muted block">{t("Speed", "السرعة")}</span>
                     <strong className="text-status-active text-[12px]">{gpsTelemetry.speed} كم/س</strong>
                   </div>
                   <div>
-                    <span className="text-text-muted block">الدقة</span>
+                    <span className="text-text-muted block">{t("Accuracy", "الدقة")}</span>
                     <strong className="text-white text-[12px]">±{gpsTelemetry.accuracy}م</strong>
                   </div>
                   <div>
-                    <span className="text-text-muted block">آخر إرسال</span>
-                    <strong className="text-brand text-[12px]">{gpsTelemetry.timestamp}</strong>
+                    <span className="text-text-muted block">{t("Last ping", "آخر إرسال")}</span>
+                    <strong className="text-brand text-[12px]">{td(gpsTelemetry.timestamp)}</strong>
                   </div>
                 </div>
               )}
@@ -692,7 +692,7 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[10px] text-text-muted uppercase">{t("Driver Route Navigation", "ملاحة المسار والموقع الميداني")}</span>
-                <div className="text-[14px] font-bold text-white">{active?.originCity} → {active?.destinationCity}</div>
+                <div className="text-[14px] font-bold text-white">{td(active?.originCity)} → {td(active?.destinationCity)}</div>
               </div>
               <button
                 onClick={toggleGpsBroadcast}
@@ -722,19 +722,19 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
             </p>
 
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">اسم المستلم الرسمي *</label>
+              <label className="block text-[11px] font-semibold text-text-secondary mb-1">{t("Official recipient name", "اسم المستلم الرسمي")} *</label>
               <input
                 type="text"
                 required
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}
-                placeholder="مثال: طارق منصور"
+                placeholder={t("e.g. Tarek Mansour", "مثال: طارق منصور")}
                 className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-[12.5px] text-white border border-border-subtle outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">رقم هاتف المستلم</label>
+              <label className="block text-[11px] font-semibold text-text-secondary mb-1">{t("Recipient phone number", "رقم هاتف المستلم")}</label>
               <input
                 type="tel"
                 value={recipientPhone}
@@ -745,7 +745,7 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">ملاحظات حالة البضاعة</label>
+              <label className="block text-[11px] font-semibold text-text-secondary mb-1">{t("Cargo condition notes", "ملاحظات حالة البضاعة")}</label>
               <textarea
                 rows={2}
                 value={deliveryNotes}
@@ -757,8 +757,8 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
             {/* Digital Signature Confirmation Pad */}
             <div className="rounded-[12px] bg-surface-1 p-3 border border-border-subtle space-y-2">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-white">توقيع المستلم الإلكتروني *</span>
-                <span className="text-[10px] text-brand">معتمد بالبصمة الرقمية</span>
+                <span className="font-semibold text-white">{t("Recipient e-signature", "توقيع المستلم الإلكتروني")} *</span>
+                <span className="text-[10px] text-brand">{t("Certified with a digital fingerprint", "معتمد بالبصمة الرقمية")}</span>
               </div>
               <div
                 onClick={() => setSignatureDone(true)}
@@ -800,18 +800,18 @@ export function DriverMode({ user, onLogout }: DriverModeProps) {
               </div>
 
               <div className="flex items-center justify-between text-[11.5px]">
-                <span className="text-text-muted">رقم الرخصة المعتمد:</span>
-                <span className="font-mono text-white">DL-SA-91823 (نقل ثقيل)</span>
+                <span className="text-text-muted">{t("Approved licence number", "رقم الرخصة المعتمد")}:</span>
+                <span className="font-mono text-white">DL-SA-91823 ({t("heavy transport", "نقل ثقيل")})</span>
               </div>
 
               <div className="flex items-center justify-between text-[11.5px]">
-                <span className="text-text-muted">صلاحية رخصة القيادة:</span>
-                <span className="text-status-active font-semibold">سارية حتى 2028-06-14</span>
+                <span className="text-text-muted">{t("Driving licence validity", "صلاحية رخصة القيادة")}:</span>
+                <span className="text-status-active font-semibold">{t("Valid until", "سارية حتى")} 2028-06-14</span>
               </div>
 
               <div className="flex items-center justify-between text-[11.5px]">
-                <span className="text-text-muted">التقييم التشغيلي:</span>
-                <span className="text-brand font-bold">★ 4.95 (184 رحلة ناجحة)</span>
+                <span className="text-text-muted">{t("Operational rating", "التقييم التشغيلي")}:</span>
+                <span className="text-brand font-bold">★ 4.95 ({t("184 completed trips", "184 رحلة ناجحة")})</span>
               </div>
             </div>
 

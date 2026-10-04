@@ -1,6 +1,6 @@
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
-import { BrandLogo } from "./Logo";
+import { BrandEmblem } from "./Logo";
 import {
   IconAnalysis,
   IconCargo,
@@ -16,6 +16,7 @@ import {
   IconTruck,
   IconBolt,
   IconLayers,
+  IconDoc,
 } from "./Icons";
 import type { RequestKind } from "../data/types";
 
@@ -35,21 +36,12 @@ interface Props {
 }
 
 /**
- * Spec §4.8 — sidebar.
+ * Sidebar — grouped navigation (§24).
  *
- * Three changes from the previous 15-item flat list:
- *
- *  1. Entries are grouped under three labelled headings with hairline
- *     dividers, so 23 destinations become 4 scannable clusters.
- *  2. The old "الطلبات" subgroup duplicated destinations that already sat at
- *     the top level (`trucks` → `fleet`, `cargos` → `shipments`, `repair` →
- *     `fleet`), and the three "التحليلات" children all dispatched the same
- *     `analysis` key — three labels, one behaviour. Both are gone.
- *  3. The quick-create row used to be `opacity-0` + `group-hover` only, so it
- *     was unreachable on touch. It is now permanently rendered.
- *
- * Rows that open a modal rather than navigate carry a small window glyph, so
- * "moves me" and "opens over this" are no longer visually identical.
+ * Labels resolve through the central i18n keys, so an English session shows
+ * "Trips / Shipments / Live Map" and an Urdu session shows "ٹرپس / کھیپ / لائیو
+ * نقشہ" with no per-component string tables. "Settings" now opens the settings
+ * center (the same panel the account menu reaches) instead of being a dead end.
  */
 
 /** Legacy keys the console can still hold — highlight their parent instead. */
@@ -61,7 +53,7 @@ const KEY_ALIAS: Record<string, string> = {
 };
 
 export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
-  const { t } = useSettings();
+  const { t, tk } = useSettings();
   const current = KEY_ALIAS[active] ?? active;
 
   const row = (
@@ -78,12 +70,12 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
         aria-current={isActive ? "page" : undefined}
         className={cn("nav-item w-full", isActive && "nav-item-on")}
       >
-        <Icon size={17} className={isActive ? "" : ""} />
+        <Icon size={17} />
         <span className="flex-1 text-start">{label}</span>
         {opts.modal && !isActive && (
           <span
             aria-hidden="true"
-            title={t("Opens in a window", "يفتح في نافذة")}
+            title={tk("nav.opensWindow")}
             className="h-1.5 w-1.5 shrink-0 rounded-full bg-text-muted/60"
           />
         )}
@@ -110,64 +102,62 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
 
   return (
     <aside className="flex h-full w-[264px] shrink-0 flex-col border-e border-border-subtle bg-surface-1 px-3 py-4">
-      <div className="px-2">
-        <BrandLogo size={32} sub={t("Since 2022", "منذ ٢٠٢٢")} />
+      {/* Compact identity block — the header carries the full brand lockup. */}
+      <div className="flex items-center gap-2.5 px-2">
+        <BrandEmblem size={28} />
+        <div className="min-w-0 leading-tight">
+          <div className="truncate text-[12.5px] font-extrabold text-text-primary">
+            {tk("app.name")}
+          </div>
+          <div className="tagline truncate">{tk("app.tagline")}</div>
+        </div>
       </div>
 
       <nav className="scroll-thin mt-5 flex-1 overflow-y-auto px-1 pb-2">
-        {heading(t("Operations", "التشغيل"))}
+        {heading(tk("nav.operations"))}
         <div className="space-y-0.5">
-          {row("overview", t("Logistics Dashboard", "لوحة المؤشرات"), IconAnalysis)}
-          {row("operations", t("Operations Center", "مركز العمليات"), IconDashboard)}
-          {row("trips", t("Trips", "الرحلات"), IconTruck)}
-          {row("shipments", t("Shipments", "الشحنات"), IconCargo, { count: counts.cargos })}
-          {row("tracking", t("Live Map", "الخريطة المباشرة"), IconTracking)}
+          {row("overview", tk("nav.overview"), IconAnalysis)}
+          {row("operations", tk("nav.operationsCenter"), IconDashboard)}
+          {row("trips", tk("nav.trips"), IconTruck)}
+          {row("shipments", tk("nav.shipments"), IconCargo, { count: counts.cargos })}
+          {row("tracking", tk("nav.tracking"), IconTracking)}
         </div>
 
         <div className="my-3 border-t border-border-subtle" />
 
-        {heading(t("Fleet", "الأسطول"))}
+        {heading(tk("nav.fleetGroup"))}
         <div className="space-y-0.5">
-          {row("fleet", t("Fleet (4 Types)", "الأسطول (٤ أنواع)"), IconTruck, {
-            count: counts.trucks,
-          })}
-          {row("vehicle-assets", t("Vehicle Assets", "أصول المركبات"), IconLayers)}
-          {row("drivers", t("Drivers", "السائقون"), IconDriver, { count: counts.drivers })}
-          {row("registrations", t("Registration Requests", "طلبات التسجيل"), IconRequests)}
+          {row("fleet", tk("nav.fleet"), IconTruck, { count: counts.trucks })}
+          {row("vehicle-assets", tk("nav.vehicleAssets"), IconLayers)}
+          {row("drivers", tk("nav.drivers"), IconDriver, { count: counts.drivers })}
+          {row("registrations", tk("nav.registrations"), IconRequests)}
         </div>
 
         <div className="my-3 border-t border-border-subtle" />
 
-        {heading(t("Insights", "التحليلات"))}
+        {heading(tk("nav.insights"))}
         <div className="space-y-0.5">
-          {row("reports", t("Reports & Audit", "التقارير والتدقيق"), IconReport, {
-            count: counts.reports,
-          })}
-          {row("analysis", t("Fleet Analytics", "التحليلات التشغيلية"), IconAnalysis)}
-          {row("history", t("Trip Archive", "أرشيف الرحلات"), IconHistory)}
+          {row("reports", tk("nav.reports"), IconReport, { count: counts.reports })}
+          {row("analysis", tk("nav.analysis"), IconAnalysis)}
+          {row("history", tk("nav.history"), IconHistory)}
         </div>
 
         <div className="my-3 border-t border-border-subtle" />
 
-        {heading(t("Settings & Identity", "الإعدادات والهوية"))}
+        {heading(tk("nav.identity"))}
         <div className="space-y-0.5">
-          {row("branding", t("Branding", "الهوية"), IconLayers, { modal: true })}
-          {row("alerts", t("Live Smart Alerts", "التنبيهات المباشرة"), IconBolt, {
-            modal: true,
-          })}
-          {row("chats", t("Chats & Dispatch", "المحادثات والتوجيه"), IconChat)}
-          {row("ai", t("AI Logistics Assistant", "مساعد إيجاز الذكي"), IconBolt, {
-            modal: true,
-          })}
+          {row("settings", tk("nav.settings"), IconDoc, { modal: true })}
+          {row("branding", tk("nav.branding"), IconLayers, { modal: true })}
+          {row("alerts", tk("nav.alerts"), IconBolt, { modal: true })}
+          {row("chats", tk("nav.chats"), IconChat)}
+          {row("ai", tk("nav.ai"), IconBolt, { modal: true })}
         </div>
       </nav>
 
-      {/* Spec §4.9 — dashed orange create card, always visible. The five
-          quick actions sit above it in the open rather than on hover, so a
-          touch user can actually reach them. */}
+      {/* Quick create — always visible, reachable by touch. */}
       <div className="mt-3 shrink-0 space-y-2 border-t border-border-subtle pt-3">
         <div className="flex items-center justify-between gap-1 px-1">
-          <span className="label-sm">{t("Quick create", "إنشاء سريع")}</span>
+          <span className="label-sm">{tk("nav.quickCreate")}</span>
           <div className="flex items-center gap-1">
             {QUICK.map(({ kind, label, icon: Icon }) => (
               <button
@@ -192,10 +182,10 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
           </span>
           <span className="min-w-0">
             <span className="block truncate text-[13px] font-semibold text-brand">
-              {t("Create new Request", "إنشاء طلب جديد")}
+              {tk("nav.createRequest")}
             </span>
             <span className="block truncate text-[10.5px] text-text-muted">
-              {t("Dispatch, repair or report", "تشغيل، صيانة أو تقرير")}
+              {tk("nav.createHint")}
             </span>
           </span>
         </button>

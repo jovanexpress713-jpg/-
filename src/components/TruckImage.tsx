@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "../utils/cn";
 import { useVehicleAssets } from "../state/vehicleAssetStore";
+import { useSettings } from "../settings";
 import type { CanonicalVehicleTypeId } from "../data/vehicleTypes";
 
 /**
@@ -29,7 +30,7 @@ export function TruckImage({
   src,
   vehicle,
   body,
-  alt = "شاحنة إيجاز للنقليات",
+  alt,
   className,
   loading = "lazy",
 }: {
@@ -40,6 +41,9 @@ export function TruckImage({
   className?: string;
   loading?: "lazy" | "eager";
 }) {
+  const { t } = useSettings();
+  const resolvedAlt = alt ?? t("EJAZ Transport truck", "شاحنة إيجاز للنقليات");
+
   const { vehicleImage, typeImage } = useVehicleAssets();
 
   const primarySrc = src
@@ -79,7 +83,7 @@ export function TruckImage({
   return (
     <img
       src={currentSrc}
-      alt={alt}
+      alt={resolvedAlt}
       referrerPolicy="no-referrer"
       loading={loading}
       onError={handleError}

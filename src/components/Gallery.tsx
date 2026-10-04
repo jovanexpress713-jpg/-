@@ -18,6 +18,7 @@ function SafeImg({
   alt: string;
   className?: string;
 }) {
+  const { t } = useSettings();
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
@@ -27,7 +28,7 @@ function SafeImg({
           className,
         )}
       >
-        <span className="px-2 text-center">No preview</span>
+        <span className="px-2 text-center">{t("No preview", "لا توجد معاينة")}</span>
       </div>
     );
   }
@@ -135,21 +136,21 @@ export function Gallery({ items }: { items: GalleryItem[] }) {
                 <button
                   onClick={() => setIdx((i) => ((i ?? 0) - 1 + list.length) % list.length)}
                   className="btn-icon bg-white/10 text-white"
-                  aria-label="Previous"
+                  aria-label={t("Previous", "السابق")}
                 >
                   {dir === "rtl" ? <IconArrowRight size={16} /> : <IconArrowLeft size={16} />}
                 </button>
                 <button
                   onClick={() => setIdx((i) => ((i ?? 0) + 1) % list.length)}
                   className="btn-icon bg-white/10 text-white"
-                  aria-label="Next"
+                  aria-label={t("Next", "التالي")}
                 >
                   {dir === "rtl" ? <IconArrowLeft size={16} /> : <IconArrowRight size={16} />}
                 </button>
                 <button
                   onClick={() => setIdx(null)}
                   className="btn-icon bg-white/10 text-white"
-                  aria-label="Close"
+                  aria-label={t("Close", "إغلاق")}
                 >
                   <IconClose size={16} />
                 </button>

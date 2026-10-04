@@ -14,7 +14,7 @@ interface DispatchChatCenterProps {
 }
 
 export function DispatchChatCenter({ onOpenTrip }: DispatchChatCenterProps) {
-  const { t } = useSettings();
+  const { t, td } = useSettings();
   const toast = useToast();
   const { trips, trucks, drivers, chatMessages, sendChatMessage, selectTrip } = useFleetStore();
 
@@ -157,7 +157,7 @@ export function DispatchChatCenter({ onOpenTrip }: DispatchChatCenterProps) {
                   </div>
 
                   <div className="mt-1 text-[10.5px] text-text-muted truncate">
-                    {tr.originCity} → {tr.destinationCity}
+                    {td(tr.originCity)} → {td(tr.destinationCity)}
                   </div>
 
                   {lastMsg && (
@@ -195,7 +195,7 @@ export function DispatchChatCenter({ onOpenTrip }: DispatchChatCenterProps) {
                     </span>
                   </div>
                   <span className="hidden md:inline text-[11.5px] text-text-muted">
-                    ({activeTrip.originCity} → {activeTrip.destinationCity})
+                    ({td(activeTrip.originCity)} → {td(activeTrip.destinationCity)})
                   </span>
                 </div>
 
@@ -238,7 +238,7 @@ export function DispatchChatCenter({ onOpenTrip }: DispatchChatCenterProps) {
                         </span>
                         <span>{t(msg.textEn, msg.textAr)}</span>
                         <span className="block font-mono text-[9px] text-text-muted mt-1 tabular-nums">
-                          {msg.timestamp}
+                          {td(msg.timestamp)}
                         </span>
                       </div>
                     );
@@ -255,7 +255,7 @@ export function DispatchChatCenter({ onOpenTrip }: DispatchChatCenterProps) {
                       <div className="flex items-center gap-1.5 mb-0.5 px-1 text-[10px] text-text-muted">
                         <span className="font-semibold text-text-secondary">{msg.senderName}</span>
                         <span>·</span>
-                        <span className="font-mono tabular-nums">{msg.timestamp}</span>
+                        <span className="font-mono tabular-nums">{td(msg.timestamp)}</span>
                       </div>
                       <div
                         className={cn(
