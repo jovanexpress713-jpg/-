@@ -215,6 +215,32 @@ export const apiClient = {
         body: JSON.stringify(data),
       }),
   },
+  tariffs: {
+    getAll: (params?: Record<string, string>) => {
+      const qs = params ? `?${new URLSearchParams(params)}` : "";
+      return request<{ total: number; tariffs: any[] }>(`/api/tariffs${qs}`);
+    },
+    getById: (id: string) => request<any>(`/api/tariffs/${id}`),
+    create: (data: any) =>
+      request<any>("/api/tariffs", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: any) =>
+      request<any>(`/api/tariffs/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    deactivate: (id: string, reason?: string) =>
+      request<any>(`/api/tariffs/${id}/deactivate`, { method: "POST", body: JSON.stringify({ reason }) }),
+    activate: (id: string, reason?: string) =>
+      request<any>(`/api/tariffs/${id}/activate`, { method: "POST", body: JSON.stringify({ reason }) }),
+    getCities: () => request<{ cities: Array<{ id: string; ar: string; en: string }> }>("/api/tariffs/cities"),
+    getQuote: (params: Record<string, string>) =>
+      request<any>(`/api/tariffs/quote?${new URLSearchParams(params)}`),
+    getQuoteRequests: (params?: Record<string, string>) => {
+      const qs = params ? `?${new URLSearchParams(params)}` : "";
+      return request<{ total: number; quoteRequests: any[] }>(`/api/tariffs/quote-requests${qs}`);
+    },
+    submitQuoteRequest: (data: any) =>
+      request<any>("/api/tariffs/quote-requests", { method: "POST", body: JSON.stringify(data) }),
+    resolveQuoteRequest: (id: string, resolution?: string) =>
+      request<any>(`/api/tariffs/quote-requests/${id}/resolve`, { method: "POST", body: JSON.stringify({ resolution }) }),
+  },
   finance: {
     getTrips: () => request<any>("/api/finance/trips"),
     getTripById: (id: string) => request<any>(`/api/finance/trips/${id}`),

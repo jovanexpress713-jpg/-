@@ -48,6 +48,8 @@ export type Capability =
   | "customers.view"
   | "customers.manage"
   | "customers.create"
+  | "tariffs.view"
+  | "tariffs.manage"
   | "registrations.review"
   | "branding.manage"
   | "settings.manage"
@@ -63,6 +65,7 @@ const ROLE_CAPABILITIES: Record<string, Capability[] | "*"> = {
   GENERAL_MANAGER: [
     "trips.view", "trips.manage", "vehicles.view", "drivers.view", "drivers.create", "registrations.review",
     "customers.view", "customers.create", "customers.manage",
+    "tariffs.view", "tariffs.manage",
     "branding.manage", "settings.manage", "reports.view", "audit.view", "finance.view",
     "notifications.view", "gps.view", "assistant.act",
   ],
@@ -70,15 +73,18 @@ const ROLE_CAPABILITIES: Record<string, Capability[] | "*"> = {
     "trips.view", "trips.manage", "trips.transition", "vehicles.view", "vehicles.manage",
     "drivers.view", "drivers.manage", "drivers.create", "registrations.review",
     "customers.view", "customers.create", "customers.manage",
+    "tariffs.view", "tariffs.manage",
     "reports.view", "audit.view", "notifications.view", "gps.view", "assistant.act",
   ],
   DISPATCHER: [
     "trips.view", "trips.manage", "trips.transition", "vehicles.view", "drivers.view",
     "customers.view", "gps.view", "notifications.view", "assistant.act",
+    "tariffs.view",
   ],
   ACCOUNTANT: [
     "trips.view", "finance.view", "reports.view", "notifications.view", "audit.view",
     "customers.view",
+    "tariffs.view", "tariffs.manage",
   ],
   WAREHOUSE: ["trips.view", "trips.transition", "notifications.view"],
   DRIVER: ["trips.view", "trips.transition", "trips.request", "gps.view", "notifications.view"],
@@ -139,7 +145,7 @@ export function personaSections(persona: string): string[] {
   if (persona === "driver") return ["trips", "tracking", "settings"];
   if (persona === "shipper") return ["shipments", "tracking", "settings"];
   if (persona === "owner") return ["overview", "fleet", "reports", "settings"];
-  return [...base, "fleet", "vehicle-assets", "drivers", "registrations", "reports", "analysis", "history", "chats", "branding"];
+  return [...base, "fleet", "vehicle-assets", "drivers", "registrations", "tariffs", "reports", "analysis", "history", "chats", "branding"];
 }
 
 /** Sensitive actions the assistant must confirm before executing. */

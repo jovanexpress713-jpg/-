@@ -19,6 +19,7 @@ import brandingRoutes from "./routes/brandingRoutes";
 import devGpsRoutes from "./routes/devGpsRoutes";
 import vehicleAssetRoutes from "./routes/vehicleAssetRoutes";
 import registrationRoutes from "./routes/registrationRoutes";
+import tariffRoutes from "./routes/tariffRoutes";
 import { getUploadsServeRoot } from "./services/vehicleAssetRegistry";
 
 export function createServerApp() {
@@ -66,6 +67,7 @@ export function createServerApp() {
   app.use("/api/drivers", driverRoutes);
   app.use("/api/customers", customerRoutes);
   app.use("/api/finance", financeRoutes);
+  app.use("/api/tariffs", tariffRoutes);
   app.use("/api/documents", documentRoutes);
   app.use("/api/pod", podRoutes);
   app.use("/api/claims", claimRoutes);

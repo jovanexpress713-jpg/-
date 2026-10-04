@@ -16,6 +16,9 @@ import { runI18nTests } from "./i18n.test";
 import { runRoleRoutingTests } from "./roles.test";
 import { runLanguageSwitchTests } from "./languageSwitch.test";
 import { runOrganizationTests } from "./organization.test";
+import { runTariffTests } from "./tariffs.test";
+import { runTripScreenTests } from "./tripScreen.test";
+import { runTripIdentityTests } from "./tripIdentity.test";
 
 async function runAll() {
   console.log("============================================================");

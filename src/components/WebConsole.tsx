@@ -13,6 +13,7 @@ import { ShipperPortal } from "./ShipperPortal";
 import { OwnerPortal } from "./OwnerPortal";
 import { TripsManager } from "./TripsManager";
 import { ShipmentsManager } from "./ShipmentsManager";
+import { TariffsManager } from "./TariffsManager";
 import { FleetManager } from "./FleetManager";
 import { VehicleAssetsManager } from "./VehicleAssetsManager";
 import { RegistrationRequestsManager } from "./RegistrationRequestsManager";
@@ -36,6 +37,7 @@ export const SECTION_KEYS: Record<string, { title: I18nKey; hint?: I18nKey }> = 
   operations: { title: "nav.operationsCenter", hint: "nav.tracking" },
   trips: { title: "nav.trips", hint: "nav.operations" },
   shipments: { title: "nav.shipments", hint: "nav.operations" },
+  tariffs: { title: "nav.tariffs", hint: "nav.tariffsHint" },
   fleet: { title: "nav.fleet", hint: "nav.fleetGroup" },
   "vehicle-assets": { title: "nav.vehicleAssets", hint: "nav.fleetGroup" },
   drivers: { title: "nav.drivers", hint: "nav.fleetGroup" },
@@ -271,6 +273,8 @@ export function WebConsole({
                 setNav("tracking");
               }}
             />
+          ) : nav === "tariffs" ? (
+            <TariffsManager />
           ) : nav === "fleet" || nav === "trucks" || nav === "repair" ? (
             <FleetManager
               onOpenLiveTracking={(tripId) => {

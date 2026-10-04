@@ -306,3 +306,80 @@ CREATE TABLE IF NOT EXISTS system_settings (
     description TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================================
+-- Phase 1 — Tariff & Pricing Engine
+-- The company manages tariffs here; a trip price is resolved by
+-- (truck type + route + distance band + weight band + validity window).
+-- ============================================================
+
+-- 17. TARIFFS (dynamic pricing book — no hardcoded prices anywhere)
+CREATE TABLE IF NOT EXISTS tariffs (
+    id VARCHAR(64) PRIMARY KEY,
+    truck_type VARCHAR(32) NOT NULL CHECK (truck_type IN ('براد', 'سطحة', 'جاف', 'ستارة')),
+    origin_city VARCHAR(128) NOT NULL,
+    destination_city VARCHAR(128) NOT NULL,
+    min_distance_km NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    max_distance_km NUMERIC(10, 2),          -- NULL = open-ended band
+    min_weight NUMERIC(10, 3) NOT NULL DEFAULT 0,
+    max_weight NUMERIC(10, 3),               -- NULL = open-ended band
+    weight_unit VARCHAR(8) NOT NULL DEFAULT 'TON' CHECK (weight_unit IN ('TON', 'KG')),
+    price NUMERIC(14, 2) NOT NULL CHECK (price > 0),
+    currency VARCHAR(8) NOT NULL DEFAULT 'SAR',
+    status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE')),
+    valid_from DATE NOT NULL,
+    valid_to DATE,
+    notes TEXT,
+    created_by VARCHAR(64) REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tariffs_route ON tariffs(truck_type, origin_city, destination_city);
+CREATE INDEX IF NOT EXISTS idx_tariffs_status ON tariffs(status);
+
+-- 18. TARIFF CHANGE HISTORY (immutable: who / when / old price / new price / reason)
+CREATE TABLE IF NOT EXISTS tariff_change_history (
+    id VARCHAR(64) PRIMARY KEY,
+    tariff_id VARCHAR(64) NOT NULL REFERENCES tariffs(id) ON DELETE CASCADE,
+    user_id VARCHAR(64),
+    user_name VARCHAR(255) NOT NULL,
+    user_role VARCHAR(64),
+    action VARCHAR(32) NOT NULL CHECK (action IN ('CREATED', 'UPDATED', 'DEACTIVATED', 'ACTIVATED')),
+    old_price NUMERIC(14, 2),
+    new_price NUMERIC(14, 2),
+    old_values JSONB,
+    new_values JSONB,
+    reason TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tariff_history_tariff ON tariff_change_history(tariff_id, created_at DESC);
+
+-- 19. QUOTE REQUESTS (clients ask the company for a price when no tariff matches)
+CREATE TABLE IF NOT EXISTS quote_requests (
+    id VARCHAR(64) PRIMARY KEY,
+    truck_type VARCHAR(32) NOT NULL,
+    origin_city VARCHAR(128) NOT NULL,
+    destination_city VARCHAR(128) NOT NULL,
+    weight_tons NUMERIC(10, 3) NOT NULL,
+    distance_km NUMERIC(10, 2),
+    status VARCHAR(16) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'RESOLVED', 'CLOSED')),
+    requested_by_id VARCHAR(64),
+    requested_by_name VARCHAR(255),
+    customer_id VARCHAR(64) REFERENCES customers(id),
+    note TEXT,
+    resolution TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_quote_requests_status ON quote_requests(status, created_at DESC);
+
+-- Migration for deployments that already have the trips table (schema v2026.2):
+-- adds the pricing linkage columns introduced by Phase 1.
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS currency VARCHAR(8) DEFAULT 'SAR';
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS price_status VARCHAR(16);
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS tariff_id VARCHAR(64) REFERENCES tariffs(id);
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS distance_km NUMERIC(10, 2);
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS declined_driver_ids JSONB DEFAULT '[]'::jsonb;

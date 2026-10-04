@@ -60,6 +60,20 @@ export interface Trip {
   cargoWeightTons: number;
   maxCapacityTons: number;
   status: TripStatus;
+  /** Canonical backend lifecycle state (one of the 18) — drives tabs & badges. */
+  canonicalStatus?: string;
+  /** Authoritative price resolved from the tariff book (0 = not priced yet). */
+  tripPrice?: number;
+  currency?: string;
+  priceStatus?: "TARIFF" | "PENDING_QUOTE" | "UNPRICED";
+  tariffId?: string;
+  /** System-computed road distance for the corridor (km). */
+  distanceKm?: number | null;
+  /** Authoritative actor names from the database (never hardcoded). */
+  driverName?: string;
+  vehiclePlate?: string;
+  createdAtISO?: string;
+  departureTimeISO?: string;
   progressPct: number;
   speedKmH: number;
   headingDeg: number;
@@ -762,6 +776,16 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
                 vehicleHistory: bt.vehicleHistory,
                 additionalDriverId: bt.additionalDriverId,
                 additionalDriverName: bt.additionalDriverName,
+                // Phase 1/2 — canonical lifecycle + tariff pricing linkage
+                canonicalStatus: bt.status,
+                tripPrice: Number(bt.tripPrice ?? 0),
+                currency: bt.currency || "SAR",
+                priceStatus: bt.priceStatus,
+                tariffId: bt.tariffId,
+                distanceKm: bt.distanceKm ?? null,
+                driverName: bt.driverName,
+                createdAtISO: bt.createdAt,
+                departureTimeISO: bt.departureTime,
               };
             });
           });

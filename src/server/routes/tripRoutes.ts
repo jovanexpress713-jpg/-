@@ -11,6 +11,8 @@ import { validateTransition, type TripLifecycleStatus, STATUS_LABELS } from "../
 import { initTripFinancials, getTripFinancials } from "../services/financeService";
 import { logAuditEvent } from "../services/auditService";
 import { dispatchNotification } from "../services/notificationService";
+import { resolveQuote } from "../services/tariffService";
+import { computeRoadDistance } from "../services/cityRegistry";
 
 const router = Router();
 
@@ -353,7 +355,7 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     cargoWeightTons,
     maxCapacityTons,
     temperatureRequired,
-    tripPrice,
+    tariffId,
     corridorKey,
     customerId,
     vehicleId,
@@ -378,6 +380,42 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
 
   const customer = customerId ? db.customers.get(customerId) : undefined;
   const driver = driverId ? db.drivers.get(driverId) : undefined;
+
+  // ── Dynamic pricing (Phase 1 tariff engine) ─────────────────────────────
+  // The price is NEVER hardcoded. It is resolved from the company's tariff
+  // book by (truck type + route + system distance + weight). If no tariff
+  // matches, the trip is created awaiting a company quote — no invented price.
+  const distance = computeRoadDistance(originCity, destinationCity);
+  const quote = resolveQuote(Array.from(db.tariffs.values()), {
+    truckType: cargoType,
+    originCity,
+    destinationCity,
+    weightTons: Number(cargoWeightTons),
+  });
+
+  let resolvedPrice: number;
+  let resolvedTariffId: string | undefined;
+  let resolvedCurrency = "SAR";
+  let priceStatus: TripEntity["priceStatus"];
+
+  if (quote.available && quote.tariff) {
+    resolvedPrice = quote.price!;
+    resolvedTariffId = quote.tariff.id;
+    resolvedCurrency = quote.tariff.currency;
+    priceStatus = "TARIFF";
+  } else {
+    // Explicit price only accepted when it is backed by a real tariff record.
+    const explicitTariff = tariffId ? db.tariffs.get(String(tariffId)) : undefined;
+    if (explicitTariff && explicitTariff.status === "ACTIVE") {
+      resolvedPrice = explicitTariff.price;
+      resolvedTariffId = explicitTariff.id;
+      resolvedCurrency = explicitTariff.currency;
+      priceStatus = "TARIFF";
+    } else {
+      resolvedPrice = 0;
+      priceStatus = distance.resolvable ? "PENDING_QUOTE" : "UNPRICED";
+    }
+  }
 
   const newTrip: TripEntity = {
     id: tripId,
@@ -405,7 +443,11 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     currentHeading: 0,
     departureTime: new Date().toISOString(),
     estimatedArrival: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
-    tripPrice: Number(tripPrice || 4500),
+    tripPrice: resolvedPrice,
+    currency: resolvedCurrency,
+    priceStatus,
+    tariffId: resolvedTariffId,
+    distanceKm: quote.distanceKm ?? distance.distanceKm,
     createdBy: req.user?.userId || "system",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -424,7 +466,11 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     actorId: req.user?.userId,
     actorName: req.user?.fullName,
     actorRole: req.user?.role,
-    notes: `تم إنشاء الشحنة بنجاح وحجز الرقم المرجعي الموحد ${tripNumber}`,
+    notes:
+      priceStatus === "TARIFF"
+        ? `تم إنشاء الشحنة وحجز الرقم الموحد ${tripNumber} — السعر ${resolvedPrice} ${resolvedCurrency} من التعرفة المعتمدة (${resolvedTariffId})`
+        : `تم إنشاء الشحنة وحجز الرقم الموحد ${tripNumber} — لا توجد تعرفة مطابقة حاليًا والرحلة بانتظار عرض سعر من الشركة`,
+    metadata: { tripPrice: resolvedPrice, currency: resolvedCurrency, priceStatus, tariffId: resolvedTariffId, distanceKm: newTrip.distanceKm },
     timestamp: new Date().toISOString(),
   };
   db.tripEvents.push(createEvent);
@@ -444,7 +490,10 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     targetRole: "OPERATIONS_MANAGER",
     titleAr: "شحنة جديدة بانتظار الاعتماد",
     titleEn: "New Shipment Awaiting Approval",
-    messageAr: `تم إنشاء طلب نقل جديد رقم ${tripNumber} من ${originCity} إلى ${destinationCity}`,
+    messageAr:
+      priceStatus === "TARIFF"
+        ? `طلب نقل جديد ${tripNumber}: ${originCity} ← ${destinationCity} · السعر المعتمد ${resolvedPrice} ${resolvedCurrency} من التعرفة`
+        : `طلب نقل جديد ${tripNumber}: ${originCity} ← ${destinationCity} · لا توجد تعرفة مطابقة — يتطلب عرض سعر`,
     messageEn: `New trip order ${tripNumber} created from ${originCity} to ${destinationCity}`,
     type: "INFO",
     entityType: "trip",

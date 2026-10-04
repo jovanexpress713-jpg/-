@@ -17,6 +17,7 @@ import {
   IconBolt,
   IconLayers,
   IconDoc,
+  IconTag,
 } from "./Icons";
 import type { RequestKind } from "../data/types";
 
@@ -120,6 +121,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
           {row("operations", tk("nav.operationsCenter"), IconDashboard)}
           {row("trips", tk("nav.trips"), IconTruck)}
           {row("shipments", tk("nav.shipments"), IconCargo, { count: counts.cargos })}
+          {row("tariffs", tk("nav.tariffs"), IconTag)}
           {row("tracking", tk("nav.tracking"), IconTracking)}
         </div>
 

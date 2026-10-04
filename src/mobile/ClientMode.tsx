@@ -61,6 +61,12 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
   const [reqSubmitting, setReqSubmitting] = useState(false);
   const [reqMsg, setReqMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  // Phase 1 — dynamic tariff quote: the price is resolved live from the
+  // company's tariff book as the client fills the form. Never a typed number.
+  const [quote, setQuote] = useState<any | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteAskSent, setQuoteAskSent] = useState(false);
+
   useEffect(() => {
     if (notificationsSignal > 0) setActiveTab("notifications");
   }, [notificationsSignal]);
@@ -98,6 +104,58 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
       mounted = false;
     };
   }, []);
+
+  // Live tariff quote — re-resolves automatically whenever the client changes
+  // the truck type, the route or the weight (§6 dynamic price, no typed price).
+  useEffect(() => {
+    const ready =
+      reqForm.originCity.trim() &&
+      reqForm.destinationCity.trim() &&
+      reqForm.cargoType &&
+      Number(reqForm.cargoWeightTons) > 0;
+    if (!ready) {
+      setQuote(null);
+      setQuoteAskSent(false);
+      return;
+    }
+    let cancelled = false;
+    setQuoteLoading(true);
+    const timer = setTimeout(() => {
+      apiClient.tariffs
+        .getQuote({
+          truckType: reqForm.cargoType,
+          origin: reqForm.originCity,
+          destination: reqForm.destinationCity,
+          weightTons: String(Number(reqForm.cargoWeightTons)),
+        })
+        .then((q) => {
+          if (!cancelled) {
+            setQuote(q);
+            setQuoteAskSent(false);
+          }
+        })
+        .catch(() => !cancelled && setQuote(null))
+        .finally(() => !cancelled && setQuoteLoading(false));
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [reqForm.originCity, reqForm.destinationCity, reqForm.cargoType, reqForm.cargoWeightTons]);
+
+  const submitQuoteAsk = async () => {
+    try {
+      await apiClient.tariffs.submitQuoteRequest({
+        truckType: reqForm.cargoType,
+        originCity: reqForm.originCity,
+        destinationCity: reqForm.destinationCity,
+        weightTons: Number(reqForm.cargoWeightTons),
+      });
+      setQuoteAskSent(true);
+    } catch {
+      setQuoteAskSent(false);
+    }
+  };
 
   const activeTrip = selectedTrip || clientTrips[0] || null;
 
@@ -162,6 +220,8 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
         ...reqForm,
         cargoWeightTons: Number(reqForm.cargoWeightTons),
         customerId: user?.customerId,
+        tariffId: quote?.tariff?.id,
+        distanceKm: quote?.distanceKm,
       });
       setReqMsg({
         ok: true,
@@ -386,6 +446,78 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
               </select>
             </div>
 
+            {/* Live tariff quote — the price comes from the company's tariff
+                book, never typed by the client (§5–§7). */}
+            {quoteLoading && (
+              <div className="rounded-[12px] border border-border-subtle bg-surface-2 p-3 text-[11px] text-text-muted">
+                {t("Resolving the matching tariff…", "جارٍ مطابقة التعرفة المناسبة…")}
+              </div>
+            )}
+
+            {!quoteLoading && quote?.available && (
+              <div className="rounded-[12px] border border-status-active/40 bg-status-active/10 p-3 space-y-1 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10.5px] font-semibold text-text-muted uppercase">
+                    {t("Matched tariff price", "السعر المطابق من التعرفة")}
+                  </span>
+                  <IconCheck size={14} className="text-status-active" />
+                </div>
+                <div className="text-[18px] font-extrabold text-status-active tabular-nums">
+                  {Number(quote.price).toLocaleString()} {quote.currency || "SAR"}
+                </div>
+                <div className="text-[10.5px] text-text-secondary tabular-nums">
+                  {t("Route distance", "مسافة المسار")}: {quote.distanceKm} {t("km", "كم")} ·{" "}
+                  {quote.matchedWeightTons} {t("tons", "طن")} · {reqForm.cargoType}
+                </div>
+              </div>
+            )}
+
+            {!quoteLoading && quote && !quote.available && quote.distanceResolvable && (
+              <div className="rounded-[12px] border border-status-waiting/40 bg-status-waiting/10 p-3 space-y-2 animate-fade-in">
+                <div className="text-[11.5px] font-bold text-status-waiting">
+                  {t("No tariff is available for this trip right now.", "لا توجد تعرفة متاحة لهذه الرحلة حاليًا.")}
+                </div>
+                <div className="text-[10.5px] text-text-secondary tabular-nums">
+                  {t("Route distance", "مسافة المسار")}: {quote.distanceKm} {t("km", "كم")}
+                </div>
+                {quoteAskSent ? (
+                  <div className="text-[11px] font-semibold text-status-active">
+                    ✓ {t("Quote request sent to the control room.", "تم إرسال طلب عرض السعر إلى غرفة التحكم.")}
+                  </div>
+                ) : (
+                  <button
+                    onClick={submitQuoteAsk}
+                    className="w-full h-9 rounded-[10px] bg-status-waiting/20 border border-status-waiting/50 text-status-waiting text-[11px] font-bold hover:bg-status-waiting hover:text-navy transition-all"
+                  >
+                    {t("Request a price quote", "طلب عرض سعر")}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!quoteLoading && quote && !quote.available && !quote.distanceResolvable && (
+              <div className="rounded-[12px] border border-status-waiting/40 bg-status-waiting/10 p-3 space-y-2 animate-fade-in">
+                <div className="text-[11.5px] font-bold text-status-waiting">
+                  {t("No tariff is available for this trip right now.", "لا توجد تعرفة متاحة لهذه الرحلة حاليًا.")}
+                </div>
+                <div className="text-[10.5px] text-text-secondary">
+                  {quote.distanceReasonAr || t("The route distance could not be resolved.", "تعذّر تحديد مسافة المسار.")}
+                </div>
+                {quoteAskSent ? (
+                  <div className="text-[11px] font-semibold text-status-active">
+                    ✓ {t("Quote request sent to the control room.", "تم إرسال طلب عرض السعر إلى غرفة التحكم.")}
+                  </div>
+                ) : (
+                  <button
+                    onClick={submitQuoteAsk}
+                    className="w-full h-9 rounded-[10px] bg-status-waiting/20 border border-status-waiting/50 text-status-waiting text-[11px] font-bold hover:bg-status-waiting hover:text-navy transition-all"
+                  >
+                    {t("Request a price quote", "طلب عرض سعر")}
+                  </button>
+                )}
+              </div>
+            )}
+
             <button
               onClick={submitTripRequest}
               disabled={reqSubmitting}
@@ -431,6 +563,28 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                 {tr.cargoDescription && (
                   <div className="text-[11px] text-text-muted mt-0.5 truncate">{tr.cargoDescription}</div>
                 )}
+
+                {/* Real trip metrics from the database — incl. the tariff price (§5). */}
+                <div className="mt-2 grid grid-cols-3 gap-2 rounded-[10px] bg-surface-2/70 border border-white/5 p-2 text-center text-[10px] tabular-nums">
+                  <div>
+                    <div className="text-text-muted">{t("Distance", "المسافة")}</div>
+                    <div className="font-bold text-white">{tr.distanceKm ? `${tr.distanceKm} ${t("km", "كم")}` : "—"}</div>
+                  </div>
+                  <div>
+                    <div className="text-text-muted">{t("Weight", "الوزن")}</div>
+                    <div className="font-bold text-white">{tr.cargoWeightTons ? `${tr.cargoWeightTons} ${t("t", "طن")}` : "—"}</div>
+                  </div>
+                  <div>
+                    <div className="text-text-muted">{t("Price", "السعر")}</div>
+                    <div className={cn("font-bold", tr.tripPrice > 0 ? "text-status-active" : "text-status-waiting")}>
+                      {tr.tripPrice > 0
+                        ? `${Number(tr.tripPrice).toLocaleString()} ${tr.currency || "SAR"}`
+                        : tr.priceStatus === "PENDING_QUOTE"
+                          ? t("Awaiting quote", "بانتظار عرض سعر")
+                          : "—"}
+                    </div>
+                  </div>
+                </div>
 
                 <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
                   <span className="text-text-secondary">
