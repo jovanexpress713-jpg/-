@@ -195,7 +195,7 @@ export function DetailsPanel({
             </div>
           </div>
           {onClose && (
-            <button onClick={onClose} className="btn-icon xl:hidden" aria-label="Close">
+            <button onClick={onClose} className="btn-icon xl:hidden" aria-label={t("Close", "إغلاق")}>
               <IconClose size={16} />
             </button>
           )}
@@ -283,14 +283,14 @@ export function DetailsPanel({
               <button
                 onClick={() => toast(t("Connecting call…", "جارٍ الاتصال…"), v.driver.name)}
                 className="btn-icon"
-                aria-label="Call driver"
+                aria-label={t("Call driver", "اتصل بالسائق")}
               >
                 <IconPhone size={16} />
               </button>
               <button
                 onClick={() => setTab("comments")}
                 className="btn-icon"
-                aria-label="Message driver"
+                aria-label={t("Message driver", "راسل السائق")}
               >
                 <IconMessage size={16} />
               </button>

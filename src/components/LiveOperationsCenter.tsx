@@ -31,7 +31,7 @@ export function LiveOperationsCenter({
   onOpenTripDetails,
   onOpenShipmentDetails,
 }: LiveOperationsCenterProps) {
-  const { t } = useSettings();
+  const { t, td } = useSettings();
   const {
     trips,
     trucks,
@@ -517,7 +517,7 @@ export function LiveOperationsCenter({
               <button
                 onClick={() => setShowFloatingPanel(false)}
                 className="btn-icon-sm"
-                aria-label="Close"
+                aria-label={t("Close", "إغلاق")}
               >
                 <IconClose size={14} />
               </button>
@@ -668,7 +668,7 @@ export function LiveOperationsCenter({
                 </div>
 
                 <div className="text-[11px] font-medium text-text-secondary truncate mt-1">
-                  {tr.originCity} → {tr.destinationCity}
+                  {td(tr.originCity)} → {td(tr.destinationCity)}
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] text-text-muted mt-2 border-t border-white/5 pt-1 tabular-nums">

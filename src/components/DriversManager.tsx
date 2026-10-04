@@ -34,7 +34,7 @@ interface EnrichedDriver {
 }
 
 export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps) {
-  const { t } = useSettings();
+  const { t, td } = useSettings();
   const toast = useToast();
   const { drivers, trucks, trips, selectTrip, selectTruck } = useFleetStore();
 
@@ -345,7 +345,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                           <span className="font-mono text-brand font-semibold">{activeTr.tripNumber}</span>
                         </div>
                         <div className="mt-1 text-[11px] text-text-secondary truncate">
-                          {activeTr.originCity} → {activeTr.destinationCity}
+                          {td(activeTr.originCity)} → {td(activeTr.destinationCity)}
                         </div>
                       </div>
                     )}
@@ -499,7 +499,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                 </div>
                 <div className="mt-2 space-y-1.5 text-[11.5px]">
                   <div className="text-text-secondary">
-                    {currentTrip.originCity} → {currentTrip.destinationCity}
+                    {td(currentTrip.originCity)} → {td(currentTrip.destinationCity)}
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-text-muted tabular-nums">
                     <span>{t("Progress", "الإنجاز")}: {currentTrip.progressPct}%</span>

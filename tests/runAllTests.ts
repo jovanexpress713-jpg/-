@@ -12,6 +12,9 @@ import { runRuntimeUiTests } from "./runtimeUi.test";
 import { runResponsiveAudit } from "./responsiveAudit.test";
 import { runBrandingTests } from "./branding.test";
 import { runNovaDesignTests } from "./novaDesign.test";
+import { runI18nTests } from "./i18n.test";
+import { runRoleRoutingTests } from "./roles.test";
+import { runLanguageSwitchTests } from "./languageSwitch.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -33,9 +36,12 @@ async function runAll() {
     runResponsiveAudit();
     runBrandingTests();
     await runNovaDesignTests();
+    await runI18nTests();
+    await runRoleRoutingTests();
+    await runLanguageSwitchTests();
 
     console.log("============================================================");
-    console.log("  ✅ ALL 14 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 17 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {

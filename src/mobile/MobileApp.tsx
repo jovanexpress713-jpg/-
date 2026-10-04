@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
+import { LANGUAGE_OPTIONS } from "../localization/i18n";
+import { LanguageList } from "../components/AccountMenu";
 import { LoginScreen } from "./LoginScreen";
 import { RegistrationScreen, RegistrationStatusScreen } from "./RegistrationFlow";
 import { ClientMode } from "./ClientMode";
@@ -39,7 +41,8 @@ export function MobileApp({
   onStaffLogin?: (user: any) => void;
   bypassAuthUser?: any;
 } = {}) {
-  const { t, lang, setLang, theme, setTheme } = useSettings();
+  const { t, tk, lang, theme, setTheme } = useSettings();
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
 
@@ -193,7 +196,7 @@ export function MobileApp({
                   )}
                 >
                   <IconTruck size={10} />
-                  <span>سائق</span>
+                  <span>{t("Driver", "سائق")}</span>
                 </button>
                 <button
                   type="button"
@@ -209,7 +212,7 @@ export function MobileApp({
                   )}
                 >
                   <IconProfile size={10} />
-                  <span>عميل</span>
+                  <span>{t("Client", "عميل")}</span>
                 </button>
                 <button
                   type="button"
@@ -221,7 +224,7 @@ export function MobileApp({
                       : "text-white/70 hover:text-white"
                   )}
                 >
-                  <span>الدخول</span>
+                  <span>{t("Sign in", "الدخول")}</span>
                 </button>
               </div>
             )}
@@ -229,18 +232,27 @@ export function MobileApp({
 
           {/* Quick Utility Actions: Language, Theme */}
           <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => {
-                if (lang === "ar") setLang("en");
-                else if (lang === "en") setLang("ur");
-                else setLang("ar");
-              }}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-white/10 hover:bg-white/20 text-[10px] font-bold transition-colors"
-              title="تغيير اللغة · Language · زبان"
-            >
-              <IconGlobe size={11} />
-              <span>{lang === "ar" ? "عربي" : lang === "ur" ? "اردو" : "EN"}</span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setLangMenuOpen((v) => !v)}
+                className="flex items-center gap-1 rounded-[6px] bg-white/10 px-2 py-0.5 text-[10px] font-bold transition-colors hover:bg-white/20"
+                title={tk("language.choose")}
+                aria-haspopup="listbox"
+                aria-expanded={langMenuOpen}
+              >
+                <IconGlobe size={11} />
+                <span>{LANGUAGE_OPTIONS.find((o) => o.code === lang)?.flag}</span>
+                <span>{tk(LANGUAGE_OPTIONS.find((o) => o.code === lang)?.labelKey ?? "language.ar")}</span>
+              </button>
+              {langMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setLangMenuOpen(false)} />
+                  <div className="menu-pop absolute end-0 z-20 mt-1.5 w-[190px] p-1.5 text-text-primary">
+                    <LanguageList compact onSelect={() => setLangMenuOpen(false)} />
+                  </div>
+                </>
+              )}
+            </div>
 
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

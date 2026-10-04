@@ -134,9 +134,13 @@ function runStylesheetTests() {
     "white on --color-orange-deep must clear AA",
   );
 
-  /* A7. Spec §7 — IBM Plex Sans Arabic for prose, IBM Plex Mono for figures. */
-  assert.match(css, /--font-sans: "IBM Plex Sans Arabic"/);
-  assert.match(css, /--font-mono: "IBM Plex Mono"/);
+  /* A7. Product mandate — «مراعي» (Almarai) is the single typeface of the whole
+         product (headings, buttons, menus, tables, forms, dialogs, assistant).
+         IBM Plex stays installed underneath as the metrics-compatible fallback. */
+  assert.match(css, /--font-sans: "Almarai", "IBM Plex Sans Arabic"/);
+  assert.match(css, /--font-mono: "Almarai", "IBM Plex Sans Arabic"/);
+  const htmlFonts = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  assert.match(htmlFonts, /Almarai/, "the Marai webfont must actually be loaded");
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   assert.match(html, /IBM\+Plex\+Sans\+Arabic/, "the webfont must actually be loaded");
   assert.match(html, /IBM\+Plex\+Mono/, "the mono webfont must actually be loaded");
@@ -551,9 +555,11 @@ export async function runNovaDesignTests() {
       'no hard-coded onSelect("analysis") may remain',
     );
 
-    /* F3. The branding entry the branding suite pins must survive the rewrite. */
+    /* F3. The branding entry the branding suite pins must survive the rewrite.
+           Its label resolves through the central dictionary (nav.identity), which
+           is what keeps the three languages in step — no hard-coded English. */
     assert.match(source, /"branding"/);
-    assert.match(source, /Settings & Identity/);
+    assert.match(source, /nav\.identity/);
 
     /* F4. Live mount: grouping, the active treatment, and count badges. */
     const view = await mount(

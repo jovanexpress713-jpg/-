@@ -1,409 +1,546 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { useFleetStore } from "../state/fleetStore";
+import { usePreferences } from "../state/preferencesStore";
+import type { SessionUser } from "../utils/permissions";
+import type { I18nKey } from "../localization/i18n";
 import {
+  actionsFor,
+  answerQuestion,
+  buildAssistantContext,
+  OWNER_LABEL_KEY,
+  suggestionsFor,
+  topIssues,
+  tripStatusKey,
+  type AssistantAnswer,
+  type DetectedIssue,
+} from "../services/assistantEngine";
+import { toRoutedAlert } from "../services/smartAlerts";
+import { useToast } from "./Toast";
+import {
+  IconAlertCircle,
+  IconArrowRight,
   IconBolt,
   IconCheck,
   IconClose,
   IconSearch,
   IconTruck,
-  IconArrowRight,
 } from "./Icons";
+
+/**
+ * مساعد إيجاز الذكي (§16–§23)
+ *
+ * A real assistant wired to the running system, not a decorative chatbot:
+ *   • context strip — who you are, your role, the page you are on, the trip you
+ *     have open and how many alerts are routed to you;
+ *   • automatic incident detection with the six fields the brief requires:
+ *     problem, probable cause, impact, owner, suggested action, next step;
+ *   • page/role-aware suggestion chips;
+ *   • free-text Q&A in Arabic, English and Urdu, answered from live data and
+ *     bounded by your permissions;
+ *   • actions (escalate / acknowledge / open trip / file a report) that go
+ *     through the store — so they land in the audit log — and force a
+ *     confirmation when they are sensitive.
+ */
 
 interface AIAssistantProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Signed-in user; drives the permission scope of every answer. */
+  user?: SessionUser | null;
+  /** Current console section (or "mobile"). */
+  page?: string;
+  /** Console persona being previewed: admin | driver | shipper | owner. */
+  persona?: string;
   onSelectTrip?: (tripId: string) => void;
 }
 
-export function AIAssistant({ isOpen, onClose, onSelectTrip }: AIAssistantProps) {
-  const { t } = useSettings();
+export function AIAssistant({
+  isOpen,
+  onClose,
+  user = null,
+  page = "overview",
+  persona = "admin",
+  onSelectTrip,
+}: AIAssistantProps) {
+  const { t, tk, td } = useSettings();
+  const toast = useToast();
+  const { prefs } = usePreferences();
   const {
     trips,
     trucks,
-    setSearchQuery,
+    drivers,
+    alerts,
+    selectedTripId,
+    escalateAlert,
+    resolveAlert,
+    recordAuditLog,
     selectTrip,
   } = useFleetStore();
 
-  const [query, setQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"recommendations" | "ask" | "fleet_analysis">("recommendations");
-  const [customResponse, setCustomResponse] = useState<string | null>(null);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState<AssistantAnswer | null>(null);
   const [isThinking, setIsThinking] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
 
-  // Compute live metrics for AI insights
-  const avgUtilization = (
-    trips.reduce((acc, tr) => acc + (tr.cargoWeightTons / tr.maxCapacityTons) * 100, 0) /
-    (trips.length || 1)
-  ).toFixed(1);
+  const ctx = useMemo(
+    () =>
+      buildAssistantContext({
+        user,
+        persona,
+        page,
+        trips: trips.map((trip) => ({
+          id: trip.id,
+          tripNumber: trip.tripNumber,
+          status: trip.status,
+          driverId: trip.driverId,
+          truckId: trip.truckId,
+          progressPct: trip.progressPct,
+          distanceRemainingKm: trip.distanceRemainingKm,
+          speedKmH: trip.speedKmH,
+          etaMinutes: trip.etaMinutes,
+          isDelayed: trip.isDelayed,
+          reeferTempC: trip.reeferTempC,
+          targetTempC: trip.targetTempC,
+          originCity: trip.originCity,
+          destinationCity: trip.destinationCity,
+          shipper: trip.shipper,
+          consignee: trip.consignee,
+          cargoWeightTons: trip.cargoWeightTons,
+          maxCapacityTons: trip.maxCapacityTons,
+          minutesSinceStatusUpdate: trip.lastStatusAt
+            ? Math.max(0, Math.round((Date.now() - trip.lastStatusAt) / 60_000))
+            : undefined,
+          minutesSinceGpsFix: trip.lastGpsAt
+            ? Math.max(0, Math.round((Date.now() - trip.lastGpsAt) / 60_000))
+            : undefined,
+        })),
+        trucks: trucks.map((truck) => ({
+          id: truck.id,
+          plate: truck.plate,
+          body: String(truck.body),
+          status: truck.status,
+          driverName: truck.driver?.name,
+        })),
+        drivers: drivers.map((driver) => ({
+          id: driver.id ?? driver.phone.replace(/\D/g, ""),
+          name: driver.name,
+          phone: driver.phone,
+          rating: driver.rating,
+          trips: driver.trips,
+        })),
+        alerts: alerts.map(toRoutedAlert),
+        selectedTripId,
+        expiringDocuments: [],
+      }),
+    [user, persona, page, trips, trucks, drivers, alerts, selectedTripId],
+  );
 
-  // Quick suggestions prompt chips
-  const PROMPTS = [
-    { ar: "أين الشاحنات المتجهة إلى جدة؟", en: "Where are the trucks heading to Jeddah?" },
-    { ar: "أظهر الشاحنات الشاغرة في الرياض", en: "Show idle trucks in Riyadh" },
-    { ar: "ما هي الرحلات المعرضة للتأخير؟", en: "Which trips are at risk of delay?" },
-    { ar: "فحص شحنات التبريد والمواد الغذائية", en: "Audit cold chain & reefer shipments" },
-  ];
+  const issues = useMemo(() => topIssues(ctx), [ctx]);
+  const suggestions = useMemo(
+    () => (prefs.assistantSuggestions ? suggestionsFor(ctx) : []),
+    [ctx, prefs.assistantSuggestions],
+  );
 
-  const handleAsk = (userQuery: string) => {
-    if (!userQuery.trim()) return;
-    setIsThinking(true);
-    setCustomResponse(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
 
-    // Parse natural language intent
-    setTimeout(() => {
-      setIsThinking(false);
-      const lower = userQuery.toLowerCase();
-
-      if (lower.includes("جدة") || lower.includes("jeddah")) {
-        const matching = trips.filter((tr) => tr.destinationCity.includes("جدة") || tr.originCity.includes("جدة"));
-        setSearchQuery("جدة");
-        setCustomResponse(
-          t(
-            `Found ${matching.length} active consignments on the Jeddah corridor. Actros EZ-10482 is currently at km 417 cruising at 87 km/h, estimated arrival in 3.5 hours.`,
-            `تم العثور على ${matching.length} شحنات نشطة على ممر جدة. الشاحنة أكتروس EZ-10482 حالياً عند الكيلو ٤١٧ بسرعة ٨٧ كم/س، وستصل خلال ٣ ساعات ونصف.`
-          )
-        );
-      } else if (lower.includes("شاغر") || lower.includes("رياض") || lower.includes("idle") || lower.includes("riyadh")) {
-        setSearchQuery("الرياض");
-        setCustomResponse(
-          t(
-            `3 heavy units are idle in Riyadh Mega Yard: Volvo FM 460 (Plate RYD 7714) and DAF XF 480. Recommended: Assign Volvo FM 460 to the pending Buraydah distribution order to boost utilization by 12%.`,
-            `توجد ٣ شاحنات شاغرة في ساحة الرياض المركزية: فولفو FM 460 (لوحة ر ي د ٧٧١٤) وداف XF. التوصية: تكليف فولفو بشحنة بريدة المعلقة لرفع نسبة استغلال الأسطول بمعدل ١٢٪.`
-          )
-        );
-      } else if (lower.includes("تأخير") || lower.includes("delay")) {
-        setSearchQuery("EZ-10482");
-        setCustomResponse(
-          t(
-            `Trip EZ-10482 experienced a 15-minute speed drop near Al Quwayiyah due to highway maintenance. Dynamic ETA has adjusted to 11:45 AM. Consignee has been automatically notified.`,
-            `الرحلة EZ-10482 تعرضت لتباطؤ مؤقت لمدة ١٥ دقيقة قرب القويعية بسبب أعمال صيانة بالطريق السريع. تم تحديث موعد الوصول التلقائي إلى ١١:٤٥ ص وإرسال إشعار للمستلم.`
-          )
-        );
-      } else if (lower.includes("تبريد") || lower.includes("reefer") || lower.includes("حرارة")) {
-        setSearchQuery("reefer");
-        setCustomResponse(
-          t(
-            `Refrigerated trips audited: SADAFCO cold consignment EZ-10483 maintains -18.5°C (Target -18.0°C). Sensor logs 100% compliant with Saudi SFDA standards.`,
-            `تم فحص شحنات التبريد: شحنة سدافكو EZ-10483 تسجل حرارة -18.5°C (المستهدف -18.0°C). جميع قراءات الحساسات مطابقة لاشتراطات هيئة الغذاء والدواء السعودية.`
-          )
-        );
-      } else {
-        setCustomResponse(
-          t(
-            `AI analyzed the fleet of 14 trucks and 7 live trips. Fleet health index: 94/100. On-time delivery forecast: 96.2%. No critical telemetry alerts recorded in the past hour.`,
-            `قام الذكاء الاصطناعي بتحليل الأسطول المكون من ١٤ شاحنة و٧ رحلات حية. مؤشر الكفاءة التشغيلية: ٩٤٪، والالتزام المتوقع بالمواعيد ٩٦.٢٪ دون تسجيل أي انحرافات حرجة.`
-          )
-        );
-      }
-    }, 700);
-  };
+  useEffect(() => {
+    if (isOpen) setAnswer(null);
+  }, [isOpen, page]);
 
   if (!isOpen) return null;
 
+  const handleAsk = (text: string) => {
+    const value = text.trim();
+    if (!value) return;
+    setQuestion(value);
+    setIsThinking(true);
+    setAnswer(null);
+    /* A short beat so the operator can see the context update — no fake delay. */
+    window.setTimeout(() => {
+      setAnswer(answerQuestion(value, ctx, (key: I18nKey) => tk(key)));
+      setIsThinking(false);
+    }, 260);
+  };
+
+  const runAction = (issue: DetectedIssue | undefined, actionId: string) => {
+    if (actionId === "escalate") {
+      const target = alerts.find(
+        (a) =>
+          !a.resolved &&
+          ((issue?.tripId && a.tripId === issue.tripId) || (!issue?.tripId && true)),
+      );
+      if (target) {
+        escalateAlert(target.id, user?.fullName || tk("assistant.title"));
+        toast(tk("alerts.escalateToast"), tk("assistant.acted"));
+        return;
+      }
+      recordAuditLog(
+        t("The EJAZ assistant escalated an alert", "قام مساعد إيجاز بتصعيد التنبيه"),
+        "Assistant escalated an alert",
+      );
+      toast(tk("assistant.acted"), tk("alerts.escalate"));
+      return;
+    }
+    if (actionId === "acknowledge") {
+      const target = alerts.find((a) => !a.resolved);
+      if (target) {
+        resolveAlert(target.id);
+        toast(tk("alerts.ackToast"), tk("assistant.acted"));
+      }
+      return;
+    }
+    if (actionId === "openTrip" && issue?.tripId) {
+      selectTrip(issue.tripId);
+      onSelectTrip?.(issue.tripId);
+      onClose();
+    }
+  };
+
+  const severityChip = (severity: string) => {
+    const key: I18nKey =
+      severity === "CRITICAL"
+        ? "severity.critical"
+        : severity === "HIGH"
+          ? "severity.high"
+          : severity === "MEDIUM"
+            ? "severity.medium"
+            : severity === "LOW"
+              ? "severity.low"
+              : "severity.info";
+    const tone =
+      severity === "CRITICAL"
+        ? "bg-status-danger/15 text-status-danger"
+        : severity === "HIGH"
+          ? "bg-status-waiting/15 text-status-waiting"
+          : "bg-surface-4 text-text-muted";
+    return <span className={cn("pill", tone)}>{tk(key)}</span>;
+  };
+
   return (
     <div
-      className="animate-fade-in fixed inset-0 z-[85] grid place-items-center bg-black/75 p-4 backdrop-blur-md"
+      className="animate-fade-in fixed inset-0 z-[85] grid place-items-center bg-black/75 p-3 backdrop-blur-md sm:p-5"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={tk("assistant.title")}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="animate-fade-up scroll-thin relative max-h-[92vh] w-full max-w-[720px] overflow-y-auto rounded-[20px] bg-surface-2 p-6 shadow-2xl border border-border-subtle"
-        style={{
-          boxShadow: "0 30px 90px -20px color-mix(in oklab, var(--color-brand) 30%, transparent)",
-        }}
+        className="animate-fade-up flex max-h-[92vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[20px] border border-border-subtle bg-surface-1 shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-border-subtle pb-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-[14px] bg-brand text-on-brand shadow-lg">
-              <IconBolt size={24} />
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border-subtle p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-brand text-on-brand">
+              <IconBolt size={20} />
             </span>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="text-[20px] font-bold text-text-primary">
-                  {t("EJAZ AI Logistics Assistant", "مساعد إيجاز الذكي للوجستيات")}
+                <h3 className="truncate text-[var(--type-page-title)] font-extrabold text-text-primary">
+                  {tk("assistant.title")}
                 </h3>
-                <span className="badge bg-status-active/20 text-status-active text-[10px]">
-                  {t("Online · Live", "متصل · مباشر")}
+                <span className="pill pill-success hidden sm:inline-flex">
+                  <span className="h-1.5 w-1.5 rounded-full bg-status-active" />
+                  {tk("common.online")}
                 </span>
               </div>
-              <p className="mt-0.5 text-[11.5px] text-text-muted">
-                {t(
-                  "Predictive operations, smart dispatching, and dynamic fleet analytics",
-                  "تحليلات تنبؤية للأسطول، توزيع الرحلات الذكي، وإدارة المخاطر التشغيلية"
-                )}
-              </p>
+              <p className="truncate text-[11px] text-text-muted">{tk("assistant.subtitle")}</p>
             </div>
           </div>
-          <button onClick={onClose} className="btn-icon" aria-label="Close">
-            <IconClose size={17} />
+          <button onClick={onClose} className="btn-icon shrink-0" aria-label={tk("common.close")}>
+            <IconClose size={16} />
           </button>
         </div>
 
-        {/* Tab selection */}
-        <div className="mt-4 flex items-center gap-1 rounded-full bg-surface-3 p-1">
-          {[
-            { id: "recommendations", label: t("Smart Recommendations", "توصيات التشغيل الحية") },
-            { id: "ask", label: t("Natural Language Query", "الاستعلام الذكي") },
-            { id: "fleet_analysis", label: t("Predictive Fleet Health", "التحليل التنبؤي") },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={cn(
-                "flex-1 rounded-full py-2 text-[12px] font-medium transition-all active:scale-95 text-center",
-                activeTab === tab.id
-                  ? "bg-brand text-on-brand font-bold shadow-md"
-                  : "text-text-secondary hover:text-text-primary"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* TAB 1: Smart Operational Recommendations */}
-        {activeTab === "recommendations" && (
-          <div className="mt-5 space-y-3.5">
-            {/* Recommendation 1: Dispatch Idle Truck */}
-            <div className="rounded-[14px] bg-surface-3 p-4 border border-border-subtle hover:border-brand/40 transition-colors">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-status-waiting/20 text-status-waiting">
-                    <IconTruck size={20} />
-                  </span>
-                  <div>
-                    <span className="text-[10.5px] font-bold text-status-waiting uppercase tracking-wider">
-                      {t("Fleet Utilization Optimization", "فرصة رفع استغلال الأسطول")}
-                    </span>
-                    <h4 className="text-[14px] font-semibold text-text-primary mt-0.5">
-                      {t(
-                        `3 idle trucks in Riyadh. Assign Volvo FM 460 to pending Buraydah route.`,
-                        `توجد ٣ شاحنات متوقفة بالرياض. يوصى بتكليف شاحنة فولفو FM 460 بشحنة بريدة.`
-                      )}
-                    </h4>
-                    <p className="text-[11.5px] text-text-muted mt-1 leading-relaxed">
-                      {t(
-                        "Payload demand: 18 tons general cargo. Expected revenue impact: +SAR 4,200. Empty running reduced by 85 km.",
-                        "حمولة بضائع عامة مطلوبة: ١٨ طناً. العائد التقديري الإضافي: ٤,٢٠٠ ر.س. تقليل حركة الشاحنة الفارغة بمقدار ٨٥ كم."
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3.5 flex items-center justify-end gap-2 border-t border-border-subtle/60 pt-3">
-                <button
-                  onClick={() => {
-                    setSearchQuery("v6");
-                    onClose();
-                  }}
-                  className="btn-ghost text-[11.5px] py-1.5 px-3"
-                >
-                  {t("Inspect Truck", "فحص الشاحنة")}
-                </button>
-                <button
-                  onClick={() => {
-                    const newTrip = trips[0];
-                    if (newTrip && onSelectTrip) onSelectTrip(newTrip.id);
-                    onClose();
-                  }}
-                  className="btn-primary text-[11.5px] py-1.5 px-4"
-                >
-                  <IconCheck size={14} />
-                  {t("Execute Dispatch", "اعتماد التكليف فوراً")}
-                </button>
-              </div>
-            </div>
-
-            {/* Recommendation 2: Delay Risk Mitigation */}
-            <div className="rounded-[14px] bg-surface-3 p-4 border border-border-subtle hover:border-brand/40 transition-colors">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand/20 text-brand">
-                    <IconBolt size={20} />
-                  </span>
-                  <div>
-                    <span className="text-[10.5px] font-bold text-brand uppercase tracking-wider">
-                      {t("Dynamic ETA & Delay Mitigation", "تنبؤ وتفادي تأخير الوصول")}
-                    </span>
-                    <h4 className="text-[14px] font-semibold text-text-primary mt-0.5">
-                      {t(
-                        "Trip EZ-10482 on Highway 40 has 22 min buffer. Maintain 88 km/h.",
-                        "الرحلة EZ-10482 على طريق ٤٠ تملك فائض ٢٢ دقيقة. حافظ على سرعة ٨٨ كم/س."
-                      )}
-                    </h4>
-                    <p className="text-[11.5px] text-text-muted mt-1 leading-relaxed">
-                      {t(
-                        "Driver Fahad Al-Qahtani was alerted about temporary bottleneck near Bahrah. Rerouting via Highway 40 bypass saves 14 minutes.",
-                        "تم إشعار السائق فهد القحطاني عن نقطة ازدحام عابرة قرب بحرة. الالتفاف عبر طريق الدائري يوفر ١٤ دقيقة."
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3.5 flex items-center justify-end gap-2 border-t border-border-subtle/60 pt-3">
-                <button
-                  onClick={() => {
-                    selectTrip("trip-1");
-                    if (onSelectTrip) onSelectTrip("trip-1");
-                    onClose();
-                  }}
-                  className="btn-primary text-[11.5px] py-1.5 px-4"
-                >
-                  {t("View Trip on Live Map", "عرض الرحلة على الخريطة")}
-                  <IconArrowRight size={14} />
-                </button>
-              </div>
-            </div>
-
-            {/* Recommendation 3: Cold Chain Safety Audit */}
-            <div className="rounded-[14px] bg-surface-3 p-4 border border-border-subtle">
-              <div className="flex gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-status-active/20 text-status-active">
-                  <IconCheck size={20} />
-                </span>
-                <div>
-                  <span className="text-[10.5px] font-bold text-status-active uppercase tracking-wider">
-                    {t("Cold Chain Certification", "سلامة سلسلة التبريد")}
-                  </span>
-                  <h4 className="text-[14px] font-semibold text-text-primary mt-0.5">
-                    {t(
-                      "Reefer Actros EZ-10483 temperature stabilized at -18.5°C.",
-                      "حرارة شاحنة المبرّد EZ-10483 مستقرة تماماً عند -18.5°C."
-                    )}
-                  </h4>
-                  <p className="text-[11.5px] text-text-muted mt-1 leading-relaxed">
-                    {t(
-                      "Continuous telemetry streaming verified. Electronic delivery certificate ready for consignee digital signature upon arrival in Riyadh.",
-                      "تم التحقق من استمرار تدفق بيانات الحساسات. شهادة التسليم الإلكترونية جاهزة لتوقيع العميل فور الوصول للرياض."
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
+        <div className="scroll-thin min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+          {/* Context strip */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <ContextCell label={tk("assistant.contextUser")} value={user?.fullName ?? "—"} />
+            <ContextCell label={tk("assistant.contextRole")} value={user?.role ?? persona} />
+            <ContextCell label={tk("assistant.contextPage")} value={tk(`nav.${pageKeyOf(page)}` as I18nKey)} />
+            <ContextCell
+              label={tk("assistant.contextAlerts")}
+              value={String(ctx.alerts.filter((a) => !a.resolved).length)}
+              tone="danger"
+            />
           </div>
-        )}
 
-        {/* TAB 2: Natural Language Smart Search & Query */}
-        {activeTab === "ask" && (
-          <div className="mt-5 space-y-4">
-            <div className="flex items-center gap-2 rounded-xl bg-surface-3 p-2 border border-border-subtle focus-within:border-brand">
-              <IconSearch size={18} className="text-text-muted ps-2" />
+          {/* Scope + hint */}
+          <div className="rounded-[12px] border border-border-subtle bg-surface-2 p-3">
+            <div className="flex items-center gap-2 text-[11.5px] font-semibold text-text-secondary">
+              <IconTruck size={14} className="text-brand" />
+              {tk("assistant.scope")}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <ScopeChip on={ctx.capabilities.viewTrips} label={tk("nav.trips")} />
+              <ScopeChip on={ctx.capabilities.viewFleet} label={tk("nav.fleet")} />
+              <ScopeChip on={ctx.capabilities.viewDrivers} label={tk("nav.drivers")} />
+              <ScopeChip on={ctx.capabilities.viewReports} label={tk("nav.reports")} />
+              <ScopeChip on={ctx.capabilities.viewFinance} label={tk("nav.finance")} />
+              <ScopeChip on={ctx.capabilities.act} label={tk("assistant.actEscalate")} />
+            </div>
+            <p className="mt-2 text-[10.5px] text-text-muted">
+              {ctx.scope === "driver"
+                ? tk("assistant.hintDriver")
+                : ctx.scope === "client"
+                  ? tk("assistant.hintClient")
+                  : tk("assistant.hintAdmin")}
+            </p>
+          </div>
+
+          {/* Detected issues */}
+          <section>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h4 className="text-[var(--type-card-title)] font-bold text-text-primary">
+                {tk("assistant.insights")}
+              </h4>
+              <span className="text-[10.5px] text-text-muted">
+                {tk("assistant.issuesCount", { count: issues.length })}
+              </span>
+            </div>
+
+            {issues.length === 0 ? (
+              <div className="rounded-[12px] border border-status-active/25 bg-status-active/8 p-4 text-center">
+                <IconCheck size={18} className="mx-auto text-status-active" />
+                <p className="mt-1.5 text-[12px] text-text-secondary">{tk("assistant.noIssues")}</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {issues.map((issue) => (
+                  <article key={issue.id} className="card p-3.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <IconAlertCircle
+                        size={15}
+                        className={
+                          issue.severity === "CRITICAL"
+                            ? "text-status-danger"
+                            : issue.severity === "HIGH"
+                              ? "text-status-waiting"
+                              : "text-text-muted"
+                        }
+                      />
+                      <span className="text-[12.5px] font-bold text-text-primary">
+                        {tk(issue.keys.title)}
+                      </span>
+                      {severityChip(issue.severity)}
+                      {issue.signals.trip && (
+                        <span className="num text-[10.5px] text-text-muted" dir="ltr">
+                          {issue.signals.trip}
+                        </span>
+                      )}
+                    </div>
+
+                    <dl className="mt-2.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                      <IssueRow label={tk("assistant.cause")} value={tk(issue.keys.cause)} />
+                      <IssueRow label={tk("assistant.impact")} value={tk(issue.keys.impact)} />
+                      <IssueRow
+                        label={tk("assistant.owner")}
+                        value={tk(OWNER_LABEL_KEY[issue.owner] ?? "assistant.ownerOps")}
+                      />
+                      <IssueRow label={tk("assistant.suggested")} value={tk(issue.keys.action)} />
+                      <IssueRow label={tk("assistant.next")} value={tk(issue.keys.next)} full />
+                    </dl>
+
+                    {ctx.capabilities.act && (
+                      <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-border-subtle pt-2.5">
+                        {actionsFor(ctx, issue).map((action) => (
+                          <button
+                            key={action.id}
+                            onClick={() => {
+                              if (action.requiresConfirm && confirming !== `${issue.id}:${action.id}`) {
+                                setConfirming(`${issue.id}:${action.id}`);
+                                return;
+                              }
+                              setConfirming(null);
+                              runAction(issue, action.id);
+                            }}
+                            className={cn(
+                              action.id === "escalate" ? "btn-primary" : "btn-ghost",
+                              "text-[11px] py-1.5 px-3",
+                            )}
+                          >
+                            {confirming === `${issue.id}:${action.id}` && <IconAlertCircle size={12} />}
+                            {confirming === `${issue.id}:${action.id}`
+                              ? tk("assistant.confirm")
+                              : tk(action.labelKey)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Ask */}
+          <section className="space-y-2.5">
+            <div className="flex items-center gap-2 rounded-[12px] border border-border-subtle bg-surface-2 p-2 focus-within:border-brand">
+              <IconSearch size={17} className="shrink-0 text-text-muted ps-1.5" />
               <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAsk(query)}
-                placeholder={t(
-                  "Ask in Arabic or English: 'Where are Jeddah trucks?', 'Delayed trips'...",
-                  "اسأل بالعربية: 'أين شاحنات جدة؟'، 'شاحنات الرياض الشاغرة'..."
-                )}
-                className="w-full bg-transparent text-[13px] text-text-primary outline-none px-2"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAsk(question)}
+                placeholder={tk("assistant.ask")}
+                aria-label={tk("assistant.ask")}
+                className="min-w-0 flex-1 bg-transparent text-[13px] text-text-primary outline-none"
               />
               <button
-                onClick={() => handleAsk(query)}
+                onClick={() => handleAsk(question)}
                 disabled={isThinking}
-                className="btn-primary text-[12px] py-2 px-4 shrink-0"
+                className="btn-primary shrink-0 py-1.5 px-3.5 text-[11.5px]"
               >
-                {isThinking ? t("Analyzing...", "جارٍ التحليل...") : t("Ask AI", "اسأل الذكاء")}
+                {isThinking ? tk("assistant.thinking") : tk("assistant.send")}
               </button>
             </div>
 
-            {/* Quick Prompt Chips */}
-            <div>
-              <span className="text-[11px] text-text-muted block mb-2 font-medium">
-                {t("Quick Suggested Prompts:", "استعلامات سريعة مقترحة:")}
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {PROMPTS.map((p, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setQuery(p.ar);
-                      handleAsk(p.ar);
-                    }}
-                    className="chip hover:border-brand/40 text-[11.5px] py-1.5 px-3"
-                  >
-                    {t(p.en, p.ar)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* AI Response Display */}
-            {customResponse && (
-              <div className="animate-fade-up rounded-[16px] bg-brand/10 border border-brand/30 p-4 text-text-primary">
-                <div className="flex items-center gap-2 mb-2 font-bold text-brand text-[13px]">
-                  <IconBolt size={16} />
-                  <span>{t("AI Dispatch Intelligence Answer:", "إجابة المساعد الذكي:")}</span>
-                </div>
-                <p className="text-[13px] leading-relaxed">{customResponse}</p>
-                <div className="mt-3 flex items-center justify-end">
-                  <button
-                    onClick={() => {
-                      onClose();
-                    }}
-                    className="btn-primary text-[11.5px] py-1.5 px-4"
-                  >
-                    {t("View Filtered Results in Console", "مشاهدة النتائج المفلترة باللوحة")}
-                  </button>
+            {suggestions.length > 0 && (
+              <div>
+                <span className="mb-1.5 block text-[10.5px] font-semibold text-text-muted">
+                  {tk("assistant.suggestions")}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => handleAsk(tk(s.labelKey))}
+                      className="chip text-[11px] py-1.5 px-2.5"
+                    >
+                      {tk(s.labelKey)}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
-          </div>
-        )}
 
-        {/* TAB 3: Predictive Fleet Health & Analytics */}
-        {activeTab === "fleet_analysis" && (
-          <div className="mt-5 space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="card p-3 text-center">
-                <span className="text-[10px] text-text-muted block uppercase">
-                  {t("Fleet Utilization", "معدل استغلال الأسطول")}
-                </span>
-                <span className="text-[22px] font-bold text-brand tabular-nums">{avgUtilization}%</span>
-                <span className="text-[10.5px] text-status-active block mt-0.5">
-                  +4.2% {t("vs last week", "مقارنة بالأسبوع الماضي")}
-                </span>
-              </div>
-
-              <div className="card p-3 text-center">
-                <span className="text-[10px] text-text-muted block uppercase">
-                  {t("On-Time Probability", "توقع الالتزام بالمواعيد")}
-                </span>
-                <span className="text-[22px] font-bold text-status-active tabular-nums">96.8%</span>
-                <span className="text-[10.5px] text-text-muted block mt-0.5">
-                  {trips.length} {t("active trips tracked", "رحلات مراقبة")}
-                </span>
-              </div>
-
-              <div className="card p-3 text-center">
-                <span className="text-[10px] text-text-muted block uppercase">
-                  {t("Reefer Safety Index", "مؤشر سلامة التبريد")}
-                </span>
-                <span className="text-[22px] font-bold text-text-primary tabular-nums">100%</span>
-                <span className="text-[10.5px] text-status-active block mt-0.5">
-                  {t("0 temperature deviations", "صفر انحرافات حرارية")}
-                </span>
-              </div>
-            </div>
-
-            <div className="card p-4 space-y-2">
-              <span className="text-[12px] font-bold text-text-primary block">
-                {t("Active Fleet Summary & AI Assessment", "تقرير الذكاء الاصطناعي الشامل للأسطول")}
-              </span>
-              <p className="text-[12px] text-text-secondary leading-relaxed">
-                {t(
-                  `Currently, ${trucks.length} heavy tractor units are managed. ${trips.filter(t => t.status === "on_road").length} are moving smoothly along key corridors (Highway 40, Highway 80, Highway 15, and Highway 65). Average corridor speed is 84 km/h with zero safety violations. Fuel burn is 3.1% below monthly target.`,
-                  `يدير النظام حالياً ${trucks.length} شاحنة ثقيلة. منها ${trips.filter(t => t.status === "on_road").length} شاحنات على الطرق السريعة (طريق ٤٠، طريق ٨٠، طريق ١٥، طريق ٦٥). متوسط السرعة ٨٤ كم/س دون أي مخالفات مرورية، واستهلاك الوقود أقل من المستهدف الشهري بـ ٣.١٪.`
+            {answer && (
+              <div
+                className={cn(
+                  "animate-fade-up rounded-[14px] border p-3.5",
+                  answer.denied
+                    ? "border-status-danger/35 bg-status-danger/8"
+                    : "border-brand/30 bg-brand/8",
                 )}
-              </p>
-            </div>
-          </div>
-        )}
+              >
+                <div className="mb-1.5 flex items-center gap-2 text-[12px] font-bold text-brand">
+                  <IconBolt size={15} />
+                  {tk("assistant.title")}
+                </div>
+                <p className="text-[12.5px] leading-relaxed text-text-primary">
+                  {tk(answer.key, answer.params)}
+                </p>
+                {answer.issues && answer.issues.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {answer.issues.slice(0, 3).map((issue) => (
+                      <li key={issue.id} className="flex items-center gap-2 text-[11.5px] text-text-secondary">
+                        {severityChip(issue.severity)}
+                        <span className="truncate">{tk(issue.keys.title)}</span>
+                        <span className="num shrink-0 text-[10px] text-text-muted" dir="ltr">
+                          {issue.signals.trip ?? ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {ctx.focusTrip && (
+              <button
+                onClick={() => {
+                  selectTrip(ctx.focusTrip!.id);
+                  onSelectTrip?.(ctx.focusTrip!.id);
+                  onClose();
+                }}
+                className="menu-row justify-between border border-border-subtle"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <IconTruck size={14} className="shrink-0 text-brand" />
+                  <span className="truncate">
+                    {tk("assistant.contextTrip")}: {ctx.focusTrip.tripNumber} ·{" "}
+                    {td(ctx.focusTrip.originCity)} → {td(ctx.focusTrip.destinationCity)}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1 text-[10.5px] text-text-muted">
+                  {tk(tripStatusKey(ctx.focusTrip.status))}
+                  <IconArrowRight size={13} className="rtl:rotate-180" />
+                </span>
+              </button>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );
+}
+
+function ContextCell({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "danger";
+}) {
+  return (
+    <div className="rounded-[10px] bg-surface-2 px-3 py-2">
+      <div className="truncate text-[10px] font-semibold text-text-muted">{label}</div>
+      <div
+        className={cn(
+          "truncate text-[12px] font-bold",
+          tone === "danger" ? "text-status-danger" : "text-text-primary",
+        )}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function ScopeChip({ on, label }: { on: boolean; label: string }) {
+  return (
+    <span
+      className={cn(
+        "pill",
+        on ? "pill-success" : "bg-surface-4 text-text-muted",
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
+function IssueRow({ label, value, full }: { label: string; value: string; full?: boolean }) {
+  return (
+    <div className={cn("rounded-[10px] bg-surface-2 px-2.5 py-2", full && "sm:col-span-2")}>
+      <dt className="text-[10px] font-semibold text-text-muted">{label}</dt>
+      <dd className="mt-0.5 text-[11.5px] leading-relaxed text-text-secondary">{value}</dd>
+    </div>
+  );
+}
+
+/** Map a console section to a nav key so the context strip translates. */
+function pageKeyOf(page: string): string {
+  switch (page) {
+    case "operations":
+      return "operationsCenter";
+    case "vehicle-assets":
+      return "vehicleAssets";
+    case "overview":
+      return "overview";
+    case "mobile":
+      return "settings";
+    default:
+      return page;
+  }
 }

@@ -126,7 +126,7 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
               )}
             </p>
           </div>
-          <button onClick={onClose} className="btn-icon" aria-label="Close">
+          <button onClick={onClose} className="btn-icon" aria-label={t("Close", "إغلاق")}>
             <IconClose size={16} />
           </button>
         </div>

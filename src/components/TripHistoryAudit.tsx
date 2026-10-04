@@ -16,7 +16,7 @@ interface TripHistoryAuditProps {
 }
 
 export function TripHistoryAudit({ onOpenTrip }: TripHistoryAuditProps) {
-  const { t } = useSettings();
+  const { t, td } = useSettings();
   const toast = useToast();
   const { trips, trucks, drivers, auditLogs, selectTrip } = useFleetStore();
 
@@ -191,7 +191,7 @@ export function TripHistoryAudit({ onOpenTrip }: TripHistoryAuditProps) {
                       <div>
                         <div className="text-text-muted text-[10.5px]">{t("Route Corridor", "مسار الرحلة")}</div>
                         <div className="font-semibold text-text-primary mt-0.5">
-                          {tr.originCity} → {tr.destinationCity}
+                          {td(tr.originCity)} → {td(tr.destinationCity)}
                         </div>
                       </div>
                       <div>
@@ -240,7 +240,7 @@ export function TripHistoryAudit({ onOpenTrip }: TripHistoryAuditProps) {
                   <div className="text-end shrink-0">
                     <div className="text-[11px] font-semibold text-text-muted">{log.actor}</div>
                     <div className="font-mono text-[10.5px] text-text-muted tabular-nums mt-0.5">
-                      {log.timestamp}
+                      {td(log.timestamp)}
                     </div>
                   </div>
                 </div>

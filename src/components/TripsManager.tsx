@@ -22,7 +22,7 @@ interface TripsManagerProps {
 }
 
 export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps) {
-  const { t } = useSettings();
+  const { t, td } = useSettings();
   const toast = useToast();
   const {
     trips,
@@ -188,7 +188,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
             {t("Print e-Waybill", "بوليصة الشحن الإلكترونية")}
           </button>
           {onClose && (
-            <button onClick={onClose} className="btn-icon" aria-label="Close">
+            <button onClick={onClose} className="btn-icon" aria-label={t("Close", "إغلاق")}>
               <IconClose size={16} />
             </button>
           )}
@@ -250,7 +250,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
 
                 <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-text-secondary font-medium">
                   <span className="truncate">
-                    {tr.originCity} → {tr.destinationCity}
+                    {td(tr.originCity)} → {td(tr.destinationCity)}
                   </span>
                   <span className="shrink-0 text-[11px] font-bold" style={{ color: getVehicleTypeMeta(tr.cargoType).accentColor }}>
                     {getVehicleTypeMeta(tr.cargoType).arabicName}
@@ -369,7 +369,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                   {t("Corridor & Route", "الممر والمسار")}
                 </span>
                 <span className="text-[13.5px] font-bold text-text-primary mt-0.5 block">
-                  {currentTrip.originCity} → {currentTrip.destinationCity}
+                  {td(currentTrip.originCity)} → {td(currentTrip.destinationCity)}
                 </span>
               </div>
               <div>
@@ -435,13 +435,13 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 </div>
 
                 <div>
-                  <div className="text-[14px] font-bold text-white">فهد الشمري</div>
-                  <div className="text-[11px] text-text-muted">+966 55 123 4567 · رخصة DL-SA-91823</div>
+                  <div className="text-[14px] font-bold text-white">{t("Fahd Al-Shamri", "فهد الشمري")}</div>
+                  <div className="text-[11px] text-text-muted">+966 55 123 4567 · {t("Licence", "رخصة")} DL-SA-91823</div>
                 </div>
 
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10.5px]">
-                  <span className="text-status-active font-semibold">✓ رخصة القيادة سارية ومحققة</span>
-                  <span className="text-brand font-bold">سائق إضافي: ماجد البلوي</span>
+                  <span className="text-status-active font-semibold">✓ {t("Driving licence valid & verified", "رخصة القيادة سارية ومحققة")}</span>
+                  <span className="text-brand font-bold">{t("Additional driver", "سائق إضافي")}: {t("Majed Al-Balawi", "ماجد البلوي")}</span>
                 </div>
               </div>
 
@@ -472,7 +472,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-[14px] font-bold text-white">ر ج د ٤٨٢١</div>
+                    <div className="text-[14px] font-bold text-white">{t("R J D 4821", "ر ج د ٤٨٢١")}</div>
                     <div className="text-[11px] text-text-muted">Mercedes-Benz Actros L 1863</div>
                   </div>
                   <span className="badge bg-brand/20 text-brand text-[11px] font-bold uppercase">
@@ -481,7 +481,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 </div>
 
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10.5px]">
-                  <span className="text-status-active font-semibold">✓ استمارة وفحص دوري وتأمين ساري</span>
+                  <span className="text-status-active font-semibold">✓ {t("Registration, inspection & insurance valid", "استمارة وفحص دوري وتأمين ساري")}</span>
                   <span className="text-white/60">GPS: AVL-MB-4821</span>
                 </div>
               </div>
@@ -582,7 +582,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                     )}
                   </div>
                   <span className="text-[11px] text-text-muted tabular-nums shrink-0 font-medium">
-                    {ev.timestamp}
+                    {td(ev.timestamp)}
                   </span>
                 </div>
               ))}
@@ -617,7 +617,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
               <button
                 onClick={() => setShowWaybillModal(false)}
                 className="btn-icon bg-navy/10 text-navy"
-                aria-label="Close"
+                aria-label={t("Close", "إغلاق")}
               >
                 <IconClose size={16} />
               </button>
@@ -638,29 +638,29 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
 
               <div className="rounded-[10px] bg-navy/5 p-3.5 space-y-1">
                 <span className="text-[10px] font-bold text-navy/60 block uppercase">
-                  بيانات المستلم والوجهة
+                  {t("Consignee & destination data", "بيانات المستلم والوجهة")}
                 </span>
                 <span className="font-bold text-navy block">{currentTrip.consignee}</span>
                 <span className="text-[11px] text-navy/70 block">
-                  موقع التسليم: {currentTrip.destinationTerminal}
+                  {t("Delivery point", "موقع التسليم")}: {currentTrip.destinationTerminal}
                 </span>
-                <span className="text-[11px] text-navy/70 block">المدينة: {currentTrip.destinationCity}</span>
+                <span className="text-[11px] text-navy/70 block">{t("City", "المدينة")}: {currentTrip.destinationCity}</span>
               </div>
             </div>
 
             {/* Cargo and Truck Specs */}
             <div className="mt-4 grid grid-cols-3 gap-3 text-[12px] border-b border-navy/10 pb-4">
               <div>
-                <span className="text-[10.5px] text-navy/60 block font-medium">نوع الشاحنة والمقطورة</span>
+                <span className="text-[10.5px] text-navy/60 block font-medium">{t("Truck & trailer type", "نوع الشاحنة والمقطورة")}</span>
                 <span className="font-bold text-navy">{currentTrip.cargoType}</span>
               </div>
               <div>
-                <span className="text-[10.5px] text-navy/60 block font-medium">الوزن القائم الصافي</span>
-                <span className="font-bold text-brand tabular-nums">{currentTrip.cargoWeightTons} طن</span>
+                <span className="text-[10.5px] text-navy/60 block font-medium">{t("Net laden weight", "الوزن القائم الصافي")}</span>
+                <span className="font-bold text-brand tabular-nums">{currentTrip.cargoWeightTons} {t("t", "طن")}</span>
               </div>
               <div>
-                <span className="text-[10.5px] text-navy/60 block font-medium">المسافة المقدرة</span>
-                <span className="font-bold text-navy tabular-nums">{currentTrip.distanceTotalKm} كم</span>
+                <span className="text-[10.5px] text-navy/60 block font-medium">{t("Estimated distance", "المسافة المقدرة")}</span>
+                <span className="font-bold text-navy tabular-nums">{currentTrip.distanceTotalKm} {t("km", "كم")}</span>
               </div>
             </div>
 
@@ -683,13 +683,13 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 </div>
                 <div>
                   <span className="text-[11.5px] font-bold text-navy block">
-                    رمز التحقق الإلكتروني لهيئة النقل
+                    {t("Transport Authority electronic verification token", "رمز التحقق الإلكتروني لهيئة النقل")}
                   </span>
                   <span className="text-[10.5px] text-navy/60 block font-mono">
                     {currentTrip.qrCodeToken}
                   </span>
                   <span className="text-[10.5px] text-status-active font-semibold block mt-1">
-                    ✓ بوليصة سارية ومسجلة في منصة بيان
+                    ✓ {t("Consignment valid & registered on Bayan", "بوليصة سارية ومسجلة في منصة بيان")}
                   </span>
                 </div>
               </div>
@@ -697,10 +697,10 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
               {/* Recipient Signature Box if present */}
               {currentTrip.recipientSignature && (
                 <div className="text-end">
-                  <span className="text-[10.5px] text-navy/60 block font-medium">توقيع المستلم الإلكتروني</span>
+                  <span className="text-[10.5px] text-navy/60 block font-medium">{t("Recipient e-signature", "توقيع المستلم الإلكتروني")}</span>
                   <img
                     src={currentTrip.recipientSignature}
-                    alt="Signature"
+                    alt={t("Signature", "توقيع المستلم")}
                     className="h-12 w-28 object-contain inline-block border-b border-navy/30"
                   />
                 </div>
@@ -742,7 +742,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                   )}
                 </p>
               </div>
-              <button onClick={() => setShowSignModal(false)} className="btn-icon" aria-label="Close">
+              <button onClick={() => setShowSignModal(false)} className="btn-icon" aria-label={t("Close", "إغلاق")}>
                 <IconClose size={16} />
               </button>
             </div>
@@ -806,57 +806,57 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
           >
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
-                <span>استبدال سائق الرحلة الرسمي</span>
+                <span>{t("Replace the official trip driver", "استبدال سائق الرحلة الرسمي")}</span>
                 <span className="badge bg-brand/20 text-brand text-[10px]">{currentTrip.tripNumber}</span>
               </h3>
-              <button onClick={() => setShowReplaceDriverModal(false)} className="btn-icon" aria-label="Close">
+              <button onClick={() => setShowReplaceDriverModal(false)} className="btn-icon" aria-label={t("Close", "إغلاق")}>
                 <IconClose size={16} />
               </button>
             </div>
 
             <div className="space-y-3 text-[12px]">
               <div>
-                <label className="block text-text-muted text-[11px] mb-1">السائق الحالي المفرغ:</label>
+                <label className="block text-text-muted text-[11px] mb-1">{t("Driver being unassigned", "السائق الحالي المفرغ")}:</label>
                 <div className="p-2.5 rounded-[10px] bg-surface-2 text-white font-bold border border-white/5">
-                  فهد الشمري (DL-SA-91823)
+                  {t("Fahd Al-Shamri", "فهد الشمري")} (DL-SA-91823)
                 </div>
               </div>
 
               <div>
-                <label className="block text-text-muted text-[11px] mb-1">السائق الجديد المكلف بالرحلة *</label>
+                <label className="block text-text-muted text-[11px] mb-1">{t("New driver assigned to the trip", "السائق الجديد المكلف بالرحلة")} *</label>
                 <select
                   value={newDriverName}
                   onChange={(e) => setNewDriverName(e.target.value)}
                   className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-white border border-border-subtle outline-none"
                 >
-                  <option value="سالم المري">سالم المري (رخصة سارية حتى 2027)</option>
-                  <option value="ماجد البلوي">ماجد البلوي (رخصة سارية حتى 2028)</option>
-                  <option value="عبدالله الدوسري">عبدالله الدوسري (رخصة سارية حتى 2029)</option>
-                  <option value="يوسف العتيبي">يوسف العتيبي (رخصة سارية حتى 2027)</option>
+                  <option value="سالم المري">{t("Salem Al-Marri", "سالم المري")} ({t("licence valid to", "رخصة سارية حتى")} 2027)</option>
+                  <option value="ماجد البلوي">{t("Majed Al-Balawi", "ماجد البلوي")} ({t("licence valid to", "رخصة سارية حتى")} 2028)</option>
+                  <option value="عبدالله الدوسري">{t("Abdullah Al-Dosari", "عبدالله الدوسري")} ({t("licence valid to", "رخصة سارية حتى")} 2029)</option>
+                  <option value="يوسف العتيبي">{t("Yousef Al-Otaibi", "يوسف العتيبي")} ({t("licence valid to", "رخصة سارية حتى")} 2027)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-text-muted text-[11px] mb-1">سبب الاستبدال الإلزامي للتدقيق *</label>
+                <label className="block text-text-muted text-[11px] mb-1">{t("Reason for the swap (mandatory for audit)", "سبب الاستبدال الإلزامي للتدقيق")} *</label>
                 <textarea
                   rows={2}
                   value={driverReplaceReason}
                   onChange={(e) => setDriverReplaceReason(e.target.value)}
                   className="w-full rounded-[10px] bg-surface-2 p-2.5 text-white border border-border-subtle outline-none resize-none"
-                  placeholder="اكتب سبب الاستبدال الميداني المبرر..."
+                  placeholder={t("State the justified field reason for the swap…", "اكتب سبب الاستبدال الميداني المبرر...")}
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
               <button onClick={() => setShowReplaceDriverModal(false)} className="btn-ghost text-[11.5px] py-2 px-3">
-                إلغاء
+                {t("Cancel", "إلغاء")}
               </button>
               <button
                 onClick={handleExecuteDriverReplacement}
                 className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg"
               >
-                تأكيد الاستبدال وتوثيق السجل
+                {t("Confirm the swap & record it", "تأكيد الاستبدال وتوثيق السجل")}
               </button>
             </div>
           </div>
@@ -875,57 +875,57 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
           >
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
-                <span>استبدال شاحنة الرحلة المعتمدة</span>
+                <span>{t("Replace the approved trip vehicle", "استبدال شاحنة الرحلة المعتمدة")}</span>
                 <span className="badge bg-brand/20 text-brand text-[10px]">{currentTrip.tripNumber}</span>
               </h3>
-              <button onClick={() => setShowReplaceVehicleModal(false)} className="btn-icon" aria-label="Close">
+              <button onClick={() => setShowReplaceVehicleModal(false)} className="btn-icon" aria-label={t("Close", "إغلاق")}>
                 <IconClose size={16} />
               </button>
             </div>
 
             <div className="space-y-3 text-[12px]">
               <div>
-                <label className="block text-text-muted text-[11px] mb-1">الشاحنة الحالية المفصولة:</label>
+                <label className="block text-text-muted text-[11px] mb-1">{t("Vehicle being released", "الشاحنة الحالية المفصولة")}:</label>
                 <div className="p-2.5 rounded-[10px] bg-surface-2 text-white font-bold border border-white/5">
-                  ر ج د ٤٨٢١ (ستارة Actros L 1863)
+                  {t("R J D 4821", "ر ج د ٤٨٢١")} ({t("Curtain", "ستارة")} Actros L 1863)
                 </div>
               </div>
 
               <div>
-                <label className="block text-text-muted text-[11px] mb-1">الشاحنة البديلة المعتمدة (الأنواع الرسمية الـ 4 فقط) *</label>
+                <label className="block text-text-muted text-[11px] mb-1">{t("Approved replacement vehicle (the 4 official types only)", "الشاحنة البديلة المعتمدة (الأنواع الرسمية الـ 4 فقط)")} *</label>
                 <select
                   value={newVehiclePlate}
                   onChange={(e) => setNewVehiclePlate(e.target.value)}
                   className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-white border border-border-subtle outline-none"
                 >
-                  <option value="ب ر د ٩١٠٤ (براد)">ب ر د ٩١٠٤ · براد Mercedes Actros (استمارة وفحص ساري)</option>
-                  <option value="س ط ح ٥٥٢٠ (سطحة)">س ط ح ٥٥٢٠ · سطحة Scania R 500 (استمارة وفحص ساري)</option>
-                  <option value="ج ا ف ٧٧١٤ (جاف)">ج ا ف ٧٧١٤ · جاف Volvo FH 500 (استمارة وفحص ساري)</option>
-                  <option value="س ط ح ٨٣١٩ (سطحة)">س ط ح ٨٣١٩ · سطحة Scania Heavy (استمارة وفحص ساري)</option>
+                  <option value="ب ر د ٩١٠٤ (براد)">{t("B R D 9104", "ب ر د ٩١٠٤")} · {t("Reefer", "براد")} Mercedes Actros ({t("registration & inspection valid", "استمارة وفحص ساري")})</option>
+                  <option value="س ط ح ٥٥٢٠ (سطحة)">{t("S T H 5520", "س ط ح ٥٥٢٠")} · {t("Flatbed", "سطحة")} Scania R 500 ({t("registration & inspection valid", "استمارة وفحص ساري")})</option>
+                  <option value="ج ا ف ٧٧١٤ (جاف)">{t("J A F 7714", "ج ا ف ٧٧١٤")} · {t("Dry box", "جاف")} Volvo FH 500 ({t("registration & inspection valid", "استمارة وفحص ساري")})</option>
+                  <option value="س ط ح ٨٣١٩ (سطحة)">{t("S T H 8319", "س ط ح ٨٣١٩")} · {t("Flatbed", "سطحة")} Scania Heavy ({t("registration & inspection valid", "استمارة وفحص ساري")})</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-text-muted text-[11px] mb-1">سبب الاستبدال المبرر للتدقيق *</label>
+                <label className="block text-text-muted text-[11px] mb-1">{t("Justified reason for the swap (audit)", "سبب الاستبدال المبرر للتدقيق")} *</label>
                 <textarea
                   rows={2}
                   value={vehicleReplaceReason}
                   onChange={(e) => setVehicleReplaceReason(e.target.value)}
                   className="w-full rounded-[10px] bg-surface-2 p-2.5 text-white border border-border-subtle outline-none resize-none"
-                  placeholder="سبب استبدال المركبة وتحديث جهاز الـ GPS..."
+                  placeholder={t("Reason for the vehicle swap and the GPS device update…", "سبب استبدال المركبة وتحديث جهاز الـ GPS...")}
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
               <button onClick={() => setShowReplaceVehicleModal(false)} className="btn-ghost text-[11.5px] py-2 px-3">
-                إلغاء
+                {t("Cancel", "إلغاء")}
               </button>
               <button
                 onClick={handleExecuteVehicleReplacement}
                 className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg"
               >
-                تأكيد استبدال الشاحنة وتحديث التتبع
+                {t("Confirm the vehicle swap & update tracking", "تأكيد استبدال الشاحنة وتحديث التتبع")}
               </button>
             </div>
           </div>

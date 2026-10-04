@@ -738,7 +738,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                     required
                     value={formPlate}
                     onChange={(e) => setFormPlate(e.target.value)}
-                    placeholder="ر ج د ٤٨٢١"
+                    placeholder={t("R J D 4821", "ر ج د ٤٨٢١")}
                     className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
@@ -825,7 +825,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   type="text"
                   value={formCustomImage}
                   onChange={(e) => setFormCustomImage(e.target.value)}
-                  placeholder="https://... أو اترك فارغاً لاعتماد الصورة الرسمية للنوع"
+                  placeholder={t("https://… or leave empty to use the official type image", "https://... أو اترك فارغاً لاعتماد الصورة الرسمية للنوع")}
                   className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary text-[12px] outline-none focus:border-brand"
                 />
                 <p className="text-[10px] text-text-muted mt-1">
@@ -927,7 +927,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               <button
                 onClick={() => setShowVehicleDetailsModal(null)}
                 className="btn-icon-sm"
-                aria-label="Close"
+                aria-label={t("Close", "إغلاق")}
               >
                 <IconClose size={16} />
               </button>

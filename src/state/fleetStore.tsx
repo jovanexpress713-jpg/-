@@ -1,4 +1,12 @@
 import {
+  escalateTargetOf,
+  nextSeverity,
+  normalizeSeverity,
+  ownerFor,
+  severityRank,
+  type AlertType as AlertTypeKey,
+} from "../services/smartAlerts";
+import {
   createContext,
   useContext,
   useEffect,
@@ -69,6 +77,10 @@ export interface Trip {
   isDelayed?: boolean;
   reeferTempC?: number;
   targetTempC?: number;
+  /** Epoch ms of the last lifecycle write — feeds the stale-status detector. */
+  lastStatusAt?: number;
+  /** Epoch ms of the last GPS fix — feeds the tracking-failure detector. */
+  lastGpsAt?: number;
   timeline: TimelineEvent[];
   qrCodeToken: string;
   recipientSignature?: string;
@@ -78,6 +90,7 @@ export interface Trip {
 export interface SmartAlert {
   id: string;
   type: "delay" | "off_route" | "idle" | "temp" | "doc_expiry" | "speed" | "utilization";
+  /** Legacy three-level severity kept for the seeded/older records. */
   severity: "critical" | "warning" | "info";
   tripId?: string;
   truckId?: string;
@@ -87,6 +100,27 @@ export interface SmartAlert {
   descEn: string;
   timestamp: string;
   resolved: boolean;
+  /* ── Smart-routing extensions (§15, §21) — all optional, so older stored
+        records in localStorage keep loading unchanged. ─────────────────── */
+  /** Canonical five-level severity (INFO…CRITICAL). */
+  severityLevel?: "INFO" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  /** Role accountable for this alert. */
+  owner?: "operations" | "dispatcher" | "driver" | "maintenance" | "it" | "client";
+  /** Why the alert fired — rendered as «سبب التنبيه». */
+  reasonAr?: string;
+  reasonEn?: string;
+  /** What the owner must do — rendered as «الإجراء المطلوب». */
+  actionAr?: string;
+  actionEn?: string;
+  source?: "telemetry" | "ops" | "assistant" | "system";
+  dedupeKey?: string;
+  detectedAt?: number;
+  acknowledgedBy?: string;
+  acknowledgedAt?: string;
+  escalated?: boolean;
+  escalatedTo?: "operations" | "dispatcher" | "driver" | "maintenance" | "it" | "client";
+  escalatedAt?: string;
+  driverId?: string;
 }
 
 export interface AuditLog {
@@ -147,6 +181,8 @@ interface FleetStoreContextType {
   addVehicle: (vehicle: Vehicle) => void;
   updateVehicle: (vehicleId: string, updates: Partial<Vehicle>) => void;
   resolveAlert: (alertId: string) => void;
+  /** Escalate an unhandled alert one severity step and hand it to the next owner. */
+  escalateAlert: (alertId: string, actor: string) => void;
   sendChatMessage: (tripId: string, text: string) => void;
   recordAuditLog: (actionAr: string, actionEn: string, tripNumber?: string, details?: string) => void;
   resetAllDemoData: () => void;
@@ -427,6 +463,28 @@ const INITIAL_TRIPS: Trip[] = [
   },
 ];
 
+/**
+ * Telemetry freshness (§20).
+ * The seeded demo rows carry display-only timestamps, so their age is stamped
+ * here once — deterministically, so the detectors have real numbers to work
+ * with — while every live status transition stamps the true time.
+ */
+function seedTelemetry(trip: Trip, index: number): Trip {
+  const now = Date.now();
+  const stopped = trip.status === "on_road" && (trip.speedKmH ?? 0) <= 2;
+  const stale = index % 5 === 3 && trip.status !== "on_road";
+  const statusAgeMinutes = stopped ? 34 : stale ? 205 : 6 + index * 3;
+  const gpsAgeMinutes = stopped ? 42 : 2 + (index % 4);
+  return {
+    ...trip,
+    lastStatusAt: now - statusAgeMinutes * 60_000,
+    lastGpsAt: now - gpsAgeMinutes * 60_000,
+  };
+}
+
+/** The trips the store boots with, carrying their telemetry age. */
+const SEEDED_TRIPS: Trip[] = INITIAL_TRIPS.map(seedTelemetry);
+
 // Initial Smart Alerts
 const INITIAL_ALERTS: SmartAlert[] = [
   {
@@ -570,7 +628,7 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.warn("Failed reading trips store", e);
     }
-    return INITIAL_TRIPS;
+    return SEEDED_TRIPS;
   });
 
   const [drivers] = useState<Driver[]>(INITIAL_DRIVERS);
@@ -848,6 +906,8 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
           timeline: [...t.timeline, newEvent],
           recipientSignature: signature || t.recipientSignature,
           deliveryTime: newStatus === "delivered" || newStatus === "completed" ? timeStr : t.deliveryTime,
+          /* A fresh lifecycle write clears the stale-status alert automatically. */
+          lastStatusAt: Date.now(),
         };
 
         return updated;
@@ -1027,9 +1087,41 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const escalateAlert = (alertId: string, actor: string) => {
+    setAlerts((prev) =>
+      prev.map((a) =>
+        a.id === alertId
+          ? {
+              ...a,
+              severityLevel: nextSeverity(normalizeSeverity(a.severityLevel ?? a.severity)),
+              severity: severityRank(normalizeSeverity(a.severityLevel ?? a.severity)) >= 4 ? a.severity : "critical",
+              escalated: true,
+              escalatedTo: escalateTargetOf({
+                ...a,
+                severity: normalizeSeverity(a.severityLevel ?? a.severity),
+                owner: a.owner ?? ownerFor(a.type as AlertTypeKey),
+              }),
+              escalatedAt: new Date().toISOString(),
+            }
+          : a,
+      ),
+    );
+    const escalated = alerts.find((a) => a.id === alertId);
+    recordAuditLog(
+      `تصعيد تنبيه غير معالج: ${escalated?.titleAr ?? alertId}`,
+      `Unhandled alert escalated: ${escalated?.titleEn ?? alertId}`,
+      trips.find((t) => t.id === escalated?.tripId)?.tripNumber,
+      actor,
+    );
+  };
+
   const resolveAlert = (alertId: string) => {
     setAlerts((prev) =>
-      prev.map((a) => (a.id === alertId ? { ...a, resolved: true } : a))
+      prev.map((a) =>
+        a.id === alertId
+          ? { ...a, resolved: true, acknowledgedAt: new Date().toISOString() }
+          : a,
+      )
     );
   };
 
@@ -1090,11 +1182,11 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("ejaz_logs_store");
     localStorage.removeItem("ejaz_chat_store");
     setTrucks(FLEET);
-    setTrips(INITIAL_TRIPS);
+    setTrips(SEEDED_TRIPS);
     setAlerts(INITIAL_ALERTS);
     setAuditLogs(INITIAL_LOGS);
     setChatMessages(INITIAL_MESSAGES);
-    setSelectedTripId(INITIAL_TRIPS[0].id);
+    setSelectedTripId(SEEDED_TRIPS[0].id);
   };
 
   const selectedTrip = useMemo(
@@ -1135,6 +1227,7 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
         addVehicle,
         updateVehicle,
         resolveAlert,
+        escalateAlert,
         sendChatMessage,
         recordAuditLog,
         resetAllDemoData,

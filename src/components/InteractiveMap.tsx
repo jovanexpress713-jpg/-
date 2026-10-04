@@ -30,7 +30,7 @@ export function InteractiveMap({
   showCardOverlay = true,
   onWaypointClick,
 }: InteractiveMapProps) {
-  const { t, dir } = useSettings();
+  const { t, dir, td, tdp } = useSettings();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Map state
@@ -405,7 +405,7 @@ export function InteractiveMap({
           </span>
           <span className="text-white/40">|</span>
           <span className="text-white/90">
-            {trip.originCity} → {trip.destinationCity}
+            {td(trip.originCity)} → {td(trip.destinationCity)}
           </span>
           <span className="text-white/40">|</span>
           <span className="font-semibold tabular-nums text-status-active">
@@ -487,7 +487,7 @@ export function InteractiveMap({
           <TruckTypeIcon truckType={trip.cargoType} size={16} className="text-brand shrink-0" />
           <span className="truncate text-white/90">
             {t("Next Waypoint:", "المحطة القادمة:")}{" "}
-            <strong className="text-brand font-semibold">{trip.nextWaypointAr}</strong>
+            <strong className="text-brand font-semibold">{tdp(trip.nextWaypointAr, trip.nextWaypointEn)}</strong>
           </span>
         </div>
 

@@ -55,10 +55,10 @@ export function RoleSwitcher() {
   ];
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-1 border-b border-border-subtle px-4 py-2.5 text-[12px]">
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle bg-surface-1 px-3 py-2 text-[12px]">
       {/* Role Selector Pills */}
-      <div className="scroll-x flex max-w-full items-center gap-1.5 py-0.5">
-        <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider me-1.5 hidden sm:inline">
+      <div className="scroll-x flex min-w-0 items-center gap-1.5 py-0.5">
+        <span className="me-1.5 hidden shrink-0 text-[10.5px] font-bold uppercase tracking-wider text-text-muted sm:inline">
           {t("Persona Mode:", "نمط التجربة:")}
         </span>
 
@@ -70,7 +70,7 @@ export function RoleSwitcher() {
               key={r.id}
               onClick={() => setRole(r.id)}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-semibold transition-all active:scale-95 whitespace-nowrap",
+                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all active:scale-95",
                 isActive
                   ? "bg-brand text-on-brand shadow-sm font-bold"
                   : "bg-surface-2 text-text-secondary hover:bg-surface-3 hover:text-text-primary"
@@ -85,7 +85,7 @@ export function RoleSwitcher() {
       </div>
 
       {/* Live Simulation Controls & Indicator */}
-      <div className="flex items-center gap-3 shrink-0 ms-auto">
+      <div className="ms-auto flex shrink-0 items-center gap-2.5">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
             <span
@@ -115,9 +115,9 @@ export function RoleSwitcher() {
           {isSimulating ? t("Pause GPS", "إيقاف مؤقت") : t("Resume GPS", "استئناف الحركة")}
         </button>
 
-        <span className="text-text-muted hidden md:inline">|</span>
+        <span className="hidden text-text-muted lg:inline">|</span>
 
-        <span className="text-[11px] text-text-muted hidden md:inline">
+        <span className="hidden text-[11px] text-text-muted lg:inline">
           {trips.length} {t("active trips synced", "رحلات متزامنة")}
         </span>
       </div>

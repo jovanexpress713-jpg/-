@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { cn } from "../utils/cn";
+import { useSettings } from "../settings";
 import {
   getVehicleTypeMeta,
   normalizeVehicleType,
@@ -101,6 +102,7 @@ export function TruckTypeBadge({
   withLabel = true,
   accent = true,
 }: TruckTypeBadgeProps) {
+  const { t } = useSettings();
   const meta = getVehicleTypeMeta(truckType);
   return (
     <span
@@ -118,10 +120,10 @@ export function TruckTypeBadge({
             }
           : undefined
       }
-      title={`${meta.arabicName} — ${meta.englishName}`}
+      title={t(meta.englishName, meta.arabicName)}
     >
       <TruckTypeIcon truckType={truckType} size={size} />
-      {withLabel && <span className="truncate">{meta.arabicName}</span>}
+      {withLabel && <span className="truncate">{t(meta.englishName, meta.arabicName)}</span>}
     </span>
   );
 }
@@ -139,15 +141,16 @@ export function TruckTypeInline({
   size?: number;
   className?: string;
 }) {
+  const { t } = useSettings();
   const meta = getVehicleTypeMeta(truckType);
   return (
     <span
       className={cn("inline-flex min-w-0 items-center gap-1.5", className)}
       style={{ color: meta.accentColor }}
-      title={`${meta.arabicName} — ${meta.englishName}`}
+      title={t(meta.englishName, meta.arabicName)}
     >
       <TruckTypeIcon truckType={truckType} size={size} />
-      <span className="truncate text-[11.5px] font-bold">{meta.arabicName}</span>
+      <span className="truncate text-[11.5px] font-bold">{t(meta.englishName, meta.arabicName)}</span>
     </span>
   );
 }
@@ -253,6 +256,7 @@ export function TruckTypeLegend({
   className,
   size = "md",
 }: TruckTypeLegendProps) {
+  const { t } = useSettings();
   const types: CanonicalVehicleTypeId[] = ["flatbed", "reefer", "dry", "curtain"];
   const isSm = size === "sm";
 
@@ -271,18 +275,18 @@ export function TruckTypeLegend({
           )}
         >
           <FleetGlyph size={isSm ? 13 : 15} />
-          <span>الكل (٤ فئات)</span>
+          <span>{t("All (4 classes)", "الكل (٤ فئات)")}</span>
         </button>
       )}
 
-      {types.map((t) => {
-        const isSelected = selected === t;
-        const meta = getVehicleTypeMeta(t);
+      {types.map((type) => {
+        const isSelected = selected === type;
+        const meta = getVehicleTypeMeta(type);
         return (
           <button
-            key={t}
+            key={type}
             type="button"
-            onClick={() => onSelect?.(t)}
+            onClick={() => onSelect?.(type)}
             className={cn(
               "rounded-full font-bold transition-all flex items-center gap-1.5 border select-none",
               isSm ? "px-2.5 py-1 text-[11px]" : "px-3 py-1.5 text-[12px]",
@@ -299,8 +303,8 @@ export function TruckTypeLegend({
                 : undefined
             }
           >
-            <TruckTypeIcon truckType={t} size={isSm ? 14 : 16} className="shrink-0" />
-            <span className="shrink-0">{meta.arabicName}</span>
+            <TruckTypeIcon truckType={type} size={isSm ? 14 : 16} className="shrink-0" />
+            <span className="shrink-0">{t(meta.englishName, meta.arabicName)}</span>
           </button>
         );
       })}

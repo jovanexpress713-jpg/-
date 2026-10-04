@@ -26,7 +26,16 @@ export function runBrandingTests() {
 
   // 1. The settings entry exists in the admin sidebar.
   assert.match(sidebar, /"branding"/, "the sidebar must expose the branding/identity entry");
-  assert.match(sidebar, /Settings & Identity/, "the entry must be labelled Settings & Identity");
+  // The label is no longer a hard-coded string: it resolves through the central
+  // dictionary, so the entry stays «Settings & Identity» in English while the
+  // Arabic and Urdu sessions show their own translation of the same key.
+  assert.match(sidebar, /nav\.identity/, "the entry must be labelled through the central i18n key");
+  const i18n = read("src", "localization", "i18n.ts");
+  assert.match(
+    i18n,
+    /"nav\.identity":\s*\{[^}]*en:\s*"Settings & Identity"/,
+    "the entry must be labelled Settings & Identity",
+  );
 
   // 2. The store resolves the custom logo from the saved branding and publishes it.
   assert.match(

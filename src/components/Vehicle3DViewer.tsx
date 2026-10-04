@@ -1351,7 +1351,7 @@ export function Vehicle3DViewer({
               onClick={resetCamera}
               className="grid h-8 w-8 place-items-center rounded-[6px] text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
               title={t("Reset Camera View (3/4 Front)", "إعادة ضبط الكاميرا")}
-              aria-label="Reset View"
+              aria-label={t("Reset view", "إعادة ضبط العرض")}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -1362,7 +1362,7 @@ export function Vehicle3DViewer({
               onClick={zoomIn}
               className="grid h-8 w-8 place-items-center rounded-[6px] text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
               title={t("Zoom In", "تكبير")}
-              aria-label="Zoom In"
+              aria-label={t("Zoom in", "تكبير")}
             >
               <IconZoomIn size={15} />
             </button>
@@ -1370,7 +1370,7 @@ export function Vehicle3DViewer({
               onClick={zoomOut}
               className="grid h-8 w-8 place-items-center rounded-[6px] text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
               title={t("Zoom Out", "تصغير")}
-              aria-label="Zoom Out"
+              aria-label={t("Zoom out", "تصغير")}
             >
               <IconZoomOut size={15} />
             </button>
