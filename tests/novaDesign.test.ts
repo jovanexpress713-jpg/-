@@ -427,7 +427,7 @@ export async function runNovaDesignTests() {
       reefer: "M 804 226",
       flatbed: "M 702 627",
       dry: "M 696 222",
-      curtain: "M 701 248",
+      curtain: "M 696 243",
     };
     for (const [type, imageName] of Object.entries(expectedImages)) {
       const view = await mount(React.createElement(CapacityTruck, { pct: 63, truckType: type }));
