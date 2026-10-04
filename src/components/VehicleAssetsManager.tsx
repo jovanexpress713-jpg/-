@@ -7,6 +7,7 @@ import { APPROVED_VEHICLE_TYPES_LIST, normalizeVehicleType, type CanonicalVehicl
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { TruckImage } from "./TruckImage";
 import { CapacityTruck } from "./CapacityTruck";
+import { TruckTypeIcon } from "./TruckTypeIcon";
 import { apiClient } from "../services/apiClient";
 import { useToast } from "./Toast";
 import { IconUpload, IconTruck, IconCheck, IconAlertCircle, IconClose, IconSearch } from "./Icons";
@@ -333,7 +334,7 @@ export function VehicleAssetsManager() {
               <div className="p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-bold text-text-primary">{vt.arabicName}</span>
-                  <span className="text-[10px] font-mono text-text-muted">{vt.categoryCode}</span>
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-text-muted"><span>{vt.categoryCode}</span><span style={{ color: vt.accentColor }}><TruckTypeIcon truckType={vt.id} size={16} /></span></span>
                 </div>
                 <div className="mt-0.5 text-[10.5px] text-text-muted">{vt.englishName}</div>
                 <div className="mt-2 flex items-center justify-between gap-2 border-t border-border-subtle pt-2 text-[10px]">

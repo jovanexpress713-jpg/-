@@ -3,9 +3,8 @@ import { useSettings } from "../settings";
 import { apiClient, getAuthToken } from "../services/apiClient";
 import { useFleetStore, type Trip } from "../state/fleetStore";
 import { useToast } from "./Toast";
-import { TruckImage } from "./TruckImage";
 import { CapacityTruck } from "./CapacityTruck";
-import { TruckTypeBadge } from "./TruckTypeIcon";
+import { TruckTypeBadge, TruckTypeIcon } from "./TruckTypeIcon";
 import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconGauge, IconFuel, IconThermo } from "./Icons";
 import { KpiCards } from "./overview/KpiCards";
 import { CargoDonut } from "./overview/CargoDonut";
@@ -204,18 +203,16 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                   <span className="rounded-full border border-border-subtle bg-surface-1/90 px-3 py-1.5 text-[11px] font-semibold text-text-primary">#{selected.tripNumber}</span>
                   <span className="rounded-full bg-brand/12 px-3 py-1.5 text-[10px] font-semibold text-brand">{tripStatusLabel(selected, t)}</span>
                 </div>
-                <TruckImage body={selected.cargoType} alt={truck ? `${truck.brand} ${truck.model}` : t("EJAZ fleet truck", "شاحنة أسطول إيجاز")} loading="eager" className="relative z-[1] h-[190px] w-full max-w-[680px] object-contain drop-shadow-[0_22px_26px_rgba(0,0,0,.2)] sm:h-[230px]" />
-                {truck && <div className="absolute bottom-8 end-4 z-20 hidden w-[252px] rounded-xl border border-border-subtle bg-surface-1/95 p-3 shadow-xl backdrop-blur-sm sm:block">
-                  <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-[9px] text-text-muted"><IconFuel size={12} />{t("Fuel level", "مستوى الوقود")}</span><strong className="text-[11px] tabular-nums text-text-primary">{truck.fuel}%</strong></div>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-5"><div className={`h-full rounded-full transition-[width] duration-500 ${truck.fuel <= 20 ? "bg-status-danger" : "bg-status-active"}`} style={{ width: `${Math.max(0, Math.min(100, truck.fuel))}%` }} /></div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <SpeedDial value={speedValue} t={t} />
-                    <div className="rounded-lg bg-surface-2/80 px-2 py-1.5 text-center"><IconThermo size={14} className="mx-auto text-brand" /><div className="mt-0.5 text-[12px] font-bold tabular-nums text-text-primary">{truck.engineTemp}°C</div><div className="mt-0.5 text-[8px] text-text-muted">{t("Engine temperature", "حرارة المحرك")}</div></div>
-                  </div>
-                  {truck.boxTemp !== undefined && <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-surface-2/80 px-2 py-1.5"><span className="text-[9px] text-text-muted">{t("Cargo temperature", "حرارة الحمولة")}</span><strong className="text-[10px] tabular-nums text-text-primary">{truck.boxTemp} °C</strong></div>}
-                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-border-subtle pt-2"><span className="text-[9px] text-text-muted">{t("Vehicle status", "حالة المركبة")}</span><strong className={`text-[10px] ${truck.status === "active" ? "text-status-active" : "text-status-waiting"}`}>{truck.status === "active" ? t("Active", "نشطة") : truck.status === "waiting" ? t("Waiting", "بالانتظار") : t("Inactive", "متوقفة")}</strong></div>
-                  <button onClick={onOpenMaintenance} className="mt-2 w-full border-t border-border-subtle pt-2 text-start text-[10px] font-semibold text-brand hover:text-brand-soft">{t("Maintenance & repairs", "الصيانة والإصلاحات")} →</button>
-                </div>}
+                <CapacityTruck
+                  key={`hero-${selected.id}`}
+                  pct={loadPercent}
+                  countUp
+                  truckType={selected.cargoType}
+                  vehicle={truck}
+                  className="relative z-[1] w-full max-w-[465px] drop-shadow-[0_22px_26px_rgba(0,0,0,.2)]"
+                  label={t(`Truck load ${Math.round(loadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(loadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
+                />
+
                 <div className="absolute inset-x-8 bottom-5 h-px bg-gradient-to-r from-transparent via-border-strong to-transparent" />
                 {truck && <div className="absolute bottom-2 z-10 rounded-full border border-border-subtle bg-surface-1/90 px-3 py-1 text-[10px] text-text-secondary">{truck.brand} · {truck.model}</div>}
               </div>
@@ -239,15 +236,17 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                       <span className="text-[10px] font-semibold text-text-secondary">{t("Truck load capacity", "حمولة الشاحنة")}</span>
                       <span className="text-[11px] font-bold tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}</span>
                     </div>
-                    <CapacityTruck
-                      key={selected.id}
-                      pct={loadPercent}
-                      countUp
-                      truckType={selected.cargoType}
-                      vehicle={truck}
-                      className="mt-2 w-full motion-safe:animate-truck-bob motion-reduce:animate-none"
-                      label={t(`Truck load ${Math.round(loadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(loadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
-                    />
+                    {truck && <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="col-span-2 rounded-lg bg-surface-2/80 px-2.5 py-2">
+                        <div className="flex items-center justify-between gap-2 text-[9px] text-text-muted"><span className="flex items-center gap-1.5"><IconFuel size={12} />{t("Fuel level", "مستوى الوقود")}</span><strong className="text-[10px] tabular-nums text-text-primary">{truck.fuel}%</strong></div>
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-5"><div className={`h-full rounded-full transition-[width] duration-500 ${truck.fuel <= 20 ? "bg-status-danger" : "bg-status-active"}`} style={{ width: `${Math.max(0, Math.min(100, truck.fuel))}%` }} /></div>
+                      </div>
+                      <SpeedDial value={speedValue} t={t} />
+                      <div className="rounded-lg bg-surface-2/80 px-2 py-1.5 text-center"><IconThermo size={14} className="mx-auto text-brand" /><div className="mt-0.5 text-[12px] font-bold tabular-nums text-text-primary">{truck.engineTemp}°C</div><div className="mt-0.5 text-[8px] text-text-muted">{t("Engine temperature", "حرارة المحرك")}</div></div>
+                      {truck.boxTemp !== undefined && <div className="col-span-2 flex items-center justify-between gap-2 rounded-lg bg-surface-2/80 px-2 py-1.5"><span className="text-[9px] text-text-muted">{t("Cargo temperature", "حرارة الحمولة")}</span><strong className="text-[10px] tabular-nums text-text-primary">{truck.boxTemp} °C</strong></div>}
+                      <div className="col-span-2 flex items-center justify-between gap-2 border-t border-border-subtle pt-2"><span className="text-[9px] text-text-muted">{t("Vehicle status", "حالة المركبة")}</span><strong className={`text-[10px] ${truck.status === "active" ? "text-status-active" : "text-status-waiting"}`}>{truck.status === "active" ? t("Active", "نشطة") : truck.status === "waiting" ? t("Waiting", "بالانتظار") : t("Inactive", "متوقفة")}</strong></div>
+                      <button onClick={onOpenMaintenance} className="col-span-2 border-t border-border-subtle pt-2 text-start text-[10px] font-semibold text-brand hover:text-brand-soft">{t("Maintenance & repairs", "الصيانة والإصلاحات")} →</button>
+                    </div>}
                   </div>
                 </div>
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
@@ -291,7 +290,7 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                     label={t(meta.englishName, meta.arabicName)}
                   />
                 </div>
-                <div className="mt-2 flex min-w-0 items-center justify-between gap-1"><span className="truncate text-[11px] font-bold text-text-primary">{t(meta.englishName, meta.arabicName)}</span><span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} /></div>
+                <div className="mt-2 flex min-w-0 items-center justify-between gap-1"><span className="truncate text-[11px] font-bold text-text-primary">{t(meta.englishName, meta.arabicName)}</span><span className="shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ color: meta.accentColor }}><TruckTypeIcon truckType={meta.id} size={18} /></span></div>
                 <div className="mt-0.5 flex min-w-0 items-center justify-between gap-1 text-[9px] text-text-muted">
                   <span className="truncate">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</span>
                   {matchingTrip && <strong className="shrink-0 tabular-nums text-text-primary">{matchingTrip.cargoWeightTons.toLocaleString()} / {matchingTrip.maxCapacityTons} {t("tons", "طن")} · {Math.round(typeLoadPercent)}%</strong>}

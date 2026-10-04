@@ -294,6 +294,11 @@ export async function runNovaDesignTests() {
       text: () => host.textContent ?? "",
       query: (sel: string) => [...host.querySelectorAll(sel)],
       one: (sel: string) => host.querySelector(sel),
+      rerender: async (nextNode: React.ReactElement) => {
+        await act(async () => {
+          r.render(React.createElement(SettingsProvider, null, React.createElement(FleetStoreProvider, null, nextNode)));
+        });
+      },
       unmount: async () => {
         await act(async () => r.unmount());
         host.remove();
@@ -412,6 +417,10 @@ export async function runNovaDesignTests() {
     await settle(1250);
     const texts = view.query("text").map((n) => n.textContent ?? "");
     assert.ok(texts.includes("89%"), `count-up settles at the actual value (got: ${texts.join(",")})`);
+    await view.rerender(React.createElement(CapacityTruck, { pct: 95, countUp: true }));
+    assert.ok(!view.query("text").map((n) => n.textContent ?? "").includes("95%"), "live load changes animate from the current level instead of jumping");
+    await settle(1150);
+    assert.ok(view.query("text").map((n) => n.textContent ?? "").includes("95%"), "the fill and reading settle at the updated live load");
     await view.unmount();
   }
 
@@ -432,10 +441,16 @@ export async function runNovaDesignTests() {
     for (const [type, imageName] of Object.entries(expectedImages)) {
       const view = await mount(React.createElement(CapacityTruck, { pct: 63, truckType: type }));
       assert.ok((view.query("image")[0]?.getAttribute("href") ?? "").endsWith(imageName), `${type} keeps its own approved truck image`);
-      assert.ok(view.query("clipPath").length > 0, `${type} renders the reefer-approved gauge`);
+      assert.ok(view.query("clipPath").length > 0, `${type} renders its type-specific cargo mask`);
       const mask = view.query("clipPath path")[0]?.getAttribute("d") ?? "";
       assert.ok(mask.startsWith(expectedMasks[type]), `${type} gauge is aligned to its body bounds`);
-      assert.ok(view.query("text").some((node) => (node.textContent ?? "").includes("%")), `${type} displays its load percentage`);
+      const gaugeTexts = view.query("text").map((node) => node.textContent ?? "");
+      assert.ok(gaugeTexts.some((text) => text.includes("%")), `${type} displays its load percentage`);
+      if (type === "reefer" || type === "curtain") {
+        assert.strictEqual(gaugeTexts.length, 2, `${type} includes the compact “of load” caption inside the cargo space`);
+      } else {
+        assert.strictEqual(gaugeTexts.length, 1, `${type} keeps its type-specific reading without extra caption text`);
+      }
       await view.unmount();
     }
     const drySampleLoadPct = Math.round((28.6 / 32) * 100);
