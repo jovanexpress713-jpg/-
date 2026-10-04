@@ -400,6 +400,8 @@ router.get("/:id", authenticate, requirePermission("trips.view"), (req: Authenti
   const events = db.tripEvents.filter((e) => e.tripId === trip.id);
   const financials = getTripFinancials(trip.id);
   const documents = Array.from(db.documents.values()).filter((d) => d.tripId === trip.id);
+  const pod = Array.from(db.podRecords.values()).filter((p) => p.tripId === trip.id);
+  const claims = Array.from(db.claims.values()).filter((c) => c.tripId === trip.id);
 
   return res.json({
     trip,
@@ -409,6 +411,8 @@ router.get("/:id", authenticate, requirePermission("trips.view"), (req: Authenti
     events,
     financials,
     documents,
+    pod,
+    claims,
     statusMeta: STATUS_LABELS[trip.status as TripLifecycleStatus] || { ar: trip.status, en: trip.status, badgeColor: "#FF6B1A" },
   });
 });
@@ -956,18 +960,20 @@ router.post("/:id/replace-driver", authenticate, requirePermission("trips.assign
     return res.status(404).json({ error: "New driver not found" });
   }
 
-  // Preserve history
+  const oldDriverId = trip.driverId;
+  const oldDriverName = trip.driverName;
+
+  // Preserve history — previous + replacement + acting user + reason + time
   if (!trip.driverHistory) trip.driverHistory = [];
   trip.driverHistory.push({
-    driverId: trip.driverId,
-    driverName: trip.driverName,
+    driverId: oldDriverId,
+    driverName: oldDriverName,
+    newDriverId: newDriver.id,
+    newDriverName: newDriver.fullName,
     replacedBy: req.user?.fullName || "إدارة العمليات",
     reason,
     timestamp: new Date().toISOString(),
   });
-
-  const oldDriverId = trip.driverId;
-  const oldDriverName = trip.driverName;
 
   trip.driverId = newDriver.id;
   trip.driverName = newDriver.fullName;
@@ -1088,18 +1094,20 @@ router.post("/:id/replace-vehicle", authenticate, requirePermission("trips.assig
     return res.status(404).json({ error: "New vehicle not found" });
   }
 
-  // Preserve history
-  if (!trip.vehicleHistory) trip.vehicleHistory = [];
+  // Preserve history — previous + replacement + acting user + reason + time
   const oldVehicle = db.vehicles.get(trip.vehicleId);
+  const oldVehicleId = trip.vehicleId;
+  if (!trip.vehicleHistory) trip.vehicleHistory = [];
   trip.vehicleHistory.push({
-    vehicleId: trip.vehicleId,
-    plate: oldVehicle?.plate || trip.vehicleId,
+    vehicleId: oldVehicleId,
+    plate: oldVehicle?.plate || oldVehicleId,
+    newVehicleId: newVehicle.id,
+    newPlate: newVehicle.plate,
     replacedBy: req.user?.fullName || "إدارة العمليات",
     reason,
     timestamp: new Date().toISOString(),
   });
 
-  const oldVehicleId = trip.vehicleId;
   trip.vehicleId = newVehicle.id;
   trip.updatedAt = new Date().toISOString();
 
@@ -1143,6 +1151,118 @@ router.post("/:id/replace-vehicle", authenticate, requirePermission("trips.assig
   });
 
   return res.json({ message: "Vehicle replaced successfully", trip, vehicleHistory: trip.vehicleHistory });
+});
+
+// POST /api/trips/:id/replace-assignment — replace driver AND vehicle together
+// One operation inside the SAME trip: no new trip, the unified number never
+// changes, both histories and one combined event are recorded.
+router.post("/:id/replace-assignment", authenticate, requirePermission("trips.assign"), (req: AuthenticatedRequest, res: Response) => {
+  const tripId = String(req.params.id);
+  const trip = db.trips.get(tripId);
+  if (!trip) {
+    return res.status(404).json({ error: "Trip not found" });
+  }
+
+  const { newDriverId, newVehicleId, reason, latitude, longitude } = req.body || {};
+  if (!newDriverId || !newVehicleId || !reason || String(reason).trim().length < 4) {
+    return res.status(400).json({ error: "newDriverId, newVehicleId and a clear reason are required to replace both", code: "MISSING_FIELDS" });
+  }
+
+  const newDriver = db.drivers.get(newDriverId);
+  if (!newDriver) return res.status(404).json({ error: "New driver not found" });
+  const newVehicle = db.vehicles.get(newVehicleId);
+  if (!newVehicle) return res.status(404).json({ error: "New vehicle not found" });
+
+  const isLicenseExpired = new Date(newDriver.licenseExpiry).getTime() < Date.now();
+  if (isLicenseExpired) {
+    return res.status(400).json({ error: "Cannot assign replacement driver: licence has expired." });
+  }
+
+  const oldDriverId = trip.driverId;
+  const oldDriverName = trip.driverName;
+  const oldVehicle = db.vehicles.get(trip.vehicleId);
+  const oldVehicleId = trip.vehicleId;
+
+  // Preserve both histories inside the same trip record
+  // (previous + replacement + acting user + reason + time + location)
+  if (!trip.driverHistory) trip.driverHistory = [];
+  trip.driverHistory.push({
+    driverId: oldDriverId,
+    driverName: oldDriverName,
+    newDriverId: newDriver.id,
+    newDriverName: newDriver.fullName,
+    replacedBy: req.user?.fullName || "إدارة العمليات",
+    reason,
+    timestamp: new Date().toISOString(),
+    latitude,
+    longitude,
+  });
+  if (!trip.vehicleHistory) trip.vehicleHistory = [];
+  trip.vehicleHistory.push({
+    vehicleId: oldVehicleId,
+    plate: oldVehicle?.plate || oldVehicleId,
+    newVehicleId: newVehicle.id,
+    newPlate: newVehicle.plate,
+    replacedBy: req.user?.fullName || "إدارة العمليات",
+    reason,
+    timestamp: new Date().toISOString(),
+    latitude,
+    longitude,
+  });
+
+  trip.driverId = newDriver.id;
+  trip.driverName = newDriver.fullName;
+  trip.driverPhone = newDriver.phone;
+  trip.vehicleId = newVehicle.id;
+  trip.updatedAt = new Date().toISOString();
+
+  db.tripEvents.push({
+    id: `ev-${Date.now()}`,
+    tripId: trip.id,
+    eventType: "DRIVER_AND_VEHICLE_REPLACED",
+    fromStatus: trip.status,
+    toStatus: trip.status,
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    notes: `تم استبدال المركبة والسائق معًا (السائق: ${oldDriverName} ➔ ${newDriver.fullName} · المركبة: ${oldVehicle?.plate || oldVehicleId} ➔ ${newVehicle.plate}). السبب: ${reason}`,
+    latitude,
+    longitude,
+    metadata: { oldDriverId, newDriverId: newDriver.id, oldVehicleId, newVehicleId: newVehicle.id, reason },
+    timestamp: new Date().toISOString(),
+  });
+
+  logAuditEvent({
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    action: "TRIP_DRIVER_AND_VEHICLE_REPLACED",
+    entity: "trips",
+    entityId: trip.id,
+    tripId: trip.id,
+    oldValues: { driverId: oldDriverId, driverName: oldDriverName, vehicleId: oldVehicleId },
+    newValues: { driverId: newDriver.id, driverName: newDriver.fullName, vehicleId: newVehicle.id, plate: newVehicle.plate, reason },
+    reason,
+  });
+
+  dispatchNotification({
+    targetRole: "ALL",
+    titleAr: `استبدال المركبة والسائق للرحلة ${trip.tripNumber}`,
+    titleEn: `Driver & Vehicle Replaced for Trip ${trip.tripNumber}`,
+    messageAr: `تم استبدال المركبة والسائق داخل نفس الرحلة دون تغيير رقمها الموحد. السبب: ${reason}`,
+    messageEn: `Driver and vehicle replaced inside the same trip; unified number unchanged: ${reason}`,
+    type: "WARNING",
+    entityType: "trip",
+    entityId: trip.id,
+    tripId: trip.id,
+  });
+
+  return res.json({
+    message: "Driver and vehicle replaced inside the same trip — unified number unchanged",
+    trip,
+    driverHistory: trip.driverHistory,
+    vehicleHistory: trip.vehicleHistory,
+  });
 });
 
 export default router;

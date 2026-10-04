@@ -120,8 +120,24 @@ export interface TripEntity {
   declinedDriverIds?: string[];
   additionalDriverId?: string;
   additionalDriverName?: string;
-  vehicleHistory?: Array<{ vehicleId: string; plate: string; replacedBy: string; reason: string; timestamp: string }>;
-  driverHistory?: Array<{ driverId: string; driverName: string; replacedBy: string; reason: string; timestamp: string }>;
+  /**
+   * Assignment & replacement history (§Phase 3). Every record keeps the
+   * previous entity, the new entity, the acting user, the reason and the time.
+   */
+  vehicleHistory?: Array<{
+    vehicleId: string; plate: string;               // previous vehicle
+    newVehicleId?: string; newPlate?: string;       // replacement vehicle
+    replacedBy: string;                             // acting user (المستخدم)
+    reason: string; timestamp: string;
+    latitude?: number; longitude?: number;          // location if available
+  }>;
+  driverHistory?: Array<{
+    driverId: string; driverName: string;           // previous driver
+    newDriverId?: string; newDriverName?: string;   // replacement driver
+    replacedBy: string;                             // acting user (المستخدم)
+    reason: string; timestamp: string;
+    latitude?: number; longitude?: number;
+  }>;
   requestedByDriverId?: string;
   requestedByDriverName?: string;
   driverRequestStatus?: "PENDING" | "APPROVED" | "REJECTED";

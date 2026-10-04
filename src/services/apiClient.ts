@@ -190,6 +190,11 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify({ newVehicleId, reason }),
       }),
+    replaceAssignment: (tripId: string, payload: { newDriverId: string; newVehicleId: string; reason: string; latitude?: number; longitude?: number }) =>
+      request<any>(`/api/trips/${tripId}/replace-assignment`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
   },
   vehicles: {
     getAll: (params?: Record<string, string>) => {

@@ -15,6 +15,7 @@ import {
   IconDoc,
   IconLayers,
   IconSearch,
+  IconHistory,
 } from "./Icons";
 import { palette } from "../utils/palette";
 
@@ -64,6 +65,10 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
   const [showReplaceVehicleModal, setShowReplaceVehicleModal] = useState(false);
   const [newVehicleId, setNewVehicleId] = useState("");
   const [vehicleReplaceReason, setVehicleReplaceReason] = useState("");
+  const [showReplaceBothModal, setShowReplaceBothModal] = useState(false);
+  const [bothDriverId, setBothDriverId] = useState("");
+  const [bothVehicleId, setBothVehicleId] = useState("");
+  const [bothReason, setBothReason] = useState("");
   const [replacementBusy, setReplacementBusy] = useState(false);
   const [replacementNotice, setReplacementNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -142,6 +147,26 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
       setReplacementNotice({ ok: true, text: t("Vehicle replaced successfully and recorded in the trip file.", "تم استبدال الشاحنة بنجاح وتوثيق العملية في ملف الرحلة.") + (v ? ` (${v.plate})` : "") });
       setShowReplaceVehicleModal(false);
       setVehicleReplaceReason("");
+      refreshDetails(currentTrip.id);
+    } catch (e: any) {
+      setReplacementNotice({ ok: false, text: String(e?.message || t("Replacement failed", "فشل الاستبدال")) });
+    } finally {
+      setReplacementBusy(false);
+    }
+  };
+
+  const handleExecuteBothReplacement = async () => {
+    if (!currentTrip || !bothDriverId || !bothVehicleId) return;
+    setReplacementBusy(true);
+    try {
+      await apiClient.trips.replaceAssignment(currentTrip.id, {
+        newDriverId: bothDriverId,
+        newVehicleId: bothVehicleId,
+        reason: bothReason.trim(),
+      });
+      setReplacementNotice({ ok: true, text: t("Driver and vehicle replaced inside the same trip — the unified number never changed.", "تم استبدال السائق والمركبة داخل نفس الرحلة — الرقم الموحد لا يتغير أبدًا.") });
+      setShowReplaceBothModal(false);
+      setBothReason("");
       refreshDetails(currentTrip.id);
     } catch (e: any) {
       setReplacementNotice({ ok: false, text: String(e?.message || t("Replacement failed", "فشل الاستبدال")) });
@@ -587,7 +612,15 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                   {t("Assigned Vehicle & Fleet Drivers", "الشاحنة والسائقين المكلفين بالرحلة")}
                 </span>
               </div>
-              <TruckTypeBadge truckType={currentTrip.cargoType} size={14} />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setBothDriverId(""); setBothVehicleId(""); setBothReason(""); setShowReplaceBothModal(true); }}
+                  className="rounded-[8px] bg-status-waiting/15 hover:bg-status-waiting hover:text-navy text-status-waiting px-2.5 py-1 text-[11px] font-bold transition-all"
+                >
+                  {t("Replace driver + vehicle together", "استبدال السائق والمركبة معًا")}
+                </button>
+                <TruckTypeBadge truckType={currentTrip.cargoType} size={14} />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -659,6 +692,54 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 </div>
               </div>
             </div>
+
+            {/* Assignment History — who was replaced, by whom, when and why (§Phase 3) */}
+            {((details?.trip?.driverHistory?.length || 0) > 0 || (details?.trip?.vehicleHistory?.length || 0) > 0) && (
+              <div className="rounded-[14px] bg-surface-1 p-4 border border-border-subtle space-y-3">
+                <div className="flex items-center gap-2">
+                  <IconHistory size={16} className="text-brand" />
+                  <span className="text-[12px] font-bold text-text-primary uppercase tracking-wider">
+                    {t("Assignment & Replacement History", "سجل التعيينات والاستبدالات")}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {(details?.trip?.driverHistory?.length || 0) > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-[10.5px] text-text-muted uppercase font-bold">{t("Drivers", "السائقون")}</span>
+                      {details.trip.driverHistory.map((h: any, i: number) => (
+                        <div key={`dh-${i}`} className="rounded-[10px] bg-surface-2 border border-border-subtle p-2.5 text-[11.5px]">
+                          <div className="font-bold text-white">
+                            {t("Driver replaced", "تم استبدال السائق")}: {h.driverName} ← {h.newDriverName || "—"}
+                          </div>
+                          <div className="text-text-muted mt-0.5">{t("Reason", "السبب")}: {h.reason}</div>
+                          <div className="text-text-muted text-[10.5px] tabular-nums mt-0.5">
+                            {t("By", "بواسطة")}: {h.replacedBy} · {new Date(h.timestamp).toLocaleString("ar-SA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {(details?.trip?.vehicleHistory?.length || 0) > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-[10.5px] text-text-muted uppercase font-bold">{t("Vehicles", "المركبات")}</span>
+                      {details.trip.vehicleHistory.map((h: any, i: number) => (
+                        <div key={`vh-${i}`} className="rounded-[10px] bg-surface-2 border border-border-subtle p-2.5 text-[11.5px]">
+                          <div className="font-bold text-white">
+                            {t("Vehicle replaced", "تم استبدال المركبة")}: {h.plate} ← {h.newPlate || "—"}
+                          </div>
+                          <div className="text-text-muted mt-0.5">{t("Reason", "السبب")}: {h.reason}</div>
+                          <div className="text-text-muted text-[10.5px] tabular-nums mt-0.5">
+                            {t("By", "بواسطة")}: {h.replacedBy} · {new Date(h.timestamp).toLocaleString("ar-SA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Lifecycle Flow Stepper Buttons */}
@@ -1111,6 +1192,90 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                 className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg disabled:opacity-50"
               >
                 {t("Confirm the vehicle swap & update tracking", "تأكيد استبدال الشاحنة وتحديث التتبع")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 5: Replace driver + vehicle together — same trip, same number */}
+      {showReplaceBothModal && (
+        <div
+          className="animate-fade-in fixed inset-0 z-[90] grid place-items-center bg-black/80 p-4 backdrop-blur-md"
+          onClick={() => setShowReplaceBothModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="animate-fade-up max-w-[480px] w-full rounded-[18px] bg-surface-1 text-white p-6 border border-border-subtle shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
+                <span>{t("Replace the driver and the vehicle together", "استبدال السائق والمركبة معًا")}</span>
+                <span className="badge bg-brand/20 text-brand text-[10px] tabular-nums">{currentTrip.tripNumber}</span>
+              </h3>
+              <button onClick={() => setShowReplaceBothModal(false)} className="btn-icon" aria-label={t("Close", "إغلاق")}>
+                <IconClose size={16} />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-text-muted">
+              {t(
+                "The operation is recorded inside the same trip. No new trip is created and the unified number never changes.",
+                "تُسجَّل العملية داخل نفس الرحلة. لا تُنشأ رحلة جديدة ولا يتغير الرقم الموحد أبدًا."
+              )}
+            </p>
+
+            <div className="space-y-3 text-[12px]">
+              <div>
+                <label className="block text-text-muted text-[11px] mb-1">{t("New driver", "السائق الجديد")} *</label>
+                <select
+                  value={bothDriverId}
+                  onChange={(e) => setBothDriverId(e.target.value)}
+                  className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-white border border-border-subtle outline-none"
+                >
+                  <option value="">{t("Select a driver…", "اختر سائقًا…")}</option>
+                  {driversList.filter((d) => d.id !== details?.driver?.id).map((d) => (
+                    <option key={d.id} value={d.id}>{d.fullName} — {d.phone}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-text-muted text-[11px] mb-1">{t("New vehicle", "المركبة الجديدة")} *</label>
+                <select
+                  value={bothVehicleId}
+                  onChange={(e) => setBothVehicleId(e.target.value)}
+                  className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-white border border-border-subtle outline-none"
+                >
+                  <option value="">{t("Select a vehicle…", "اختر شاحنة…")}</option>
+                  {vehiclesList.filter((v) => v.id !== details?.vehicle?.id && v.isActive).map((v) => (
+                    <option key={v.id} value={v.id}>{v.plate} · {v.type} · {v.model}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-text-muted text-[11px] mb-1">{t("Reason (mandatory for audit)", "السبب (إلزامي للتدقيق)")} *</label>
+                <textarea
+                  rows={2}
+                  value={bothReason}
+                  onChange={(e) => setBothReason(e.target.value)}
+                  className="w-full rounded-[10px] bg-surface-2 p-2.5 text-white border border-border-subtle outline-none resize-none"
+                  placeholder={t("e.g. breakdown mid-route — replacement unit dispatched", "مثال: عطل في الطريق — إرسال وحدة بديلة")}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+              <button onClick={() => setShowReplaceBothModal(false)} className="btn-ghost text-[11.5px] py-2 px-3">
+                {t("Cancel", "إلغاء")}
+              </button>
+              <button
+                onClick={handleExecuteBothReplacement}
+                disabled={replacementBusy || !bothDriverId || !bothVehicleId || bothReason.trim().length < 4}
+                className="btn-primary text-[12px] py-2 px-4 font-bold shadow-lg disabled:opacity-50"
+              >
+                {t("Confirm both replacements", "تأكيد الاستبدالين معًا")}
               </button>
             </div>
           </div>
