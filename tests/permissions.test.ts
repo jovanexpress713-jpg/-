@@ -77,7 +77,9 @@ async function login(email: string, password: string) {
  * the exact payload the console boots from — so a change saved through the admin
  * screen is what this renders, not a hand-written permission list.
  */
-async function renderSidebar(opsToken: string): Promise<string> {
+async function mountInJsdom(
+  render: (deps: any) => any
+): Promise<{ text: string; host: any }> {
   const { JSDOM, VirtualConsole } = await import("jsdom");
   const virtualConsole = new VirtualConsole();
   virtualConsole.on("jsdomError", () => {});
@@ -130,52 +132,149 @@ async function renderSidebar(opsToken: string): Promise<string> {
   const { act } = await import("react");
   const { SettingsProvider } = await import("../src/settings");
   const { FleetStoreProvider } = await import("../src/state/fleetStore");
-  const { Sidebar } = await import("../src/components/Sidebar");
   const { PermissionProvider } = await import("../src/state/permissionStore");
-
-  const me = await api("GET", "/api/permissions/me", { token: opsToken });
-  assert.strictEqual(me.status, 200);
 
   const host = dom.window.document.createElement("div");
   dom.window.document.body.appendChild(host);
   const root = createRoot(host as any);
+  const node = await render({ React, SettingsProvider, FleetStoreProvider, PermissionProvider, dom });
+
   await act(async () => {
-    root.render(
+    root.render(node);
+  });
+
+  const text = host.textContent ?? "";
+  return { text, host, unmount: () => act(async () => root.unmount()), close: () => dom.window.close() } as any;
+}
+
+/** Builds the exact `initial` grant the console boots from, for a signed-in role. */
+async function grantFor(token: string) {
+  const me = await api("GET", "/api/permissions/me", { token });
+  assert.strictEqual(me.status, 200);
+  return {
+    role: me.body.role,
+    wildcard: !!me.body.wildcard,
+    permissions: me.body.permissions as string[],
+    pages: me.body.pages as string[],
+    sections: me.body.sections as string[],
+    version: me.body.version as number,
+    canManagePermissions: !!me.body.canManagePermissions,
+  };
+}
+
+/** Renders the real <Sidebar> exactly as the signed-in role would see it. */
+async function renderSidebar(token: string): Promise<string> {
+  const initial = await grantFor(token);
+  const { Sidebar } = await import("../src/components/Sidebar");
+  const mounted = await mountInJsdom(({ React, SettingsProvider, FleetStoreProvider, PermissionProvider }) => {
+    return React.createElement(
+      SettingsProvider,
+      null,
       React.createElement(
-        SettingsProvider,
+        FleetStoreProvider,
         null,
         React.createElement(
-          FleetStoreProvider,
-          null,
-          React.createElement(
-            PermissionProvider,
-            {
-              initial: {
-                role: me.body.role,
-                wildcard: !!me.body.wildcard,
-                permissions: me.body.permissions,
-                pages: me.body.pages,
-                sections: me.body.sections,
-                version: me.body.version,
-                canManagePermissions: !!me.body.canManagePermissions,
-              },
-            },
-            React.createElement(Sidebar, {
-              active: "trips",
-              onSelect: () => {},
-              counts: { trucks: 4, cargos: 2, repair: 1, drivers: 3, reports: 6 },
-              onCreate: () => {},
-            })
-          )
+          PermissionProvider,
+          { initial },
+          React.createElement(Sidebar, {
+            active: "trips",
+            onSelect: () => {},
+            counts: { trucks: 4, cargos: 2, repair: 1, drivers: 3, reports: 6 },
+            onCreate: () => {},
+          })
         )
       )
     );
   });
-
-  const text = host.textContent ?? "";
-  await act(async () => root.unmount());
-  dom.window.close();
+  const text = mounted.text;
+  await mounted.unmount();
+  mounted.close();
   return text;
+}
+
+/** Renders the real <WebConsole> — the surface that carries the persona bar. */
+async function renderConsole(token: string): Promise<string> {
+  const initial = await grantFor(token);
+  const { WebConsole } = await import("../src/components/WebConsole");
+  const mounted = await mountInJsdom(({ React, SettingsProvider, FleetStoreProvider, PermissionProvider }) => {
+    return React.createElement(
+      SettingsProvider,
+      null,
+      React.createElement(
+        FleetStoreProvider,
+        null,
+        React.createElement(
+          PermissionProvider,
+          { initial },
+          React.createElement(WebConsole, { page: "trips", onPageChange: () => {} })
+        )
+      )
+    );
+  });
+  const text = mounted.text;
+  await mounted.unmount();
+  mounted.close();
+  return text;
+}
+
+/**
+ * «نمط التجربة» must not exist for an ordinary employee.
+ *
+ * The persona bar swaps the console into another identity's portal, so if it
+ * renders for everyone then a driver or a client is one click away from the
+ * operations console — regardless of what the registry says they may see.
+ */
+async function runPersonaBarTests(adminToken: string, opsToken: string) {
+  const PERSONA_LABEL = "نمط التجربة";
+
+  const asAdmin = await renderConsole(adminToken);
+  assert.ok(asAdmin.includes(PERSONA_LABEL), "the administrator keeps the persona bar");
+
+  const asOps = await renderConsole(opsToken);
+  assert.ok(
+    !asOps.includes(PERSONA_LABEL),
+    "an operations manager must not be offered another identity to switch into"
+  );
+}
+
+/**
+ * The sign-in form must let the visitor choose.
+ *
+ * It used to ship pre-filled with the system administrator's credentials and to
+ * sign the visitor in as him when submitted empty — so nobody ever picked an
+ * account. Both are asserted away here.
+ */
+async function runAuthGateTests() {
+  const { ConsoleAuthGate } = await import("../src/components/ConsoleAuthGate");
+  let authenticated: any = null;
+
+  const mounted = await mountInJsdom(({ React, SettingsProvider }) =>
+    React.createElement(SettingsProvider, null, React.createElement(ConsoleAuthGate, {
+      onAuthenticated: (user: any) => {
+        authenticated = user;
+      },
+    }))
+  );
+
+  const doc = mounted.host.ownerDocument;
+  const email = doc.querySelector('input[autocomplete="username"]') as HTMLInputElement | null;
+  const password = doc.querySelector('input[autocomplete="current-password"]') as HTMLInputElement | null;
+
+  assert.ok(email && password, "the sign-in form renders its two fields");
+  assert.strictEqual(email!.value, "", "no account is pre-selected for the visitor");
+  assert.strictEqual(password!.value, "", "and no password is pre-filled");
+
+  /* Submitting an empty form must ask for credentials, not sign anybody in. */
+  const form = doc.querySelector("form");
+  assert.ok(form, "the form is present");
+  await form!.dispatchEvent(
+    new (mounted.host.ownerDocument.defaultView as any).Event("submit", { bubbles: true, cancelable: true })
+  );
+  await new Promise((r) => setTimeout(r, 30));
+  assert.strictEqual(authenticated, null, "an empty form never signs the visitor in as the administrator");
+
+  await mounted.unmount();
+  mounted.close();
 }
 
 /** The Arabic labels the sidebar renders, taken from the live i18n table. */
@@ -495,6 +594,8 @@ export async function runPermissionTests() {
      `/me` answer the console would receive, so the same code path the user sees
      is the one under test. */
   await runSidebarVisibilityTests(admin.token, ops.token);
+  await runPersonaBarTests(admin.token, ops.token);
+  await runAuthGateTests();
 
   /* ── 18. Restore the registry so later suites see the factory state ──── */
   for (const role of ROLES.filter((r) => !r.locked).map((r) => r.id)) {

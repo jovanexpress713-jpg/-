@@ -125,8 +125,14 @@ export function ConsoleAuthGate({
 }) {
   const { t, tk, lang } = useSettings();
   const activeLanguage = LANGUAGE_OPTIONS.find((option) => option.code === lang);
-  const [email, setEmail] = useState("admin@ejaz.sa");
-  const [password, setPassword] = useState("Ejaz@2026Admin");
+  /*
+   * Deliberately empty. Pre-filling the administrator's credentials turned the
+   * sign-in form into a one-key admin login, so nobody ever actually chose an
+   * account — the demo list below is the place to pick one, and a real user types
+   * their own.
+   */
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -183,8 +189,17 @@ export function ConsoleAuthGate({
       return;
     }
     if (!email.trim() || !password) {
-      // If empty, allow instant demo entry as Super Admin
-      await handleQuickDemoLogin(FALLBACK_DEMO_ACCOUNTS[0]);
+      /*
+       * Never sign anybody in on their behalf. An empty form used to log the
+       * visitor straight in as the system administrator; now it just asks for the
+       * credentials, and the demo accounts below remain an explicit choice.
+       */
+      setError(
+        t(
+          "Enter your email and password, or pick one of the demo accounts below.",
+          "أدخل بريدك الإلكتروني وكلمة المرور، أو اختر أحد الحسابات التجريبية في الأسفل.",
+        ),
+      );
       return;
     }
 

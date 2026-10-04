@@ -80,7 +80,18 @@ export function WebConsole({
     selectTruck,
   } = useFleetStore();
 
-  const { pageVisible, can, ready } = usePermissions();
+  const { pageVisible, can, ready, wildcard, role } = usePermissions();
+
+  /**
+   * «نمط التجربة» is an administrative affordance, not a navigation aid.
+   *
+   * It swaps the whole console into another identity's portal, so leaving it on
+   * screen hands every signed-in user a switch between مدير العمليات / بوابة
+   * السائق / بوابة العميل / مالك الأسطول — the exact opposite of showing a role
+   * only its own permitted screens. It renders for the system administrator (or a
+   * role explicitly granted `accounts.switch`) and does not exist for anyone else.
+   */
+  const maySwitchPersona = wildcard || role === "SUPER_ADMIN" || can("accounts.switch");
 
   const [internalNav, setInternalNav] = useState("overview");
 
@@ -182,10 +193,10 @@ export function WebConsole({
   };
 
   // Persona Views
-  if (currentRole === "driver") {
+  if (maySwitchPersona && currentRole === "driver") {
     return (
       <div className="flex h-full flex-col min-h-0">
-        <RoleSwitcher />
+        {maySwitchPersona && <RoleSwitcher />}
         <div className="flex-1 overflow-hidden min-h-0">
           <DriverPortal />
         </div>
@@ -193,10 +204,10 @@ export function WebConsole({
     );
   }
 
-  if (currentRole === "shipper") {
+  if (maySwitchPersona && currentRole === "shipper") {
     return (
       <div className="flex h-full flex-col min-h-0">
-        <RoleSwitcher />
+        {maySwitchPersona && <RoleSwitcher />}
         <div className="flex-1 overflow-hidden min-h-0">
           <ShipperPortal />
         </div>
@@ -204,10 +215,10 @@ export function WebConsole({
     );
   }
 
-  if (currentRole === "owner") {
+  if (maySwitchPersona && currentRole === "owner") {
     return (
       <div className="flex h-full flex-col min-h-0">
-        <RoleSwitcher />
+        {maySwitchPersona && <RoleSwitcher />}
         <div className="flex-1 overflow-hidden min-h-0">
           <OwnerPortal />
         </div>
@@ -219,7 +230,7 @@ export function WebConsole({
   return (
     <div className="flex h-full flex-col min-h-0">
       {/* Interactive Role & Persona Bar */}
-      <RoleSwitcher />
+      {maySwitchPersona && <RoleSwitcher />}
 
       {/*
         Mobile section bar. Every console screen stays reachable from a phone:
