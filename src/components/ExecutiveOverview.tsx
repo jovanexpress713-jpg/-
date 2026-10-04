@@ -5,7 +5,7 @@ import { useFleetStore } from "../state/fleetStore";
 import { useToast } from "./Toast";
 import { CapacityTruck } from "./CapacityTruck";
 import { TruckTypeIcon } from "./TruckTypeIcon";
-import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconSnowflake } from "./Icons";
+import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconSnowflake, IconChevron } from "./Icons";
 import { KpiCards } from "./overview/KpiCards";
 import { CargoDonut } from "./overview/CargoDonut";
 import { TripBars } from "./overview/TripBars";
@@ -75,6 +75,7 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
   const [driverFilter, setDriverFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [gpsState, setGpsState] = useState<GpsState>("checking");
+  const [truckTypesExpanded, setTruckTypesExpanded] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -208,12 +209,23 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
           <div className="mb-4 flex items-start justify-between gap-4" dir="ltr">
             <span className="pt-1 text-[11px] font-medium text-text-secondary" dir="rtl">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span>
             <div className="text-end" dir="rtl">
-              <h2 className="text-[18px] font-bold text-text-primary sm:text-[21px]">{t("Truck load capacity", "حمولة الشاحنة")}</h2>
+              <button
+                type="button"
+                onClick={() => setTruckTypesExpanded((expanded) => !expanded)}
+                aria-expanded={truckTypesExpanded}
+                aria-controls="executive-truck-type-cards"
+                aria-label={truckTypesExpanded ? t("Hide truck types", "إخفاء أنواع الشاحنات") : t("Show truck types", "عرض أنواع الشاحنات")}
+                className="inline-flex cursor-pointer items-center gap-1.5 text-[18px] font-bold text-text-primary transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 sm:text-[21px]"
+              >
+                {t("Truck load capacity", "حمولة الشاحنة")}
+                <IconChevron size={17} className={`transition-transform duration-200 ${truckTypesExpanded ? "rotate-180" : ""}`} />
+              </button>
               <p className="mt-1 text-[10px] text-text-muted sm:text-[12px]">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنتك.")}</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
+          <div id="executive-truck-type-cards" className={truckTypesExpanded ? "block" : "hidden"}>
+            <div className="grid grid-cols-2 gap-3">
+              {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
               const vehicle = trucks.find((item) => normalizeVehicleType(item.body) === meta.id);
               const matchingTypeTrips = trips.filter((trip) => normalizeVehicleType(trip.cargoType) === meta.id);
               const matchingTrip = matchingTypeTrips.find((trip) => trip.cargoWeightTons > 0 && (!vehicle || trip.truckId === vehicle.id))
@@ -256,7 +268,8 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                     : <span className="shrink-0 text-text-muted">—</span>}
                 </div>
               </button>;
-            })}
+              })}
+            </div>
           </div>
         </section>
 

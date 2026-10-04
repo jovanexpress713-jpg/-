@@ -546,6 +546,8 @@ Object.assign(UR_OPS, {
   "Trips and shipments": "ٹرپس اور ترسیلات",
   "Truck load capacity": "ٹرک کی گنجائش",
   "of load": "لوڈ کا",
+  "Hide truck types": "ٹرک کی اقسام چھپائیں",
+  "Show truck types": "ٹرک کی اقسام دکھائیں",
   "Cargo temperature": "کارگو کا درجۂ حرارت",
   "Vehicle status": "گاڑی کی حالت",
   "Maintenance & repairs": "مرمت اور دیکھ بھال",
