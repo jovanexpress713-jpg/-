@@ -124,8 +124,8 @@ const TYPE_GAUGE_SHAPES: Record<CanonicalVehicleTypeId, { clip: string; top: num
   flatbed: { clip: "M 702 627 L 1450 649 L 1450 665 L 710 644 Z", top: 627, bottom: 665, centerX: 1080, amplitude: 0 },
   // The reefer side begins behind its refrigeration unit; keep the cooling unit visible.
   reefer: { clip: "M 804 226 L 1442 452 L 1442 675 L 804 660 Z", top: 226, bottom: 675, centerX: 1120, amplitude: 16 },
-  dry: { clip: "M 692 226 L 1438 455 L 1438 632 L 718 660 Z", top: 226, bottom: 660, centerX: 1070, amplitude: 17 },
-  curtain: { clip: "M 698 240 L 1435 455 L 1435 599 L 714 615 Z", top: 240, bottom: 615, centerX: 1065, amplitude: 14 },
+  dry: { clip: "M 692 226 L 1438 455 L 1438 632 L 718 660 Z", top: 226, bottom: 660, centerX: 1070, amplitude: 16 },
+  curtain: { clip: "M 698 240 L 1435 455 L 1435 599 L 714 615 Z", top: 240, bottom: 615, centerX: 1065, amplitude: 16 },
 };
 
 function waterAreaPath(y: number, bottom: number, amplitude = 28) {
@@ -220,8 +220,8 @@ export function CapacityTruck({ pct, className, label, countUp = false, truckTyp
           </g>
           <path d={shape.clip} fill="none" stroke="#9cb0c6" strokeWidth="2" opacity=".72" />
           {showText && <>
-            <rect x="970" y="568" width="220" height="72" rx="36" fill="#0b1d31" fillOpacity=".94" stroke="#72bdff" strokeWidth="3" />
-            <text x={shape.centerX} y="605" textAnchor="middle" dominantBaseline="central" fill="#fff" style={{ fontFamily: "var(--font-mono)", fontSize: 92, fontWeight: 800, filter: "drop-shadow(0 2px 8px rgba(0,0,0,.75))" }}>{Math.round(p)}%</text>
+            <rect x="950" y="558" width="260" height="84" rx="42" fill="#0b1d31" fillOpacity=".94" stroke="#72bdff" strokeWidth="3" />
+            <text x={shape.centerX} y="600" textAnchor="middle" dominantBaseline="central" fill="#fff" style={{ fontFamily: "var(--font-mono)", fontSize: 104, fontWeight: 800, filter: "drop-shadow(0 2px 8px rgba(0,0,0,.75))" }}>{Math.round(p)}%</text>
           </>}
         </svg>
       );
