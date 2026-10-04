@@ -14,6 +14,8 @@ import { AIAssistant } from "./components/AIAssistant";
 import { AlertsCenter } from "./components/AlertsCenter";
 import { toRoutedAlert, visibleAlertsFor } from "./services/smartAlerts";
 import { IconArrowRight } from "./components/Icons";
+import { PermissionProvider } from "./state/permissionStore";
+import { NAV_ALIASES } from "./utils/permissions";
 
 type Project = "web" | "mobile";
 
@@ -115,10 +117,15 @@ function Shell() {
     setPreviewLogin(false);
   }, []);
 
-  /** Search results navigate the console to the matching section. */
+  /**
+   * Search results and settings shortcuts navigate the console to the matching
+   * section. A section the role cannot see is never entered — the caller is sent
+   * to its own landing page instead of a "no permission" message.
+   */
   const handleNavigate = useCallback((targetView: string) => {
     setProject("web");
-    setPage(targetView in SECTION_KEYS ? targetView : "shipments");
+    const canonical = NAV_ALIASES[targetView] ?? targetView;
+    setPage(canonical in SECTION_KEYS ? canonical : "overview");
   }, []);
 
   /** «إعدادات النظام» jumps to the existing console sections (§8). */
@@ -159,6 +166,7 @@ function Shell() {
     };
   }, [page, project, mobileInterface, tk]);
 
+  const body = (() => {
   /* ── Sign-in screen PREVIEW (§11): preview only, with a clear exit. ── */
   if (previewLogin && session) {
     return (
@@ -275,6 +283,13 @@ function Shell() {
         onNavigate={handleSystemNavigate}
       />
     </div>
+  );
+  })();
+
+  return (
+    <PermissionProvider role={session?.role} tokenPermissions={session?.permissions}>
+      {body}
+    </PermissionProvider>
   );
 }
 

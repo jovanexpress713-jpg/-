@@ -523,6 +523,14 @@ class InMemoryDatabase {
       createdAt: new Date().toISOString(),
     });
 
+    // 6. Official Tariff Book — the company's rate card.
+    //
+    // Without a tariff book nothing can ever be priced: every new shipment
+    // would sit in «بانتظار عرض سعر» forever, no invoice would exist and no
+    // settlement could be recorded. These are the four approved categories over
+    // the main inter-city corridors, banded by the system's own road distance.
+    this.seedTariffBook();
+
     this.documents.set("doc-2", {
       id: "doc-2",
       tripId: trip2Id,
@@ -535,6 +543,85 @@ class InMemoryDatabase {
       uploadedBy: "u-ops",
       createdAt: new Date().toISOString(),
     });
+  }
+
+  /**
+   * Seeds the official rate card: 4 approved categories × the main corridors.
+   * Prices are the company's published tariffs — the single source the pricing
+   * engine reads, so a trip price is always traceable to one of these rows.
+   */
+  private seedTariffBook() {
+    const now = new Date().toISOString();
+    type Band = { origin: string; destination: string; minKm: number; maxKm: number | null };
+
+    const CORRIDORS: Band[] = [
+      { origin: "الرياض", destination: "جدة", minKm: 900, maxKm: 1000 },
+      { origin: "جدة", destination: "الرياض", minKm: 900, maxKm: 1000 },
+      { origin: "الرياض", destination: "الدمام", minKm: 380, maxKm: 460 },
+      { origin: "الدمام", destination: "الرياض", minKm: 380, maxKm: 460 },
+      { origin: "جدة", destination: "الدمام", minKm: 1400, maxKm: 1600 },
+      { origin: "الدمام", destination: "جدة", minKm: 1400, maxKm: 1600 },
+      { origin: "الرياض", destination: "المدينة المنورة", minKm: 800, maxKm: 950 },
+      { origin: "المدينة المنورة", destination: "الرياض", minKm: 800, maxKm: 950 },
+      { origin: "جدة", destination: "مكة المكرمة", minKm: 60, maxKm: 110 },
+      { origin: "مكة المكرمة", destination: "جدة", minKm: 60, maxKm: 110 },
+      { origin: "جدة", destination: "أبها", minKm: 550, maxKm: 700 },
+      { origin: "أبها", destination: "جدة", minKm: 550, maxKm: 700 },
+      { origin: "الرياض", destination: "القصيم", minKm: 300, maxKm: 400 },
+      { origin: "القصيم", destination: "الرياض", minKm: 300, maxKm: 400 },
+      { origin: "الرياض", destination: "حائل", minKm: 600, maxKm: 750 },
+      { origin: "حائل", destination: "الرياض", minKm: 600, maxKm: 750 },
+    ];
+
+    /** Price per corridor per category (SAR, full-truck load). */
+    const RATES: Record<string, { flatbed: number; reefer: number; dry: number; curtain: number }> = {
+      "الرياض|جدة": { flatbed: 4200, reefer: 5600, dry: 4500, curtain: 4350 },
+      "الرياض|الدمام": { flatbed: 2100, reefer: 2850, dry: 2250, curtain: 2180 },
+      "جدة|الدمام": { flatbed: 6100, reefer: 8100, dry: 6500, curtain: 6300 },
+      "الرياض|المدينة المنورة": { flatbed: 3700, reefer: 4950, dry: 3950, curtain: 3820 },
+      "جدة|مكة المكرمة": { flatbed: 850, reefer: 1150, dry: 920, curtain: 880 },
+      "جدة|أبها": { flatbed: 3100, reefer: 4150, dry: 3320, curtain: 3210 },
+      "الرياض|القصيم": { flatbed: 1650, reefer: 2200, dry: 1770, curtain: 1710 },
+      "الرياض|حائل": { flatbed: 2900, reefer: 3880, dry: 3110, curtain: 3010 },
+    };
+
+    const TYPE_AR: Record<string, "سطحة" | "براد" | "جاف" | "ستارة"> = {
+      flatbed: "سطحة",
+      reefer: "براد",
+      dry: "جاف",
+      curtain: "ستارة",
+    };
+
+    let n = 0;
+    for (const c of CORRIDORS) {
+      const rates = RATES[`${c.origin}|${c.destination}`];
+      if (!rates) continue;
+      for (const key of Object.keys(rates) as Array<keyof typeof rates>) {
+        n += 1;
+        const id = `tariff-seed-${n}`;
+        const tariff: TariffEntity = {
+          id,
+          truckType: TYPE_AR[key],
+          originCity: c.origin,
+          destinationCity: c.destination,
+          minDistanceKm: c.minKm,
+          maxDistanceKm: c.maxKm,
+          minWeight: 0,
+          maxWeight: null,
+          weightUnit: "TON",
+          price: rates[key],
+          currency: "SAR",
+          status: "ACTIVE",
+          validFrom: "2026-01-01",
+          validTo: null,
+          notes: "التعرفة الرسمية المعتمدة — دفتر أسعار المؤسسة",
+          createdBy: "system",
+          createdAt: now,
+          updatedAt: now,
+        };
+        this.tariffs.set(id, tariff);
+      }
+    }
   }
 }
 

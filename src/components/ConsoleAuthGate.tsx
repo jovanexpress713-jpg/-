@@ -5,7 +5,7 @@ import { LANGUAGE_OPTIONS } from "../localization/i18n";
 import { LanguageList } from "./AccountMenu";
 import { BrandLogo } from "./Logo";
 import { apiClient, setAuthToken, getAuthToken } from "../services/apiClient";
-import { IconLock, IconProfile, IconEye, IconEyeOff, IconAlertCircle, IconTruck, IconBolt } from "./Icons";
+import { IconLock, IconProfile, IconEye, IconEyeOff, IconAlertCircle, IconTruck } from "./Icons";
 
 /**
  * EJAZ Transport — Control Room Authentication Gate
@@ -125,8 +125,14 @@ export function ConsoleAuthGate({
 }) {
   const { t, tk, lang } = useSettings();
   const activeLanguage = LANGUAGE_OPTIONS.find((option) => option.code === lang);
-  const [email, setEmail] = useState("admin@ejaz.sa");
-  const [password, setPassword] = useState("Ejaz@2026Admin");
+  /*
+   * Deliberately empty. Pre-filling the administrator's credentials turned the
+   * sign-in form into a one-key admin login, so nobody ever actually chose an
+   * account — the demo list below is the place to pick one, and a real user types
+   * their own.
+   */
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -183,8 +189,17 @@ export function ConsoleAuthGate({
       return;
     }
     if (!email.trim() || !password) {
-      // If empty, allow instant demo entry as Super Admin
-      await handleQuickDemoLogin(FALLBACK_DEMO_ACCOUNTS[0]);
+      /*
+       * Never sign anybody in on their behalf. An empty form used to log the
+       * visitor straight in as the system administrator; now it just asks for the
+       * credentials, and the demo accounts below remain an explicit choice.
+       */
+      setError(
+        t(
+          "Enter your email and password, or pick one of the demo accounts below.",
+          "أدخل بريدك الإلكتروني وكلمة المرور، أو اختر أحد الحسابات التجريبية في الأسفل.",
+        ),
+      );
       return;
     }
 
@@ -308,29 +323,14 @@ export function ConsoleAuthGate({
             </div>
           </div>
 
-          {/* Instant Password-Free Entry Button — never inside the preview (§11) */}
-          {!previewMode && (
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => handleQuickDemoLogin(FALLBACK_DEMO_ACCOUNTS[0])}
-            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-status-active text-[13.5px] font-extrabold text-[#07131d] shadow-lg shadow-status-active/20 transition-all hover:brightness-110 active:scale-[0.99]"
-          >
-            <IconBolt size={17} />
-            <span>
-              {t(
-                "Enter Control Room Directly (No Password)",
-                "دخول مباشر للوحة التحكم والإدارة (بدون كلمة مرور)",
-              )}
-            </span>
-          </button>
-          )}
-
           {!previewMode && (
           <div className="mt-5 border-t border-border-subtle pt-4">
             <div className="mb-2.5 flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-brand">
-                {t("1-Click Demo Accounts (Instant Sign-in)", "حسابات تجريبية جاهزة (اضغط للدخول الفوري)")}
+                {t(
+                  "Choose an account to enter (no password)",
+                  "اختر الحساب للدخول (بدون كلمة مرور)",
+                )}
               </span>
               <span className="text-[10.5px] font-semibold text-status-active">
                 {t("Instant Entry", "دخول مباشر بضغطة واحدة")}

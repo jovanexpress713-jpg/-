@@ -62,7 +62,7 @@ export async function runIntegrationTests() {
   const tariff = await api("POST", "/api/tariffs", {
     token: admin,
     body: {
-      truckType: "براد", originCity: "جدة", destinationCity: "الدمام",
+      truckType: "براد", originCity: "تبوك", destinationCity: "نجران",
       minDistanceKm: 0, maxDistanceKm: null, minWeight: 0, maxWeight: null,
       weightUnit: "TON", price: 7400, currency: "SAR", status: "ACTIVE", validFrom: "2026-01-01",
     },
@@ -70,7 +70,7 @@ export async function runIntegrationTests() {
   assert.strictEqual(tariff.status, 201, "company tariff published");
 
   // The client resolves the live quote before ordering — dynamic, not typed.
-  const quote = await api("GET", "/api/tariffs/quote?truckType=براد&origin=جدة&destination=الدمام&weightTons=15", { token: client });
+  const quote = await api("GET", "/api/tariffs/quote?truckType=براد&origin=تبوك&destination=نجران&weightTons=15", { token: client });
   assert.strictEqual(quote.body.available, true, "quote matches the published tariff");
   assert.strictEqual(quote.body.price, 7400, "client sees the exact tariff price");
 
@@ -78,7 +78,7 @@ export async function runIntegrationTests() {
   const order = await api("POST", "/api/trips", {
     token: client,
     body: {
-      originCity: "جدة", destinationCity: "الدمام",
+      originCity: "تبوك", destinationCity: "نجران",
       cargoDescription: "منتجات مبردة — تكامل المراحل",
       cargoType: "براد", cargoWeightTons: 15,
       customerId: "cust-1", tariffId: quote.body.tariff.id,

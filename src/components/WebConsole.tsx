@@ -27,6 +27,8 @@ import { AIAssistant } from "./AIAssistant";
 import { AlertsCenter } from "./AlertsCenter";
 import { BrandingSettings } from "./BrandingSettings";
 import { useToast } from "./Toast";
+import { usePermissions } from "../state/permissionStore";
+import { NAV_PAGES, NAV_ALIASES } from "../utils/permissions";
 
 /**
  * Console section titles for the mobile section bar. The dashboard renders its
@@ -78,11 +80,52 @@ export function WebConsole({
     selectTruck,
   } = useFleetStore();
 
+  const { pageVisible, can, ready, wildcard, role } = usePermissions();
+
+  /**
+   * «نمط التجربة» is an administrative affordance, not a navigation aid.
+   *
+   * It swaps the whole console into another identity's portal, so leaving it on
+   * screen hands every signed-in user a switch between مدير العمليات / بوابة
+   * السائق / بوابة العميل / مالك الأسطول — the exact opposite of showing a role
+   * only its own permitted screens. It renders for the system administrator (or a
+   * role explicitly granted `accounts.switch`) and does not exist for anyone else.
+   */
+  const maySwitchPersona = wildcard || role === "SUPER_ADMIN" || can("accounts.switch");
+
   const [internalNav, setInternalNav] = useState("overview");
-  const nav = page ?? internalNav;
+
+  /**
+   * Permission clamp.
+   *
+   * A section this role may not see is never rendered — not even behind a
+   * direct navigation attempt. Instead the console lands on the first page the
+   * role *does* own, so the experience is "this page does not exist for you"
+   * rather than "this page exists but you may not open it".
+   */
+  const requested = NAV_ALIASES[page ?? internalNav] ?? (page ?? internalNav);
+  const visiblePages = useMemo(
+    () => NAV_PAGES.filter((p) => pageVisible(p.id)).map((p) => p.id),
+    [pageVisible]
+  );
+  const landing = visiblePages[0] ?? "settings";
+  const navIsAllowed =
+    !ready ||
+    requested === "branding" ||
+    requested === "settings" ||
+    pageVisible(requested);
+  const nav = navIsAllowed ? requested : landing;
+
+  useEffect(() => {
+    // Keep the owner's controlled state in sync when a page is revoked live.
+    if (!navIsAllowed && onPageChange) onPageChange(landing);
+  }, [navIsAllowed, landing, onPageChange]);
+
   const setNav = (next: string) => {
-    if (onPageChange) onPageChange(next);
-    else setInternalNav(next);
+    const canonical = NAV_ALIASES[next] ?? next;
+    if (ready && !pageVisible(canonical) && canonical !== "settings" && canonical !== "branding") return;
+    if (onPageChange) onPageChange(canonical);
+    else setInternalNav(canonical);
   };
   const [modalKind, setModalKind] = useState<RequestKind | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -107,7 +150,7 @@ export function WebConsole({
       cargos: trips.filter((t) => t.status === "on_road").length,
       repair: trucks.filter((v) => v.status !== "active").length,
       drivers: drivers.length,
-      reports: 6,
+      reports: 0,
     }),
     [trucks, trips, drivers]
   );
@@ -138,6 +181,7 @@ export function WebConsole({
       return;
     }
     if (key === "branding") {
+      if (!can("branding.manage")) return;
       setShowBrandingModal(true);
       return;
     }
@@ -149,10 +193,10 @@ export function WebConsole({
   };
 
   // Persona Views
-  if (currentRole === "driver") {
+  if (maySwitchPersona && currentRole === "driver") {
     return (
       <div className="flex h-full flex-col min-h-0">
-        <RoleSwitcher />
+        {maySwitchPersona && <RoleSwitcher />}
         <div className="flex-1 overflow-hidden min-h-0">
           <DriverPortal />
         </div>
@@ -160,10 +204,10 @@ export function WebConsole({
     );
   }
 
-  if (currentRole === "shipper") {
+  if (maySwitchPersona && currentRole === "shipper") {
     return (
       <div className="flex h-full flex-col min-h-0">
-        <RoleSwitcher />
+        {maySwitchPersona && <RoleSwitcher />}
         <div className="flex-1 overflow-hidden min-h-0">
           <ShipperPortal />
         </div>
@@ -171,10 +215,10 @@ export function WebConsole({
     );
   }
 
-  if (currentRole === "owner") {
+  if (maySwitchPersona && currentRole === "owner") {
     return (
       <div className="flex h-full flex-col min-h-0">
-        <RoleSwitcher />
+        {maySwitchPersona && <RoleSwitcher />}
         <div className="flex-1 overflow-hidden min-h-0">
           <OwnerPortal />
         </div>
@@ -186,7 +230,7 @@ export function WebConsole({
   return (
     <div className="flex h-full flex-col min-h-0">
       {/* Interactive Role & Persona Bar */}
-      <RoleSwitcher />
+      {maySwitchPersona && <RoleSwitcher />}
 
       {/*
         Mobile section bar. Every console screen stays reachable from a phone:

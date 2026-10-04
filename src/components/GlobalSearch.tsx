@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
+import { usePermissions } from "../state/permissionStore";
 import { useFleetStore, type Trip } from "../state/fleetStore";
 import { getVehicleTypeMeta } from "../data/vehicleTypes";
 import {
@@ -35,42 +36,58 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Aggregated Search Results
+  /*
+   * Aggregated Search Results.
+   *
+   * Search is a page like any other: it must not become the one place a role can
+   * still reach data it has no permission for. A group the role cannot see is
+   * dropped from the answer entirely — not shown with an "access denied" note —
+   * so an operations manager without the fleet simply never gets truck hits.
+   */
+  const { can } = usePermissions();
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return { trips: [], shipments: [], trucks: [], drivers: [] };
 
-    const matchingTrips = trips
-      .filter(
-        (tr) =>
-          tr.tripNumber.toLowerCase().includes(q) ||
-          tr.originCity.toLowerCase().includes(q) ||
-          tr.destinationCity.toLowerCase().includes(q)
-      )
-      .slice(0, 4);
+    const matchingTrips = can("trips.view")
+      ? trips
+          .filter(
+            (tr) =>
+              tr.tripNumber.toLowerCase().includes(q) ||
+              tr.originCity.toLowerCase().includes(q) ||
+              tr.destinationCity.toLowerCase().includes(q)
+          )
+          .slice(0, 4)
+      : [];
 
-    const matchingShipments = trips
-      .filter(
-        (tr) =>
-          tr.qrCodeToken.toLowerCase().includes(q) ||
-          tr.shipper.toLowerCase().includes(q) ||
-          tr.consignee.toLowerCase().includes(q)
-      )
-      .slice(0, 4);
+    const matchingShipments = can("shipments.view")
+      ? trips
+          .filter(
+            (tr) =>
+              tr.qrCodeToken.toLowerCase().includes(q) ||
+              tr.shipper.toLowerCase().includes(q) ||
+              tr.consignee.toLowerCase().includes(q)
+          )
+          .slice(0, 4)
+      : [];
 
-    const matchingTrucks = trucks
-      .filter(
-        (v) =>
-          v.plate.toLowerCase().includes(q) ||
-          v.model.toLowerCase().includes(q) ||
-          v.brand.toLowerCase().includes(q) ||
-          v.partner.toLowerCase().includes(q)
-      )
-      .slice(0, 4);
+    const matchingTrucks = can("vehicles.view")
+      ? trucks
+          .filter(
+            (v) =>
+              v.plate.toLowerCase().includes(q) ||
+              v.model.toLowerCase().includes(q) ||
+              v.brand.toLowerCase().includes(q) ||
+              v.partner.toLowerCase().includes(q)
+          )
+          .slice(0, 4)
+      : [];
 
-    const matchingDrivers = drivers
-      .filter((d) => d.name.toLowerCase().includes(q) || d.phone.includes(q))
-      .slice(0, 3);
+    const matchingDrivers = can("drivers.view")
+      ? drivers
+          .filter((d) => d.name.toLowerCase().includes(q) || d.phone.includes(q))
+          .slice(0, 3)
+      : [];
 
     return {
       trips: matchingTrips,
@@ -78,7 +95,7 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
       trucks: matchingTrucks,
       drivers: matchingDrivers,
     };
-  }, [query, trips, trucks, drivers]);
+  }, [query, trips, trucks, drivers, can]);
 
   const totalResults =
     results.trips.length +

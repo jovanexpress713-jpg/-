@@ -180,7 +180,46 @@ router.patch("/:id", authenticate, requirePermission("vehicles.edit"), (req: Aut
   if (registrationExpiry !== undefined) vehicle.registrationExpiry = registrationExpiry;
   if (insuranceExpiry !== undefined) vehicle.insuranceExpiry = insuranceExpiry;
   if (inspectionExpiry !== undefined) vehicle.inspectionExpiry = inspectionExpiry;
-  if (assignedDriverId !== undefined) vehicle.assignedDriverId = assignedDriverId || undefined;
+  /**
+   * Captain assignment is a TWO-WAY link. Writing only the vehicle side left
+   * the previous captain still pointing at this truck and the new captain still
+   * pointing at his old one, so the drivers screen, the fleet screen and the
+   * trip assignment list disagreed about who drives what.
+   */
+  const previousDriverId = vehicle.assignedDriverId;
+  if (assignedDriverId !== undefined) {
+    const nextDriverId = assignedDriverId ? String(assignedDriverId) : undefined;
+
+    if (nextDriverId && !db.drivers.has(nextDriverId)) {
+      return res.status(404).json({ error: `Driver '${nextDriverId}' does not exist`, code: "DRIVER_NOT_FOUND" });
+    }
+
+    // Release the truck from whoever held it before.
+    if (previousDriverId && previousDriverId !== nextDriverId) {
+      const previousDriver = db.drivers.get(previousDriverId);
+      if (previousDriver && previousDriver.assignedVehicleId === id) {
+        previousDriver.assignedVehicleId = undefined;
+        if (previousDriver.status === "on_trip") previousDriver.status = "available";
+      }
+    }
+
+    // Release the new captain from his previous truck.
+    if (nextDriverId) {
+      const nextDriver = db.drivers.get(nextDriverId);
+      if (nextDriver) {
+        const oldVehicleId = nextDriver.assignedVehicleId;
+        if (oldVehicleId && oldVehicleId !== id) {
+          const oldVehicle = db.vehicles.get(oldVehicleId);
+          if (oldVehicle && oldVehicle.assignedDriverId === nextDriverId) {
+            oldVehicle.assignedDriverId = undefined;
+          }
+        }
+        nextDriver.assignedVehicleId = id;
+      }
+    }
+
+    vehicle.assignedDriverId = nextDriverId;
+  }
 
   if (customImage === null || customImage === "") {
     // A per-vehicle photograph is removed together with its published file.
@@ -201,7 +240,14 @@ router.patch("/:id", authenticate, requirePermission("vehicles.edit"), (req: Aut
     entity: "vehicles",
     entityId: id,
     oldValues: previous,
-    newValues: { type: vehicle.type, plate: vehicle.plate, status: vehicle.status, model: vehicle.model, customImage: vehicle.customImage },
+    newValues: {
+      type: vehicle.type,
+      plate: vehicle.plate,
+      status: vehicle.status,
+      model: vehicle.model,
+      customImage: vehicle.customImage,
+      assignedDriverId: vehicle.assignedDriverId,
+    },
     reason: typeChanged ? `Vehicle category re-bound from '${previous.type}' to '${vehicle.type}'` : undefined,
   });
 

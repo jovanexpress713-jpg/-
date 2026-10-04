@@ -170,6 +170,14 @@ export const apiClient = {
         body: JSON.stringify({ reason }),
       }),
     getTracking: (id: string) => request<any>(`/api/trips/${id}/tracking`),
+    /** Legal next lifecycle steps of a trip for the calling role. */
+    nextStates: (id: string) => request<any>(`/api/trips/${id}/next-states`),
+    /** Apply the authoritative tariff price to an unpriced trip. */
+    price: (id: string, payload: { tariffId?: string; price?: number; notes?: string }) =>
+      request<any>(`/api/trips/${id}/price`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     assignDriver: (tripId: string, driverId: string, additionalDriverId?: string) =>
       request<any>(`/api/trips/${tripId}/assign-driver`, {
         method: "POST",
@@ -205,6 +213,12 @@ export const apiClient = {
     create: (data: any) =>
       request<any>("/api/vehicles", {
         method: "POST",
+        body: JSON.stringify(data),
+      }),
+    /** Edit a fleet unit — including its assigned captain (`assignedDriverId`). */
+    update: (id: string, data: any) =>
+      request<any>(`/api/vehicles/${id}`, {
+        method: "PATCH",
         body: JSON.stringify(data),
       }),
   },
@@ -254,7 +268,13 @@ export const apiClient = {
   finance: {
     getTrips: () => request<any>("/api/finance/trips"),
     getTripById: (id: string) => request<any>(`/api/finance/trips/${id}`),
-    settle: (data: { tripId: string; paidAmount: number; settlementStatus?: string; paymentStatus?: string }) =>
+    /** Record a real cost line (toll / other) against a trip. */
+    addExpense: (tripId: string, data: { category?: string; amount: number; notes?: string }) =>
+      request<any>(`/api/finance/trips/${tripId}/expenses`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    settle: (data: { tripId: string; paidAmount: number; settlementStatus?: string }) =>
       request<any>("/api/finance/settle", {
         method: "POST",
         body: JSON.stringify(data),
@@ -378,6 +398,27 @@ export const apiClient = {
       }),
     removeVehicleImage: (vehicleId: string) =>
       request<any>(`/api/vehicle-assets/vehicle/${vehicleId}/image`, { method: "DELETE" }),
+  },
+  /** Live role & permission registry (§RBAC). */
+  permissions: {
+    /** The caller's own effective grant — drives everything the UI renders. */
+    me: () => request<any>("/api/permissions/me"),
+    /** Cheap version probe; a change means "refetch /me". */
+    changes: () => request<{ version: number }>("/api/permissions/changes"),
+    catalog: () => request<any>("/api/permissions/catalog"),
+    roles: () => request<any>("/api/permissions/roles"),
+    role: (role: string) => request<any>(`/api/permissions/roles/${encodeURIComponent(role)}`),
+    save: (role: string, permissions: string[], reason?: string) =>
+      request<any>(`/api/permissions/roles/${encodeURIComponent(role)}`, {
+        method: "PUT",
+        body: JSON.stringify({ permissions, reason }),
+      }),
+    reset: (role: string, reason?: string) =>
+      request<any>(`/api/permissions/roles/${encodeURIComponent(role)}/reset`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    audit: (limit = 100) => request<any>(`/api/permissions/audit?limit=${limit}`),
   },
   branding: {
     get: () => request<{ branding: any }>("/api/branding"),

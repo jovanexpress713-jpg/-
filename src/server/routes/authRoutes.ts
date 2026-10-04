@@ -2,7 +2,8 @@ import { Router, type Response } from "express";
 import { db } from "../db";
 import { comparePassword, generateToken } from "../auth/jwt";
 import { statusForUser, REGISTRATION_STATUS_AR } from "../services/registrationService";
-import { authenticate, type AuthenticatedRequest, ROLE_PERMISSIONS } from "../auth/middleware";
+import { authenticate, type AuthenticatedRequest } from "../auth/middleware";
+import { getRolePermissions } from "../services/permissionService";
 import { logAuditEvent } from "../services/auditService";
 import { config } from "../config";
 
@@ -30,7 +31,9 @@ function resolveAccountAccess(user: {
     : registration
       ? registration.approved
       : !user.registrationId || user.registrationStatus === "APPROVED";
-  const base = ROLE_PERMISSIONS[user.role] || [];
+  // The LIVE registry grant — not the factory defaults — so an administrator's
+  // change reaches the account on its next sign-in without a code deploy.
+  const base = getRolePermissions(user.role);
   return {
     registration,
     approved,

@@ -275,6 +275,7 @@ export async function runNovaDesignTests() {
   const { CITIES } = await import("../src/data/routes");
   const { KpiCards } = await import("../src/components/overview/KpiCards");
   const { Sidebar } = await import("../src/components/Sidebar");
+  const { PermissionProvider } = await import("../src/state/permissionStore");
 
   const mount = async (node: React.ReactElement) => {
     const host = document.createElement("div");
@@ -285,7 +286,17 @@ export async function runNovaDesignTests() {
         React.createElement(
           SettingsProvider,
           null,
-          React.createElement(FleetStoreProvider, null, node),
+          React.createElement(
+            FleetStoreProvider,
+            null,
+            /* Navigation is permission-gated; these suites assert layout, so they
+               mount with a full grant. */
+            React.createElement(
+              PermissionProvider,
+              { initial: { role: "SUPER_ADMIN", wildcard: true, permissions: ["*"], pages: [], sections: [], version: 1, canManagePermissions: true } },
+              node
+            )
+          ),
         ),
       );
     });
@@ -296,7 +307,21 @@ export async function runNovaDesignTests() {
       one: (sel: string) => host.querySelector(sel),
       rerender: async (nextNode: React.ReactElement) => {
         await act(async () => {
-          r.render(React.createElement(SettingsProvider, null, React.createElement(FleetStoreProvider, null, nextNode)));
+          r.render(
+            React.createElement(
+              SettingsProvider,
+              null,
+              React.createElement(
+                FleetStoreProvider,
+                null,
+                React.createElement(
+                  PermissionProvider,
+                  { initial: { role: "SUPER_ADMIN", wildcard: true, permissions: ["*"], pages: [], sections: [], version: 1, canManagePermissions: true } },
+                  nextNode
+                )
+              )
+            )
+          );
         });
       },
       unmount: async () => {

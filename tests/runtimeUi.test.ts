@@ -274,6 +274,7 @@ async function runDomTests() {
   const { MobileApp } = await import("../src/mobile/MobileApp");
   const { TripsManager } = await import("../src/components/TripsManager");
   const { setAuthToken } = await import("../src/services/apiClient");
+  const { PermissionProvider } = await import("../src/state/permissionStore");
 
   const mount = async (node: React.ReactElement) => {
     const host = document.createElement("div");
@@ -284,7 +285,21 @@ async function runDomTests() {
         React.createElement(
           SettingsProvider,
           null,
-          React.createElement(FleetStoreProvider, null, React.createElement(ToastProvider, null, node))
+          React.createElement(
+            FleetStoreProvider,
+            null,
+            React.createElement(
+              ToastProvider,
+              null,
+              /* The console is permission-gated, so a mount needs a grant. These
+                 suites assert behaviour, not access — they run with full access. */
+              React.createElement(
+                PermissionProvider,
+                { initial: { role: "SUPER_ADMIN", wildcard: true, permissions: ["*"], pages: [], sections: [], version: 1, canManagePermissions: true } },
+                node
+              )
+            )
+          )
         )
       );
     });

@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { BrandEmblem } from "./Logo";
@@ -20,6 +21,7 @@ import {
   IconTag,
 } from "./Icons";
 import type { RequestKind } from "../data/types";
+import { usePermissions } from "../state/permissionStore";
 
 export interface NavCounts {
   trucks: number;
@@ -55,14 +57,53 @@ const KEY_ALIAS: Record<string, string> = {
 
 export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
   const { t, tk } = useSettings();
+  const { pageVisible, can } = usePermissions();
   const current = KEY_ALIAS[active] ?? active;
 
+  /**
+   * Navigation gate. Tool entries (assistant, alerts, settings) are gated by
+   * their own capability; page entries by the page permission from the registry.
+   */
+  const isNavAllowed = (key: string): boolean => {
+    switch (key) {
+      case "ai":
+        return can("assistant.act") || can("notifications.view");
+      case "alerts":
+        return can("notifications.view");
+      case "settings":
+        return true; // the account menu must always stay reachable
+      case "branding":
+        return can("branding.manage");
+      default:
+        return pageVisible(key);
+    }
+  };
+
+  /** Renders a labelled group, and nothing at all when every row is hidden. */
+  const group = (labelKey: Parameters<typeof tk>[0], rows: (ReactElement | null)[]) => {
+    const visible = rows.filter(Boolean);
+    if (!visible.length) return null;
+    return (
+      <div className="mb-1">
+        {heading(tk(labelKey))}
+        <div className="space-y-0.5">{visible}</div>
+        <div className="my-3 border-t border-border-subtle" />
+      </div>
+    );
+  };
+
+  /**
+   * A row the role may not see is not rendered at all — the item simply does not
+   * exist in this user's navigation, which is the whole point: nobody is ever
+   * shown a page only to be told they lack access to it.
+   */
   const row = (
     key: string,
     label: string,
     Icon: typeof IconTruck,
     opts: { count?: number; modal?: boolean } = {},
   ) => {
+    if (!isNavAllowed(key)) return null;
     const isActive = current === key;
     return (
       <button
@@ -101,6 +142,16 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
     { kind: "report", label: t("Report", "تقرير"), icon: IconReport },
   ];
 
+  /** Each shortcut is gated by the capability that actually performs it. */
+  const QUICK_CREATE_PERM: Record<RequestKind, string> = {
+    truck: "vehicles.create",
+    cargo: "trips.create",
+    repair: "vehicles.edit",
+    driver: "drivers.create",
+    report: "reports.view",
+  };
+  const QUICK_VISIBLE = QUICK.filter((q) => can(QUICK_CREATE_PERM[q.kind]));
+
   return (
     <aside className="flex h-full w-[264px] shrink-0 flex-col border-e border-border-subtle bg-surface-1 px-3 py-4">
       {/* Compact identity block — the header carries the full brand lockup. */}
@@ -115,53 +166,49 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
       </div>
 
       <nav className="scroll-thin mt-5 flex-1 overflow-y-auto px-1 pb-2">
-        {heading(tk("nav.operations"))}
-        <div className="space-y-0.5">
-          {row("overview", tk("nav.overview"), IconAnalysis)}
-          {row("operations", tk("nav.operationsCenter"), IconDashboard)}
-          {row("trips", tk("nav.trips"), IconTruck)}
-          {row("shipments", tk("nav.shipments"), IconCargo, { count: counts.cargos })}
-          {row("tariffs", tk("nav.tariffs"), IconTag)}
-          {row("tracking", tk("nav.tracking"), IconTracking)}
-        </div>
+        {/* Operations */}
+        {group("nav.operations", [
+          row("overview", tk("nav.overview"), IconAnalysis),
+          row("operations", tk("nav.operationsCenter"), IconDashboard),
+          row("trips", tk("nav.trips"), IconTruck),
+          row("shipments", tk("nav.shipments"), IconCargo, { count: counts.cargos }),
+          row("tariffs", tk("nav.tariffs"), IconTag),
+          row("tracking", tk("nav.tracking"), IconTracking),
+          row("chats", tk("nav.chats"), IconChat),
+        ])}
 
-        <div className="my-3 border-t border-border-subtle" />
+        {/* Fleet */}
+        {group("nav.fleetGroup", [
+          row("fleet", tk("nav.fleet"), IconTruck, { count: counts.trucks }),
+          row("vehicle-assets", tk("nav.vehicleAssets"), IconLayers),
+          row("drivers", tk("nav.drivers"), IconDriver, { count: counts.drivers }),
+          row("registrations", tk("nav.registrations"), IconRequests),
+        ])}
 
-        {heading(tk("nav.fleetGroup"))}
-        <div className="space-y-0.5">
-          {row("fleet", tk("nav.fleet"), IconTruck, { count: counts.trucks })}
-          {row("vehicle-assets", tk("nav.vehicleAssets"), IconLayers)}
-          {row("drivers", tk("nav.drivers"), IconDriver, { count: counts.drivers })}
-          {row("registrations", tk("nav.registrations"), IconRequests)}
-        </div>
+        {/* Finance & insights — financial surfaces are gated separately from
+            operational ones, so a role can run trips without seeing money. */}
+        {group("nav.insights", [
+          row("reports", tk("nav.reports"), IconReport, { count: counts.reports }),
+          row("analysis", tk("nav.analysis"), IconAnalysis),
+          row("history", tk("nav.history"), IconHistory),
+        ])}
 
-        <div className="my-3 border-t border-border-subtle" />
-
-        {heading(tk("nav.insights"))}
-        <div className="space-y-0.5">
-          {row("reports", tk("nav.reports"), IconReport, { count: counts.reports })}
-          {row("analysis", tk("nav.analysis"), IconAnalysis)}
-          {row("history", tk("nav.history"), IconHistory)}
-        </div>
-
-        <div className="my-3 border-t border-border-subtle" />
-
-        {heading(tk("nav.identity"))}
-        <div className="space-y-0.5">
-          {row("settings", tk("nav.settings"), IconDoc, { modal: true })}
-          {row("branding", tk("nav.branding"), IconLayers, { modal: true })}
-          {row("alerts", tk("nav.alerts"), IconBolt, { modal: true })}
-          {row("chats", tk("nav.chats"), IconChat)}
-          {row("ai", tk("nav.ai"), IconBolt, { modal: true })}
-        </div>
+        {/* Identity & tools */}
+        {group("nav.identity", [
+          row("settings", tk("nav.settings"), IconDoc, { modal: true }),
+          row("branding", tk("nav.branding"), IconLayers, { modal: true }),
+          row("alerts", tk("nav.alerts"), IconBolt, { modal: true }),
+          row("ai", tk("nav.ai"), IconBolt, { modal: true }),
+        ])}
       </nav>
 
-      {/* Quick create — always visible, reachable by touch. */}
+      {/* Quick create — offers only what this role may actually create. */}
+      {QUICK_VISIBLE.length > 0 && (
       <div className="mt-3 shrink-0 space-y-2 border-t border-border-subtle pt-3">
         <div className="flex items-center justify-between gap-1 px-1">
           <span className="label-sm">{tk("nav.quickCreate")}</span>
           <div className="flex items-center gap-1">
-            {QUICK.map(({ kind, label, icon: Icon }) => (
+            {QUICK_VISIBLE.map(({ kind, label, icon: Icon }) => (
               <button
                 key={kind}
                 title={label}
@@ -176,7 +223,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
         </div>
 
         <button
-          onClick={() => onCreate("truck")}
+          onClick={() => onCreate(QUICK_VISIBLE[0].kind)}
           className="group flex w-full items-center gap-3 rounded-panel border-[1.5px] border-dashed border-brand bg-brand/5 p-3 text-start transition-[background-color,border-color,transform] duration-200 hover:bg-brand/10 active:scale-[0.98]"
         >
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand text-on-brand transition-transform duration-300 group-hover:rotate-90">
@@ -192,6 +239,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
           </span>
         </button>
       </div>
+      )}
     </aside>
   );
 }

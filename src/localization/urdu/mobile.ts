@@ -62,6 +62,8 @@ export const UR_MOBILE: Record<string, string> = {
   "Demo Accounts": "ڈیمو اکاؤنٹس",
   "Back to sign in": "سائن اِن پر واپس",
   "Invalid credentials. Tap any demo account below for instant access.": "غلط تفصیلات۔ فوری رسائی کے لیے نیچے کوئی ڈیمو اکاؤنٹ دبائیں۔",
+  "Enter your email and password, or pick one of the demo accounts below.": "اپنا ای میل اور پاس ورڈ درج کریں، یا نیچے کوئی ڈیمو اکاؤنٹ منتخب کریں۔",
+  "Choose an account to enter (no password)": "داخل ہونے کے لیے اکاؤنٹ منتخب کریں (بغیر پاس ورڈ)",
   "Password": "پاس ورڈ",
   "Username / Email": "صارف نام / ای میل",
   "Username": "صارف نام",

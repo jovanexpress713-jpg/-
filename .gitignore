@@ -31,6 +31,8 @@ Thumbs.db
 public/uploads/*
 data/registration-uploads/
 data/registration-requests.json
+# Runtime permission overrides set from the admin screen; defaults live in code.
+data/role-permissions.json
 
 # Keep the published brand logo (it is part of the identity, not runtime data)
 !public/uploads/branding/

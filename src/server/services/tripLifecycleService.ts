@@ -140,3 +140,102 @@ export const STATUS_LABELS: Record<TripLifecycleStatus, { ar: string; en: string
   CANCELLED: { ar: "ملغاة", en: "Cancelled", badgeColor: "#ff5a6e" },
   REOPENED: { ar: "معاد فتحها للمراجعة", en: "Reopened", badgeColor: "#38bdf8" },
 };
+
+/**
+ * ── Legal-path planning ────────────────────────────────────────────────────
+ *
+ * The console works in operator milestones («ابدأ الانطلاق», «تم التسليم») while
+ * the engine is state-machine strict. A milestone therefore has to walk every
+ * intermediate state in order — never skip one — so `planTransition` returns the
+ * ordered chain of hops that gets there, validating role + required fields at
+ * every single step. If any hop is illegal the whole plan fails: there is no
+ * silent partial advance.
+ */
+export interface TransitionPlan {
+  ok: boolean;
+  /** Ordered hops, excluding `from`. Empty when already at `to`. */
+  path: TripLifecycleStatus[];
+  error?: string;
+}
+
+/** Mainline order of the canonical lifecycle, used to find the shortest walk. */
+const MAINLINE: TripLifecycleStatus[] = [
+  "DRAFT_CREATED",
+  "PENDING_APPROVAL",
+  "CONFIRMED",
+  "ASSIGNED",
+  "HEADING_TO_LOADING",
+  "ARRIVED_LOADING",
+  "LOADED",
+  "IN_TRANSIT",
+  "ARRIVED_DESTINATION",
+  "DELIVERED",
+  "SETTLEMENT_PENDING",
+  "FINANCIAL_REVIEW",
+  "PARTIALLY_PAID",
+  "PAID",
+  "COMPLETED",
+  "ARCHIVED",
+];
+
+export function planTransition(
+  from: TripLifecycleStatus,
+  to: TripLifecycleStatus,
+  userRole: string,
+  tripData: Record<string, any>,
+  reason?: string
+): TransitionPlan {
+  if (from === to) return { ok: true, path: [] };
+
+  const direct = validateTransition(from, to, userRole, tripData, reason);
+  if (direct.isValid) return { ok: true, path: [to] };
+
+  // Forward walk along the mainline (e.g. CONFIRMED → IN_TRANSIT walks
+  // ASSIGNED → HEADING_TO_LOADING → ARRIVED_LOADING → LOADED → IN_TRANSIT).
+  const fromIdx = MAINLINE.indexOf(from);
+  const toIdx = MAINLINE.indexOf(to);
+  if (fromIdx >= 0 && toIdx > fromIdx) {
+    const chain = MAINLINE.slice(fromIdx + 1, toIdx + 1);
+    // Every hop must be legal for this role; a missing field anywhere aborts.
+    for (let i = 0; i < chain.length; i += 1) {
+      const stepFrom = i === 0 ? from : chain[i - 1];
+      const stepTo = chain[i];
+      const check = validateTransition(stepFrom, stepTo, userRole, tripData, reason);
+      if (!check.isValid) {
+        return {
+          ok: false,
+          path: [],
+          error: `Cannot reach '${to}': the required step '${stepFrom}' → '${stepTo}' was rejected. ${check.error || ""}`.trim(),
+        };
+      }
+    }
+    return { ok: true, path: chain };
+  }
+
+  return { ok: false, path: [], error: direct.error };
+}
+
+/** Next legal state(s) from a given status for a role — drives the console's buttons. */
+export function availableTransitions(
+  from: TripLifecycleStatus,
+  userRole: string,
+  tripData: Record<string, any> = {}
+): TripLifecycleStatus[] {
+  return TRANSITION_MATRIX.filter((r) => r.from === from)
+    .map((r) => r.to)
+    .filter((to) => validateTransition(from, to, userRole, tripData).isValid);
+}
+
+/** Can this trip be cancelled right now, by this role? */
+export function canCancelTrip(
+  currentStatus: TripLifecycleStatus,
+  userRole: string
+): { allowed: boolean; reason?: string } {
+  if (!CANCELLABLE_STATES.includes(currentStatus)) {
+    return { allowed: false, reason: `Trips in '${currentStatus}' are already delivered or in settlement and cannot be cancelled.` };
+  }
+  if (!["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"].includes(userRole)) {
+    return { allowed: false, reason: "Only managers can cancel a trip." };
+  }
+  return { allowed: true };
+}

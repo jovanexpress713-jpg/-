@@ -251,4 +251,38 @@ export const UR_ORGANIZATION: Record<string, string> = {
   "Vehicle": "گاڑی",
   "Payments": "ادائیگیاں",
   "Unable to reach the reporting service.": "رپورٹنگ سروس تک رسائی ممکن نہیں۔",
+  /* ── Roles & permissions administration (RBAC) ──────────────────── */
+  "Roles & permissions": "کردار اور اختیارات",
+  "Control exactly which sections, pages and functions each role sees. Changes apply on save — no code edit.":
+    "طے کریں کہ ہر کردار کون سے سیکشن، صفحات اور افعال دیکھ سکتا ہے۔ تبدیلیاں محفوظ کرتے ہی لاگو ہو جاتی ہیں — کوڈ میں ترمیم کے بغیر۔",
+  "Loading the permission registry…": "اختیارات کا رجسٹر لوڈ ہو رہا ہے…",
+  "Unable to load the permission registry.": "اختیارات کا رجسٹر لوڈ نہیں ہو سکا۔",
+  "Retry": "دوبارہ کوشش کریں",
+  "Roles": "کردار",
+  "edited": "ترمیم شدہ",
+  "The system administrator holds full access and cannot be restricted — otherwise nobody could restore access. Edit any other role to control what it sees.":
+    "سسٹم ایڈمنسٹریٹر کے پاس مکمل رسائی ہے اور اسے محدود نہیں کیا جا سکتا — ورنہ کوئی بھی رسائی بحال نہ کر سکے گا۔ کسی دوسرے کردار کو ترتیب دیں۔",
+  "Search a page or function…": "صفحہ یا فعل تلاش کریں…",
+  "granted": "دیے گئے",
+  "Restore defaults": "طے شدہ بحال کریں",
+  "Save permissions": "اختیارات محفوظ کریں",
+  "Saving…": "محفوظ ہو رہا ہے…",
+  "Permissions saved": "اختیارات محفوظ ہو گئے",
+  "Permissions saved for": "اختیارات محفوظ ہو گئے برائے",
+  "added": "شامل",
+  "removed": "ہٹائے گئے",
+  "Saving failed.": "محفوظ کرنے میں ناکامی۔",
+  "Default permissions restored.": "طے شدہ اختیارات بحال ہو گئے۔",
+  "Reset failed.": "بحالی ناکام۔",
+  "pages": "صفحات",
+  "Whole section": "پورا سیکشن",
+  "Permission change log": "اختیارات کی تبدیلی کا لاگ",
+  "Who changed which role, from what to what, and when.": "کس نے کس کردار کو، کس سے کیا، اور کب تبدیل کیا۔",
+  "No permission changes recorded yet.": "ابھی تک اختیارات میں کوئی تبدیلی درج نہیں ہوئی۔",
+  "restored defaults": "طے شدہ بحال",
+  "updated": "تبدیل شدہ",
+  "Show or hide any section, page or function for any role — applied on save.":
+    "کسی بھی کردار کے لیے کوئی بھی سیکشن، صفحہ یا فعل دکھائیں یا چھپائیں — محفوظ کرتے ہی لاگو۔",
+  "The system administrator holds full access and cannot be restricted":
+    "سسٹم ایڈمنسٹریٹر کے پاس مکمل رسائی ہے اور اسے محدود نہیں کیا جا سکتا",
 };

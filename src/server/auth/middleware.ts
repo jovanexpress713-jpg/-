@@ -1,64 +1,26 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyToken, type TokenPayload } from "./jwt";
 import { statusForUser } from "../services/registrationService";
+import {
+  DEFAULT_ROLE_PERMISSIONS,
+  hasPermission as registryHasPermission,
+  canManagePermissions,
+  effectivePermissionsFor,
+} from "../services/permissionService";
 
 export interface AuthenticatedRequest extends Request {
   user?: TokenPayload;
 }
 
-export const ROLE_PERMISSIONS: Record<string, string[]> = {
-  SUPER_ADMIN: ["*"],
-  GENERAL_MANAGER: [
-    "trips.view", "trips.approve", "trips.cancel", "trips.reopen", "trips.assign",
-    "finance.view", "finance.approve", "finance.settle", "claims.view", "claims.manage",
-    "tariffs.view", "tariffs.manage",
-    "customers.view", "customers.create", "customers.manage", "notifications.view", "pod.view",
-    "vehicles.view", "drivers.view", "drivers.create", "reports.view", "reports.export", "audit.view", "settings.manage",
-    "registrations.view", "registrations.review"
-  ],
-  OPERATIONS_MANAGER: [
-    "trips.view", "trips.create", "trips.assign", "trips.transition", "trips.cancel", "trips.approve",
-    "tariffs.view", "tariffs.manage",
-    "claims.view", "claims.manage", "customers.view", "customers.create", "customers.manage", "notifications.view", "pod.view",
-    "vehicles.view", "vehicles.create", "vehicles.edit", "vehicles.assign",
-    "drivers.view", "drivers.create", "drivers.edit",
-    "gps.view", "gps.configure", "documents.view", "documents.upload",
-    "reports.view", "audit.view", "registrations.view", "registrations.review"
-  ],
-  DISPATCHER: [
-    "trips.view", "trips.create", "trips.assign", "trips.transition",
-    "tariffs.view",
-    "vehicles.view", "vehicles.assign", "drivers.view", "gps.view",
-    "documents.view", "documents.upload", "customers.view", "notifications.view", "pod.view"
-  ],
-  ACCOUNTANT: [
-    "finance.view", "finance.create", "finance.approve", "finance.settle",
-    "tariffs.view", "tariffs.manage",
-    "trips.view", "claims.view", "customers.view", "notifications.view", "pod.view",
-    "invoices.create", "payments.record", "reports.view", "reports.export"
-  ],
-  DRIVER: [
-    "trips.view", "trips.transition", "trips.request", "pod.create", "pod.view",
-    "documents.upload", "documents.view", "gps.view", "notifications.view"
-  ],
-  CUSTOMER: [
-    "trips.view", "trips.create", "documents.view", "claims.create", "claims.view",
-    "invoices.view", "notifications.view", "pod.view"
-  ],
-  WAREHOUSE: [
-    "trips.view", "loading.record", "documents.view", "documents.upload", "notifications.view", "pod.view"
-  ],
-  BROKER: [
-    "trips.view", "trips.create", "documents.view", "customers.view", "customers.create", "notifications.view"
-  ],
-  CUSTOMS_BROKER: [
-    "trips.view", "documents.upload", "documents.view", "notifications.view"
-  ],
-  REPRESENTATIVE: [
-    "trips.view", "documents.view", "notifications.view"
-  ],
-};
-
+/**
+ * Factory defaults, re-exported for compatibility.
+ *
+ * ⚠ This is NOT what authorises a request. The live grant for a role comes from
+ * the dynamic permission registry (`services/permissionService`), which the
+ * system administrator edits from «إدارة الأدوار والصلاحيات». Reading this
+ * constant will show you the factory defaults, never the current state.
+ */
+export const ROLE_PERMISSIONS: Record<string, string[]> = DEFAULT_ROLE_PERMISSIONS;
 /**
  * Extract the bearer token from any of the supported locations. Some reverse
  * proxies (including sandbox preview proxies) strip the `Authorization` header,
@@ -127,11 +89,36 @@ export function requireRole(...roles: string[]) {
   };
 }
 
-export function hasPermission(role: string | undefined, permission: string): boolean {
+/**
+ * The single permission question, answered by the live registry.
+ *
+ * A user-level override (granted per account by the administrator) is honoured
+ * ahead of the role grant, so an individual can be given one extra capability
+ * without opening it to the whole role.
+ */
+export function hasPermission(
+  role: string | undefined,
+  permission: string,
+  userPermissions?: string[]
+): boolean {
   if (!role) return false;
-  if (role === "SUPER_ADMIN") return true;
-  const userPerms = ROLE_PERMISSIONS[role] || [];
-  return userPerms.includes("*") || userPerms.includes(permission);
+  /*
+   * The live registry is the only authority — the token claim never is.
+   *
+   * `userPermissions` is the grant frozen into the JWT at sign-in. Honouring it
+   * as an allow-source makes it a ceiling that only ever moves one way: after an
+   * administrator revokes a permission, every open session keeps passing this
+   * check until its token expires, so «إخفاء الشاحنات» would not actually hide
+   * the data from the API. The reverse is just as wrong — re-granting would stay
+   * blocked for whoever signed in before the change.
+   *
+   * There is no per-user grant in the platform (the token carries the role's own
+   * list), so nothing is lost: one lookup decides, immediately, for every session.
+   * The parameter stays so existing call sites read unchanged, and so a future
+   * per-user restriction has an obvious place to intersect.
+   */
+  void userPermissions;
+  return registryHasPermission(role, permission);
 }
 
 function accountIsApproved(user: TokenPayload): boolean {
@@ -149,7 +136,7 @@ function effectiveHasPermission(user: TokenPayload, permission: string): boolean
   if (permission === "notifications.view") {
     return hasPermission(user.role, permission);
   }
-  return accountIsApproved(user) && hasPermission(user.role, permission);
+  return accountIsApproved(user) && hasPermission(user.role, permission, user.permissions);
 }
 
 export function requirePermission(...permissions: string[]) {
@@ -172,12 +159,8 @@ export function requirePermission(...permissions: string[]) {
       }
     }
 
-    if (req.user.role === "SUPER_ADMIN") {
-      return next();
-    }
-
-    // Role permissions stay authoritative, but are evaluated only after the
-    // live registration state confirms that an applicant account is approved.
+    // The live registry decides — including for SUPER_ADMIN, whose wildcard is
+    // itself a registry entry. No role is hard-bypassed here.
     const granted = permissions.some((permission) => effectiveHasPermission(req.user!, permission));
     if (granted) return next();
 
@@ -252,3 +235,7 @@ export function canAccessTrip(
 
   return true;
 }
+
+
+/** Re-exported so route modules can ask the registry directly. */
+export { canManagePermissions, effectivePermissionsFor };
