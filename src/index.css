@@ -818,15 +818,15 @@
 }
 
 @keyframes capacity-water-drift {
-  from { transform: translateX(-28px); }
-  to { transform: translateX(28px); }
+  from { transform: translateX(-54px); }
+  to { transform: translateX(54px); }
 }
 .capacity-water-wave {
   transform-box: fill-box;
-  animation: capacity-water-drift 2.8s ease-in-out infinite alternate;
+  animation: capacity-water-drift 2.4s linear infinite alternate;
 }
 .capacity-water-wave-highlight {
-  animation-duration: 3.6s;
+  animation-duration: 3.7s;
   animation-direction: alternate-reverse;
 }
 @media (prefers-reduced-motion: reduce) {

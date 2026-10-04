@@ -237,6 +237,7 @@ export function WebConsole({
                 setNav("trips");
               }}
               onOpenTracking={() => setNav("tracking")}
+              onOpenMaintenance={() => setNav("repair")}
             />
           ) : nav === "operations" || nav === "tracking" ? (
             <LiveOperationsCenter

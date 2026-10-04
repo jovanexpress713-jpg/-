@@ -414,6 +414,22 @@ export async function runNovaDesignTests() {
     await view.unmount();
   }
 
+  /* B6. The capacity truck uses the exact official body image for all four EJAZ types. */
+  {
+    const expectedImages: Record<string, string> = {
+      reefer: "official-reefer.png",
+      flatbed: "official-flatbed.png",
+      dry: "official-dry.png",
+      curtain: "official-curtain.png",
+    };
+    for (const [type, imageName] of Object.entries(expectedImages)) {
+      const view = await mount(React.createElement(CapacityTruck, { pct: 63, truckType: type }));
+      assert.ok((view.query("image")[0]?.getAttribute("href") ?? "").endsWith(imageName), `${type} meter uses its own approved truck image`);
+      assert.ok(view.query("clipPath").length > 0, `${type} liquid overlay is clipped to the vehicle cargo area`);
+      await view.unmount();
+    }
+  }
+
   /* ── C. TruckCapacity = truck + route in ONE component ───────────────── */
   {
     const view = await mount(

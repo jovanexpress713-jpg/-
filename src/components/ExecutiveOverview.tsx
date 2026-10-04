@@ -19,6 +19,7 @@ interface Props {
   onOpenSidebar?: () => void;
   onOpenTripDetails?: (tripId: string) => void;
   onOpenTracking?: () => void;
+  onOpenMaintenance?: () => void;
 }
 
 type GpsState = "checking" | "configured" | "unconfigured" | "unavailable";
@@ -70,7 +71,7 @@ function MetricCard({
   );
 }
 
-export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, onOpenTracking }: Props) {
+export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, onOpenTracking, onOpenMaintenance }: Props) {
   const { t } = useSettings();
   const toast = useToast();
   const { trips, trucks, drivers, selectedTripId, selectTrip, selectTruck } = useFleetStore();
@@ -129,11 +130,11 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
     }
     setCountedLoadPercent(0);
     const started = Date.now();
-    const duration = 720;
+    const duration = 1200;
     let frame = 0;
     const count = () => {
       const progress = Math.min(1, Math.max(0, (Date.now() - started) / duration));
-      const eased = 1 - Math.pow(1 - progress, 4);
+      const eased = 1 - Math.pow(1 - progress, 3);
       setCountedLoadPercent(progress === 1 ? loadPercent : loadPercent * eased);
       if (progress < 1) frame = window.requestAnimationFrame(count);
     };
@@ -214,6 +215,14 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                   <span><span className="block text-[9px] text-text-muted">{t("Truck load", "حمولة الشاحنة")}</span><strong className="mt-0.5 block text-[10px] tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}</strong></span>
                 </div>
                 <TruckImage vehicle={truck} body={selected.cargoType} alt={truck ? `${truck.brand} ${truck.model}` : t("EJAZ fleet truck", "شاحنة أسطول إيجاز")} loading="eager" className="relative z-[1] h-[190px] w-full max-w-[680px] object-contain drop-shadow-[0_22px_26px_rgba(0,0,0,.2)] sm:h-[230px]" />
+                {truck && <div className="absolute bottom-8 end-4 z-20 hidden w-[190px] rounded-xl border border-border-subtle bg-surface-1/95 p-3 shadow-xl backdrop-blur-sm sm:block">
+                  <div className="flex items-center justify-between gap-2"><span className="text-[9px] text-text-muted">{t("Fuel", "الوقود")}</span><strong className="text-[11px] tabular-nums text-text-primary">{truck.fuel}%</strong></div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-5"><div className="h-full rounded-full bg-status-active transition-[width] duration-500" style={{ width: `${Math.max(0, Math.min(100, truck.fuel))}%` }} /></div>
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-border-subtle pt-2"><span className="text-[9px] text-text-muted">{t("Engine temp", "حرارة المحرك")}</span><strong className="text-[11px] tabular-nums text-text-primary">{truck.engineTemp} °C</strong></div>
+                  {truck.boxTemp !== undefined && <div className="mt-2 flex items-center justify-between gap-2"><span className="text-[9px] text-text-muted">{t("Cargo temperature", "حرارة الحمولة")}</span><strong className="text-[11px] tabular-nums text-text-primary">{truck.boxTemp} °C</strong></div>}
+                  <div className="mt-2 flex items-center justify-between gap-2"><span className="text-[9px] text-text-muted">{t("Vehicle status", "حالة المركبة")}</span><strong className={`text-[10px] ${truck.status === "active" ? "text-status-active" : "text-status-waiting"}`}>{truck.status === "active" ? t("Active", "نشطة") : truck.status === "waiting" ? t("Waiting", "بالانتظار") : t("Inactive", "متوقفة")}</strong></div>
+                  <button onClick={onOpenMaintenance} className="mt-2 w-full border-t border-border-subtle pt-2 text-start text-[10px] font-semibold text-brand hover:text-brand-soft">{t("Maintenance & repairs", "الصيانة والإصلاحات")} →</button>
+                </div>}
                 <div className="absolute inset-x-8 bottom-5 h-px bg-gradient-to-r from-transparent via-border-strong to-transparent" />
                 {truck && <div className="absolute bottom-2 z-10 rounded-full border border-border-subtle bg-surface-1/90 px-3 py-1 text-[10px] text-text-secondary">{truck.brand} · {truck.model}</div>}
               </div>
@@ -238,7 +247,10 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                       <span className="text-[11px] font-bold tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")} · {Math.round(countedLoadPercent)}%</span>
                     </div>
                     <CapacityTruck
+                      key={selected.id}
                       pct={countedLoadPercent}
+                      truckType={selected.cargoType}
+                      vehicle={truck}
                       className="mt-2 w-full motion-safe:animate-truck-bob motion-reduce:animate-none"
                       label={t(`Truck load ${Math.round(countedLoadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(countedLoadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
                     />

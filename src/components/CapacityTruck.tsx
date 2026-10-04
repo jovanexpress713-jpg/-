@@ -1,5 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import { cn } from "../utils/cn";
+import { useVehicleAssets } from "../state/vehicleAssetStore";
+import { normalizeVehicleType, type CanonicalVehicleTypeId } from "../data/vehicleTypes";
+import type { Vehicle } from "../data/types";
 
 /**
  * CapacityTruck — the photographic truck the user supplied, with the load
@@ -115,6 +118,21 @@ export const LOAD_BLUE = { from: "#2f67ff", to: "#245bff" } as const;
 /** Unused cargo space veil — mid grey over the white box, never black/white. */
 export const LOAD_EMPTY = "#4a5468";
 
+const TYPE_GAUGE_SHAPES: Record<CanonicalVehicleTypeId, { clip: string; top: number; bottom: number; centerX: number }> = {
+  flatbed: { clip: "M 690 615 L 1452 650 L 1450 702 L 706 688 Z", top: 614, bottom: 700, centerX: 1070 },
+  reefer: { clip: "M 680 218 L 1450 438 L 1450 628 L 712 690 Z", top: 218, bottom: 688, centerX: 1060 },
+  dry: { clip: "M 680 218 L 1450 438 L 1450 628 L 712 690 Z", top: 218, bottom: 688, centerX: 1060 },
+  curtain: { clip: "M 680 218 L 1450 438 L 1450 628 L 712 690 Z", top: 218, bottom: 688, centerX: 1060 },
+};
+
+function waterAreaPath(y: number, bottom: number, amplitude = 28) {
+  let d = `M -160 ${y}`;
+  for (let x = -160; x < 1696; x += 128) {
+    d += ` C ${x + 32} ${y - amplitude}, ${x + 96} ${y + amplitude}, ${x + 128} ${y}`;
+  }
+  return `${d} L 1696 ${bottom + 24} L -160 ${bottom + 24} Z`;
+}
+
 interface Props {
   /** Current load as a percentage of max capacity, 0–100. */
   pct: number;
@@ -123,10 +141,22 @@ interface Props {
   label?: string;
   /** Animate from zero to the supplied value when mounted or when it changes. */
   countUp?: boolean;
+  /** Approved EJAZ cargo body; selects its official image and trailer shape. */
+  truckType?: CanonicalVehicleTypeId | string;
+  /** Assigned vehicle for per-vehicle published imagery. */
+  vehicle?: Pick<Vehicle, "id" | "body" | "customImage"> | null;
 }
 
-export function CapacityTruck({ pct, className, label, countUp = false }: Props) {
+export function CapacityTruck({ pct, className, label, countUp = false, truckType, vehicle }: Props) {
   const uid = useId().replace(/:/g, "");
+  const { typeImage, vehicleImage } = useVehicleAssets();
+  const rawType = vehicle?.body ?? truckType;
+  const selectedType = rawType ? normalizeVehicleType(rawType) : null;
+  const typeSpecificSrc = vehicle
+    ? vehicleImage(vehicle)
+    : selectedType
+      ? typeImage(selectedType)
+      : null;
   const targetPct = Math.max(0, Math.min(100, pct));
   const [animatedPct, setAnimatedPct] = useState(countUp ? 0 : targetPct);
 
@@ -163,7 +193,41 @@ export function CapacityTruck({ pct, className, label, countUp = false }: Props)
   /* Scale to the liquid height so the figure fits even at low percentages. */
   const fontSize = Math.max(40, Math.min(118, Math.min(fillH, OVERLAY.w) * 0.42));
   const showText = p >= 6;
-  const wavePath = `M ${OVERLAY.x - 110} ${fillY} C ${OVERLAY.x - 45} ${fillY - 10}, ${OVERLAY.x + 25} ${fillY + 10}, ${OVERLAY.x + 90} ${fillY} S ${OVERLAY.x + 220} ${fillY - 10}, ${OVERLAY.x + 285} ${fillY} S ${OVERLAY.x + 415} ${fillY + 10}, ${OVERLAY.x + 480} ${fillY} S ${OVERLAY.x + 610} ${fillY - 10}, ${OVERLAY.x + 675} ${fillY} S ${OVERLAY.x + 805} ${fillY + 10}, ${OVERLAY.x + 870} ${fillY} L ${OVERLAY.x + OVERLAY.w + 110} ${OVERLAY.y + OVERLAY.h} L ${OVERLAY.x - 110} ${OVERLAY.y + OVERLAY.h} Z`;
+  const wavePath = waterAreaPath(fillY, OVERLAY.y + OVERLAY.h, 22);
+  const secondWavePath = waterAreaPath(fillY + 9, OVERLAY.y + OVERLAY.h, 14);
+
+  if (selectedType && typeSpecificSrc) {
+    const shape = TYPE_GAUGE_SHAPES[selectedType];
+    const bodyHeight = shape.bottom - shape.top;
+    const liquidHeight = bodyHeight * p / 100;
+    const liquidY = shape.bottom - liquidHeight;
+    const typeWave = waterAreaPath(liquidY, shape.bottom, 34);
+    const typeWaveSecondary = waterAreaPath(liquidY + 12, shape.bottom, 22);
+    const typeTextSize = Math.max(22, Math.min(104, liquidHeight * 0.3));
+    return (
+      <svg viewBox="0 120 1536 760" className={cn("w-full", className)} role="img" aria-label={label ?? `${Math.round(p)}%`}>
+        <defs>
+          <linearGradient id={`typed-load-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#55a8ff" />
+            <stop offset="100%" stopColor="#1559d6" />
+          </linearGradient>
+          <clipPath id={`typed-clip-${uid}`}><path d={shape.clip} /></clipPath>
+        </defs>
+        <image href={typeSpecificSrc} x="0" y="0" width="1536" height="1024" preserveAspectRatio="none" />
+        <g clipPath={`url(#typed-clip-${uid})`}>
+          <path d={shape.clip} fill="#061323" opacity=".2" />
+          <rect x="0" y={liquidY} width="1536" height={liquidHeight} fill={`url(#typed-load-${uid})`} opacity=".78" style={{ transition: "height 720ms ease-out, y 720ms ease-out" }} />
+          {p > 0 && <>
+            <path d={typeWave} fill="#59a9ff" opacity=".54" className="capacity-water-wave" />
+            <path d={typeWaveSecondary} fill="#9ed4ff" opacity=".24" className="capacity-water-wave capacity-water-wave-highlight" />
+            <path d={typeWave} fill="none" stroke="#d9efff" strokeWidth="5" opacity=".72" className="capacity-water-wave capacity-water-wave-highlight" />
+          </>}
+        </g>
+        <path d={shape.clip} fill="none" stroke="#9cb0c6" strokeWidth="3" opacity=".6" />
+        {showText && <text x={shape.centerX} y={liquidY + liquidHeight / 2} textAnchor="middle" dominantBaseline="central" fill="#fff" style={{ fontFamily: "var(--font-mono)", fontSize: typeTextSize, fontWeight: 800, filter: "drop-shadow(0 2px 8px rgba(0,0,0,.75))", transition: "y 720ms ease-out" }}>{Math.round(p)}%</text>}
+      </svg>
+    );
+  }
 
   return (
     <svg
@@ -233,8 +297,9 @@ export function CapacityTruck({ pct, className, label, countUp = false }: Props)
         />
         {/* Two overlapping ripples drift across the waterline. */}
         {p > 0 && <>
-          <path d={wavePath} fill="#77baff" opacity={0.48} className="capacity-water-wave" />
-          <path d={wavePath} fill="none" stroke="#d8efff" strokeWidth={5} opacity={0.58} className="capacity-water-wave capacity-water-wave-highlight" />
+          <path d={wavePath} fill="#77baff" opacity={0.5} className="capacity-water-wave" />
+          <path d={secondWavePath} fill="#9ed4ff" opacity={0.24} className="capacity-water-wave capacity-water-wave-highlight" />
+          <path d={wavePath} fill="none" stroke="#d8efff" strokeWidth={7} opacity={0.68} className="capacity-water-wave capacity-water-wave-highlight" />
         </>}
       </g>
       {/* Overlay frame. */}

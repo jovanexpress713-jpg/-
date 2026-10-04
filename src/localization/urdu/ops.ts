@@ -545,4 +545,7 @@ Object.assign(UR_OPS, {
   "Select a trip to open its operational details.": "آپریشنل تفصیلات کھولنے کے لیے ٹرپ منتخب کریں۔",
   "Trips and shipments": "ٹرپس اور ترسیلات",
   "Truck load capacity": "ٹرک کی گنجائش",
+  "Cargo temperature": "کارگو کا درجۂ حرارت",
+  "Vehicle status": "گاڑی کی حالت",
+  "Maintenance & repairs": "مرمت اور دیکھ بھال",
 });
