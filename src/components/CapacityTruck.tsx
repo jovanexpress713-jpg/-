@@ -123,8 +123,8 @@ export const LOAD_EMPTY = "#4a5468";
 const TYPE_GAUGE_SHAPES: Record<CanonicalVehicleTypeId, { clip: string; top: number; bottom: number; centerX: number; amplitude: number; deck?: boolean }> = {
   flatbed: { clip: "M 702 627 L 1450 649 L 1450 665 L 710 644 Z", top: 627, bottom: 665, centerX: 1080, amplitude: 4, deck: true },
   reefer: { clip: "M 804 226 L 1442 452 L 1442 675 L 804 660 Z", top: 226, bottom: 675, centerX: 1120, amplitude: 16 },
-  dry: { clip: "M 692 226 L 1438 455 L 1438 632 L 718 660 Z", top: 226, bottom: 660, centerX: 1070, amplitude: 16 },
-  curtain: { clip: "M 698 240 L 1435 455 L 1435 599 L 714 615 Z", top: 240, bottom: 615, centerX: 1065, amplitude: 16 },
+  dry: { clip: "M 696 222 L 1438 458 L 1438 665 L 710 645 Z", top: 222, bottom: 665, centerX: 1067, amplitude: 16 },
+  curtain: { clip: "M 701 248 L 1440 453 L 1440 601 L 718 609 Z", top: 248, bottom: 609, centerX: 1070, amplitude: 16 },
 };
 
 function waterAreaPath(y: number, bottom: number, amplitude = 28) {
