@@ -260,6 +260,44 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
         </section>
 
         <section className="card p-4 sm:p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-[14px] font-semibold text-text-primary">{t("Truck load capacity", "حمولة الشاحنة")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنته.")}</p></div><span className="rounded-full bg-surface-3 px-2.5 py-1 text-[10px] font-semibold text-text-secondary">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span></div>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+            {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
+              const vehicle = trucks.find((item) => item.body === meta.id);
+              const matchingTrip = trips.find((trip) => trip.cargoType === meta.id && (!vehicle || trip.truckId === vehicle.id)) ?? trips.find((trip) => trip.cargoType === meta.id);
+              const count = trucks.filter((item) => item.body === meta.id).length;
+              const typeLoadPercent = matchingTrip && matchingTrip.maxCapacityTons > 0
+                ? Math.max(0, Math.min(100, matchingTrip.cargoWeightTons / matchingTrip.maxCapacityTons * 100))
+                : 0;
+              const active = cargo === meta.id;
+              return <button key={meta.id} onClick={() => {
+                setCargo(meta.id);
+                setGroup("all");
+                setCustomer("all");
+                setDriverFilter("all");
+                setQuery("");
+                if (matchingTrip) handleSelect(matchingTrip.id);
+              }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-xl border p-2.5 text-start transition hover:border-brand/55 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
+                <div className="overflow-hidden rounded-lg bg-surface-2/70 p-1">
+                  <CapacityTruck
+                    pct={typeLoadPercent}
+                    countUp={Boolean(matchingTrip)}
+                    truckType={meta.id}
+                    className="w-full transition-transform duration-300 group-hover:scale-[1.02]"
+                    label={t(meta.englishName, meta.arabicName)}
+                  />
+                </div>
+                <div className="mt-2 flex min-w-0 items-center justify-between gap-1"><span className="truncate text-[11px] font-bold text-text-primary">{t(meta.englishName, meta.arabicName)}</span><span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} /></div>
+                <div className="mt-0.5 flex min-w-0 items-center justify-between gap-1 text-[9px] text-text-muted">
+                  <span className="truncate">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</span>
+                  {matchingTrip && <strong className="shrink-0 tabular-nums text-text-primary">{matchingTrip.cargoWeightTons.toLocaleString()} / {matchingTrip.maxCapacityTons} {t("tons", "طن")} · {Math.round(typeLoadPercent)}%</strong>}
+                </div>
+              </button>;
+            })}
+          </div>
+        </section>
+
+        <section className="card p-4 sm:p-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div><h2 className="text-[14px] font-semibold text-text-primary">{t("Operations & fleet snapshot", "لمحة التشغيل والأسطول")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{t("Counts are calculated from the records currently available to you.", "المؤشرات محسوبة من السجلات المتاحة لحسابك حالياً.")}</p></div>
             <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-surface-2 p-1" role="group" aria-label={t("Cargo type filters", "فلاتر نوع الشاحنة")}>
@@ -296,44 +334,6 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
           <CargoDonut trips={filteredTrips} />
           <TripBars trips={filteredTrips} selectedId={selected?.id ?? ""} onSelect={handleSelect} />
         </div>
-
-        <section className="card p-4 sm:p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-[14px] font-semibold text-text-primary">{t("EJAZ truck types", "أنواع شاحنات إيجاز")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنته.")}</p></div><span className="rounded-full bg-surface-3 px-2.5 py-1 text-[10px] font-semibold text-text-secondary">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span></div>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-            {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
-              const vehicle = trucks.find((item) => item.body === meta.id);
-              const matchingTrip = trips.find((trip) => trip.cargoType === meta.id && (!vehicle || trip.truckId === vehicle.id)) ?? trips.find((trip) => trip.cargoType === meta.id);
-              const count = trucks.filter((item) => item.body === meta.id).length;
-              const typeLoadPercent = matchingTrip && matchingTrip.maxCapacityTons > 0
-                ? Math.max(0, Math.min(100, matchingTrip.cargoWeightTons / matchingTrip.maxCapacityTons * 100))
-                : 0;
-              const active = cargo === meta.id;
-              return <button key={meta.id} onClick={() => {
-                setCargo(meta.id);
-                setGroup("all");
-                setCustomer("all");
-                setDriverFilter("all");
-                setQuery("");
-                if (matchingTrip) handleSelect(matchingTrip.id);
-              }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-xl border p-2.5 text-start transition hover:border-brand/55 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
-                <div className="overflow-hidden rounded-lg bg-surface-2/70 p-1">
-                  <CapacityTruck
-                    pct={typeLoadPercent}
-                    countUp={Boolean(matchingTrip)}
-                    truckType={meta.id}
-                    className="w-full transition-transform duration-300 group-hover:scale-[1.02]"
-                    label={t(meta.englishName, meta.arabicName)}
-                  />
-                </div>
-                <div className="mt-2 flex min-w-0 items-center justify-between gap-1"><span className="truncate text-[11px] font-bold text-text-primary">{t(meta.englishName, meta.arabicName)}</span><span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} /></div>
-                <div className="mt-0.5 flex min-w-0 items-center justify-between gap-1 text-[9px] text-text-muted">
-                  <span className="truncate">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</span>
-                  {matchingTrip && <strong className="shrink-0 tabular-nums text-text-primary">{matchingTrip.cargoWeightTons.toLocaleString()} / {matchingTrip.maxCapacityTons} {t("tons", "طن")} · {Math.round(typeLoadPercent)}%</strong>}
-                </div>
-              </button>;
-            })}
-          </div>
-        </section>
 
         <section className="card overflow-hidden p-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle px-4 py-4 sm:px-5"><div><h2 className="text-[14px] font-semibold text-text-primary">{t("Trips & activity", "الرحلات والنشاط")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{filteredTrips.length} {t("matching records", "سجل مطابق للفلاتر")}</p></div><div className="flex items-center gap-2 text-[10px] text-text-muted"><span className={`h-2 w-2 rounded-full ${gpsState === "configured" ? "bg-status-active" : "bg-status-waiting"}`} />{gpsState === "configured" ? t("Provider configured; live positions are shown only when a device feed is available.", "المزود مهيأ؛ لا تظهر المواقع إلا عند توفر بيانات جهاز فعلية.") : t("Live locations unavailable until a GPS provider is configured.", "المواقع المباشرة غير متاحة حتى تهيئة مزود GPS.")}</div></div>
