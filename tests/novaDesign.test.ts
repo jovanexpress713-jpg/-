@@ -408,7 +408,8 @@ export async function runNovaDesignTests() {
   /* B5. Dashboard mode counts quickly from 0, then stops at the true value. */
   {
     const view = await mount(React.createElement(CapacityTruck, { pct: 89, countUp: true }));
-    await settle(780);
+    assert.ok(!view.query("text").map((n) => n.textContent ?? "").includes("89%"), "counter does not jump to the target on first paint");
+    await settle(1250);
     const texts = view.query("text").map((n) => n.textContent ?? "");
     assert.ok(texts.includes("89%"), `count-up settles at the actual value (got: ${texts.join(",")})`);
     await view.unmount();

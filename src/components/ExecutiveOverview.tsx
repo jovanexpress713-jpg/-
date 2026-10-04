@@ -135,30 +135,6 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
   const speedValue = gpsState === "configured" && selected && Number.isFinite(selected.speedKmH)
     ? selected.speedKmH
     : null;
-  const [countedLoadPercent, setCountedLoadPercent] = useState(0);
-  useEffect(() => {
-    if (!selected) {
-      setCountedLoadPercent(0);
-      return;
-    }
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion) {
-      setCountedLoadPercent(loadPercent);
-      return;
-    }
-    setCountedLoadPercent(0);
-    const started = Date.now();
-    const duration = 1200;
-    let frame = 0;
-    const count = () => {
-      const progress = Math.min(1, Math.max(0, (Date.now() - started) / duration));
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCountedLoadPercent(progress === 1 ? loadPercent : loadPercent * eased);
-      if (progress < 1) frame = window.requestAnimationFrame(count);
-    };
-    frame = window.requestAnimationFrame(count);
-    return () => window.cancelAnimationFrame(frame);
-  }, [selected?.id, loadPercent]);
   const onToast = (text: string, sub?: string) => toast(text, sub);
 
   const handleSelect = (id: string) => {
@@ -228,11 +204,7 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                   <span className="rounded-full border border-border-subtle bg-surface-1/90 px-3 py-1.5 text-[11px] font-semibold text-text-primary">#{selected.tripNumber}</span>
                   <span className="rounded-full bg-brand/12 px-3 py-1.5 text-[10px] font-semibold text-brand">{tripStatusLabel(selected, t)}</span>
                 </div>
-                <div className="absolute end-4 top-4 z-10 hidden items-center gap-2 rounded-xl border border-border-subtle bg-surface-1/90 px-3 py-2 shadow-lg backdrop-blur-sm md:flex" aria-label={t(`Truck load ${Math.round(countedLoadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(countedLoadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}>
-                  <span className="grid h-9 w-9 place-items-center rounded-full text-[10px] font-bold tabular-nums text-text-primary" style={{ background: `conic-gradient(var(--color-brand) ${countedLoadPercent}%, var(--color-surface-5) ${countedLoadPercent}% 100%)` }}><span className="grid h-7 w-7 place-items-center rounded-full bg-surface-1">{Math.round(countedLoadPercent)}%</span></span>
-                  <span><span className="block text-[9px] text-text-muted">{t("Truck load", "حمولة الشاحنة")}</span><strong className="mt-0.5 block text-[10px] tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}</strong></span>
-                </div>
-                <TruckImage vehicle={truck} body={selected.cargoType} alt={truck ? `${truck.brand} ${truck.model}` : t("EJAZ fleet truck", "شاحنة أسطول إيجاز")} loading="eager" className="relative z-[1] h-[190px] w-full max-w-[680px] object-contain drop-shadow-[0_22px_26px_rgba(0,0,0,.2)] sm:h-[230px]" />
+                <TruckImage body={selected.cargoType} alt={truck ? `${truck.brand} ${truck.model}` : t("EJAZ fleet truck", "شاحنة أسطول إيجاز")} loading="eager" className="relative z-[1] h-[190px] w-full max-w-[680px] object-contain drop-shadow-[0_22px_26px_rgba(0,0,0,.2)] sm:h-[230px]" />
                 {truck && <div className="absolute bottom-8 end-4 z-20 hidden w-[252px] rounded-xl border border-border-subtle bg-surface-1/95 p-3 shadow-xl backdrop-blur-sm sm:block">
                   <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-1.5 text-[9px] text-text-muted"><IconFuel size={12} />{t("Fuel level", "مستوى الوقود")}</span><strong className="text-[11px] tabular-nums text-text-primary">{truck.fuel}%</strong></div>
                   <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-5"><div className={`h-full rounded-full transition-[width] duration-500 ${truck.fuel <= 20 ? "bg-status-danger" : "bg-status-active"}`} style={{ width: `${Math.max(0, Math.min(100, truck.fuel))}%` }} /></div>
@@ -265,15 +237,16 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                   <div className="mt-4 rounded-xl border border-border-subtle bg-surface-2/70 p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-[10px] font-semibold text-text-secondary">{t("Truck load capacity", "حمولة الشاحنة")}</span>
-                      <span className="text-[11px] font-bold tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")} · {Math.round(countedLoadPercent)}%</span>
+                      <span className="text-[11px] font-bold tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}</span>
                     </div>
                     <CapacityTruck
                       key={selected.id}
-                      pct={countedLoadPercent}
+                      pct={loadPercent}
+                      countUp
                       truckType={selected.cargoType}
                       vehicle={truck}
                       className="mt-2 w-full motion-safe:animate-truck-bob motion-reduce:animate-none"
-                      label={t(`Truck load ${Math.round(countedLoadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(countedLoadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
+                      label={t(`Truck load ${Math.round(loadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(loadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
                     />
                   </div>
                 </div>
@@ -340,7 +313,7 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                 setQuery("");
                 if (matchingTrip) handleSelect(matchingTrip.id);
               }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-xl border p-2.5 text-start transition hover:border-brand/55 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
-                <div className="flex h-[92px] items-center justify-center overflow-hidden rounded-lg bg-surface-2"><TruckImage vehicle={vehicle} body={meta.id} alt={`${meta.englishName} EJAZ truck`} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]" /></div>
+                <div className="flex h-[92px] items-center justify-center overflow-hidden rounded-lg bg-surface-2"><TruckImage body={meta.id} alt={`${meta.englishName} EJAZ truck`} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]" /></div>
                 <div className="mt-2 flex min-w-0 items-center justify-between gap-1"><span className="truncate text-[11px] font-bold text-text-primary">{t(meta.englishName, meta.arabicName)}</span><span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} /></div>
                 <div className="mt-0.5 truncate text-[9px] text-text-muted">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</div>
               </button>;

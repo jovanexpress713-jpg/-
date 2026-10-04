@@ -118,12 +118,12 @@ export const LOAD_BLUE = { from: "#2f67ff", to: "#245bff" } as const;
 /** Unused cargo space veil — mid grey over the white box, never black/white. */
 export const LOAD_EMPTY = "#4a5468";
 
-const TYPE_GAUGE_SHAPES: Record<CanonicalVehicleTypeId, { clip: string; top: number; bottom: number; centerX: number }> = {
-  // Each mask is measured for the cargo area of its own shipped EJAZ photo.
-  flatbed: { clip: "M 696 624 L 1452 650 L 1450 702 L 708 688 Z", top: 624, bottom: 700, centerX: 1080 },
-  reefer: { clip: "M 718 232 L 1450 449 L 1450 646 L 720 687 Z", top: 232, bottom: 686, centerX: 1080 },
-  dry: { clip: "M 688 220 L 1450 450 L 1450 647 L 710 685 Z", top: 220, bottom: 684, centerX: 1070 },
-  curtain: { clip: "M 676 218 L 1450 442 L 1450 630 L 710 676 Z", top: 218, bottom: 675, centerX: 1060 },
+const TYPE_GAUGE_SHAPES: Record<CanonicalVehicleTypeId, { clip: string; top: number; bottom: number; centerX: number; amplitude: number }> = {
+  // Inner cargo-area masks follow the photographed outline of each official asset.
+  flatbed: { clip: "M 702 628 L 1450 650 L 1448 674 L 710 653 Z", top: 628, bottom: 674, centerX: 1080, amplitude: 5 },
+  reefer: { clip: "M 720 242 L 1438 458 L 1438 644 L 724 674 Z", top: 242, bottom: 674, centerX: 1080, amplitude: 16 },
+  dry: { clip: "M 692 226 L 1438 455 L 1438 632 L 718 660 Z", top: 226, bottom: 660, centerX: 1070, amplitude: 17 },
+  curtain: { clip: "M 690 232 L 1438 451 L 1438 613 L 714 627 Z", top: 232, bottom: 627, centerX: 1060, amplitude: 16 },
 };
 
 function waterAreaPath(y: number, bottom: number, amplitude = 28) {
@@ -150,14 +150,12 @@ interface Props {
 
 export function CapacityTruck({ pct, className, label, countUp = false, truckType, vehicle }: Props) {
   const uid = useId().replace(/:/g, "");
-  const { typeImage, vehicleImage } = useVehicleAssets();
-  const rawType = vehicle?.body ?? truckType;
+  const { typeImage } = useVehicleAssets();
+  const rawType = truckType ?? vehicle?.body;
   const selectedType = rawType ? normalizeVehicleType(rawType) : null;
-  const typeSpecificSrc = vehicle
-    ? vehicleImage(vehicle)
-    : selectedType
-      ? typeImage(selectedType)
-      : null;
+  // The meter always uses the official image of the selected cargo body, not
+  // a per-vehicle override that could belong to a different body shape.
+  const typeSpecificSrc = selectedType ? typeImage(selectedType) : null;
   const targetPct = Math.max(0, Math.min(100, pct));
   const [animatedPct, setAnimatedPct] = useState(countUp ? 0 : targetPct);
 
@@ -174,11 +172,11 @@ export function CapacityTruck({ pct, className, label, countUp = false, truckTyp
     }
 
     const start = Date.now();
-    const duration = 720;
+    const duration = 1150;
     let frame = 0;
     const step = () => {
       const progress = Math.min(1, Math.max(0, (Date.now() - start) / duration));
-      const eased = 1 - Math.pow(1 - progress, 4);
+      const eased = 1 - Math.pow(1 - progress, 3);
       setAnimatedPct(targetPct * eased);
       if (progress < 1) frame = window.requestAnimationFrame(step);
     };
@@ -202,8 +200,8 @@ export function CapacityTruck({ pct, className, label, countUp = false, truckTyp
     const bodyHeight = shape.bottom - shape.top;
     const liquidHeight = bodyHeight * p / 100;
     const liquidY = shape.bottom - liquidHeight;
-    const typeWave = waterAreaPath(liquidY, shape.bottom, 34);
-    const typeWaveSecondary = waterAreaPath(liquidY + 12, shape.bottom, 22);
+    const typeWave = waterAreaPath(liquidY, shape.bottom, shape.amplitude);
+    const typeWaveSecondary = waterAreaPath(liquidY + shape.amplitude * 0.7, shape.bottom, shape.amplitude * 0.55);
     const typeTextSize = Math.max(22, Math.min(104, liquidHeight * 0.3));
     return (
       <svg viewBox="0 120 1536 760" className={cn("w-full", className)} role="img" aria-label={label ?? `${Math.round(p)}%`}>
