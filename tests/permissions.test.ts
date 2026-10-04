@@ -218,6 +218,64 @@ async function renderConsole(token: string): Promise<string> {
 }
 
 /**
+ * The account menu must not carry identity-switching tools for an employee.
+ *
+ * «التطبيقات» opens the client or driver interface and «معاينة شاشة تسجيل
+ * الدخول» renders the sign-in surface; both let a signed-in user step into
+ * another identity, so for a role that may not switch accounts they are absent
+ * from the menu rather than disabled inside it.
+ */
+async function renderAccountMenu(token: string): Promise<string> {
+  const initial = await grantFor(token);
+  const { AccountMenu } = await import("../src/components/AccountMenu");
+  const mounted = await mountInJsdom(({ React, SettingsProvider, PermissionProvider }) =>
+    React.createElement(
+      SettingsProvider,
+      null,
+      React.createElement(
+        PermissionProvider,
+        { initial },
+        React.createElement(AccountMenu, {
+          user: { fullName: "فحص", role: initial.role },
+          onOpenSettings: () => {},
+          onOpenAssistant: () => {},
+          onOpenMobileApp: () => {},
+          onPreviewLogin: () => {},
+          onLogout: () => {},
+        })
+      )
+    )
+  );
+
+  /* The rows only exist once the menu is opened, so open it first. */
+  const doc = mounted.host.ownerDocument;
+  const trigger = doc.querySelector("button") as HTMLButtonElement | null;
+  assert.ok(trigger, "the account menu renders its trigger");
+  await trigger!.dispatchEvent(
+    new (doc.defaultView as any).MouseEvent("click", { bubbles: true, cancelable: true })
+  );
+  await new Promise((r) => setTimeout(r, 20));
+
+  const text = mounted.host.textContent ?? "";
+  await mounted.unmount();
+  mounted.close();
+  return text;
+}
+
+async function runAccountMenuTests(adminToken: string, opsToken: string) {
+  const APPS = "التطبيقات";
+  const PREVIEW = "معاينة شاشة تسجيل الدخول";
+
+  const asAdmin = await renderAccountMenu(adminToken);
+  assert.ok(asAdmin.includes(APPS), "the administrator keeps the app launcher");
+  assert.ok(asAdmin.includes(PREVIEW), "and the sign-in preview");
+
+  const asOps = await renderAccountMenu(opsToken);
+  assert.ok(!asOps.includes(APPS), "an operations manager is not offered another identity to open");
+  assert.ok(!asOps.includes(PREVIEW), "nor the sign-in preview");
+}
+
+/**
  * «نمط التجربة» must not exist for an ordinary employee.
  *
  * The persona bar swaps the console into another identity's portal, so if it
@@ -272,6 +330,20 @@ async function runAuthGateTests() {
   );
   await new Promise((r) => setTimeout(r, 30));
   assert.strictEqual(authenticated, null, "an empty form never signs the visitor in as the administrator");
+
+  /* The visitor chooses a role; nothing enters the control room for him. */
+  const gateText = mounted.text;
+  assert.ok(
+    !gateText.includes("دخول مباشر للوحة التحكم والإدارة"),
+    "there is no one-click entry hardcoded to the system administrator"
+  );
+  assert.ok(
+    gateText.includes("اختر الحساب للدخول"),
+    "the sign-in surface offers an explicit choice of account"
+  );
+  for (const role of ["مدير النظام", "مدير العمليات", "المحاسب المالي", "حساب السائق", "حساب العميل"]) {
+    assert.ok(gateText.includes(role), `the role list offers ${role}`);
+  }
 
   await mounted.unmount();
   mounted.close();
@@ -595,6 +667,7 @@ export async function runPermissionTests() {
      is the one under test. */
   await runSidebarVisibilityTests(admin.token, ops.token);
   await runPersonaBarTests(admin.token, ops.token);
+  await runAccountMenuTests(admin.token, ops.token);
   await runAuthGateTests();
 
   /* ── 18. Restore the registry so later suites see the factory state ──── */

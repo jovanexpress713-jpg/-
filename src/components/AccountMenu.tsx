@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings, type Lang } from "../settings";
 import { LANGUAGE_OPTIONS } from "../localization/i18n";
+import { usePermissions } from "../state/permissionStore";
 import {
   IconArrowRight,
   IconBolt,
@@ -98,6 +99,19 @@ export function AccountMenu({
   className,
 }: AccountMenuProps) {
   const { tk, lang } = useSettings();
+  const { can, wildcard, role } = usePermissions();
+
+  /**
+   * Identity-switching and demo affordances.
+   *
+   * «تطبيقات الجوال» opens the client or driver interface and «معاينة شاشة تسجيل
+   * الدخول» renders the sign-in surface — both are administrative/demo tools. For
+   * an ordinary employee they are not disabled or greyed out, they simply are not
+   * here: an item a role may not use must not exist in its menu at all.
+   */
+  const maySwitchAccounts = wildcard || role === "SUPER_ADMIN" || can("accounts.switch");
+  const mayUseAssistant = can("assistant.act") || can("notifications.view");
+
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<"root" | "apps">("root");
   const [copied, setCopied] = useState(false);
@@ -232,27 +246,33 @@ export function AccountMenu({
                 <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
               </button>
 
-              {/* تطبيقات الجوال (§12) */}
-              <button type="button" className="menu-row" onClick={() => setPanel("apps")}>
-                <IconTruck size={16} className="shrink-0" />
-                <span className="flex-1 text-start">{tk("settings.tabApps")}</span>
-                <span className="text-[10px] text-text-muted">2</span>
-                <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
-              </button>
+              {/* تطبيقات الجوال (§12) — لمن يملك تبديل الهوية فقط */}
+              {maySwitchAccounts && (
+                <button type="button" className="menu-row" onClick={() => setPanel("apps")}>
+                  <IconTruck size={16} className="shrink-0" />
+                  <span className="flex-1 text-start">{tk("settings.tabApps")}</span>
+                  <span className="text-[10px] text-text-muted">2</span>
+                  <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
+                </button>
+              )}
 
               <div className="my-1.5 border-t border-border-subtle" />
 
               {/* معاينة شاشة تسجيل الدخول (§11) — preview only */}
-              <button type="button" className="menu-row" onClick={() => { setOpen(false); onPreviewLogin(); }}>
-                <IconLock size={16} className="shrink-0" />
-                <span className="flex-1 text-start">{tk("account.previewLogin")}</span>
-              </button>
+              {maySwitchAccounts && (
+                <button type="button" className="menu-row" onClick={() => { setOpen(false); onPreviewLogin(); }}>
+                  <IconLock size={16} className="shrink-0" />
+                  <span className="flex-1 text-start">{tk("account.previewLogin")}</span>
+                </button>
+              )}
 
               {/* مساعد إيجاز الذكي */}
-              <button type="button" className="menu-row" onClick={() => { setOpen(false); onOpenAssistant(); }}>
-                <IconBolt size={16} className="shrink-0 text-brand" />
-                <span className="flex-1 text-start">{tk("nav.ai")}</span>
-              </button>
+              {mayUseAssistant && (
+                <button type="button" className="menu-row" onClick={() => { setOpen(false); onOpenAssistant(); }}>
+                  <IconBolt size={16} className="shrink-0 text-brand" />
+                  <span className="flex-1 text-start">{tk("nav.ai")}</span>
+                </button>
+              )}
 
               {/* المساعدة والدعم */}
               <button type="button" className="menu-row" onClick={() => { setOpen(false); onOpenSettings("help"); }}>
@@ -273,7 +293,7 @@ export function AccountMenu({
             </>
           )}
 
-          {panel === "apps" && (
+          {panel === "apps" && maySwitchAccounts && (
             <div>
               <div className="mb-1.5 flex items-center gap-2 border-b border-border-subtle pb-1.5">
                 <button
