@@ -615,4 +615,18 @@ export const IconRotate360 = (p: IconProps) => (
   </Svg>
 );
 
+/* Route header "Change Route" affordance (reference spec §Route header). */
+export const IconPencil = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M16.5 3.9a2.1 2.1 0 0 1 3 3L8.4 18l-4 1 1-4z" />
+    <path d="M14.6 5.8l3 3" />
+  </Svg>
+);
 
+/* Map "recenter on the truck" control. */
+export const IconNavigate = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 2.6 21 12l-9 9.4L3 12z" />
+    <path d="M12 8.4v7.2" />
+  </Svg>
+);

@@ -19,14 +19,19 @@ interface Props {
 export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
   const { t } = useSettings();
   const done = v.stops.filter((s) => s.done).length;
+  /* Late = still moving but the ETA clock has already hit zero. */
+  const late = v.status === "active" && live.etaSeconds <= 0;
 
   return (
     <button
       onClick={onSelect}
-      style={{ animationDelay: `${index * 45}ms` }}
+      /* Spec §6 — 40ms cascade. */
+      style={{ animationDelay: `${index * 40}ms` }}
       className={cn(
-        "animate-fade-up group relative h-[252px] overflow-hidden rounded-[8px] bg-surface-3 p-4 text-start transition-all duration-300 hover:bg-surface-4",
-        selected && "selected-ring bg-surface-4",
+        /* Spec §4.4 — the shared card recipe, with the §4.4 selected state
+           (1.5px orange border + halo) instead of the old inset ring. */
+        "card card-in card-hover group relative h-[252px] overflow-hidden text-start",
+        selected && "card-selected",
       )}
     >
       <div className="relative z-10 flex items-start justify-between gap-2">
@@ -101,13 +106,23 @@ export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
         </div>
       </div>
 
-      <div className="relative z-10 mt-3 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-[6px] bg-surface-0/55 px-2 py-1 text-[10.5px] text-text-secondary backdrop-blur-sm">
+      <div className="relative z-10 mt-3 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-inner bg-surface-0/55 px-2 py-1 text-[10.5px] text-text-secondary backdrop-blur-sm">
         <IconPin size={13} className="shrink-0 text-brand" />
         <span className="truncate">
           {v.from} → {v.to}
         </span>
         <span className="text-text-muted">·</span>
         <span className="truncate">{v.partner}</span>
+      </div>
+
+      {/* Spec §4.4 — 4px rail; turns red and pulses when the trip is late. */}
+      <div className="relative z-10 mt-2.5 flex items-center gap-2">
+        <div className={cn("progress min-w-0 flex-1", late && "progress-late")}>
+          <span style={{ width: `${Math.min(100, live.progress)}%` }} />
+        </div>
+        <span className="num shrink-0 text-[11px] text-text-secondary">
+          {Math.round(Math.min(100, live.progress))}%
+        </span>
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[128px] overflow-hidden bg-black">

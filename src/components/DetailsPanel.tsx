@@ -468,17 +468,16 @@ export function DetailsPanel({
                 >
                   <div
                     className={cn(
-                      "max-w-[78%] rounded-[12px] px-3 py-2",
-                      m.from === "me"
-                        ? "bg-brand text-on-brand"
-                        : "bg-surface-4 text-text-primary",
+                      /* Spec §4.7 — outgoing orange, incoming card-2. */
+                      "max-w-[78%] rounded-inner px-3 py-2",
+                      m.from === "me" ? "bubble-out" : "bubble-in",
                     )}
                   >
                     <div className="text-[12.5px] leading-snug">{m.text}</div>
                     <div
                       className={cn(
                         "mt-1 text-[10px] tabular-nums",
-                        m.from === "me" ? "text-on-brand/60" : "text-text-muted",
+                        m.from === "me" ? "text-on-orange/70" : "text-text-muted",
                       )}
                     >
                       {m.time}

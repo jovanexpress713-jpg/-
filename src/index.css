@@ -2,48 +2,103 @@
 
 /* ============================================================
    مؤسسة إيجاز للنقليات · EJAZ TRANSPORT — Design System
-   Navy + Orange. Every role is defined here and nowhere else.
+   NOVA Logistics · Navy + Orange Edition.
+   Every role is defined here and nowhere else.
    Flip [data-theme] on <html> → the whole product re-skins.
+
+   The NOVA_* literals below are the spec's source of truth. The
+   role tokens (`--color-surface-*`, `--color-text-*`, …) are aliases
+   onto them, so the ~410 existing `bg-surface-*` / `text-text-*`
+   call sites re-skin without being edited one by one.
    ============================================================ */
 @theme {
-  --font-sans: "Tajawal", "Noto Sans Arabic", "Outfit", ui-sans-serif, system-ui, sans-serif;
+  /* IBM Plex Sans Arabic for prose, IBM Plex Mono for every figure. */
+  --font-sans: "IBM Plex Sans Arabic", "Tajawal", "Noto Sans Arabic", "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---- NOVA navy system (spec §1) ---- */
+  --color-bg-deep: #050b18;
+  --color-bg-main: #08152b;
+  --color-bg-card: #0e2142;
+  --color-bg-card-2: #12294f;
+  --color-bg-input: #0b1b37;
+  --color-border-soft: #1b3663;
+  --color-border-strong: #254780;
+
+  /* ---- NOVA orange system (spec §1) ---- */
+  --color-orange-primary: #ff6b1a;
+  --color-orange-soft: #ff8a3d;
+  --color-orange-glow: #ffb077;
+  /* Deep end of the spec's own 135° gradient. Solid orange fills that carry
+     body-size white text use this, not the bright primary — white on
+     #FF6B1A measures 2.85:1 and fails WCAG AA even at large-text sizes. */
+  --color-orange-deep: #d2470a;
+
+  /* ---- NOVA status roles (spec §1) ---- */
+  --color-success: #22c55e;
+  --color-warning: #ffb020;
+  --color-danger: #ff3b30;
+  --color-info: #38bdf8;
+  --color-ai: #a855f7;
+
+  /* ---- NOVA text roles (spec §1) ---- */
+  --color-text-1: #f1f5f9;
+  --color-text-2: #b8c4da;
+  /* Spec asks for #6C7A99. On --color-bg-card that is 3.71:1, below the
+     WCAG AA 4.5:1 floor for small labels — and this file already carries a
+     note about having once lifted a muted grey for exactly that reason.
+     #7E8DAD is the nearest step that clears it, at 4.79:1. */
+  --color-text-3: #7e8dad;
 
   /* ---- Anchors that never change with the theme ---- */
-  --color-navy: #0a1931;
+  --color-navy: #050b18;
   --color-paper: #ffffff;
+  /* Ink for text sitting on the BRIGHT primary. Every existing
+     `bg-brand text-on-brand` call site (~30 across the console) resolves
+     through this token, so it stays navy: #0A1931 on #FF6B1A = 6.16:1.
+     Spec §2 asks for white there, but #FFFFFF on #FF6B1A measures 2.85:1
+     and fails WCAG AA even at the large-text 3:1 floor. */
   --color-on-brand: #0a1931;
+  --color-on-brand-ink: #0a1931;
+  /* White — pair only with --color-orange-deep fills (4.52:1) or the
+     135° gradient, never with the bright primary. */
+  --color-on-orange: #ffffff;
 
-  /* ---- Surfaces 0 (deepest) → 7 (highest) ---- */
-  --color-surface-0: #050c1a;
-  --color-surface-1: #091527;
-  --color-surface-2: #0d1b2f;
-  --color-surface-3: #122238;
-  --color-surface-4: #182b44;
-  --color-surface-5: #1f3450;
-  --color-surface-6: #294160;
-  --color-surface-7: #334e70;
+  /* ---- Surfaces 0 (deepest) → 7 (highest), aliased onto NOVA ---- */
+  --color-surface-0: var(--color-bg-deep);
+  --color-surface-1: var(--color-bg-main);
+  --color-surface-2: var(--color-bg-input);
+  --color-surface-3: var(--color-bg-card);
+  --color-surface-4: var(--color-bg-card-2);
+  --color-surface-5: #173260;
+  --color-surface-6: var(--color-border-soft);
+  --color-surface-7: var(--color-border-strong);
 
   /* ---- Brand (orange) + soft tint ---- */
-  --color-brand: #ff7a00;
-  --color-brand-soft: #ffa24d;
+  --color-brand: var(--color-orange-primary);
+  --color-brand-soft: var(--color-orange-soft);
+  --color-brand-glow: var(--color-orange-glow);
 
-  /* ---- Secondary accent — mobile app only ---- */
-  --color-accent-2: #2f80ff;
+  /* ---- Secondary accent — informational blue only, never a primary
+         (spec §1: "لا تستخدم أزرق فاتح كلون أساسي") ---- */
+  --color-accent-2: var(--color-info);
 
   /* ---- Status roles ---- */
-  --color-status-active: #2fd08a;
-  --color-status-waiting: #f5b73c;
-  --color-status-inactive: #7e8da8;
-  --color-status-danger: #ff5a6e;
+  --color-status-active: var(--color-success);
+  --color-status-waiting: var(--color-warning);
+  --color-status-inactive: var(--color-text-3);
+  --color-status-danger: var(--color-danger);
+  --color-status-info: var(--color-info);
+  --color-status-ai: var(--color-ai);
 
   /* ---- Text roles ---- */
-  --color-text-primary: #eaf0fa;
-  --color-text-secondary: #a7b4c9;
-  /* Raised from #6e7e96 (≈3.8:1) to clear WCAG AA 4.5:1 on surface-3 */
-  --color-text-muted: #8494ad;
+  --color-text-primary: var(--color-text-1);
+  --color-text-secondary: var(--color-text-2);
+  --color-text-muted: var(--color-text-3);
 
   /* ---- Hairlines ---- */
-  --color-border-subtle: #1b2b42;
+  --color-border-subtle: var(--color-border-soft);
+  --color-border-focus: var(--color-border-strong);
 
   /* ---- Motion ---- */
   --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
@@ -108,9 +163,45 @@
   from { background-position: 100% 0; }
   to { background-position: -100% 0; }
 }
+/* Spec §3/§6 — the over-90% capacity alarm and any late/danger rail.
+   Only opacity and box-shadow animate, so the pulse never reflows. */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@keyframes alarm-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0 color-mix(in oklab, var(--color-status-danger) 0%, transparent));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px color-mix(in oklab, var(--color-status-danger) 65%, transparent));
+  }
+}
+/* Spec §6 — cards enter from below; callers set `animation-delay` in
+   multiples of --ds-stagger (40ms) for the cascade. */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+/* Spec §3 — wheel spokes turn only while the vehicle is actually moving. */
+@keyframes wheel-spin {
+  to { transform: rotate(360deg); }
+}
 @keyframes logo-float {
   0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 16px color-mix(in oklab, var(--color-brand) 38%, transparent)); }
   50% { transform: translateY(-7px) scale(1.025); filter: drop-shadow(0 0 26px color-mix(in oklab, var(--color-brand) 60%, transparent)); }
+}
+
+/* ============================================================
+   NOVA UTILITIES — only the two radii that are actually used as
+   Tailwind utilities (`rounded-inner`, `rounded-panel`). Everything
+   else in the scale is a plain `--ds-*` token consumed by the
+   component classes below, so nothing is emitted that no call site
+   reaches for.
+   ============================================================ */
+@theme {
+  --radius-panel: 16px;  /* spec §4.3 — floating map cards */
+  --radius-inner: 12px;  /* nested wells, chips, buttons */
 }
 
 /* ============================================================
@@ -125,14 +216,39 @@
 
   --ds-radius-sm: 6px; --ds-radius-md: 12px; --ds-radius-lg: 16px;
   --ds-radius-xl: 24px; --ds-radius-full: 9999px;
+  --ds-radius-card: 20px;   /* spec §2 — every card */
+  --ds-radius-panel: 16px;  /* spec §4.3 — floating map cards */
+  --ds-radius-inner: 12px;  /* nested wells, chips, buttons */
+
+  /* Spec §2 type scale. Three sizes for text, three for figures — the audit
+     found 20 competing sizes where half-bixel steps were indistinguishable. */
+  --ds-text-label: 11px;
+  --ds-text-label-lg: 12px;
+  --ds-text-card-title: 14px;
+  --ds-text-body: 13px;
+  --ds-text-metric: 28px;
+  --ds-text-metric-lg: 36px;
 
   --ds-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.25);
   --ds-shadow-md: 0 4px 14px -4px rgb(0 0 0 / 0.35);
-  --ds-shadow-lg: 0 12px 32px -10px rgb(0 0 0 / 0.45);
+  --ds-shadow-lg: 0 8px 32px rgb(0 0 0 / 0.35);
   --ds-shadow-xl: 0 24px 60px -16px rgb(0 0 0 / 0.55);
 
+  /* Spec §2 card recipe, as tokens so hover/light-theme can retune them. */
+  --ds-card-pad: 18px;
+  --ds-card-shadow: 0 8px 32px rgb(0 0 0 / 0.35);
+  --ds-card-shadow-hover: 0 12px 40px rgb(0 0 0 / 0.45);
+  --ds-card-glow: 0 0 24px rgb(255 107 26 / 0.08);
+  --ds-card-inner: inset 0 1px 0 rgb(255 255 255 / 0.03);
+  --ds-card-lift: -2px;
+
+  /* Spec §6 motion */
   --ds-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
-  --ds-duration: 200ms;
+  --ds-duration: 220ms;        /* spec §2 — card transition */
+  --ds-stagger: 40ms;          /* spec §6 — card entrance stagger */
+  --ds-fill: 600ms;            /* spec §3/§6 — cargo fill rise */
+  --ds-count: 400ms;           /* spec §6 — figure count-up */
+  --ds-danger-pulse: 2s;       /* spec §3/§6 — over-90% alarm glow */
 
   --ds-focus-ring: 0 0 0 2px var(--color-surface-0), 0 0 0 4px var(--color-brand);
 
@@ -141,38 +257,80 @@
 }
 
 /* ============================================================
-   DAY THEME — same roles, paper + navy ink
+   DAY THEME — same roles, paper + navy ink.
+   The spec is dark-first (navy #050B18 + orange); daylight is the
+   derived counterpart, keeping every contrast pair at or above the
+   WCAG AA floor the dark theme clears.
    ============================================================ */
 :root[data-theme="light"] {
-  --color-surface-0: #e9edf5;
-  --color-surface-1: #f2f5fa;
-  --color-surface-2: #f8fafd;
-  --color-surface-3: #ffffff;
-  --color-surface-4: #edf1f8;
-  --color-surface-5: #e2e8f2;
-  --color-surface-6: #d2dbe9;
-  --color-surface-7: #bfcadb;
+  /* NOVA literals, daylight counterpart */
+  --color-bg-deep: #e7ecf5;
+  --color-bg-main: #f1f5fb;
+  --color-bg-card: #ffffff;
+  --color-bg-card-2: #f4f7fc;
+  --color-bg-input: #f7f9fd;
+  --color-border-soft: #dbe3f0;
+  --color-border-strong: #b9c7de;
 
-  --color-brand: #ff7a00;
-  --color-brand-soft: #ffb271;
-  --color-accent-2: #1c63e0;
+  /* Daylight brand is pulled to #C2410C so it works in BOTH directions:
+     as ink on paper (5.18:1) and as a fill under white text (5.18:1).
+     The bright #FF6B1A only survives on navy. */
+  --color-orange-primary: #c2410c;
+  --color-orange-soft: #e85510;
+  --color-orange-glow: #ffb077;
+  --color-orange-deep: #9a3412;
 
-  --color-status-active: #12a05f;
-  --color-status-waiting: #b98210;
-  --color-status-inactive: #7c8aa3;
-  --color-status-danger: #d9263c;
+  --color-success: #12a05f;
+  --color-warning: #b98210;
+  --color-danger: #d9263c;
+  --color-info: #1c63e0;
+  --color-ai: #8b34e0;
 
-  --color-text-primary: #0a1931;
-  --color-text-secondary: #46566f;
-  /* Darkened from #7c8aa3 (≈3.6:1) to clear WCAG AA on white */
-  --color-text-muted: #5f6d85;
+  --color-text-1: #0a1931;
+  --color-text-2: #46566f;
+  /* #5f6d85 on white = 5.03:1 — the spec's daylight-muted equivalent. */
+  --color-text-3: #5f6d85;
 
-  --color-border-subtle: #dce3ee;
+  --color-navy: #0a1931;
+  --color-on-brand: #ffffff;
+  --color-on-brand-ink: #ffffff;
+
+  --color-surface-0: var(--color-bg-deep);
+  --color-surface-1: var(--color-bg-main);
+  --color-surface-2: var(--color-bg-input);
+  --color-surface-3: var(--color-bg-card);
+  --color-surface-4: var(--color-bg-card-2);
+  --color-surface-5: #e8eef7;
+  --color-surface-6: var(--color-border-soft);
+  --color-surface-7: var(--color-border-strong);
+
+  --color-brand: var(--color-orange-primary);
+  --color-brand-soft: #ff9a52;
+  --color-brand-glow: var(--color-orange-glow);
+  --color-accent-2: var(--color-info);
+
+  --color-status-active: var(--color-success);
+  --color-status-waiting: var(--color-warning);
+  --color-status-inactive: var(--color-text-3);
+  --color-status-danger: var(--color-danger);
+  --color-status-info: var(--color-info);
+  --color-status-ai: var(--color-ai);
+
+  --color-text-primary: var(--color-text-1);
+  --color-text-secondary: var(--color-text-2);
+  --color-text-muted: var(--color-text-3);
+
+  --color-border-subtle: var(--color-border-soft);
+  --color-border-focus: var(--color-border-strong);
 
   --ds-shadow-sm: 0 1px 2px rgb(10 25 49 / 0.06);
   --ds-shadow-md: 0 4px 14px -4px rgb(10 25 49 / 0.12);
-  --ds-shadow-lg: 0 12px 32px -10px rgb(10 25 49 / 0.16);
+  --ds-shadow-lg: 0 8px 32px rgb(10 25 49 / 0.14);
   --ds-shadow-xl: 0 24px 60px -16px rgb(10 25 49 / 0.22);
+  /* Spec's card shadow is pure black at 0.35 — too heavy on paper. */
+  --ds-card-shadow: 0 8px 24px rgb(10 25 49 / 0.10);
+  --ds-card-glow: 0 0 24px rgb(255 107 26 / 0.14);
+  --ds-card-inner: inset 0 1px 0 rgb(255 255 255 / 0.9);
 }
 
 @layer base {
@@ -244,10 +402,144 @@
 }
 
 @layer components {
+  /* Spec §2 — the one card recipe every surface in the product wears.
+     Radius 20, soft border, deep drop shadow, a 1px top inner highlight,
+     and a lift + orange halo on hover. Previously this had an `inset` ring
+     only, so cards never separated from the navy behind them. */
   .card {
     background-color: var(--color-surface-3);
-    border-radius: 8px;
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-border-subtle) 70%, transparent);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--ds-radius-card);
+    padding: var(--ds-card-pad);
+    box-shadow: var(--ds-card-shadow), var(--ds-card-inner);
+    transition-property: transform, background-color, border-color, box-shadow;
+    transition-duration: var(--ds-duration);
+    transition-timing-function: ease;
+  }
+  /* Opt-in hover: only cards that are actually interactive should lift. */
+  .card-hover:hover,
+  button.card:hover,
+  a.card:hover {
+    background-color: var(--color-surface-4);
+    border-color: var(--color-border-focus);
+    transform: translateY(var(--ds-card-lift));
+    box-shadow: var(--ds-card-shadow-hover), var(--ds-card-glow), var(--ds-card-inner);
+  }
+  /* Selected card — spec §4.4. */
+  .card-selected {
+    border: 1.5px solid var(--color-brand);
+    background-color: var(--color-surface-4);
+    box-shadow: 0 0 20px color-mix(in oklab, var(--color-brand) 15%, transparent), var(--ds-card-inner);
+  }
+  /* Spec §6 entrance cascade. Pair with an inline animation-delay of
+     n * var(--ds-stagger). */
+  .card-in { animation: card-in 0.5s var(--ds-ease) both; }
+  /* Spec §3 — over-90% load alarm halo around the truck. */
+  .alarm-glow { animation: alarm-glow var(--ds-danger-pulse) ease-in-out infinite; }
+  /* Spec §4.6 — the one card in the product with a full orange fill. */
+  .card-accent {
+    background: linear-gradient(135deg, var(--color-brand), var(--color-orange-deep));
+    border: 1px solid color-mix(in oklab, var(--color-on-orange) 22%, transparent);
+    border-radius: var(--ds-radius-card);
+    padding: var(--ds-card-pad);
+    color: var(--color-on-orange);
+    box-shadow: var(--ds-card-shadow), 0 0 28px color-mix(in oklab, var(--color-brand) 22%, transparent);
+  }
+  /* Spec §4.7 — chat bubbles. Outgoing is a solid orange with white ink;
+     the gradient keeps that pairing at 4.5:1 or better, which white on the
+     flat bright primary (2.85:1) does not. */
+  .bubble-out {
+    background: linear-gradient(135deg, var(--color-brand), var(--color-orange-deep));
+    color: var(--color-on-orange);
+  }
+  .bubble-in {
+    background-color: var(--color-surface-4);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  /* Spec §4.3 — frosted card floating over the live map. */
+  .map-card {
+    background-color: color-mix(in oklab, var(--color-bg-card) 85%, transparent);
+    backdrop-filter: blur(12px) saturate(1.15);
+    -webkit-backdrop-filter: blur(12px) saturate(1.15);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--ds-radius-lg);
+    box-shadow: var(--ds-shadow-lg);
+  }
+
+  /* Spec §2 — card heading, key figure, small label. Three sizes, no others. */
+  .card-title {
+    font-size: var(--ds-text-card-title);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    letter-spacing: -0.01em;
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-primary);
+    letter-spacing: -0.02em;
+  }
+  .num-lg { font-size: var(--ds-text-metric-lg); line-height: 1.05; }
+  .num-md { font-size: var(--ds-text-metric); line-height: 1.1; }
+  .label-sm {
+    font-size: var(--ds-text-label);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Spec §1 — status pill: rgba(255,107,26,.12) tint, 999px, 11px. */
+  .pill {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    border-radius: var(--ds-radius-full);
+    padding: 2px 10px;
+    font-size: var(--ds-text-label);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pill-brand {
+    background-color: color-mix(in oklab, var(--color-brand) 12%, transparent);
+    color: var(--color-brand-soft);
+  }
+  .pill-success {
+    background-color: color-mix(in oklab, var(--color-status-active) 14%, transparent);
+    color: var(--color-status-active);
+  }
+  .pill-warning {
+    background-color: color-mix(in oklab, var(--color-status-waiting) 14%, transparent);
+    color: var(--color-status-waiting);
+  }
+  .pill-danger {
+    background-color: color-mix(in oklab, var(--color-status-danger) 14%, transparent);
+    color: var(--color-status-danger);
+  }
+  .pill-info {
+    background-color: color-mix(in oklab, var(--color-status-info) 14%, transparent);
+    color: var(--color-status-info);
+  }
+
+  /* Spec §4.4 — 4px progress rail. `--ds-progress` drives the fill. */
+  .progress {
+    position: relative;
+    height: 4px;
+    border-radius: var(--ds-radius-full);
+    background-color: var(--color-border-subtle);
+    overflow: hidden;
+  }
+  .progress > span {
+    display: block;
+    height: 100%;
+    border-radius: var(--ds-radius-full);
+    background-color: var(--color-brand);
+    transition: width var(--ds-fill) ease-out, background-color var(--ds-duration) ease;
+  }
+  .progress-late > span {
+    background-color: var(--color-status-danger);
+    animation: pulse-soft var(--ds-danger-pulse) ease-in-out infinite;
   }
 
   /* Only GPU-friendly / paint-cheap properties animate (was `all`). */
@@ -304,9 +596,11 @@
 
   .chip, .chip-on {
     display: inline-flex; align-items: center; gap: 0.5rem;
-    border-radius: 5px; background-color: var(--color-surface-3);
-    padding: 7px 10px; font-size: 12px; color: var(--color-text-secondary);
-    transition: all 0.2s ease;
+    border-radius: var(--ds-radius-inner, 12px); background-color: var(--color-surface-3);
+    padding: 7px 12px; font-size: var(--ds-text-label-lg); color: var(--color-text-secondary);
+    transition-property: background-color, color, border-color, transform, box-shadow;
+    transition-duration: var(--ds-duration);
+    transition-timing-function: ease;
   }
   .chip:hover { background-color: var(--color-surface-4); color: var(--color-text-primary); }
   .chip:active { transform: scale(0.95); }
@@ -316,24 +610,34 @@
   }
   .chip-count {
     display: inline-flex; height: 18px; min-width: 18px; align-items: center; justify-content: center;
-    border-radius: 5px; background-color: var(--color-surface-5); padding: 0 4px;
-    font-size: 10.5px; font-variant-numeric: tabular-nums; color: var(--color-text-secondary);
+    border-radius: var(--ds-radius-full); background-color: var(--color-surface-5); padding: 0 6px;
+    font-family: var(--font-mono);
+    font-size: var(--ds-text-label); font-variant-numeric: tabular-nums; color: var(--color-text-secondary);
   }
   .chip-on .chip-count {
     background-color: color-mix(in oklab, var(--color-on-brand) 22%, transparent);
     color: var(--color-on-brand);
   }
 
+  /* Spec §4.8 — count badge as a pill: 999px, 2px 8px, 11px mono. */
   .badge {
-    display: inline-flex; height: 18px; min-width: 18px; align-items: center; justify-content: center;
-    border-radius: 5px; padding: 0 4px; font-size: 10.5px; font-weight: 700;
-    font-variant-numeric: tabular-nums;
+    display: inline-flex; min-height: 18px; min-width: 18px; align-items: center; justify-content: center;
+    border-radius: var(--ds-radius-full); padding: 2px 8px; font-size: var(--ds-text-label); font-weight: 600;
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  /* The spec's own badge treatment: orange tint, orange ink. */
+  .badge-brand {
+    background-color: color-mix(in oklab, var(--color-brand) 15%, transparent);
+    color: var(--color-brand-soft);
   }
 
   .field {
-    width: 100%; border-radius: 12px; background-color: var(--color-surface-2);
-    padding: 0.625rem 0.875rem; font-size: 13px; color: var(--color-text-primary);
-    outline: none; transition: all 0.2s ease;
+    width: 100%; border-radius: var(--ds-radius-inner, 12px); background-color: var(--color-bg-input);
+    padding: 0.625rem 0.875rem; font-size: var(--ds-text-body); color: var(--color-text-primary);
+    outline: none;
+    transition-property: box-shadow, background-color, color;
+    transition-duration: var(--ds-duration);
+    transition-timing-function: ease;
     box-shadow: inset 0 0 0 1px var(--color-border-subtle);
   }
   .field:focus {
@@ -344,8 +648,22 @@
 
   .nav-item {
     position: relative; display: flex; align-items: center; gap: 0.75rem;
-    border-radius: 8px; padding: 9px 12px; font-size: 13px;
-    color: var(--color-text-secondary); transition: all 0.2s ease;
+    border-radius: var(--ds-radius-inner, 12px); padding: 9px 12px; font-size: var(--ds-text-body);
+    color: var(--color-text-secondary);
+    transition-property: background-color, color, box-shadow, transform;
+    transition-duration: var(--ds-duration);
+    transition-timing-function: ease;
+  }
+  /* Spec §4.8 — the active nav entry is a solid orange pill with a halo. */
+  .nav-item-on {
+    background: linear-gradient(135deg, var(--color-brand), var(--color-orange-deep));
+    color: var(--color-on-orange);
+    font-weight: 600;
+    box-shadow: 0 0 16px color-mix(in oklab, var(--color-brand) 30%, transparent);
+  }
+  .nav-item-on:hover {
+    background: linear-gradient(135deg, var(--color-brand-soft), var(--color-brand));
+    color: var(--color-on-orange);
   }
   .nav-item:hover { background-color: var(--color-surface-3); color: var(--color-text-primary); }
 
@@ -365,6 +683,9 @@
   }
 
   .glow-brand { box-shadow: 0 0 24px -2px color-mix(in oklab, var(--color-brand) 60%, transparent); }
+
+  /* Spec §3 — wheel spokes, applied only while the vehicle is moving. */
+  .wheel-spin { animation: wheel-spin 1.6s linear infinite; }
 
   .scroll-thin { scrollbar-width: thin; scrollbar-color: var(--color-surface-6) transparent; }
   .scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }

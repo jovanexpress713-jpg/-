@@ -8,6 +8,7 @@ import { CargoDonut } from "./overview/CargoDonut";
 import { TripBars } from "./overview/TripBars";
 import { TrackingPanel } from "./overview/TrackingPanel";
 import { TruckCapacity } from "./overview/TruckCapacity";
+import { RouteEfficiency } from "./overview/RouteEfficiency";
 import { ActivitiesTable } from "./overview/ActivitiesTable";
 import type { StatusGroup } from "./overview/shared";
 
@@ -89,10 +90,19 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails }
               <TripBars trips={trips} selectedId={selected.id} onSelect={handleSelect} />
             </div>
           </div>
-          <TrackingPanel trip={selected} trips={trips} onSelect={handleSelect} onOpenDetails={onOpenTripDetails} />
+          <div className="flex min-w-0 flex-col gap-4">
+            <TrackingPanel trip={selected} trips={trips} onSelect={handleSelect} onOpenDetails={onOpenTripDetails} />
+            {/* Spec §4.6 — the single orange card in the console. */}
+            <RouteEfficiency trip={selected} />
+          </div>
         </div>
 
-        <TruckCapacity trip={selected} truck={truck} driverName={driverName} />
+        <TruckCapacity
+          trip={selected}
+          truck={truck}
+          driverName={driverName}
+          onChangeRoute={onOpenTripDetails ? () => onOpenTripDetails(selected.id) : undefined}
+        />
 
         <ActivitiesTable
           trips={trips}

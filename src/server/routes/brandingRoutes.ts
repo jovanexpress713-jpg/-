@@ -35,8 +35,8 @@ let activeBranding: BrandingConfig = {
   taglineEn: "Heavy Fleet & Logistics Control",
   taglineUr: "ہیوی فلیٹ اور لاجسٹکس کنٹرول",
   logoUrl: null, // null defaults to vector EJAZ Emblem
-  primaryColor: "#FF7A00",
-  navyColor: "#0A1931",
+  primaryColor: "#FF6B1A",
+  navyColor: "#050B18",
   headerLogoUrl: null,
   loginLogoUrl: null,
   reportLogoUrl: null,

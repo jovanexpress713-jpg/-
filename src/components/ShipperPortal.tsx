@@ -264,7 +264,7 @@ export function ShipperPortal() {
               </button>
             </div>
 
-            <EjazEmblem size={44} color="#FF7A00" className="mx-auto" />
+            <EjazEmblem size={44} color="var(--color-brand)" className="mx-auto" />
             <h3 className="text-[18px] font-extrabold mt-3">
               {t("Electronic Consignment Waybill QR", "رمز بوليصة الشحن الإلكترونية")}
             </h3>
@@ -274,12 +274,12 @@ export function ShipperPortal() {
 
             {/* QR Visual */}
             <div className="my-5 mx-auto grid h-48 w-48 place-items-center rounded-2xl bg-navy/5 p-4 border border-navy/15">
-              <svg viewBox="0 0 40 40" className="h-full w-full" fill="#0A1931">
-                <rect x="2" y="2" width="14" height="14" rx="2" fill="none" stroke="#0A1931" strokeWidth="3" />
+              <svg viewBox="0 0 40 40" className="h-full w-full" fill="var(--color-on-brand)">
+                <rect x="2" y="2" width="14" height="14" rx="2" fill="none" stroke="var(--color-on-brand)" strokeWidth="3" />
                 <rect x="6" y="6" width="6" height="6" />
-                <rect x="24" y="2" width="14" height="14" rx="2" fill="none" stroke="#0A1931" strokeWidth="3" />
+                <rect x="24" y="2" width="14" height="14" rx="2" fill="none" stroke="var(--color-on-brand)" strokeWidth="3" />
                 <rect x="28" y="6" width="6" height="6" />
-                <rect x="2" y="24" width="14" height="14" rx="2" fill="none" stroke="#0A1931" strokeWidth="3" />
+                <rect x="2" y="24" width="14" height="14" rx="2" fill="none" stroke="var(--color-on-brand)" strokeWidth="3" />
                 <rect x="6" y="28" width="6" height="6" />
                 <rect x="22" y="22" width="4" height="4" />
                 <rect x="28" y="26" width="6" height="4" />

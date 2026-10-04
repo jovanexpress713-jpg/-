@@ -203,8 +203,8 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
               <svg viewBox="0 0 500 180" className="h-full w-full overflow-visible" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="tripGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#FF7A00" stopOpacity="0.38" />
-                    <stop offset="100%" stopColor="#FF7A00" stopOpacity="0.0" />
+                    <stop offset="0%" stopColor="var(--color-brand)" stopOpacity="0.38" />
+                    <stop offset="100%" stopColor="var(--color-brand)" stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
 
@@ -239,17 +239,17 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
                   return (
                     <>
                       <path d={areaD} fill="url(#tripGrad)" />
-                      <path d={lineD} fill="none" stroke="#FF7A00" strokeWidth="3" strokeLinecap="round" />
+                      <path d={lineD} fill="none" stroke="var(--color-brand)" strokeWidth="3" strokeLinecap="round" />
                       {pts.map(([px, py], i) => (
                         <g key={i}>
-                          <circle cx={px} cy={py} r="4.5" fill="#FF7A00" stroke="#0A1931" strokeWidth="2" />
+                          <circle cx={px} cy={py} r="4.5" fill="var(--color-brand)" stroke="var(--color-navy)" strokeWidth="2" />
                           <text
                             x={px}
                             y={py - 10}
                             textAnchor="middle"
                             fontSize="10"
                             fontWeight="bold"
-                            fill="#EAF0FA"
+                            fill="var(--color-text-primary)"
                           >
                             {currentData.tripsData[i]}
                           </text>
@@ -292,7 +292,7 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
                   cy="50"
                   r="36"
                   fill="none"
-                  stroke="#2FD08A"
+                  stroke="var(--color-status-active)"
                   strokeWidth="11"
                   strokeDasharray={`${strokeActive} ${circ}`}
                   strokeDashoffset="0"
@@ -304,7 +304,7 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
                   cy="50"
                   r="36"
                   fill="none"
-                  stroke="#FF7A00"
+                  stroke="var(--color-brand)"
                   strokeWidth="11"
                   strokeDasharray={`${strokeWaiting} ${circ}`}
                   strokeDashoffset={-strokeActive}
@@ -316,7 +316,7 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
                   cy="50"
                   r="36"
                   fill="none"
-                  stroke="#7E8DA8"
+                  stroke="var(--color-text-muted)"
                   strokeWidth="11"
                   strokeDasharray={`${strokeInactive} ${circ}`}
                   strokeDashoffset={-(strokeActive + strokeWaiting)}

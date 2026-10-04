@@ -14,6 +14,7 @@ import {
   IconDoc,
   IconLayers,
 } from "./Icons";
+import { palette } from "../utils/palette";
 
 interface TripsManagerProps {
   onClose?: () => void;
@@ -120,7 +121,8 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
     const y = "touches" in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#FF7A00";
+    /* The signature ink follows the brand token, not a private copy of it. */
+    ctx.strokeStyle = palette()["--color-brand"];
     ctx.lineTo(x, y);
     ctx.stroke();
   };
@@ -602,7 +604,7 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
             {/* Waybill Header */}
             <div className="flex items-start justify-between border-b border-navy/15 pb-4">
               <div className="flex items-center gap-3">
-                <EjazEmblem size={44} color="#FF7A00" />
+                <EjazEmblem size={44} color="var(--color-brand)" />
                 <div>
                   <h3 className="text-[18px] font-extrabold text-navy">
                     مؤسسة إيجاز للنقليات · EJAZ TRANSPORT
