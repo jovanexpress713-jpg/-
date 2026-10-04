@@ -1,65 +1,66 @@
-import { useState, useEffect } from "react";
-import { cn } from "../utils/cn";
+import { useState, useEffect, useMemo } from "react";
 import { useSettings } from "../settings";
-import { LANGUAGE_OPTIONS } from "../localization/i18n";
-import { LanguageList } from "../components/AccountMenu";
 import { LoginScreen } from "./LoginScreen";
 import { RegistrationScreen, RegistrationStatusScreen } from "./RegistrationFlow";
 import { ClientMode } from "./ClientMode";
 import { DriverMode } from "./DriverMode";
 import { SplashScreen } from "./SplashScreen";
+import { MobileAppSettings } from "./MobileAppSettings";
+import { useMobileNotifications } from "./MobileShared";
 import { apiClient, setAuthToken, getAuthToken } from "../services/apiClient";
-import { IconGlobe, IconTruck, IconProfile } from "../components/Icons";
+import { canSwitchAccounts, isClientRole, isDriverRole, type SessionUser } from "../utils/permissions";
+import { BrandLogo } from "../components/Logo";
+import { IconBell, IconMenu, IconArrowRight } from "../components/Icons";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
 type ScreenFlow = "welcome" | "login" | "register" | "app";
 
-const DEMO_DRIVER_USER = {
-  id: "u-driver",
-  email: "driver@ejaz.sa",
-  fullName: "فهد الشمري (كابتن أسطول)",
-  phone: "+966551234567",
-  role: "DRIVER",
-  driverId: "d1",
-  accountApproved: true,
-};
-
-const DEMO_CLIENT_USER = {
-  id: "u-client",
-  email: "client@ejaz.sa",
-  fullName: "شركة سدافكو للأغذية والمشروبات",
-  phone: "+966112223344",
-  role: "CUSTOMER",
-  customerId: "cust-1",
-  accountApproved: true,
-};
-
+/**
+ * Mobile application shell (§3-§5).
+ *
+ * Full-screen on phones — no fake device frame, no fake status bar. The header
+ * carries ONLY the EJAZ logo, the current page title, notifications and the
+ * menu (§4). Clock, platform name, driver/client pills, sign-in, language and
+ * theme were removed from here — they live in «إعدادات التطبيق» instead (§5).
+ *
+ * The driver app and the client app are independent interfaces over the same
+ * backend, auth, users, roles and data (§1). `forcedInterface` opens a specific
+ * app from the control room's «تطبيقات الجوال» area (§12).
+ */
 export function MobileApp({
   onStaffLogin,
   bypassAuthUser,
+  forcedInterface,
+  onLogout,
 }: {
   onStaffLogin?: (user: any) => void;
   bypassAuthUser?: any;
+  /** Set by the control room: open directly into the driver or client app. */
+  forcedInterface?: "driver" | "client";
+  /** Delegated sign-out (control-room sessions log out of everything). */
+  onLogout?: () => void;
 } = {}) {
-  const { t, tk, lang, theme, setTheme } = useSettings();
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const { t } = useSettings();
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
 
   const [currentScreen, setCurrentScreen] = useState<ScreenFlow>("welcome");
   const [registerType, setRegisterType] = useState<"DRIVER" | "CUSTOMER">("DRIVER");
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [notifSignal, setNotifSignal] = useState(0);
+  const [interfacePref, setInterfacePref] = useState<"driver" | "client">("driver");
+  const { unread } = useMobileNotifications();
+
   useEffect(() => {
     let cancelled = false;
 
     if (bypassAuthUser) {
-      const mobileIdentity =
-        bypassAuthUser.role === "DRIVER"
-          ? bypassAuthUser
-          : bypassAuthUser.role === "CUSTOMER" || bypassAuthUser.role === "CLIENT"
-            ? { ...bypassAuthUser, role: "CUSTOMER" }
-            : DEMO_DRIVER_USER;
-      setCurrentUser(mobileIdentity);
+      const identity: SessionUser = bypassAuthUser;
+      setCurrentUser(identity);
+      if (forcedInterface) setInterfacePref(forcedInterface);
+      else if (isClientRole(identity.role)) setInterfacePref("client");
+      else setInterfacePref("driver");
       setCurrentScreen("app");
       setSessionChecked(true);
       return;
@@ -107,12 +108,12 @@ export function MobileApp({
     return () => {
       cancelled = true;
     };
-  }, [bypassAuthUser]);
+  }, [bypassAuthUser, forcedInterface]);
 
   // Sync current user to local cache
   useEffect(() => {
     try {
-      if (currentUser) {
+      if (currentUser && !bypassAuthUser) {
         localStorage.setItem("ejaz_current_user", JSON.stringify(currentUser));
       } else if (!bypassAuthUser) {
         localStorage.removeItem("ejaz_current_user");
@@ -121,6 +122,17 @@ export function MobileApp({
       /* ignore */
     }
   }, [currentUser, bypassAuthUser]);
+
+  // Adopt the interface that fits the signed-in identity (§13, §14).
+  useEffect(() => {
+    if (!currentUser) return;
+    if (forcedInterface) {
+      setInterfacePref(forcedInterface);
+      return;
+    }
+    if (isDriverRole(currentUser.role)) setInterfacePref("driver");
+    else if (isClientRole(currentUser.role)) setInterfacePref("client");
+  }, [currentUser, forcedInterface]);
 
   const handleLoginSuccess = (user: any) => {
     const STAFF_ROLES = [
@@ -150,13 +162,16 @@ export function MobileApp({
   const awaitingApproval = isApplicantRole && currentUser?.accountApproved === false;
 
   const handleLogout = () => {
-    if (!bypassAuthUser) {
-      setAuthToken(null);
-      apiClient.auth.logout().catch(() => {});
+    if (onLogout && bypassAuthUser) {
+      onLogout();
+      return;
     }
+    setAuthToken(null);
+    apiClient.auth.logout().catch(() => {});
     setCurrentUser(null);
     setSessionChecked(true);
     setCurrentScreen("login");
+    setSettingsOpen(false);
   };
 
   const handleWelcomeContinue = () => {
@@ -167,157 +182,148 @@ export function MobileApp({
     }
   };
 
+  /** Multi-role identities pick the interface in settings (§5), never in the header. */
+  const maySwitchInterface =
+    canSwitchAccounts(currentUser) || !!(currentUser?.driverId && currentUser?.customerId);
+
+  const pageTitle = useMemo(() => {
+    if (settingsOpen) return t("App Settings", "إعدادات التطبيق");
+    return "";
+  }, [settingsOpen, t]);
+
+  const inApp = currentScreen === "app" && currentUser && !awaitingApproval;
+  const showChrome = !!currentUser && currentScreen === "app";
+
   return (
-    <div className="h-full w-full bg-surface-0 flex flex-col items-center justify-center overflow-hidden">
-      {/* Real Mobile App Viewport Container */}
-      <div className="relative h-full w-full max-w-[430px] bg-surface-0 shadow-2xl flex flex-col overflow-hidden border-x border-border-subtle">
-        {/* Android Real System Bar & Utility Header */}
-        <header className="shrink-0 flex items-center justify-between px-3 py-2 bg-navy border-b border-white/10 text-white text-[11px] select-none z-30 gap-1.5">
-          {/* Virtual Status Bar: Time & Quick Mode Switcher */}
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono font-bold text-brand">
-              {new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
-            </span>
-            <span className="text-white/40">|</span>
-            <span className="text-[10px] text-white/70">EJAZ 5G LTE</span>
-            {(bypassAuthUser || currentUser) && (
-              <div className="flex items-center gap-1 rounded-full bg-white/10 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentUser(DEMO_DRIVER_USER);
-                    setCurrentScreen("app");
-                  }}
-                  className={cn(
-                    "flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-bold transition-colors",
-                    currentScreen === "app" && currentUser?.role === "DRIVER"
-                      ? "bg-brand text-on-brand"
-                      : "text-white/80 hover:text-white"
-                  )}
-                >
-                  <IconTruck size={10} />
-                  <span>{t("Driver", "سائق")}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentUser(DEMO_CLIENT_USER);
-                    setCurrentScreen("app");
-                  }}
-                  className={cn(
-                    "flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-bold transition-colors",
-                    currentScreen === "app" && currentUser?.role !== "DRIVER"
-                      ? "bg-accent-2 text-white"
-                      : "text-white/80 hover:text-white"
-                  )}
-                >
-                  <IconProfile size={10} />
-                  <span>{t("Client", "عميل")}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrentScreen("login")}
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[9.5px] font-bold transition-colors",
-                    currentScreen === "login" || currentScreen === "register"
-                      ? "bg-white/25 text-white"
-                      : "text-white/70 hover:text-white"
-                  )}
-                >
-                  <span>{t("Sign in", "الدخول")}</span>
-                </button>
-              </div>
+    <div className="relative flex h-full w-full flex-col overflow-hidden bg-surface-0">
+      {/* Clean app header (§4): logo · title · notifications · menu. */}
+      {showChrome && !settingsOpen && (
+        <header className="relative z-30 flex shrink-0 items-center gap-2 border-b border-border-subtle bg-navy px-3 py-2 text-white">
+          <BrandLogo size={26} showSub={false} />
+          {pageTitle ? (
+            <h1 className="min-w-0 flex-1 truncate text-[12.5px] font-bold">{pageTitle}</h1>
+          ) : (
+            <div className="min-w-0 flex-1" />
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setNotifSignal((n) => n + 1);
+            }}
+            className="relative grid h-8 w-8 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+            aria-label={t("Notifications", "الإشعارات")}
+          >
+            <IconBell size={15} />
+            {unread > 0 && (
+              <span className="absolute end-1 top-1 h-1.5 w-1.5 rounded-full bg-brand" />
             )}
-          </div>
-
-          {/* Quick Utility Actions: Language, Theme */}
-          <div className="flex items-center gap-1.5">
-            <div className="relative">
-              <button
-                onClick={() => setLangMenuOpen((v) => !v)}
-                className="flex items-center gap-1 rounded-[6px] bg-white/10 px-2 py-0.5 text-[10px] font-bold transition-colors hover:bg-white/20"
-                title={tk("language.choose")}
-                aria-haspopup="listbox"
-                aria-expanded={langMenuOpen}
-              >
-                <IconGlobe size={11} />
-                <span>{LANGUAGE_OPTIONS.find((o) => o.code === lang)?.flag}</span>
-                <span>{tk(LANGUAGE_OPTIONS.find((o) => o.code === lang)?.labelKey ?? "language.ar")}</span>
-              </button>
-              {langMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setLangMenuOpen(false)} />
-                  <div className="menu-pop absolute end-0 z-20 mt-1.5 w-[190px] p-1.5 text-text-primary">
-                    <LanguageList compact onSelect={() => setLangMenuOpen(false)} />
-                  </div>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="px-2 py-0.5 rounded-[6px] bg-white/10 hover:bg-white/20 text-[10px] font-bold transition-colors"
-              title={t("Toggle Theme", "تبديل المظهر")}
-            >
-              {theme === "dark" ? "☀" : "☾"}
-            </button>
-          </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="grid h-8 w-8 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+            aria-label={t("App Settings", "إعدادات التطبيق")}
+          >
+            <IconMenu size={15} />
+          </button>
         </header>
+      )}
 
-        {/* Real App Viewport Screen Content */}
-        <main className="relative flex-1 min-h-0 overflow-hidden bg-surface-0">
-          {currentScreen === "welcome" && (
-            <SplashScreen onContinue={handleWelcomeContinue} />
-          )}
+      {/* Settings header with back */}
+      {showChrome && settingsOpen && (
+        <header className="relative z-30 flex shrink-0 items-center gap-2 border-b border-border-subtle bg-navy px-3 py-2 text-white">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(false)}
+            className="grid h-8 w-8 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+            aria-label={t("Back", "رجوع")}
+          >
+            <IconArrowRight size={15} className="rtl:rotate-180" />
+          </button>
+          <h1 className="min-w-0 flex-1 truncate text-[12.5px] font-bold">{pageTitle}</h1>
+        </header>
+      )}
 
-          {currentScreen === "login" && (
-            <ErrorBoundary fallbackTitle="حدث خطأ في تحميل شاشة تسجيل الدخول">
-              <LoginScreen
-                onLoginSuccess={handleLoginSuccess}
-                onRegister={(kind) => {
-                  setRegisterType(kind);
-                  setCurrentScreen("register");
-                }}
-              />
-            </ErrorBoundary>
-          )}
+      <main className="relative min-h-0 flex-1 overflow-hidden bg-surface-0">
+        {currentScreen === "welcome" && (
+          <SplashScreen onContinue={handleWelcomeContinue} />
+        )}
 
-          {currentScreen === "register" && (
-            <ErrorBoundary fallbackTitle="حدث خطأ في تحميل طلب التسجيل">
-              <RegistrationScreen
-                initialType={registerType}
-                onBackToLogin={() => setCurrentScreen("login")}
-                onSubmitted={() => setCurrentScreen("login")}
-              />
-            </ErrorBoundary>
-          )}
+        {currentScreen === "login" && (
+          <ErrorBoundary fallbackTitle="حدث خطأ في تحميل شاشة تسجيل الدخول">
+            <LoginScreen
+              onLoginSuccess={handleLoginSuccess}
+              onRegister={(kind) => {
+                setRegisterType(kind);
+                setCurrentScreen("register");
+              }}
+            />
+          </ErrorBoundary>
+        )}
 
-          {currentScreen === "app" && currentUser && awaitingApproval && (
-            <ErrorBoundary fallbackTitle="حدث خطأ في تحميل حالة الطلب">
-              <RegistrationStatusScreen
-                user={currentUser}
-                onLogout={handleLogout}
-                onApproved={async () => {
-                  try {
-                    const me = await apiClient.auth.me();
-                    setCurrentUser(me);
-                  } catch {
-                    /* keep the current session */
+        {currentScreen === "register" && (
+          <ErrorBoundary fallbackTitle="حدث خطأ في تحميل طلب التسجيل">
+            <RegistrationScreen
+              initialType={registerType}
+              onBackToLogin={() => setCurrentScreen("login")}
+              onSubmitted={() => setCurrentScreen("login")}
+            />
+          </ErrorBoundary>
+        )}
+
+        {currentScreen === "app" && currentUser && awaitingApproval && (
+          <ErrorBoundary fallbackTitle="حدث خطأ في تحميل حالة الطلب">
+            <RegistrationStatusScreen
+              user={currentUser}
+              onLogout={handleLogout}
+              onApproved={async () => {
+                try {
+                  const me = await apiClient.auth.me();
+                  setCurrentUser(me);
+                } catch {
+                  /* keep the current session */
+                }
+              }}
+            />
+          </ErrorBoundary>
+        )}
+
+        {inApp && (
+          interfacePref === "driver" ? (
+            <DriverMode
+              user={currentUser}
+              onLogout={handleLogout}
+              onOpenSettings={() => setSettingsOpen(true)}
+              notificationsSignal={notifSignal}
+            />
+          ) : (
+            <ClientMode
+              user={currentUser}
+              onLogout={handleLogout}
+              onOpenSettings={() => setSettingsOpen(true)}
+              notificationsSignal={notifSignal}
+            />
+          )
+        )}
+
+        {/* «إعدادات التطبيق» (§5) — account, language, appearance, time, app info. */}
+        {settingsOpen && inApp && (
+          <MobileAppSettings
+            user={currentUser}
+            onClose={() => setSettingsOpen(false)}
+            interfacePref={interfacePref}
+            onSwitchInterface={
+              maySwitchInterface
+                ? (next) => {
+                    setInterfacePref(next);
+                    setSettingsOpen(false);
                   }
-                }}
-              />
-            </ErrorBoundary>
-          )}
-
-          {currentScreen === "app" && currentUser && !awaitingApproval && (
-            currentUser.role === "DRIVER" ? (
-              <DriverMode user={currentUser} onLogout={handleLogout} />
-            ) : (
-              <ClientMode user={currentUser} onLogout={handleLogout} />
-            )
-          )}
-        </main>
-      </div>
+                : undefined
+            }
+            onLogout={handleLogout}
+          />
+        )}
+      </main>
     </div>
   );
 }

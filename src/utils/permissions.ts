@@ -44,6 +44,10 @@ export type Capability =
   | "vehicles.manage"
   | "drivers.view"
   | "drivers.manage"
+  | "drivers.create"
+  | "customers.view"
+  | "customers.manage"
+  | "customers.create"
   | "registrations.review"
   | "branding.manage"
   | "settings.manage"
@@ -57,29 +61,32 @@ export type Capability =
 const ROLE_CAPABILITIES: Record<string, Capability[] | "*"> = {
   SUPER_ADMIN: "*",
   GENERAL_MANAGER: [
-    "trips.view", "trips.manage", "vehicles.view", "drivers.view", "registrations.review",
+    "trips.view", "trips.manage", "vehicles.view", "drivers.view", "drivers.create", "registrations.review",
+    "customers.view", "customers.create", "customers.manage",
     "branding.manage", "settings.manage", "reports.view", "audit.view", "finance.view",
     "notifications.view", "gps.view", "assistant.act",
   ],
   OPERATIONS_MANAGER: [
     "trips.view", "trips.manage", "trips.transition", "vehicles.view", "vehicles.manage",
-    "drivers.view", "drivers.manage", "registrations.review", "reports.view", "audit.view",
-    "notifications.view", "gps.view", "assistant.act",
+    "drivers.view", "drivers.manage", "drivers.create", "registrations.review",
+    "customers.view", "customers.create", "customers.manage",
+    "reports.view", "audit.view", "notifications.view", "gps.view", "assistant.act",
   ],
   DISPATCHER: [
     "trips.view", "trips.manage", "trips.transition", "vehicles.view", "drivers.view",
-    "gps.view", "notifications.view", "assistant.act",
+    "customers.view", "gps.view", "notifications.view", "assistant.act",
   ],
   ACCOUNTANT: [
     "trips.view", "finance.view", "reports.view", "notifications.view", "audit.view",
+    "customers.view",
   ],
   WAREHOUSE: ["trips.view", "trips.transition", "notifications.view"],
   DRIVER: ["trips.view", "trips.transition", "trips.request", "gps.view", "notifications.view"],
   CUSTOMER: ["trips.view", "notifications.view"],
   CLIENT: ["trips.view", "notifications.view"],
-  BROKER: ["trips.view", "notifications.view"],
+  BROKER: ["trips.view", "customers.view", "customers.create", "notifications.view"],
   CUSTOMS_BROKER: ["trips.view", "notifications.view"],
-  REPRESENTATIVE: ["trips.view", "notifications.view"],
+  REPRESENTATIVE: ["trips.view", "customers.view", "notifications.view"],
 };
 
 /** Console personas (the role switch inside the control room). */

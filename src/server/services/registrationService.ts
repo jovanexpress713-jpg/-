@@ -442,6 +442,77 @@ function findUserByEmail(email: string): UserEntity | undefined {
   return Array.from(db.users.values()).find((u) => u.email.toLowerCase() === target);
 }
 
+/**
+ * Unique-identifier duplicate guard (§19): no second account may be opened for
+ * a phone number, national ID, commercial registration or e-mail that already
+ * exists in the users table, the operational driver/customer registries, or a
+ * previous registration request.
+ */
+function assertNoDuplicateIdentifiers(input: {
+  email: string;
+  phone?: string;
+  nationalId?: string;
+  commercialReg?: string;
+  type: RegistrationType;
+}) {
+  const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+  const email = norm(input.email);
+  const phone = norm(input.phone);
+  const nationalId = norm(input.nationalId);
+  const commercialReg = norm(input.commercialReg);
+  const store = readStore();
+
+  const clash = (values: (string | undefined)[], target: string | undefined) =>
+    !!target && values.some((v) => norm(v) === target);
+
+  for (const user of db.users.values()) {
+    if (norm(user.email) === email) {
+      throw registrationError("يوجد حساب بهذا البريد بالفعل؛ سجّل الدخول لمتابعة طلبك", 409, "EMAIL_ALREADY_REGISTERED");
+    }
+    if (phone && norm(user.phone) === phone) {
+      throw registrationError("رقم الجوال مسجّل على حساب آخر بالفعل. لا يمكن إنشاء حساب مكرر.", 409, "PHONE_ALREADY_REGISTERED");
+    }
+    const linkedDriver = user.driverId ? db.drivers.get(user.driverId) : undefined;
+    const linkedCustomer = user.customerId ? db.customers.get(user.customerId) : undefined;
+    if (nationalId && clash([linkedDriver?.nationalId], nationalId)) {
+      throw registrationError("رقم الهوية الوطنية مسجّل لسائق آخر بالفعل.", 409, "NATIONAL_ID_ALREADY_REGISTERED");
+    }
+    if (commercialReg && clash([linkedCustomer?.commercialReg], commercialReg)) {
+      throw registrationError("رقم السجل التجاري مسجّل لمنشأة أخرى بالفعل.", 409, "COMMERCIAL_REG_ALREADY_REGISTERED");
+    }
+  }
+
+  for (const driver of db.drivers.values()) {
+    if (nationalId && norm(driver.nationalId) === nationalId) {
+      throw registrationError("رقم الهوية الوطنية مسجّل لسائق آخر بالفعل.", 409, "NATIONAL_ID_ALREADY_REGISTERED");
+    }
+    if (phone && norm(driver.phone) === phone) {
+      throw registrationError("رقم الجوال مسجّل لسائق آخر بالفعل. لا يمكن إنشاء حساب مكرر.", 409, "PHONE_ALREADY_REGISTERED");
+    }
+  }
+  for (const customer of db.customers.values()) {
+    if (commercialReg && norm(customer.commercialReg) === commercialReg) {
+      throw registrationError("رقم السجل التجاري مسجّل لمنشأة أخرى بالفعل.", 409, "COMMERCIAL_REG_ALREADY_REGISTERED");
+    }
+    if (phone && norm(customer.phone) === phone) {
+      throw registrationError("رقم الجوال مسجّل لمنشأة أخرى بالفعل. لا يمكن إنشاء حساب مكرر.", 409, "PHONE_ALREADY_REGISTERED");
+    }
+  }
+
+  for (const request of store.requests) {
+    if (norm(request.email) === email) continue; // handled by the request-merge logic below
+    if (phone && norm(request.phone) === phone) {
+      throw registrationError("يوجد طلب سابق بنفس رقم الجوال؛ لا يمكن إنشاء طلب مكرر.", 409, "PHONE_ALREADY_REGISTERED");
+    }
+    if (nationalId && clash([request.fields?.nationalId], nationalId)) {
+      throw registrationError("يوجد طلب سابق بنفس رقم الهوية الوطنية.", 409, "NATIONAL_ID_ALREADY_REGISTERED");
+    }
+    if (commercialReg && clash([request.fields?.commercialReg], commercialReg)) {
+      throw registrationError("يوجد طلب سابق بنفس رقم السجل التجاري.", 409, "COMMERCIAL_REG_ALREADY_REGISTERED");
+    }
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Public API — applicant side                                         */
 /* ------------------------------------------------------------------ */
@@ -452,6 +523,8 @@ export interface SubmitInput {
   password?: string;
   documents?: { kind: string; fileName?: string; data: string }[];
   submit?: boolean;
+  /** The operator who opened the request on behalf of the applicant (staff add). */
+  submittedBy?: { id?: string; name?: string; role?: string };
 }
 
 export interface SubmitResult {
@@ -508,6 +581,16 @@ export function submitRegistration(input: SubmitInput): SubmitResult {
     throw registrationError("يوجد حساب بهذا البريد بالفعل؛ سجّل الدخول لمتابعة طلبك", 409, "EMAIL_ALREADY_REGISTERED");
   }
 
+  // §19 — phone / national ID / commercial registration must be unique across
+  // accounts, operational registries and previous requests.
+  assertNoDuplicateIdentifiers({
+    email,
+    phone,
+    nationalId: fields.nationalId,
+    commercialReg: fields.commercialReg,
+    type,
+  });
+
   if (!request) {
     request = {
       id: nextRequestNumber(store),
@@ -551,9 +634,11 @@ export function submitRegistration(input: SubmitInput): SubmitResult {
     request.completionRequests = [];
     request.history.push(
       historyEntry(submissionAction, previous, "PENDING_REVIEW", {
-        name: request.fullName,
+        name: input.submittedBy?.name || request.fullName,
         role: type,
-      }, "إرسال طلب التسجيل")
+      }, input.submittedBy?.name
+        ? `إرسال طلب التسجيل بواسطة ${input.submittedBy.name}`
+        : "إرسال طلب التسجيل")
     );
 
     const userId = `u-reg-${randomUUID()}`;

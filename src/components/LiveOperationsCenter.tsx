@@ -58,6 +58,16 @@ export function LiveOperationsCenter({
   const [focusedTripId, setFocusedTripId] = useState<string>(selectedTripId || trips[0]?.id || "trip-1");
   const [showFloatingPanel, setShowFloatingPanel] = useState(true);
 
+  // §24 — honest GPS state: the console never claims live tracking while no
+  // approved GPS provider is configured.
+  const [gpsConfigured, setGpsConfigured] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/gps/providers/status")
+      .then((r) => r.json())
+      .then((data) => setGpsConfigured(Boolean(data?.providers?.some((p: any) => p.configured))))
+      .catch(() => setGpsConfigured(false));
+  }, []);
+
   // Synchronize focused trip with store
   useEffect(() => {
     if (selectedTripId) setFocusedTripId(selectedTripId);
@@ -420,6 +430,12 @@ export function LiveOperationsCenter({
       </div>
 
       {/* 2. MAIN MAP VIEWPORT (Section 5 & 6) */}
+      {/* §24 — explicit honest state when live GPS is not configured */}
+      {gpsConfigured === false && (
+        <div className="shrink-0 border-b border-status-waiting/30 bg-status-waiting/10 px-4 py-1.5 text-[11px] font-semibold text-status-waiting">
+          ⚠ {t("GPS service is not configured — vehicle positions shown are route demos, not live GPS.", "خدمة GPS غير مهيأة — مواقع المركبات المعروضة استعراضية للمسارات وليست تتبعًا حقيقيًا.")}
+        </div>
+      )}
       <div className="relative flex-1 min-h-0 overflow-hidden">
         {/* Interactive Canvas */}
         <canvas
@@ -569,7 +585,11 @@ export function LiveOperationsCenter({
                 </div>
 
                 <div className="bg-surface-2 p-2 rounded-[8px]">
-                  <div className="text-text-muted text-[9.5px]">{t("GPS Speed", "السرعة الحية")}</div>
+                  <div className="text-text-muted text-[9.5px]">
+                    {gpsConfigured
+                      ? t("GPS Speed", "السرعة الحية")
+                      : t("Speed (route demo)", "السرعة (استعراضية)")}
+                  </div>
                   <div className="font-bold text-status-active tabular-nums mt-0.5">
                     {focusedTrip.speedKmH > 0 ? `${focusedTrip.speedKmH} كم/س (LIVE)` : "متوقفة"}
                   </div>

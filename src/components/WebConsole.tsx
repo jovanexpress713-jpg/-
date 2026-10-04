@@ -63,7 +63,7 @@ export function WebConsole({
   onPageChange?: (section: string) => void;
   /** Incremented by the header's menu button to open the mobile drawer. */
   openSidebarSignal?: number;
-  onOpenSettings?: (tab?: "profile" | "preferences" | "notifications" | "assistant" | "help") => void;
+  onOpenSettings?: (tab?: "account" | "app" | "apps" | "loginPreview" | "system" | "help") => void;
 } = {}) {
   const toast = useToast();
   const {
@@ -140,7 +140,7 @@ export function WebConsole({
       return;
     }
     if (key === "settings") {
-      onOpenSettings?.("preferences");
+      onOpenSettings?.("system");
       return;
     }
     setNav(key);
