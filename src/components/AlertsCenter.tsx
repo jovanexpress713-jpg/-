@@ -101,52 +101,55 @@ export function AlertsCenter({ isOpen, onClose, onSelectTrip }: AlertsCenterProp
             return (
               <div
                 key={al.id}
+                /* Spec §4.2 — one card recipe; severity is carried by the
+                   8px status dot and the pill, not by repainting the card. */
                 className={cn(
-                  "rounded-[14px] p-4 border transition-all",
-                  al.resolved
-                    ? "bg-surface-3/50 border-border-subtle opacity-60"
-                    : isCritical
-                    ? "bg-status-danger/10 border-status-danger/30"
-                    : isWarning
-                    ? "bg-status-waiting/10 border-status-waiting/30"
-                    : "bg-surface-3 border-border-subtle"
+                  "card",
+                  al.resolved && "opacity-55",
+                  !al.resolved && isCritical && "border-status-danger/40",
+                  !al.resolved && isWarning && "border-status-waiting/40",
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
+                    {/* Spec §4.2 — an 8px dot in the status colour. */}
                     <span
+                      aria-hidden="true"
                       className={cn(
-                        "grid h-8 w-8 shrink-0 place-items-center rounded-lg mt-0.5",
-                        isCritical
-                          ? "bg-status-danger/20 text-status-danger"
-                          : isWarning
-                          ? "bg-status-waiting/20 text-status-waiting"
-                          : "bg-brand/20 text-brand"
+                        "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                        al.resolved
+                          ? "bg-status-active"
+                          : isCritical
+                            ? "animate-pulse-dot bg-status-danger text-status-danger"
+                            : isWarning
+                              ? "bg-status-waiting"
+                              : "bg-status-info",
                       )}
-                    >
-                      <IconBolt size={16} />
-                    </span>
+                    />
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[13.5px] text-text-primary">
+                        {/* Spec §4.2 — 14px title. */}
+                        <span className="card-title">
                           {t(al.titleEn, al.titleAr)}
                         </span>
-                        <span className="text-[10px] text-text-muted tabular-nums">
-                          {al.timestamp}
-                        </span>
                       </div>
-                      <p className="text-[12px] text-text-secondary mt-1 leading-relaxed">
+                      {/* Spec §4.2 — 12px description. */}
+                      <p className="mt-1 text-[12px] leading-relaxed text-text-secondary">
                         {t(al.descEn, al.descAr)}
                       </p>
                     </div>
                   </div>
 
-                  {al.resolved && (
-                    <span className="badge bg-status-active/20 text-status-active text-[10.5px] shrink-0 font-bold">
-                      ✓ {t("Resolved", "تمت المعالجة")}
-                    </span>
-                  )}
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    {/* Spec §4.2 — 11px timestamp. */}
+                    <span className="num text-[11px] text-text-muted">{al.timestamp}</span>
+                    {al.resolved && (
+                      <span className="pill pill-success">
+                        ✓ {t("Resolved", "تمت المعالجة")}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Actions */}

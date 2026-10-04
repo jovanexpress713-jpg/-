@@ -42,7 +42,7 @@ export function BrandEmblem({
 export function EjazEmblem({
   size = 64,
   className,
-  color = "#FF7A00",
+  color = "#FF6B1A",
 }: {
   size?: number;
   className?: string;

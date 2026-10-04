@@ -31,8 +31,8 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
     headerLogoUrl: "",
     loginLogoUrl: "",
     reportLogoUrl: "",
-    primaryColor: "#FF7A00",
-    navyColor: "#0A1931",
+    primaryColor: "#FF6B1A",
+    navyColor: "#050B18",
   });
 
   useEffect(() => {

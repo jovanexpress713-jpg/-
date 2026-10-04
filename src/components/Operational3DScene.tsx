@@ -25,7 +25,7 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
           titleEn: "Central Yard Loading & Axle Weighing Scene",
           stageAr: "جاري رص وتأمين الشحنة ومطابقة الأوزان",
           stageEn: "Pallet loading, strap tie-down & weighbridge check",
-          badgeColor: "#FF7A00",
+          badgeColor: "#FF6B1A",
           iconColor: "text-brand",
         };
       case "arrived":
@@ -35,7 +35,7 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
           titleEn: "Port Terminal & Cargo Berth Arrival Scene",
           stageAr: "وصول بوابة الميناء وإنهاء الفحص الجمركي",
           stageEn: "Gate clearance & customs inspection completed",
-          badgeColor: "#2F80FF",
+          badgeColor: "#38BDF8",
           iconColor: "text-accent-2",
         };
       case "delivered":
@@ -46,7 +46,7 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
           titleEn: "Cargo Handover & Recipient Sign-off Scene",
           stageAr: "تم التفريغ وتوثيق إثبات التسليم الإلكتروني POD",
           stageEn: "Cargo unloaded and digital POD signed",
-          badgeColor: "#2FD08A",
+          badgeColor: "#22C55E",
           iconColor: "text-status-active",
         };
       case "cancelled":
@@ -56,7 +56,7 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
           titleEn: "Operation Suspended - Cancelled Trip",
           stageAr: "تم إيقاف حركة المركبة وإلغاء أمر التكليف",
           stageEn: "Vehicle halted; dispatch order formally cancelled",
-          badgeColor: "#FF5A6E",
+          badgeColor: "#FF3B30",
           iconColor: "text-status-danger",
         };
       case "on_road":
@@ -67,7 +67,7 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
           titleEn: "Live Highway Express Transit Scene",
           stageAr: `إبحار بسرعة ${trip.speedKmH} كم/س عبر الممر اللوجستي`,
           stageEn: `Cruising at ${trip.speedKmH} km/h along logistics artery`,
-          badgeColor: "#2FD08A",
+          badgeColor: "#22C55E",
           iconColor: "text-status-active",
         };
     }
@@ -143,15 +143,15 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
               <rect x="30" y="30" width="105" height="42" rx="2" fill="#122238" />
 
               {/* EJAZ Brand Decal on Trailer */}
-              <text x="82" y="56" fill="#FF7A00" fontSize="14" fontWeight="bold" fontFamily="sans-serif" textAnchor="middle">
+              <text x="82" y="56" fill="var(--color-brand)" fontSize="14" fontWeight="bold" fontFamily="sans-serif" textAnchor="middle">
                 EJAZ إيجاز
               </text>
-              <line x1="45" y1="62" x2="120" y2="62" stroke="#FF7A00" strokeWidth="1.5" strokeOpacity="0.6" />
+              <line x1="45" y1="62" x2="120" y2="62" stroke="var(--color-brand)" strokeWidth="1.5" strokeOpacity="0.6" />
 
               {/* Tractor Cabin */}
-              <path d="M142 42 L168 42 L185 62 L185 77 L142 77 Z" fill="#FF7A00" stroke="#0A1931" strokeWidth="2" />
+              <path d="M142 42 L168 42 L185 62 L185 77 L142 77 Z" fill="var(--color-brand)" stroke="var(--color-navy)" strokeWidth="2" />
               {/* Cabin Windshield */}
-              <path d="M165 46 L178 60 L158 60 L158 46 Z" fill="#0A1931" />
+              <path d="M165 46 L178 60 L158 60 L158 46 Z" fill="var(--color-navy)" />
               {/* Headlights */}
               <circle cx="183" cy="72" r="3" fill="#FFFFFF" />
 
@@ -161,10 +161,10 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
               <circle cx="120" cy="79" r="10" fill="#050C1A" stroke="#46566F" strokeWidth="2.5" />
               <circle cx="170" cy="79" r="10" fill="#050C1A" stroke="#46566F" strokeWidth="2.5" />
               {/* Wheel Rims */}
-              <circle cx="45" cy="79" r="4" fill="#FF7A00" />
-              <circle cx="70" cy="79" r="4" fill="#FF7A00" />
-              <circle cx="120" cy="79" r="4" fill="#FF7A00" />
-              <circle cx="170" cy="79" r="4" fill="#FF7A00" />
+              <circle cx="45" cy="79" r="4" fill="var(--color-brand)" />
+              <circle cx="70" cy="79" r="4" fill="var(--color-brand)" />
+              <circle cx="120" cy="79" r="4" fill="var(--color-brand)" />
+              <circle cx="170" cy="79" r="4" fill="var(--color-brand)" />
             </svg>
           </div>
 

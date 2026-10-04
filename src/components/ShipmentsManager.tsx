@@ -180,7 +180,7 @@ export function ShipmentsManager({
                 >
                   <span
                     className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: isSelected ? "#0A1931" : meta.accentColor }}
+                    style={{ backgroundColor: isSelected ? "var(--color-navy)" : meta.accentColor }}
                   />
                   <span>{meta.arabicName}</span>
                 </button>

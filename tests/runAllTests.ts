@@ -11,6 +11,7 @@ import { runUiInteractionTests } from "./uiInteraction.test";
 import { runRuntimeUiTests } from "./runtimeUi.test";
 import { runResponsiveAudit } from "./responsiveAudit.test";
 import { runBrandingTests } from "./branding.test";
+import { runNovaDesignTests } from "./novaDesign.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -31,9 +32,10 @@ async function runAll() {
     await runRuntimeUiTests();
     runResponsiveAudit();
     runBrandingTests();
+    await runNovaDesignTests();
 
     console.log("============================================================");
-    console.log("  ✅ ALL 13 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 14 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {

@@ -259,10 +259,11 @@ export function DispatchChatCenter({ onOpenTrip }: DispatchChatCenterProps) {
                       </div>
                       <div
                         className={cn(
-                          "rounded-[12px] px-3.5 py-2 text-[12.5px] leading-relaxed shadow-sm",
+                          /* Spec §4.7 — outgoing orange, incoming card-2. */
+                          "rounded-inner px-3.5 py-2 text-[12.5px] leading-relaxed shadow-sm",
                           isDispatch
-                            ? "bg-brand text-on-brand font-medium rounded-ee-sm"
-                            : "bg-surface-3 text-text-primary rounded-es-sm border border-border-subtle",
+                            ? "bubble-out font-medium rounded-ee-sm"
+                            : "bubble-in rounded-es-sm",
                         )}
                       >
                         {t(msg.textEn, msg.textAr)}

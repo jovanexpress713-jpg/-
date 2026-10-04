@@ -337,7 +337,7 @@ router.get("/:id", authenticate, requirePermission("trips.view"), (req: Authenti
     events,
     financials,
     documents,
-    statusMeta: STATUS_LABELS[trip.status as TripLifecycleStatus] || { ar: trip.status, en: trip.status, badgeColor: "#FF7A00" },
+    statusMeta: STATUS_LABELS[trip.status as TripLifecycleStatus] || { ar: trip.status, en: trip.status, badgeColor: "#FF6B1A" },
   });
 });
 

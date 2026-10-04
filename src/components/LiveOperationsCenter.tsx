@@ -20,6 +20,7 @@ import {
   IconArrowRight,
   IconDoc,
 } from "./Icons";
+import { palette, rgba } from "../utils/palette";
 
 interface LiveOperationsCenterProps {
   onOpenTripDetails?: (tripId: string) => void;
@@ -110,6 +111,10 @@ export function LiveOperationsCenter({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    /* Spec §4.3 — resolved from the design tokens so this canvas follows the
+       same navy + orange system (and the same theme flip) as the DOM. */
+    const pal = palette();
+
     let animFrame: number;
 
     const render = () => {
@@ -119,11 +124,11 @@ export function LiveOperationsCenter({
       if (canvas.height !== height) canvas.height = height;
 
       // 1. Background
-      ctx.fillStyle = mapLayer === "satellite" ? "#040b15" : "#071322";
+      ctx.fillStyle = mapLayer === "satellite" ? pal["--color-bg-deep"] : pal["--color-bg-main"];
       ctx.fillRect(0, 0, width, height);
 
       // 2. Graticule Lat/Lng grid
-      ctx.strokeStyle = "rgba(41, 65, 96, 0.22)";
+      ctx.strokeStyle = rgba(pal["--color-surface-6"], 0.3);
       ctx.lineWidth = 1;
       const gridSize = 48 * zoom;
       const offsetX = pan.x % gridSize;
@@ -161,19 +166,19 @@ export function LiveOperationsCenter({
         if (cx < -40 || cx > width + 40 || cy < -40 || cy > height + 40) return;
 
         // Outer glow
-        ctx.fillStyle = "rgba(47, 128, 255, 0.25)";
+        ctx.fillStyle = rgba(pal["--color-status-info"], 0.25);
         ctx.beginPath();
         ctx.arc(cx, cy, 6, 0, Math.PI * 2);
         ctx.fill();
 
         // Core dot
-        ctx.fillStyle = "#A7B4C9";
+        ctx.fillStyle = pal["--color-text-secondary"];
         ctx.beginPath();
         ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
         ctx.fill();
 
         // City label
-        ctx.fillStyle = "rgba(234, 240, 250, 0.75)";
+        ctx.fillStyle = rgba(pal["--color-text-primary"], 0.75);
         ctx.font = "10px 'Tajawal', sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(cityName, cx, cy - 7);
@@ -192,7 +197,7 @@ export function LiveOperationsCenter({
         // Background dashed route
         ctx.beginPath();
         ctx.setLineDash([5, 5]);
-        ctx.strokeStyle = isFocused ? "rgba(255, 122, 0, 0.4)" : "rgba(110, 126, 150, 0.2)";
+        ctx.strokeStyle = isFocused ? rgba(pal["--color-brand"], 0.45) : rgba(pal["--color-text-muted"], 0.2);
         ctx.lineWidth = isFocused ? 3 : 1.5;
 
         const [sX, sY] = projectCoords(points[0][0], points[0][1], width, height);
@@ -236,13 +241,13 @@ export function LiveOperationsCenter({
           );
 
           // Origin marker
-          ctx.fillStyle = "#FF7A00";
+          ctx.fillStyle = pal["--color-brand"];
           ctx.beginPath();
           ctx.arc(sX, sY, 5, 0, Math.PI * 2);
           ctx.fill();
 
           // Dest marker
-          ctx.fillStyle = "#2FD08A";
+          ctx.fillStyle = pal["--color-status-active"];
           ctx.beginPath();
           ctx.arc(destX, destY, 5, 0, Math.PI * 2);
           ctx.fill();
@@ -273,7 +278,7 @@ export function LiveOperationsCenter({
 
         // Focused pulsing aura
         if (isFocused) {
-          ctx.strokeStyle = "#FF7A00";
+          ctx.strokeStyle = pal["--color-brand"];
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(0, 0, 16, 0, Math.PI * 2);
@@ -284,23 +289,23 @@ export function LiveOperationsCenter({
         ctx.fillStyle = meta.accentColor;
         ctx.fillRect(-10, -4, 15, 8); // Trailer
 
-        ctx.fillStyle = "#0A1931";
+        ctx.fillStyle = pal["--color-navy"];
         ctx.fillRect(5, -4, 5, 8); // Cab
 
         // Windshield
-        ctx.fillStyle = "#FFFFFF";
+        ctx.fillStyle = pal["--color-paper"];
         ctx.fillRect(7, -2.5, 2, 5);
 
         ctx.restore();
 
         // Label above truck
-        ctx.fillStyle = isFocused ? "#FF7A00" : "#EAF0FA";
+        ctx.fillStyle = isFocused ? pal["--color-brand"] : pal["--color-text-primary"];
         ctx.font = isFocused ? "bold 11px 'Tajawal', sans-serif" : "10px 'Tajawal', sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(tr.tripNumber, tx, ty - 14);
 
         if (isFocused && tr.speedKmH > 0) {
-          ctx.fillStyle = "#2FD08A";
+          ctx.fillStyle = pal["--color-status-active"];
           ctx.font = "9.5px 'Tajawal', sans-serif";
           ctx.fillText(`${tr.speedKmH} كم/س`, tx, ty + 18);
         }
@@ -451,7 +456,7 @@ export function LiveOperationsCenter({
                   isSel ? "bg-brand text-on-brand font-bold" : "text-text-secondary hover:text-text-primary"
                 )}
               >
-                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: isSel ? "#0A1931" : m.accentColor }} />
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: isSel ? "var(--color-navy)" : m.accentColor }} />
                 <span>{m.arabicName}</span>
               </button>
             );

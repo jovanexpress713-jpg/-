@@ -10,6 +10,7 @@ import {
   IconZoomOut,
   IconPin,
 } from "./Icons";
+import { palette, rgba } from "../utils/palette";
 import { TruckTypeIcon } from "./TruckTypeIcon";
 
 interface InteractiveMapProps {
@@ -42,7 +43,11 @@ export function InteractiveMap({
   const [selectedPin] = useState<{ name: string; lat: number; lng: number } | null>(null);
 
   const corridor = SAUDI_CORRIDORS[trip.corridorKey] || SAUDI_CORRIDORS["riyadh-jeddah"];
-  const strokeColor = accent ? "#2F80FF" : "#FF7A00";
+  /* Spec §4.3 — resolved from the design tokens, not a second hard-coded copy
+     of the palette. The route is the glowing orange; the informational blue is
+     reserved for the accent layer and never becomes a primary. */
+  const pal = palette();
+  const strokeColor = accent ? pal["--color-status-info"] : pal["--color-brand"];
 
   // Projection: Saudi Lat/Lng to Canvas pixels
   // Center roughly at Riyadh (24.7, 46.7) with K scaling
@@ -93,11 +98,11 @@ export function InteractiveMap({
       if (canvas.height !== height) canvas.height = height;
 
       // 1) Background canvas
-      ctx.fillStyle = mapLayer === "satellite" ? "#060f1b" : "#091527";
+      ctx.fillStyle = mapLayer === "satellite" ? pal["--color-bg-deep"] : pal["--color-bg-main"];
       ctx.fillRect(0, 0, width, height);
 
       // 2) Graticule grid lines
-      ctx.strokeStyle = "rgba(41, 65, 96, 0.28)";
+      ctx.strokeStyle = rgba(pal["--color-surface-6"], 0.4);
       ctx.lineWidth = 1;
       const gridSize = 45 * zoom;
       const offsetX = (pan.x % gridSize);
@@ -154,7 +159,7 @@ export function InteractiveMap({
         // Full corridor line (background dashed)
         ctx.beginPath();
         ctx.setLineDash([6, 6]);
-        ctx.strokeStyle = "rgba(110, 126, 150, 0.35)";
+        ctx.strokeStyle = rgba(pal["--color-text-muted"], 0.3);
         ctx.lineWidth = 3.5;
         const [startX, startY] = projectCoords(points[0][0], points[0][1], width, height);
         ctx.moveTo(startX, startY);
@@ -198,12 +203,12 @@ export function InteractiveMap({
         const isHovered = hoveredWaypoint === wp.nameAr;
 
         ctx.save();
-        ctx.fillStyle = wp.type === "terminal" ? strokeColor : "#2FD08A";
+        ctx.fillStyle = wp.type === "terminal" ? strokeColor : pal["--color-status-active"];
         ctx.beginPath();
         ctx.arc(wx, wy, isHovered ? 7 : 5, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = "#0A1931";
+        ctx.strokeStyle = pal["--color-navy"];
         ctx.lineWidth = 2;
         ctx.stroke();
 
@@ -214,7 +219,7 @@ export function InteractiveMap({
           ctx.font = "10px 'Tajawal', sans-serif";
           const tw = ctx.measureText(text).width;
           ctx.fillRect(wx - tw / 2 - 4, wy + 8, tw + 8, 16);
-          ctx.fillStyle = "#EAF0FA";
+          ctx.fillStyle = pal["--color-text-primary"];
           ctx.textAlign = "center";
           ctx.fillText(text, wx, wy + 20);
         }
@@ -240,16 +245,16 @@ export function InteractiveMap({
       // Trailer (matching 4 canonical cargo types)
       const trailerColor =
         trip.cargoType === "reefer"
-          ? "#EAF0FA" // White thermal box
+          ? pal["--color-paper"] // White thermal box
           : trip.cargoType === "dry"
-          ? "#2F80FF" // Blue container / dry box
+          ? pal["--color-status-info"] // Blue container / dry box
           : trip.cargoType === "flatbed"
-          ? "#FF7A00" // Flatbed industrial orange
+          ? pal["--color-brand"] // Flatbed industrial orange
           : strokeColor; // Curtain / standard
 
       // Draw Trailer chassis & body
       ctx.fillStyle = trailerColor;
-      ctx.strokeStyle = "#0A1931";
+      ctx.strokeStyle = pal["--color-navy"];
       ctx.lineWidth = 1.5;
 
       // Trailer Box (-22 to 2 px)
@@ -267,7 +272,7 @@ export function InteractiveMap({
         ctx.stroke();
       } else if (trip.cargoType === "reefer") {
         // Reefer unit on front
-        ctx.fillStyle = "#A7B4C9";
+        ctx.fillStyle = pal["--color-text-secondary"];
         ctx.fillRect(-2, -4, 4, 8);
       }
 
@@ -277,11 +282,11 @@ export function InteractiveMap({
       ctx.strokeRect(3, -6.5, 12, 13);
 
       // Windshield (glass reflection)
-      ctx.fillStyle = "#0A1931";
+      ctx.fillStyle = pal["--color-navy"];
       ctx.fillRect(10, -5, 4, 10);
 
       // Dual wheels
-      ctx.fillStyle = "#1E252F";
+      ctx.fillStyle = pal["--color-surface-4"];
       ctx.fillRect(-18, -9, 6, 2.5); // Rear left
       ctx.fillRect(-18, 6.5, 6, 2.5); // Rear right
       ctx.fillRect(-6, -9, 6, 2.5); // Middle left
@@ -310,7 +315,7 @@ export function InteractiveMap({
       // Small pin hover / selection info
       if (selectedPin) {
         const [px, py] = projectCoords(selectedPin.lat, selectedPin.lng, width, height);
-        ctx.fillStyle = "#0A1931";
+        ctx.fillStyle = pal["--color-navy"];
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = 1.5;
         ctx.fillRect(px - 60, py - 36, 120, 26);
@@ -327,7 +332,7 @@ export function InteractiveMap({
     render();
 
     return () => cancelAnimationFrame(animFrame);
-  }, [trip, zoom, pan, mapLayer, hoveredWaypoint, selectedPin, strokeColor]);
+  }, [trip, zoom, pan, mapLayer, hoveredWaypoint, selectedPin, strokeColor, pal]);
 
   // Mouse & Touch Pan Handling
   const handleMouseDown = (e: React.MouseEvent) => {
