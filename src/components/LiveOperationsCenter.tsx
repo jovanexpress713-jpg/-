@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
+import { apiClient } from "../services/apiClient";
 import { useFleetStore, type Trip } from "../state/fleetStore";
 import { SAUDI_CORRIDORS } from "../services/gpsSimulation";
 import {
@@ -62,10 +63,15 @@ export function LiveOperationsCenter({
   // approved GPS provider is configured.
   const [gpsConfigured, setGpsConfigured] = useState<boolean | null>(null);
   useEffect(() => {
-    fetch("/api/gps/providers/status")
-      .then((r) => r.json())
-      .then((data) => setGpsConfigured(Boolean(data?.providers?.some((p: any) => p.configured))))
-      .catch(() => setGpsConfigured(false));
+    let active = true;
+    apiClient.gps.getStatus()
+      .then((data: any) => {
+        // The development adapter ships synthetic positions; it is deliberately
+        // not treated as live GPS in the operations map.
+        if (active) setGpsConfigured(Boolean(data?.configured && !data?.isDevelopment));
+      })
+      .catch(() => { if (active) setGpsConfigured(false); });
+    return () => { active = false; };
   }, []);
 
   // Synchronize focused trip with store
@@ -430,14 +436,18 @@ export function LiveOperationsCenter({
       </div>
 
       {/* 2. MAIN MAP VIEWPORT (Section 5 & 6) */}
-      {/* §24 — explicit honest state when live GPS is not configured */}
-      {gpsConfigured === false && (
-        <div className="shrink-0 border-b border-status-waiting/30 bg-status-waiting/10 px-4 py-1.5 text-[11px] font-semibold text-status-waiting">
-          ⚠ {t("GPS service is not configured — vehicle positions shown are route demos, not live GPS.", "خدمة GPS غير مهيأة — مواقع المركبات المعروضة استعراضية للمسارات وليست تتبعًا حقيقيًا.")}
-        </div>
-      )}
       <div className="relative flex-1 min-h-0 overflow-hidden">
-        {/* Interactive Canvas */}
+        {gpsConfigured !== true ? (
+          <div className="absolute inset-0 z-30 grid place-items-center bg-surface-1 p-6">
+            <div className="max-w-md text-center">
+              <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-status-waiting/25 bg-status-waiting/10 text-status-waiting"><IconPin size={23} /></span>
+              <h2 className="mt-4 text-lg font-bold text-text-primary">{gpsConfigured === null ? t("Checking GPS configuration", "جارٍ التحقق من إعداد GPS") : t("GPS service is not configured", "خدمة GPS غير مهيأة")}</h2>
+              <p className="mt-2 text-[12px] leading-6 text-text-muted">{gpsConfigured === null ? t("Live vehicle positions will appear after the provider status is verified.", "ستظهر مواقع المركبات المباشرة بعد التحقق من حالة المزود.") : t("Live tracking is unavailable. Configure a real GPS provider and link vehicle devices to view verified locations.", "التتبع المباشر غير متاح. هيئ مزود GPS حقيقياً واربط أجهزة المركبات لعرض المواقع المعتمدة.")}</p>
+              <p className="mt-3 rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-[10px] text-text-muted">{t("No simulated locations are displayed.", "لا يتم عرض مواقع محاكاة.")}</p>
+            </div>
+          </div>
+        ) : <>
+        {/* Interactive Canvas — shown only after a configured non-development GPS provider is verified. */}
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
@@ -635,6 +645,7 @@ export function LiveOperationsCenter({
             </div>
           </div>
         )}
+        </>}
       </div>
 
       {/* 4. ACTIVE TRIPS / SHIPMENTS BOTTOM STRIP (Section 4) */}
@@ -642,12 +653,12 @@ export function LiveOperationsCenter({
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
             <span className="font-bold text-[12px] text-text-primary">
-              {t("Active Highway Shipments", "الشحنات والرحلات النشطة على الطريق")}
+              {t("Trips and shipments", "الرحلات والشحنات")}
             </span>
             <span className="text-text-muted text-[10.5px]">({trips.length})</span>
           </div>
           <div className="text-[11px] text-text-muted">
-            {t("Click any trip to focus map & 3D vehicle", "اضغط على أي رحلة للتركيز على الخريطة والمجسم")}
+              {gpsConfigured === true ? t("Select a trip to focus its verified vehicle feed.", "اختر رحلة لعرض بيانات جهازها المعتمدة.") : t("Select a trip to open its operational details.", "اختر رحلة لفتح تفاصيلها التشغيلية.")}
           </div>
         </div>
 
@@ -691,11 +702,8 @@ export function LiveOperationsCenter({
                   {td(tr.originCity)} → {td(tr.destinationCity)}
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-text-muted mt-2 border-t border-white/5 pt-1 tabular-nums">
-                  <span>{tr.cargoWeightTons} طن</span>
-                  <span className={cn(tr.speedKmH > 0 ? "text-status-active font-semibold" : "")}>
-                    {tr.speedKmH > 0 ? `${tr.speedKmH} كم/س` : "في المحطة"}
-                  </span>
+                <div className="mt-2 border-t border-white/5 pt-1 text-[10px] tabular-nums text-text-muted">
+                  {tr.cargoWeightTons} {t("tons", "طن")}
                 </div>
               </button>
             );

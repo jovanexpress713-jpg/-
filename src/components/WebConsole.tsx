@@ -236,6 +236,8 @@ export function WebConsole({
                 if (tr) selectTruck(tr.truckId);
                 setNav("trips");
               }}
+              onOpenTracking={() => setNav("tracking")}
+              onOpenMaintenance={() => setNav("repair")}
             />
           ) : nav === "operations" || nav === "tracking" ? (
             <LiveOperationsCenter

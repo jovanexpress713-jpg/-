@@ -1,5 +1,9 @@
-import { useId } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "../utils/cn";
+import { useVehicleAssets } from "../state/vehicleAssetStore";
+import { normalizeVehicleType, type CanonicalVehicleTypeId } from "../data/vehicleTypes";
+import { useSettings } from "../settings";
+import type { Vehicle } from "../data/types";
 
 /**
  * CapacityTruck — the photographic truck the user supplied, with the load
@@ -10,9 +14,9 @@ import { cn } from "../utils/cn";
  * was MEASURED from that asset's pixels (see scripts in git history), not
  * eyeballed, and is exported so the test suite can assert the proportions.
  *
- * The trailer box itself is the capacity meter: the blue fill is anchored at
- * the FRONT of the trailer and grows toward the REAR, and the figure is
- * centred inside the FILLED region — exactly as the brief demands.
+ * The trailer box itself is a liquid-style capacity meter: the blue level rises
+ * from the floor, its waterline ripples continuously, and the animated figure
+ * settles at the true trip percentage.
  */
 
 /* ── Photographic asset ────────────────────────────────────────────────── */
@@ -85,15 +89,27 @@ export const WHEEL_CY = 542;
 /* ── Capacity fill ─────────────────────────────────────────────────────── */
 
 /**
- * Width of the filled (blue) region for a given percentage. Anchored at the
- * FRONT of the trailer, growing toward the REAR.
+ * Legacy horizontal fill math retained for existing callers. The visible meter
+ * now uses capacityFillHeight to represent liquid rising from the trailer floor.
  */
 export function capacityFillWidth(pct: number, overlayWidth = OVERLAY.w): number {
   const p = Math.max(0, Math.min(100, pct));
   return (overlayWidth * p) / 100;
 }
 
-/** Centre of the FILLED region — the figure is centred here, not mid-trailer. */
+/** Liquid level height for the tank-like, bottom-up capacity fill. */
+export function capacityFillHeight(pct: number, overlayHeight = OVERLAY.h): number {
+  const p = Math.max(0, Math.min(100, pct));
+  return (overlayHeight * p) / 100;
+}
+
+/** Centreline of the current liquid surface column. */
+export function capacityTextVerticalCentre(pct: number, overlayHeight = OVERLAY.h): number {
+  const height = capacityFillHeight(pct, overlayHeight);
+  return OVERLAY.y + OVERLAY.h - height / 2;
+}
+
+/** Centre of the legacy horizontal fill calculation, kept for callers/tests. */
 export function capacityTextCentre(pct: number, overlayWidth = OVERLAY.w): number {
   return OVERLAY.x + capacityFillWidth(pct, overlayWidth) / 2;
 }
@@ -103,24 +119,213 @@ export const LOAD_BLUE = { from: "#2f67ff", to: "#245bff" } as const;
 /** Unused cargo space veil — mid grey over the white box, never black/white. */
 export const LOAD_EMPTY = "#4a5468";
 
+// Cargo anchors are normalized to the source-image plane (not CSS pixels),
+// so each mask scales with its own official photograph at every card size.
+const SOURCE_PLANE = { width: 1536, height: 1024 } as const;
+type Point = readonly [number, number];
+interface GaugeAnchors {
+  corners: readonly [Point, Point, Point, Point];
+  top: number;
+  bottom: number;
+  centerX: number;
+  amplitude: number;
+  deck?: boolean;
+}
+const TYPE_GAUGE_ANCHORS: Record<CanonicalVehicleTypeId, GaugeAnchors> = {
+  flatbed: {
+    corners: [[702 / 1536, 627 / 1024], [1450 / 1536, 649 / 1024], [1450 / 1536, 665 / 1024], [710 / 1536, 644 / 1024]],
+    top: 627 / 1024, bottom: 665 / 1024, centerX: 1080 / 1536, amplitude: 4 / 1024, deck: true,
+  },
+  reefer: {
+    corners: [[804 / 1536, 226 / 1024], [1442 / 1536, 452 / 1024], [1442 / 1536, 675 / 1024], [804 / 1536, 660 / 1024]],
+    top: 226 / 1024, bottom: 675 / 1024, centerX: 1120 / 1536, amplitude: 16 / 1024,
+  },
+  dry: {
+    corners: [[696 / 1536, 222 / 1024], [1438 / 1536, 458 / 1024], [1438 / 1536, 665 / 1024], [710 / 1536, 645 / 1024]],
+    top: 222 / 1024, bottom: 665 / 1024, centerX: 1067 / 1536, amplitude: 16 / 1024,
+  },
+  curtain: {
+    corners: [[696 / 1536, 243 / 1024], [1444 / 1536, 449 / 1024], [1444 / 1536, 608 / 1024], [710 / 1536, 614 / 1024]],
+    top: 243 / 1024, bottom: 614 / 1024, centerX: 1070 / 1536, amplitude: 16 / 1024,
+  },
+};
+function formatCoord(value: number) {
+  return Number(value.toFixed(2)).toString();
+}
+function materializeGaugeShape(anchors: GaugeAnchors) {
+  const points = anchors.corners.map(([x, y]) => [x * SOURCE_PLANE.width, y * SOURCE_PLANE.height] as const);
+  const [first, ...rest] = points;
+  const clip = `M ${formatCoord(first[0])} ${formatCoord(first[1])} ${rest.map(([x, y]) => `L ${formatCoord(x)} ${formatCoord(y)}`).join(" ")} Z`;
+  return {
+    clip,
+    top: anchors.top * SOURCE_PLANE.height,
+    bottom: anchors.bottom * SOURCE_PLANE.height,
+    centerX: anchors.centerX * SOURCE_PLANE.width,
+    amplitude: anchors.amplitude * SOURCE_PLANE.height,
+    deck: anchors.deck,
+    deckStart: anchors.deck ? anchors.corners[0][0] * SOURCE_PLANE.width : 0,
+    deckEnd: anchors.deck ? anchors.corners[1][0] * SOURCE_PLANE.width : 0,
+    deckStartY: anchors.deck ? anchors.corners[0][1] * SOURCE_PLANE.height : 0,
+    deckEndY: anchors.deck ? anchors.corners[1][1] * SOURCE_PLANE.height : 0,
+  };
+}
+
+function waterAreaPath(y: number, bottom: number, amplitude = 28) {
+  let d = `M -160 ${y}`;
+  for (let x = -160; x < 1696; x += 128) {
+    d += ` C ${x + 32} ${y - amplitude}, ${x + 96} ${y + amplitude}, ${x + 128} ${y}`;
+  }
+  return `${d} L 1696 ${bottom + 24} L -160 ${bottom + 24} Z`;
+}
+
 interface Props {
   /** Current load as a percentage of max capacity, 0–100. */
   pct: number;
   className?: string;
   /** Accessible name; defaults to a percentage readout. */
   label?: string;
+  /** Animate from zero to the supplied value when mounted or when it changes. */
+  countUp?: boolean;
+  /** Approved EJAZ cargo body; selects its official image and trailer shape. */
+  truckType?: CanonicalVehicleTypeId | string;
+  /** Assigned vehicle for per-vehicle published imagery. */
+  vehicle?: Pick<Vehicle, "id" | "body" | "customImage"> | null;
 }
 
-export function CapacityTruck({ pct, className, label }: Props) {
+export function CapacityTruck({ pct, className, label, countUp = false, truckType, vehicle }: Props) {
   const uid = useId().replace(/:/g, "");
-  const p = Math.max(0, Math.min(100, pct));
-  const fillW = capacityFillWidth(p);
-  const textX = OVERLAY.x + fillW / 2;
-  const textY = OVERLAY.y + OVERLAY.h / 2;
-  /* The figure scales with the fill so it never outgrows the blue region. */
-  const fontSize = Math.max(40, Math.min(118, fillW * 0.42));
-  /* Hide the figure when there is no blue to centre it in. */
+  const { t } = useSettings();
+  const { typeImage } = useVehicleAssets();
+  const rawType = truckType ?? vehicle?.body;
+  const selectedType = rawType ? normalizeVehicleType(rawType) : null;
+  // The meter always uses the official image of the selected cargo body, not
+  // a per-vehicle override that could belong to a different body shape.
+  const typeSpecificSrc = selectedType ? typeImage(selectedType) : null;
+  const targetPct = Math.max(0, Math.min(100, pct));
+  const currentPctRef = useRef(countUp ? 0 : targetPct);
+  const [animatedPct, setAnimatedPct] = useState(countUp ? 0 : targetPct);
+  const [arrivalGlow, setArrivalGlow] = useState(false);
+
+  useEffect(() => {
+    if (!countUp) {
+      currentPctRef.current = targetPct;
+      setAnimatedPct(targetPct);
+      return;
+    }
+
+    const startPct = currentPctRef.current;
+    setArrivalGlow(false);
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      currentPctRef.current = targetPct;
+      setAnimatedPct(targetPct);
+      return;
+    }
+
+    const start = Date.now();
+    const duration = 1050;
+    let frame = 0;
+    let glowTimer = 0;
+    const step = () => {
+      const progress = Math.min(1, Math.max(0, (Date.now() - start) / duration));
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const nextPct = startPct + (targetPct - startPct) * eased;
+      currentPctRef.current = nextPct;
+      setAnimatedPct(nextPct);
+      if (progress < 1) {
+        frame = window.requestAnimationFrame(step);
+      } else {
+        setArrivalGlow(true);
+        glowTimer = window.setTimeout(() => setArrivalGlow(false), 620);
+      }
+    };
+    frame = window.requestAnimationFrame(step);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(glowTimer);
+    };
+  }, [countUp, targetPct]);
+
+  const p = Math.max(0, Math.min(100, animatedPct));
+  const fillH = capacityFillHeight(p);
+  const fillY = OVERLAY.y + OVERLAY.h - fillH;
+  const textX = OVERLAY.x + OVERLAY.w / 2;
+  const textY = fillY + fillH / 2;
+  /* Scale to the liquid height so the figure fits even at low percentages. */
+  const fontSize = Math.max(40, Math.min(118, Math.min(fillH, OVERLAY.w) * 0.42));
   const showText = p >= 6;
+  const wavePath = waterAreaPath(fillY, OVERLAY.y + OVERLAY.h, 22);
+  const secondWavePath = waterAreaPath(fillY + 9, OVERLAY.y + OVERLAY.h, 14);
+
+  if (selectedType && typeSpecificSrc) {
+    const shape = materializeGaugeShape(TYPE_GAUGE_ANCHORS[selectedType]);
+
+    if (shape.deck) {
+      const deckFillWidth = (shape.deckEnd - shape.deckStart) * p / 100;
+      const deckFillY = shape.deckStartY + (shape.deckEndY - shape.deckStartY) * p / 100;
+      return (
+        <svg viewBox="0 120 1536 760" className={cn("w-full", className)} role="img" aria-label={label ?? `${Math.round(p)}%`}>
+          <defs>
+            <linearGradient id={`typed-load-${uid}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#55a8ff" />
+              <stop offset="100%" stopColor="#1559d6" />
+            </linearGradient>
+            <clipPath id={`typed-clip-${uid}`} clipPathUnits="userSpaceOnUse"><path d={shape.clip} /></clipPath>
+            <filter id={`deck-glow-${uid}`} x="-30%" y="-250%" width="160%" height="600%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          <image href={typeSpecificSrc} x="0" y="0" width={SOURCE_PLANE.width} height={SOURCE_PLANE.height} preserveAspectRatio="none" />
+          <g clipPath={`url(#typed-clip-${uid})`}>
+            <rect x={shape.deckStart} y={shape.top - 18} width={deckFillWidth} height={shape.bottom - shape.top + 36} fill={`url(#typed-load-${uid})`} opacity=".82" />
+          </g>
+          <path d={shape.clip} fill="none" stroke="#9cb0c6" strokeWidth="2" opacity=".72" />
+          {p > 0 && <path d={`M ${shape.deckStart} ${shape.deckStartY + 2} L ${shape.deckStart + deckFillWidth} ${deckFillY + 2}`} fill="none" stroke="#b9e3ff" strokeWidth="3" opacity=".85" filter={arrivalGlow ? `url(#deck-glow-${uid})` : undefined} />}
+          {showText && <text x={shape.centerX} y={shape.top - 24} textAnchor="middle" dominantBaseline="central" fill="#fff" style={{ fontFamily: "var(--font-mono)", fontSize: 58, fontWeight: 800, filter: "drop-shadow(0 1px 5px rgba(0,0,0,.72))" }}>{Math.round(p)}%</text>}
+        </svg>
+      );
+    }
+
+    const bodyHeight = shape.bottom - shape.top;
+    const liquidHeight = bodyHeight * p / 100;
+    const liquidY = shape.bottom - liquidHeight;
+    const typeWave = waterAreaPath(liquidY, shape.bottom, shape.amplitude);
+    const typeWaveSecondary = waterAreaPath(liquidY + shape.amplitude * 0.7, shape.bottom, shape.amplitude * 0.55);
+    const typeTextSize = Math.max(22, Math.min(104, liquidHeight * 0.3));
+    const typeTextY = liquidY + liquidHeight / 2;
+    const captionY = typeTextY + typeTextSize * 0.58;
+    const hasLoadCaption = selectedType === "reefer" || selectedType === "curtain";
+    return (
+      <svg viewBox="0 120 1536 760" className={cn("w-full", className)} role="img" aria-label={label ?? `${Math.round(p)}%`}>
+        <defs>
+          <linearGradient id={`typed-load-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#55a8ff" />
+            <stop offset="100%" stopColor="#1559d6" />
+          </linearGradient>
+          <clipPath id={`typed-clip-${uid}`} clipPathUnits="userSpaceOnUse"><path d={shape.clip} /></clipPath>
+          <filter id={`typed-water-glow-${uid}`} x="-20%" y="-80%" width="140%" height="260%">
+            <feGaussianBlur stdDeviation="4" result="glow" />
+            <feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <image href={typeSpecificSrc} x="0" y="0" width={SOURCE_PLANE.width} height={SOURCE_PLANE.height} preserveAspectRatio="none" />
+        <g clipPath={`url(#typed-clip-${uid})`}>
+          <path d={shape.clip} fill="#061323" opacity=".08" />
+          <rect x="0" y={liquidY} width={SOURCE_PLANE.width} height={liquidHeight} fill={`url(#typed-load-${uid})`} opacity=".64" />
+          {p > 0 && <>
+            <path d={typeWave} fill="#59a9ff" opacity=".38" className="capacity-water-wave" />
+            <path d={typeWaveSecondary} fill="#b4dcff" opacity=".2" className="capacity-water-wave capacity-water-wave-highlight" />
+            <path d={typeWave} fill="none" stroke="#d9efff" strokeWidth="4" opacity=".72" className="capacity-water-wave capacity-water-wave-highlight" filter={arrivalGlow ? `url(#typed-water-glow-${uid})` : undefined} />
+          </>}
+        </g>
+        <path d={shape.clip} fill="none" stroke="#d3e5f4" strokeWidth="2.5" opacity=".7" />
+        {showText && <>
+          <text x={shape.centerX} y={typeTextY} textAnchor="middle" dominantBaseline="central" fill="#fff" style={{ fontFamily: "var(--font-mono)", fontSize: typeTextSize, fontWeight: 800, filter: "drop-shadow(0 2px 8px rgba(0,0,0,.75))" }}>{Math.round(p)}%</text>
+          {hasLoadCaption && <text x={shape.centerX} y={captionY} textAnchor="middle" dominantBaseline="central" fill="#e8f5ff" opacity=".9" style={{ fontFamily: "var(--font-sans)", fontSize: Math.max(22, typeTextSize * 0.44), fontWeight: 600, filter: "drop-shadow(0 1px 4px rgba(0,0,0,.6))" }}>{t("of load", "من الحمولة")}</text>}
+        </>}
+      </svg>
+    );
+  }
 
   return (
     <svg
@@ -130,8 +335,8 @@ export function CapacityTruck({ pct, className, label }: Props) {
       aria-label={label ?? `${Math.round(p)}%`}
     >
       <defs>
-        {/* Spec: electric blue, subtle gradient rather than flat. */}
-        <linearGradient id={`load-${uid}`} x1="0" y1="0" x2="1" y2="0.35">
+        {/* Deep-to-light blue vertical gradient makes the load read as liquid. */}
+        <linearGradient id={`load-${uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={LOAD_BLUE.from} />
           <stop offset="100%" stopColor={LOAD_BLUE.to} />
         </linearGradient>
@@ -178,26 +383,22 @@ export function CapacityTruck({ pct, className, label }: Props) {
           fill={LOAD_EMPTY}
           opacity={0.3}
         />
-        {/* Filled capacity — grows from the FRONT toward the REAR. */}
+        {/* Water-like blue load rises from the trailer floor. */}
         <rect
           x={OVERLAY.x}
-          y={OVERLAY.y}
-          height={OVERLAY.h}
-          width={fillW}
+          y={fillY}
+          width={OVERLAY.w}
+          height={fillH}
           fill={`url(#load-${uid})`}
-          opacity={0.93}
-          style={{ transition: `width var(--ds-fill, 600ms) ease-out` }}
+          opacity={0.94}
+          style={{ transition: `height var(--ds-fill, 600ms) ease-out, y var(--ds-fill, 600ms) ease-out` }}
         />
-        {/* Light variation along the fill's leading edge. */}
-        <rect
-          x={OVERLAY.x + Math.max(0, fillW - 3)}
-          y={OVERLAY.y}
-          width={3}
-          height={OVERLAY.h}
-          fill="#ffffff"
-          opacity={p > 0 && p < 100 ? 0.35 : 0}
-          style={{ transition: `x var(--ds-fill, 600ms) ease-out` }}
-        />
+        {/* Two overlapping ripples drift across the waterline. */}
+        {p > 0 && <>
+          <path d={wavePath} fill="#77baff" opacity={0.5} className="capacity-water-wave" />
+          <path d={secondWavePath} fill="#9ed4ff" opacity={0.24} className="capacity-water-wave capacity-water-wave-highlight" />
+          <path d={wavePath} fill="none" stroke="#d8efff" strokeWidth={7} opacity={0.68} className="capacity-water-wave capacity-water-wave-highlight" />
+        </>}
       </g>
       {/* Overlay frame. */}
       <rect
@@ -226,7 +427,7 @@ export function CapacityTruck({ pct, className, label }: Props) {
             fontWeight: 700,
             letterSpacing: "-0.04em",
             filter: "drop-shadow(0 3px 14px rgba(0,0,0,0.5))",
-            transition: `x var(--ds-fill, 600ms) ease-out`,
+            transition: `y var(--ds-fill, 600ms) ease-out`,
           }}
         >
           {Math.round(p)}%

@@ -263,6 +263,8 @@ export async function runNovaDesignTests() {
     WHEEL_CY,
     capacityFillWidth,
     capacityTextCentre,
+    capacityFillHeight,
+    capacityTextVerticalCentre,
   } = await import("../src/components/CapacityTruck");
   const { routeEfficiency } = await import("../src/components/overview/RouteEfficiency");
   const { loadPct } = await import("../src/components/overview/shared");
@@ -292,6 +294,11 @@ export async function runNovaDesignTests() {
       text: () => host.textContent ?? "",
       query: (sel: string) => [...host.querySelectorAll(sel)],
       one: (sel: string) => host.querySelector(sel),
+      rerender: async (nextNode: React.ReactElement) => {
+        await act(async () => {
+          r.render(React.createElement(SettingsProvider, null, React.createElement(FleetStoreProvider, null, nextNode)));
+        });
+      },
       unmount: async () => {
         await act(async () => r.unmount());
         host.remove();
@@ -368,20 +375,21 @@ export async function runNovaDesignTests() {
     assert.ok(OVERLAY.y + OVERLAY.h <= wheelTop, "overlay must never cover a wheel");
   }
 
-  /* B2. Fill math: anchored at the FRONT, growing toward the REAR. */
+  /* B2. Liquid fill rises from the floor of the trailer like a moving tank. */
   {
-    const w59 = capacityFillWidth(59, OVERLAY.w);
-    assert.ok(Math.abs(w59 - 0.59 * OVERLAY.w) < 1e-9, "59% fill = 59% of interior");
-    assert.strictEqual(capacityFillWidth(-10, OVERLAY.w), 0, "clamped low");
-    assert.strictEqual(capacityFillWidth(140, OVERLAY.w), OVERLAY.w, "clamped high");
+    const h59 = capacityFillHeight(59, OVERLAY.h);
+    assert.ok(Math.abs(h59 - 0.59 * OVERLAY.h) < 1e-9, "59% liquid fill = 59% of interior height");
+    assert.strictEqual(capacityFillHeight(-10, OVERLAY.h), 0, "clamped low");
+    assert.strictEqual(capacityFillHeight(140, OVERLAY.h), OVERLAY.h, "clamped high");
 
-    /* B3. The figure is centred inside the FILLED region, not mid-trailer. */
-    const cx = capacityTextCentre(59, OVERLAY.w);
-    assert.ok(Math.abs(cx - (OVERLAY.x + w59 / 2)) < 1e-9, "centre of the blue region");
-    assert.ok(
-      Math.abs(cx - (OVERLAY.x + OVERLAY.w / 2)) > OVERLAY.w * 0.1,
-      "must NOT be centred in the whole trailer",
-    );
+    const cy = capacityTextVerticalCentre(59, OVERLAY.h);
+    assert.ok(Math.abs(cy - (OVERLAY.y + OVERLAY.h - h59 / 2)) < 1e-9, "percentage is centred inside the liquid level");
+    assert.ok(Math.abs(cy - (OVERLAY.y + OVERLAY.h / 2)) > OVERLAY.h * 0.1, "percentage follows the actual fill level");
+
+    /* Legacy helper remains clamped for any older callers. */
+    assert.strictEqual(capacityFillWidth(-10, OVERLAY.w), 0);
+    assert.strictEqual(capacityFillWidth(140, OVERLAY.w), OVERLAY.w);
+    assert.ok(Number.isFinite(capacityTextCentre(59, OVERLAY.w)));
   }
 
   /* B4. Mounted: the photograph renders, the fill animates, the figure shows. */
@@ -396,9 +404,59 @@ export async function runNovaDesignTests() {
     );
     const texts = view.query("text").map((n) => n.textContent ?? "");
     assert.ok(texts.includes("59%"), `the figure must render (got: ${texts.join(",")})`);
-    const fill = view.query("rect").find((n) => /transition: width/.test(n.getAttribute("style") ?? ""));
-    assert.ok(fill, "the fill must animate its width");
+    const fill = view.query("rect").find((n) => /transition: height/.test(n.getAttribute("style") ?? ""));
+    assert.ok(fill, "the blue water level must rise with an animated height");
+    assert.ok(view.query("path").some((n) => n.getAttribute("class")?.includes("capacity-water-wave")), "moving water ripples must render");
     await view.unmount();
+  }
+
+  /* B5. Dashboard mode counts quickly from 0, then stops at the true value. */
+  {
+    const view = await mount(React.createElement(CapacityTruck, { pct: 89, countUp: true }));
+    assert.ok(!view.query("text").map((n) => n.textContent ?? "").includes("89%"), "counter does not jump to the target on first paint");
+    await settle(1250);
+    const texts = view.query("text").map((n) => n.textContent ?? "");
+    assert.ok(texts.includes("89%"), `count-up settles at the actual value (got: ${texts.join(",")})`);
+    await view.rerender(React.createElement(CapacityTruck, { pct: 95, countUp: true }));
+    assert.ok(!view.query("text").map((n) => n.textContent ?? "").includes("95%"), "live load changes animate from the current level instead of jumping");
+    await settle(1150);
+    assert.ok(view.query("text").map((n) => n.textContent ?? "").includes("95%"), "the fill and reading settle at the updated live load");
+    await view.unmount();
+  }
+
+  /* B6. The capacity truck uses the exact official body image for all four EJAZ types. */
+  {
+    const expectedImages: Record<string, string> = {
+      reefer: "official-reefer.png",
+      flatbed: "official-flatbed.png",
+      dry: "official-dry.png",
+      curtain: "official-curtain.png",
+    };
+    const expectedMasks: Record<string, string> = {
+      reefer: "M 804 226",
+      flatbed: "M 702 627",
+      dry: "M 696 222",
+      curtain: "M 696 243",
+    };
+    for (const [type, imageName] of Object.entries(expectedImages)) {
+      const view = await mount(React.createElement(CapacityTruck, { pct: 63, truckType: type }));
+      assert.ok((view.query("image")[0]?.getAttribute("href") ?? "").endsWith(imageName), `${type} keeps its own approved truck image`);
+      assert.ok(view.query("clipPath").length > 0, `${type} renders its type-specific cargo mask`);
+      const mask = view.query("clipPath path")[0]?.getAttribute("d") ?? "";
+      assert.ok(mask.startsWith(expectedMasks[type]), `${type} gauge is aligned to its body bounds`);
+      const gaugeTexts = view.query("text").map((node) => node.textContent ?? "");
+      assert.ok(gaugeTexts.some((text) => text.includes("%")), `${type} displays its load percentage`);
+      if (type === "reefer" || type === "curtain") {
+        assert.strictEqual(gaugeTexts.length, 2, `${type} includes the compact “of load” caption inside the cargo space`);
+      } else {
+        assert.strictEqual(gaugeTexts.length, 1, `${type} keeps its type-specific reading without extra caption text`);
+      }
+      await view.unmount();
+    }
+    const drySampleLoadPct = Math.round((28.6 / 32) * 100);
+    const dryView = await mount(React.createElement(CapacityTruck, { pct: drySampleLoadPct, truckType: "dry" }));
+    assert.ok(dryView.query("text").map((node) => node.textContent ?? "").includes("89%"), "dry-van sample cargo visibly tests the gauge at 28.6 of 32 tonnes");
+    await dryView.unmount();
   }
 
   /* ── C. TruckCapacity = truck + route in ONE component ───────────────── */
