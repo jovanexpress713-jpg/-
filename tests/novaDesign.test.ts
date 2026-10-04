@@ -263,6 +263,8 @@ export async function runNovaDesignTests() {
     WHEEL_CY,
     capacityFillWidth,
     capacityTextCentre,
+    capacityFillHeight,
+    capacityTextVerticalCentre,
   } = await import("../src/components/CapacityTruck");
   const { routeEfficiency } = await import("../src/components/overview/RouteEfficiency");
   const { loadPct } = await import("../src/components/overview/shared");
@@ -368,20 +370,21 @@ export async function runNovaDesignTests() {
     assert.ok(OVERLAY.y + OVERLAY.h <= wheelTop, "overlay must never cover a wheel");
   }
 
-  /* B2. Fill math: anchored at the FRONT, growing toward the REAR. */
+  /* B2. Liquid fill rises from the floor of the trailer like a moving tank. */
   {
-    const w59 = capacityFillWidth(59, OVERLAY.w);
-    assert.ok(Math.abs(w59 - 0.59 * OVERLAY.w) < 1e-9, "59% fill = 59% of interior");
-    assert.strictEqual(capacityFillWidth(-10, OVERLAY.w), 0, "clamped low");
-    assert.strictEqual(capacityFillWidth(140, OVERLAY.w), OVERLAY.w, "clamped high");
+    const h59 = capacityFillHeight(59, OVERLAY.h);
+    assert.ok(Math.abs(h59 - 0.59 * OVERLAY.h) < 1e-9, "59% liquid fill = 59% of interior height");
+    assert.strictEqual(capacityFillHeight(-10, OVERLAY.h), 0, "clamped low");
+    assert.strictEqual(capacityFillHeight(140, OVERLAY.h), OVERLAY.h, "clamped high");
 
-    /* B3. The figure is centred inside the FILLED region, not mid-trailer. */
-    const cx = capacityTextCentre(59, OVERLAY.w);
-    assert.ok(Math.abs(cx - (OVERLAY.x + w59 / 2)) < 1e-9, "centre of the blue region");
-    assert.ok(
-      Math.abs(cx - (OVERLAY.x + OVERLAY.w / 2)) > OVERLAY.w * 0.1,
-      "must NOT be centred in the whole trailer",
-    );
+    const cy = capacityTextVerticalCentre(59, OVERLAY.h);
+    assert.ok(Math.abs(cy - (OVERLAY.y + OVERLAY.h - h59 / 2)) < 1e-9, "percentage is centred inside the liquid level");
+    assert.ok(Math.abs(cy - (OVERLAY.y + OVERLAY.h / 2)) > OVERLAY.h * 0.1, "percentage follows the actual fill level");
+
+    /* Legacy helper remains clamped for any older callers. */
+    assert.strictEqual(capacityFillWidth(-10, OVERLAY.w), 0);
+    assert.strictEqual(capacityFillWidth(140, OVERLAY.w), OVERLAY.w);
+    assert.ok(Number.isFinite(capacityTextCentre(59, OVERLAY.w)));
   }
 
   /* B4. Mounted: the photograph renders, the fill animates, the figure shows. */
@@ -396,8 +399,18 @@ export async function runNovaDesignTests() {
     );
     const texts = view.query("text").map((n) => n.textContent ?? "");
     assert.ok(texts.includes("59%"), `the figure must render (got: ${texts.join(",")})`);
-    const fill = view.query("rect").find((n) => /transition: width/.test(n.getAttribute("style") ?? ""));
-    assert.ok(fill, "the fill must animate its width");
+    const fill = view.query("rect").find((n) => /transition: height/.test(n.getAttribute("style") ?? ""));
+    assert.ok(fill, "the blue water level must rise with an animated height");
+    assert.ok(view.query("path").some((n) => n.getAttribute("class")?.includes("capacity-water-wave")), "moving water ripples must render");
+    await view.unmount();
+  }
+
+  /* B5. Dashboard mode counts quickly from 0, then stops at the true value. */
+  {
+    const view = await mount(React.createElement(CapacityTruck, { pct: 89, countUp: true }));
+    await settle(780);
+    const texts = view.query("text").map((n) => n.textContent ?? "");
+    assert.ok(texts.includes("89%"), `count-up settles at the actual value (got: ${texts.join(",")})`);
     await view.unmount();
   }
 

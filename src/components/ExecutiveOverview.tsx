@@ -116,6 +116,30 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
   const loadPercent = selected && selected.maxCapacityTons > 0
     ? Math.max(0, Math.min(100, (selected.cargoWeightTons / selected.maxCapacityTons) * 100))
     : 0;
+  const [countedLoadPercent, setCountedLoadPercent] = useState(0);
+  useEffect(() => {
+    if (!selected) {
+      setCountedLoadPercent(0);
+      return;
+    }
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      setCountedLoadPercent(loadPercent);
+      return;
+    }
+    setCountedLoadPercent(0);
+    const started = Date.now();
+    const duration = 720;
+    let frame = 0;
+    const count = () => {
+      const progress = Math.min(1, Math.max(0, (Date.now() - started) / duration));
+      const eased = 1 - Math.pow(1 - progress, 4);
+      setCountedLoadPercent(progress === 1 ? loadPercent : loadPercent * eased);
+      if (progress < 1) frame = window.requestAnimationFrame(count);
+    };
+    frame = window.requestAnimationFrame(count);
+    return () => window.cancelAnimationFrame(frame);
+  }, [selected?.id, loadPercent]);
   const onToast = (text: string, sub?: string) => toast(text, sub);
 
   const handleSelect = (id: string) => {
@@ -185,8 +209,8 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                   <span className="rounded-full border border-border-subtle bg-surface-1/90 px-3 py-1.5 text-[11px] font-semibold text-text-primary">#{selected.tripNumber}</span>
                   <span className="rounded-full bg-brand/12 px-3 py-1.5 text-[10px] font-semibold text-brand">{tripStatusLabel(selected, t)}</span>
                 </div>
-                <div className="absolute end-4 top-4 z-10 hidden items-center gap-2 rounded-xl border border-border-subtle bg-surface-1/90 px-3 py-2 shadow-lg backdrop-blur-sm md:flex" aria-label={t(`Truck load ${Math.round(loadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(loadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}>
-                  <span className="grid h-9 w-9 place-items-center rounded-full text-[10px] font-bold tabular-nums text-text-primary" style={{ background: `conic-gradient(var(--color-brand) ${loadPercent}%, var(--color-surface-5) ${loadPercent}% 100%)` }}><span className="grid h-7 w-7 place-items-center rounded-full bg-surface-1">{Math.round(loadPercent)}%</span></span>
+                <div className="absolute end-4 top-4 z-10 hidden items-center gap-2 rounded-xl border border-border-subtle bg-surface-1/90 px-3 py-2 shadow-lg backdrop-blur-sm md:flex" aria-label={t(`Truck load ${Math.round(countedLoadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(countedLoadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}>
+                  <span className="grid h-9 w-9 place-items-center rounded-full text-[10px] font-bold tabular-nums text-text-primary" style={{ background: `conic-gradient(var(--color-brand) ${countedLoadPercent}%, var(--color-surface-5) ${countedLoadPercent}% 100%)` }}><span className="grid h-7 w-7 place-items-center rounded-full bg-surface-1">{Math.round(countedLoadPercent)}%</span></span>
                   <span><span className="block text-[9px] text-text-muted">{t("Truck load", "حمولة الشاحنة")}</span><strong className="mt-0.5 block text-[10px] tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}</strong></span>
                 </div>
                 <TruckImage vehicle={truck} body={selected.cargoType} alt={truck ? `${truck.brand} ${truck.model}` : t("EJAZ fleet truck", "شاحنة أسطول إيجاز")} loading="eager" className="relative z-[1] h-[190px] w-full max-w-[680px] object-contain drop-shadow-[0_22px_26px_rgba(0,0,0,.2)] sm:h-[230px]" />
@@ -211,12 +235,12 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                   <div className="mt-4 rounded-xl border border-border-subtle bg-surface-2/70 p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-[10px] font-semibold text-text-secondary">{t("Truck load capacity", "حمولة الشاحنة")}</span>
-                      <span className="text-[11px] font-bold tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")} · {Math.round(loadPercent)}%</span>
+                      <span className="text-[11px] font-bold tabular-nums text-text-primary">{selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")} · {Math.round(countedLoadPercent)}%</span>
                     </div>
                     <CapacityTruck
-                      pct={loadPercent}
+                      pct={countedLoadPercent}
                       className="mt-2 w-full motion-safe:animate-truck-bob motion-reduce:animate-none"
-                      label={t(`Truck load ${Math.round(loadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(loadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
+                      label={t(`Truck load ${Math.round(countedLoadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(countedLoadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
                     />
                   </div>
                 </div>

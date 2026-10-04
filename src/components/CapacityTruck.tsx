@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { cn } from "../utils/cn";
 
 /**
@@ -10,9 +10,9 @@ import { cn } from "../utils/cn";
  * was MEASURED from that asset's pixels (see scripts in git history), not
  * eyeballed, and is exported so the test suite can assert the proportions.
  *
- * The trailer box itself is the capacity meter: the blue fill is anchored at
- * the FRONT of the trailer and grows toward the REAR, and the figure is
- * centred inside the FILLED region — exactly as the brief demands.
+ * The trailer box itself is a liquid-style capacity meter: the blue level rises
+ * from the floor, its waterline ripples continuously, and the animated figure
+ * settles at the true trip percentage.
  */
 
 /* ── Photographic asset ────────────────────────────────────────────────── */
@@ -85,15 +85,27 @@ export const WHEEL_CY = 542;
 /* ── Capacity fill ─────────────────────────────────────────────────────── */
 
 /**
- * Width of the filled (blue) region for a given percentage. Anchored at the
- * FRONT of the trailer, growing toward the REAR.
+ * Legacy horizontal fill math retained for existing callers. The visible meter
+ * now uses capacityFillHeight to represent liquid rising from the trailer floor.
  */
 export function capacityFillWidth(pct: number, overlayWidth = OVERLAY.w): number {
   const p = Math.max(0, Math.min(100, pct));
   return (overlayWidth * p) / 100;
 }
 
-/** Centre of the FILLED region — the figure is centred here, not mid-trailer. */
+/** Liquid level height for the tank-like, bottom-up capacity fill. */
+export function capacityFillHeight(pct: number, overlayHeight = OVERLAY.h): number {
+  const p = Math.max(0, Math.min(100, pct));
+  return (overlayHeight * p) / 100;
+}
+
+/** Centreline of the current liquid surface column. */
+export function capacityTextVerticalCentre(pct: number, overlayHeight = OVERLAY.h): number {
+  const height = capacityFillHeight(pct, overlayHeight);
+  return OVERLAY.y + OVERLAY.h - height / 2;
+}
+
+/** Centre of the legacy horizontal fill calculation, kept for callers/tests. */
 export function capacityTextCentre(pct: number, overlayWidth = OVERLAY.w): number {
   return OVERLAY.x + capacityFillWidth(pct, overlayWidth) / 2;
 }
@@ -109,18 +121,49 @@ interface Props {
   className?: string;
   /** Accessible name; defaults to a percentage readout. */
   label?: string;
+  /** Animate from zero to the supplied value when mounted or when it changes. */
+  countUp?: boolean;
 }
 
-export function CapacityTruck({ pct, className, label }: Props) {
+export function CapacityTruck({ pct, className, label, countUp = false }: Props) {
   const uid = useId().replace(/:/g, "");
-  const p = Math.max(0, Math.min(100, pct));
-  const fillW = capacityFillWidth(p);
-  const textX = OVERLAY.x + fillW / 2;
-  const textY = OVERLAY.y + OVERLAY.h / 2;
-  /* The figure scales with the fill so it never outgrows the blue region. */
-  const fontSize = Math.max(40, Math.min(118, fillW * 0.42));
-  /* Hide the figure when there is no blue to centre it in. */
+  const targetPct = Math.max(0, Math.min(100, pct));
+  const [animatedPct, setAnimatedPct] = useState(countUp ? 0 : targetPct);
+
+  useEffect(() => {
+    if (!countUp) {
+      setAnimatedPct(targetPct);
+      return;
+    }
+
+    setAnimatedPct(0);
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setAnimatedPct(targetPct);
+      return;
+    }
+
+    const start = Date.now();
+    const duration = 720;
+    let frame = 0;
+    const step = () => {
+      const progress = Math.min(1, Math.max(0, (Date.now() - start) / duration));
+      const eased = 1 - Math.pow(1 - progress, 4);
+      setAnimatedPct(targetPct * eased);
+      if (progress < 1) frame = window.requestAnimationFrame(step);
+    };
+    frame = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(frame);
+  }, [countUp, targetPct]);
+
+  const p = Math.max(0, Math.min(100, animatedPct));
+  const fillH = capacityFillHeight(p);
+  const fillY = OVERLAY.y + OVERLAY.h - fillH;
+  const textX = OVERLAY.x + OVERLAY.w / 2;
+  const textY = fillY + fillH / 2;
+  /* Scale to the liquid height so the figure fits even at low percentages. */
+  const fontSize = Math.max(40, Math.min(118, Math.min(fillH, OVERLAY.w) * 0.42));
   const showText = p >= 6;
+  const wavePath = `M ${OVERLAY.x - 110} ${fillY} C ${OVERLAY.x - 45} ${fillY - 10}, ${OVERLAY.x + 25} ${fillY + 10}, ${OVERLAY.x + 90} ${fillY} S ${OVERLAY.x + 220} ${fillY - 10}, ${OVERLAY.x + 285} ${fillY} S ${OVERLAY.x + 415} ${fillY + 10}, ${OVERLAY.x + 480} ${fillY} S ${OVERLAY.x + 610} ${fillY - 10}, ${OVERLAY.x + 675} ${fillY} S ${OVERLAY.x + 805} ${fillY + 10}, ${OVERLAY.x + 870} ${fillY} L ${OVERLAY.x + OVERLAY.w + 110} ${OVERLAY.y + OVERLAY.h} L ${OVERLAY.x - 110} ${OVERLAY.y + OVERLAY.h} Z`;
 
   return (
     <svg
@@ -130,8 +173,8 @@ export function CapacityTruck({ pct, className, label }: Props) {
       aria-label={label ?? `${Math.round(p)}%`}
     >
       <defs>
-        {/* Spec: electric blue, subtle gradient rather than flat. */}
-        <linearGradient id={`load-${uid}`} x1="0" y1="0" x2="1" y2="0.35">
+        {/* Deep-to-light blue vertical gradient makes the load read as liquid. */}
+        <linearGradient id={`load-${uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={LOAD_BLUE.from} />
           <stop offset="100%" stopColor={LOAD_BLUE.to} />
         </linearGradient>
@@ -178,26 +221,21 @@ export function CapacityTruck({ pct, className, label }: Props) {
           fill={LOAD_EMPTY}
           opacity={0.3}
         />
-        {/* Filled capacity — grows from the FRONT toward the REAR. */}
+        {/* Water-like blue load rises from the trailer floor. */}
         <rect
           x={OVERLAY.x}
-          y={OVERLAY.y}
-          height={OVERLAY.h}
-          width={fillW}
+          y={fillY}
+          width={OVERLAY.w}
+          height={fillH}
           fill={`url(#load-${uid})`}
-          opacity={0.93}
-          style={{ transition: `width var(--ds-fill, 600ms) ease-out` }}
+          opacity={0.94}
+          style={{ transition: `height var(--ds-fill, 600ms) ease-out, y var(--ds-fill, 600ms) ease-out` }}
         />
-        {/* Light variation along the fill's leading edge. */}
-        <rect
-          x={OVERLAY.x + Math.max(0, fillW - 3)}
-          y={OVERLAY.y}
-          width={3}
-          height={OVERLAY.h}
-          fill="#ffffff"
-          opacity={p > 0 && p < 100 ? 0.35 : 0}
-          style={{ transition: `x var(--ds-fill, 600ms) ease-out` }}
-        />
+        {/* Two overlapping ripples drift across the waterline. */}
+        {p > 0 && <>
+          <path d={wavePath} fill="#77baff" opacity={0.48} className="capacity-water-wave" />
+          <path d={wavePath} fill="none" stroke="#d8efff" strokeWidth={5} opacity={0.58} className="capacity-water-wave capacity-water-wave-highlight" />
+        </>}
       </g>
       {/* Overlay frame. */}
       <rect
@@ -226,7 +264,7 @@ export function CapacityTruck({ pct, className, label }: Props) {
             fontWeight: 700,
             letterSpacing: "-0.04em",
             filter: "drop-shadow(0 3px 14px rgba(0,0,0,0.5))",
-            transition: `x var(--ds-fill, 600ms) ease-out`,
+            transition: `y var(--ds-fill, 600ms) ease-out`,
           }}
         >
           {Math.round(p)}%

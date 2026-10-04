@@ -817,6 +817,22 @@
   .truck-plate-light { mix-blend-mode: multiply; filter: contrast(1.15); }
 }
 
+@keyframes capacity-water-drift {
+  from { transform: translateX(-28px); }
+  to { transform: translateX(28px); }
+}
+.capacity-water-wave {
+  transform-box: fill-box;
+  animation: capacity-water-drift 2.8s ease-in-out infinite alternate;
+}
+.capacity-water-wave-highlight {
+  animation-duration: 3.6s;
+  animation-direction: alternate-reverse;
+}
+@media (prefers-reduced-motion: reduce) {
+  .capacity-water-wave { animation: none; }
+}
+
 @layer utilities {
   .dotted-light {
     background-image: radial-gradient(rgba(10, 25, 49, 0.14) 1px, transparent 1px);
