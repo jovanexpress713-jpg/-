@@ -6,6 +6,7 @@ import { useVehicleAssets, type VehicleTypeAsset } from "../state/vehicleAssetSt
 import { APPROVED_VEHICLE_TYPES_LIST, normalizeVehicleType, type CanonicalVehicleTypeId } from "../data/vehicleTypes";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { TruckImage } from "./TruckImage";
+import { CapacityTruck } from "./CapacityTruck";
 import { apiClient } from "../services/apiClient";
 import { useToast } from "./Toast";
 import { IconUpload, IconTruck, IconCheck, IconAlertCircle, IconClose, IconSearch } from "./Icons";
@@ -43,7 +44,7 @@ export function VehicleAssetsManager() {
   const { t } = useSettings();
   const pushToast = useToast();
   const { registry, refresh, isLoading } = useVehicleAssets();
-  const { trucks } = useFleetStore();
+  const { trucks, trips } = useFleetStore();
 
   const [activeType, setActiveType] = useState<CanonicalVehicleTypeId>("curtain");
   const [show3DPreview, setShow3DPreview] = useState(true);
@@ -291,17 +292,29 @@ export function VehicleAssetsManager() {
         {APPROVED_VEHICLE_TYPES_LIST.map((vt) => {
           const entry = registry.types[vt.id];
           const isActive = activeType === vt.id;
+          const typeTrip = trips.find((trip) => normalizeVehicleType(trip.cargoType) === vt.id);
+          const typeLoadPercent = typeTrip && typeTrip.maxCapacityTons > 0
+            ? Math.max(0, Math.min(100, typeTrip.cargoWeightTons / typeTrip.maxCapacityTons * 100))
+            : 0;
           return (
             <button
               key={vt.id}
               onClick={() => setActiveType(vt.id)}
+              aria-pressed={isActive}
               className={cn(
                 "group overflow-hidden rounded-[14px] border bg-surface-1 text-start transition-all",
                 isActive ? "border-brand/60 shadow-lg" : "border-border-subtle hover:border-brand/30",
               )}
             >
-              <div className="relative h-[86px] w-full overflow-hidden bg-surface-2">
-                <TruckImage body={vt.id} className="h-full w-full object-cover" />
+              <div className="relative overflow-hidden bg-surface-2 p-1">
+                <CapacityTruck
+                  key={`${vt.id}-${isActive}`}
+                  pct={typeLoadPercent}
+                  countUp={Boolean(typeTrip)}
+                  truckType={vt.id}
+                  label={t(vt.englishName, vt.arabicName)}
+                  className="w-full"
+                />
                 <span
                   className={cn(
                     "absolute top-2 end-2 rounded-full px-2 py-[2px] text-[9.5px] font-bold backdrop-blur",
@@ -322,6 +335,10 @@ export function VehicleAssetsManager() {
                   <span className="text-[10px] font-mono text-text-muted">{vt.categoryCode}</span>
                 </div>
                 <div className="mt-0.5 text-[10.5px] text-text-muted">{vt.englishName}</div>
+                <div className="mt-2 flex items-center justify-between gap-2 border-t border-border-subtle pt-2 text-[10px]">
+                  <span className="text-text-muted">{typeTrip ? `${typeTrip.cargoWeightTons.toLocaleString()} / ${typeTrip.maxCapacityTons} ${t("tons", "طن")}` : "—"}</span>
+                  <strong className="tabular-nums text-text-primary">{typeTrip ? `${Math.round(typeLoadPercent)}%` : "—"}</strong>
+                </div>
               </div>
             </button>
           );

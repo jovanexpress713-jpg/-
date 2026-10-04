@@ -431,6 +431,11 @@ export async function runNovaDesignTests() {
       assert.ok(mask.startsWith("M "), `${type} has an explicit body-shaped fill mask`);
       if (type === "reefer") assert.ok(mask.startsWith("M 804 226"), "reefer fill starts behind the refrigeration unit, not over it");
       if (type === "dry") assert.ok(mask.startsWith("M 692 226"), "dry-van fill follows the dry box, not another body's mask");
+      if (type === "curtain") assert.ok(mask.startsWith("M 698 240"), "curtain fill stays within the tarp and above its lower rails");
+      if (type === "flatbed") {
+        assert.ok(mask.startsWith("M 702 627 L 1450 649 L 1450 665"), "flatbed gauge is a slim deck strip, not a box");
+        assert.ok(view.query("text").some((node) => (node.textContent ?? "").includes("%")), "flatbed percentage stays readable in its own badge");
+      }
       await view.unmount();
     }
   }

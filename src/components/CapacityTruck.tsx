@@ -120,11 +120,12 @@ export const LOAD_EMPTY = "#4a5468";
 
 const TYPE_GAUGE_SHAPES: Record<CanonicalVehicleTypeId, { clip: string; top: number; bottom: number; centerX: number; amplitude: number }> = {
   // Inner cargo-area masks follow the photographed outline of each official asset.
-  flatbed: { clip: "M 702 628 L 1450 650 L 1448 674 L 710 653 Z", top: 628, bottom: 674, centerX: 1080, amplitude: 5 },
+  // A flatbed is a deck, not a cargo box: its gauge is a slim surface strip.
+  flatbed: { clip: "M 702 627 L 1450 649 L 1450 665 L 710 644 Z", top: 627, bottom: 665, centerX: 1080, amplitude: 0 },
   // The reefer side begins behind its refrigeration unit; keep the cooling unit visible.
   reefer: { clip: "M 804 226 L 1442 452 L 1442 675 L 804 660 Z", top: 226, bottom: 675, centerX: 1120, amplitude: 16 },
   dry: { clip: "M 692 226 L 1438 455 L 1438 632 L 718 660 Z", top: 226, bottom: 660, centerX: 1070, amplitude: 17 },
-  curtain: { clip: "M 690 232 L 1438 451 L 1438 613 L 714 627 Z", top: 232, bottom: 627, centerX: 1060, amplitude: 16 },
+  curtain: { clip: "M 698 240 L 1435 455 L 1435 599 L 714 615 Z", top: 240, bottom: 615, centerX: 1065, amplitude: 14 },
 };
 
 function waterAreaPath(y: number, bottom: number, amplitude = 28) {
@@ -198,6 +199,34 @@ export function CapacityTruck({ pct, className, label, countUp = false, truckTyp
 
   if (selectedType && typeSpecificSrc) {
     const shape = TYPE_GAUGE_SHAPES[selectedType];
+
+    if (selectedType === "flatbed") {
+      const deckStart = 702;
+      const deckLength = 748;
+      const deckFillWidth = deckLength * p / 100;
+      return (
+        <svg viewBox="0 120 1536 760" className={cn("w-full", className)} role="img" aria-label={label ?? `${Math.round(p)}%`}>
+          <defs>
+            <linearGradient id={`typed-load-${uid}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#55a8ff" />
+              <stop offset="100%" stopColor="#1559d6" />
+            </linearGradient>
+            <clipPath id={`typed-clip-${uid}`}><path d={shape.clip} /></clipPath>
+          </defs>
+          <image href={typeSpecificSrc} x="0" y="0" width="1536" height="1024" preserveAspectRatio="none" />
+          <g clipPath={`url(#typed-clip-${uid})`}>
+            <path d={shape.clip} fill="#061323" opacity=".18" />
+            <rect x={deckStart} y="615" width={deckFillWidth} height="70" fill={`url(#typed-load-${uid})`} opacity=".92" />
+          </g>
+          <path d={shape.clip} fill="none" stroke="#9cb0c6" strokeWidth="2" opacity=".72" />
+          {showText && <>
+            <rect x="970" y="568" width="220" height="72" rx="36" fill="#0b1d31" fillOpacity=".94" stroke="#72bdff" strokeWidth="3" />
+            <text x={shape.centerX} y="605" textAnchor="middle" dominantBaseline="central" fill="#fff" style={{ fontFamily: "var(--font-mono)", fontSize: 92, fontWeight: 800, filter: "drop-shadow(0 2px 8px rgba(0,0,0,.75))" }}>{Math.round(p)}%</text>
+          </>}
+        </svg>
+      );
+    }
+
     const bodyHeight = shape.bottom - shape.top;
     const liquidHeight = bodyHeight * p / 100;
     const liquidY = shape.bottom - liquidHeight;
