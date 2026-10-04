@@ -292,7 +292,8 @@ export function VehicleAssetsManager() {
         {APPROVED_VEHICLE_TYPES_LIST.map((vt) => {
           const entry = registry.types[vt.id];
           const isActive = activeType === vt.id;
-          const typeTrip = trips.find((trip) => normalizeVehicleType(trip.cargoType) === vt.id);
+          const typeTrips = trips.filter((trip) => normalizeVehicleType(trip.cargoType) === vt.id);
+          const typeTrip = typeTrips.find((trip) => trip.cargoWeightTons > 0) ?? typeTrips[0];
           const typeLoadPercent = typeTrip && typeTrip.maxCapacityTons > 0
             ? Math.max(0, Math.min(100, typeTrip.cargoWeightTons / typeTrip.maxCapacityTons * 100))
             : 0;

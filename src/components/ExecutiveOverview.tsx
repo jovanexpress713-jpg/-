@@ -12,7 +12,7 @@ import { CargoDonut } from "./overview/CargoDonut";
 import { TripBars } from "./overview/TripBars";
 import { ActivitiesTable } from "./overview/ActivitiesTable";
 import { statusGroup, STATUS_LABEL } from "./overview/shared";
-import { APPROVED_VEHICLE_TYPES_LIST } from "../data/vehicleTypes";
+import { APPROVED_VEHICLE_TYPES_LIST, normalizeVehicleType } from "../data/vehicleTypes";
 
 interface Props {
   userName?: string;
@@ -263,9 +263,13 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-[14px] font-semibold text-text-primary">{t("Truck load capacity", "حمولة الشاحنة")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنته.")}</p></div><span className="rounded-full bg-surface-3 px-2.5 py-1 text-[10px] font-semibold text-text-secondary">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span></div>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
             {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
-              const vehicle = trucks.find((item) => item.body === meta.id);
-              const matchingTrip = trips.find((trip) => trip.cargoType === meta.id && (!vehicle || trip.truckId === vehicle.id)) ?? trips.find((trip) => trip.cargoType === meta.id);
-              const count = trucks.filter((item) => item.body === meta.id).length;
+              const vehicle = trucks.find((item) => normalizeVehicleType(item.body) === meta.id);
+              const matchingTypeTrips = trips.filter((trip) => normalizeVehicleType(trip.cargoType) === meta.id);
+              const matchingTrip = matchingTypeTrips.find((trip) => trip.cargoWeightTons > 0 && (!vehicle || trip.truckId === vehicle.id))
+                ?? matchingTypeTrips.find((trip) => trip.cargoWeightTons > 0)
+                ?? matchingTypeTrips.find((trip) => !vehicle || trip.truckId === vehicle.id)
+                ?? matchingTypeTrips[0];
+              const count = trucks.filter((item) => normalizeVehicleType(item.body) === meta.id).length;
               const typeLoadPercent = matchingTrip && matchingTrip.maxCapacityTons > 0
                 ? Math.max(0, Math.min(100, matchingTrip.cargoWeightTons / matchingTrip.maxCapacityTons * 100))
                 : 0;

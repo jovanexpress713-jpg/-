@@ -438,6 +438,10 @@ export async function runNovaDesignTests() {
       assert.ok(view.query("text").some((node) => (node.textContent ?? "").includes("%")), `${type} displays its load percentage`);
       await view.unmount();
     }
+    const drySampleLoadPct = Math.round((28.6 / 32) * 100);
+    const dryView = await mount(React.createElement(CapacityTruck, { pct: drySampleLoadPct, truckType: "dry" }));
+    assert.ok(dryView.query("text").map((node) => node.textContent ?? "").includes("89%"), "dry-van sample cargo visibly tests the gauge at 28.6 of 32 tonnes");
+    await dryView.unmount();
   }
 
   /* ── C. TruckCapacity = truck + route in ONE component ───────────────── */
