@@ -268,4 +268,56 @@ router.patch("/:id", authenticate, requirePermission("vehicles.edit"), (req: Aut
   });
 });
 
+// DELETE /api/vehicles/:id — retire/delete vehicle from fleet
+router.delete("/:id", authenticate, requirePermission("vehicles.delete", "vehicles.manage"), (req: AuthenticatedRequest, res: Response) => {
+  const id = String(req.params.id);
+  const vehicle = db.vehicles.get(id);
+  if (!vehicle) {
+    return res.status(404).json({ error: "Vehicle not found", errorAr: "الشاحنة غير موجودة" });
+  }
+
+  // Check if vehicle is in an active trip
+  const activeTrip = Array.from(db.trips.values()).find(
+    (t) => t.vehicleId === id && !["DELIVERED", "POD_CONFIRMED", "SETTLED", "CANCELLED"].includes(t.status)
+  );
+  if (activeTrip || vehicle.status === "in_trip") {
+    return res.status(400).json({
+      error: `Cannot delete vehicle '${vehicle.plate}' while assigned to an active trip`,
+      errorAr: `لا يمكن حذف الشاحنة '${vehicle.plate}' لأنها مرتبطة برحلة نشطة حالياً. يجب إنهاء أو إعادة توجيه الرحلة أولاً.`,
+      code: "VEHICLE_IN_ACTIVE_TRIP",
+    });
+  }
+
+  // Unassign any driver
+  if (vehicle.assignedDriverId) {
+    const driver = db.drivers.get(vehicle.assignedDriverId);
+    if (driver && driver.assignedVehicleId === id) {
+      driver.assignedVehicleId = undefined;
+    }
+  }
+
+  // Clean custom image if any
+  if (vehicle.customImage) {
+    removeVehicleImage(id);
+  }
+
+  db.vehicles.delete(id);
+
+  logAuditEvent({
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    action: "VEHICLE_DELETED",
+    entity: "vehicles",
+    entityId: id,
+    oldValues: { plate: vehicle.plate, model: vehicle.model, type: vehicle.type },
+  });
+
+  return res.json({
+    message: "Vehicle deleted successfully",
+    messageAr: `تم حذف الشاحنة '${vehicle.plate}' من سجل الأسطول بنجاح`,
+    id,
+  });
+});
+
 export default router;

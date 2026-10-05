@@ -182,6 +182,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
           row("fleet", tk("nav.fleet"), IconTruck, { count: counts.trucks }),
           row("vehicle-assets", tk("nav.vehicleAssets"), IconLayers),
           row("drivers", tk("nav.drivers"), IconDriver, { count: counts.drivers }),
+          row("customers", tk("nav.customers"), IconDoc),
           row("registrations", tk("nav.registrations"), IconRequests),
         ])}
 

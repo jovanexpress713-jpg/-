@@ -44,6 +44,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
     selectTruck,
     addVehicle,
     updateVehicle,
+    deleteVehicle,
   } = useFleetStore();
 
   const [search, setSearch] = useState("");
@@ -54,6 +55,8 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAssignDriverModal, setShowAssignDriverModal] = useState<Vehicle | null>(null);
   const [showVehicleDetailsModal, setShowVehicleDetailsModal] = useState<Vehicle | null>(null);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [deletingVehicle, setDeletingVehicle] = useState<Vehicle | null>(null);
 
   // Card view mode per vehicle: "3d" or "image"
   const [cardDisplayMode, setCardDisplayMode] = useState<Record<string, "3d" | "image">>({});
@@ -77,6 +80,14 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
   const [assetError, setAssetError] = useState<string | null>(null);
 
   const publishVehiclePhoto = async (file: File, vehicleId: string) => {
+    const ext = `.${file.name.split(".").pop()?.toLowerCase() || ""}`;
+    const isSvg = ext === ".svg" || file.type === "image/svg+xml";
+    if (!isSvg) {
+      const msg = t("Uploaded images must be in SVG format (.svg)", "يجب أن تكون الصور المرفوعة بصيغة SVG (.svg)");
+      setAssetError(msg);
+      toast(msg, file.name);
+      return;
+    }
     if (file.size > registry.limits.maxImageBytes) {
       setAssetError(t("Image size exceeds the permitted limit", "حجم الصورة يتجاوز الحد المسموح"));
       return;
@@ -247,14 +258,68 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
     }
   };
 
-  const handleAssignDriverSubmit = (e: React.FormEvent) => {
+  const handleAssignDriverSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedDriverId) return;
-    toast(
-      t("Driver assigned to vehicle", "تم تعيين السائق للشاحنة بنجاح"),
-      showAssignDriverModal?.plate
-    );
-    setShowAssignDriverModal(null);
+    if (!selectedDriverId || !showAssignDriverModal) return;
+    try {
+      await apiClient.vehicles.update(showAssignDriverModal.id, { assignedDriverId: selectedDriverId });
+      const driverObj = drivers.find((d) => (d as any).id === selectedDriverId || d.name === selectedDriverId);
+      updateVehicle(showAssignDriverModal.id, { driver: driverObj } as any);
+      toast(
+        t("Driver assigned to vehicle", "تم تعيين السائق للشاحنة بنجاح"),
+        `${showAssignDriverModal.plate} ← ${driverObj?.name || selectedDriverId}`
+      );
+      setShowAssignDriverModal(null);
+    } catch (err: any) {
+      toast(t("Failed to assign driver", "تعذر تعيين السائق"), err.message || "Error");
+    }
+  };
+
+  const handleEditVehicleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVehicle) return;
+    try {
+      setIsSubmitting(true);
+      const arabicType = getVehicleTypeMeta(normalizeVehicleType(editingVehicle.body)).arabicName;
+      await apiClient.vehicles.update(editingVehicle.id, {
+        plate: editingVehicle.plate,
+        brand: editingVehicle.brand,
+        model: editingVehicle.model,
+        year: Number(editingVehicle.year),
+        maxLoadTons: Number(editingVehicle.maxLoad),
+        cab: editingVehicle.cab,
+        type: arabicType,
+        status: editingVehicle.status === "active" ? "in_trip" : editingVehicle.status === "inactive" ? "maintenance" : "idle",
+      });
+      updateVehicle(editingVehicle.id, editingVehicle);
+      toast(t("Vehicle updated successfully", "تم تحديث بيانات الشاحنة بنجاح"), editingVehicle.plate);
+      if (showVehicleDetailsModal?.id === editingVehicle.id) {
+        setShowVehicleDetailsModal({ ...editingVehicle });
+      }
+      setEditingVehicle(null);
+    } catch (err: any) {
+      toast(t("Failed to update vehicle", "تعذر تحديث بيانات الشاحنة"), err.message || "Error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteVehicleSubmit = async () => {
+    if (!deletingVehicle) return;
+    try {
+      setIsSubmitting(true);
+      await apiClient.vehicles.delete(deletingVehicle.id);
+      deleteVehicle(deletingVehicle.id);
+      toast(t("Vehicle removed successfully", "تم حذف الشاحنة بنجاح"), deletingVehicle.plate);
+      if (showVehicleDetailsModal?.id === deletingVehicle.id) {
+        setShowVehicleDetailsModal(null);
+      }
+      setDeletingVehicle(null);
+    } catch (err: any) {
+      toast(t("Cannot delete vehicle", "تعذر حذف الشاحنة"), err.message || "Error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -1166,9 +1231,26 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
 
             {/* Modal Footer */}
             <div className="p-3 px-6 bg-surface-2 border-t border-border-subtle flex items-center justify-between">
-              <span className="text-[11px] text-text-muted">
-                {t("EJAZ Heavy Fleet Asset Management System", "نظام إدارة أصول ومجسمات أسطول إيجاز للنقليات")}
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingVehicle({ ...showVehicleDetailsModal });
+                  }}
+                  className="btn-ghost text-[11.5px] py-1.5 px-3"
+                >
+                  {t("Edit Specs", "تعديل بيانات الشاحنة")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeletingVehicle(showVehicleDetailsModal);
+                  }}
+                  className="btn-ghost text-[11.5px] py-1.5 px-3 text-status-danger hover:bg-status-danger/10"
+                >
+                  {t("Delete Vehicle", "إخراج من الأسطول")}
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowVehicleDetailsModal(null)}
@@ -1180,11 +1262,177 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
           </div>
         </div>
       )}
-      {/* Hidden picker: per-vehicle photograph published to the central registry */}
+
+      {/* ── EDIT VEHICLE MODAL ── */}
+      {editingVehicle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-lg bg-surface-1 rounded-[14px] p-5 border border-border-subtle shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <h3 className="font-bold text-[15px] text-text-primary">
+                {t("Edit Vehicle Data", "تعديل مواصفات وبيانات الشاحنة")}
+              </h3>
+              <button onClick={() => setEditingVehicle(null)} className="btn-icon-sm">
+                <IconClose size={15} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditVehicleSubmit} className="mt-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-[12px]">
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Plate Number", "رقم اللوحة")} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingVehicle.plate}
+                    onChange={(e) => setEditingVehicle({ ...editingVehicle, plate: e.target.value })}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Model Year", "سنة الصنع")}
+                  </label>
+                  <input
+                    type="number"
+                    value={editingVehicle.year}
+                    onChange={(e) => setEditingVehicle({ ...editingVehicle, year: Number(e.target.value) })}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-[12px]">
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Manufacturer", "الشركة المصنعة")}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingVehicle.brand}
+                    onChange={(e) => setEditingVehicle({ ...editingVehicle, brand: e.target.value as any })}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Model Name", "طراز الشاحنة")}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingVehicle.model}
+                    onChange={(e) => setEditingVehicle({ ...editingVehicle, model: e.target.value })}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-[12px]">
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Max Payload (Tons)", "الحمولة القصوى (طن)")}
+                  </label>
+                  <input
+                    type="number"
+                    value={editingVehicle.maxLoad}
+                    onChange={(e) => setEditingVehicle({ ...editingVehicle, maxLoad: Number(e.target.value) })}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Operational Status", "الحالة التشغيلية")}
+                  </label>
+                  <select
+                    value={editingVehicle.status}
+                    onChange={(e) => setEditingVehicle({ ...editingVehicle, status: e.target.value as any })}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  >
+                    <option value="active">{t("Active / On Road", "في رحلة نشطة")}</option>
+                    <option value="waiting">{t("Available / Idle", "جاهزة ومتاحة")}</option>
+                    <option value="inactive">{t("Maintenance", "صيانة دورية")}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  {t("Cabin Type", "نوع الكابينة")}
+                </label>
+                <input
+                  type="text"
+                  value={editingVehicle.cab}
+                  onChange={(e) => setEditingVehicle({ ...editingVehicle, cab: e.target.value })}
+                  className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle">
+                <button
+                  type="button"
+                  onClick={() => setEditingVehicle(null)}
+                  className="btn-ghost text-[12px]"
+                >
+                  {t("Cancel", "إلغاء")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn-primary text-[12px] px-4 py-2"
+                >
+                  {isSubmitting ? t("Saving…", "جارٍ الحفظ…") : t("Save Changes", "حفظ التعديلات")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── DELETE VEHICLE CONFIRMATION MODAL ── */}
+      {deletingVehicle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md bg-surface-1 rounded-[14px] p-5 border border-status-danger/40 shadow-2xl">
+            <h3 className="font-bold text-[16px] text-status-danger">
+              {t("Retire Vehicle from Fleet", "تأكيد إخراج الشاحنة من الأسطول")}
+            </h3>
+            <p className="mt-2 text-[12.5px] text-text-secondary leading-relaxed">
+              {t(
+                "Are you sure you want to delete this vehicle from active fleet registries? This will disassociate any assigned drivers.",
+                "هل أنت متأكد من رغبتك في حذف هذه الشاحنة من سجل الأسطول المعتمد؟ سيتم فك ارتباط أي كابتن مرتبط بها.",
+              )}
+            </p>
+            <div className="mt-3 rounded-[8px] bg-surface-2 p-2.5 text-[12px] font-mono font-bold text-text-primary flex items-center justify-between">
+              <span>{deletingVehicle.plate}</span>
+              <span className="font-sans text-text-muted">{deletingVehicle.brand} {deletingVehicle.model}</span>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingVehicle(null)}
+                className="btn-ghost text-[12px]"
+              >
+                {t("Cancel", "تراجع")}
+              </button>
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleDeleteVehicleSubmit}
+                className="rounded-[8px] bg-status-danger px-4 py-2 text-[12px] font-bold text-white transition-opacity hover:opacity-90"
+              >
+                {isSubmitting ? t("Deleting…", "جارٍ الحذف…") : t("Confirm Delete", "تأكيد الحذف")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden picker: per-vehicle photograph published to the central registry (accepts SVG vector as preferred format) */}
       <input
         ref={vehiclePhotoInputRef}
         type="file"
-        accept=".png,.jpg,.jpeg,.webp,.avif"
+        accept=".svg,image/svg+xml"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];

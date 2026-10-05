@@ -5,6 +5,7 @@ import { useFleetStore } from "../state/fleetStore";
 import { useToast } from "./Toast";
 import { TruckTypeIcon } from "./TruckTypeIcon";
 import { getVehicleTypeMeta, normalizeVehicleType } from "../data/vehicleTypes";
+import { apiClient } from "../services/apiClient";
 import {
   IconDriver,
   IconSearch,
@@ -12,6 +13,7 @@ import {
   IconCheck,
   IconArrowRight,
   IconClose,
+  IconPlus,
 } from "./Icons";
 
 interface DriversManagerProps {
@@ -36,12 +38,28 @@ interface EnrichedDriver {
 export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps) {
   const { t, td } = useSettings();
   const toast = useToast();
-  const { drivers, trucks, trips, selectTrip, selectTruck } = useFleetStore();
+  const { drivers, trucks, trips, selectTrip, selectTruck, addDriver, updateDriver, deleteDriver } = useFleetStore();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<DriverStatusFilter>("ALL");
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [showCallModal, setShowCallModal] = useState<EnrichedDriver | null>(null);
+
+  // Modals for manual driver provisioning
+  const [showAddDriverModal, setShowAddDriverModal] = useState(false);
+  const [editingDriver, setEditingDriver] = useState<EnrichedDriver | null>(null);
+  const [deletingDriver, setDeletingDriver] = useState<EnrichedDriver | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form states for new driver
+  const [formName, setFormName] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formNationalId, setFormNationalId] = useState("");
+  const [formLicense, setFormLicense] = useState("");
+  const [formLicenseExpiry, setFormLicenseExpiry] = useState("2028-06-14");
+  const [formAssignedTruck, setFormAssignedTruck] = useState("");
+  const [formStatus, setFormStatus] = useState<"available" | "rest" | "leave">("available");
+  const [formPassword, setFormPassword] = useState("Ejaz@2026Driver");
 
   // Status mapping and translations
   const STATUS_CONFIG: Record<string, { labelAr: string; labelEn: string; color: string; bg: string }> = {
@@ -125,6 +143,104 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
   const onTripCount = enrichedDrivers.filter((d) => d.status === "on_trip").length;
   const availableCount = enrichedDrivers.filter((d) => d.status === "available").length;
   const restCount = enrichedDrivers.filter((d) => d.status === "rest" || d.status === "leave").length;
+
+  const getInitials = (nameStr: string) => {
+    const parts = nameStr.trim().split(/\s+/);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return (nameStr.slice(0, 2) || "EJ").toUpperCase();
+  };
+
+  const handleAddDriverSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName || !formPhone || !formNationalId || !formLicense) {
+      toast(t("Missing required fields", "بيانات ناقصة"), t("Please fill all mandatory driver fields", "يرجى تعبئة كافة الحقول الإلزامية"));
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const res = await apiClient.drivers.create({
+        fullName: formName,
+        phone: formPhone,
+        nationalId: formNationalId,
+        licenseNumber: formLicense,
+        licenseExpiry: formLicenseExpiry,
+        assignedVehicleId: formAssignedTruck || undefined,
+        status: formStatus,
+        password: formPassword || "Ejaz@2026Driver",
+        direct: true,
+      });
+
+      const newId = res.driver?.id || `d-${Date.now()}`;
+      addDriver({
+        name: formName,
+        phone: formPhone,
+        initials: getInitials(formName),
+        rating: 5.0,
+        trips: 0,
+        id: newId,
+      } as any);
+
+      toast(t("Driver added successfully", "تمت إضافة السائق بنجاح"), formName);
+      setShowAddDriverModal(false);
+      setFormName("");
+      setFormPhone("");
+      setFormNationalId("");
+      setFormLicense("");
+      setFormAssignedTruck("");
+    } catch (err: any) {
+      toast(t("Failed to add driver", "تعذر إضافة السائق"), err.message || "Error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditDriverSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDriver) return;
+
+    try {
+      setIsSubmitting(true);
+      await apiClient.drivers.update(editingDriver.id, {
+        fullName: editingDriver.name,
+        phone: editingDriver.phone,
+        status: editingDriver.status,
+        licenseNumber: editingDriver.license,
+        assignedVehicleId: editingDriver.assignedTruckId || null,
+      });
+
+      updateDriver(editingDriver.id, {
+        name: editingDriver.name,
+        phone: editingDriver.phone,
+      });
+
+      toast(t("Driver updated successfully", "تم تحديث بيانات السائق بنجاح"), editingDriver.name);
+      setEditingDriver(null);
+    } catch (err: any) {
+      toast(t("Failed to update driver", "تعذر تحديث بيانات السائق"), err.message || "Error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteDriverSubmit = async () => {
+    if (!deletingDriver) return;
+
+    try {
+      setIsSubmitting(true);
+      await apiClient.drivers.delete(deletingDriver.id);
+      deleteDriver(deletingDriver.id);
+      toast(t("Driver removed successfully", "تم حذف السائق بنجاح"), deletingDriver.name);
+      if (selectedDriverId === deletingDriver.id) {
+        setSelectedDriverId(null);
+      }
+      setDeletingDriver(null);
+    } catch (err: any) {
+      toast(t("Cannot delete driver", "تعذر حذف السائق"), err.message || "Error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-surface-0">
@@ -221,6 +337,15 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
               </button>
             )}
           </div>
+
+          {/* Add Driver Button */}
+          <button
+            onClick={() => setShowAddDriverModal(true)}
+            className="btn-primary text-[12px] px-3.5 py-1.5 gap-1.5 shrink-0"
+          >
+            <IconPlus size={15} />
+            <span>{t("Add Driver", "إضافة كابتن جديد")}</span>
+          </button>
         </div>
       </header>
 
@@ -520,6 +645,24 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                 </div>
               </div>
             )}
+
+            {/* Profile Action Buttons */}
+            <div className="mt-4 flex items-center gap-2 border-t border-border-subtle pt-3">
+              <button
+                type="button"
+                onClick={() => setEditingDriver({ ...selectedDriver })}
+                className="btn-ghost flex-1 py-1.5 text-[11.5px]"
+              >
+                {t("Edit Driver Profile", "تعديل بيانات السائق")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeletingDriver(selectedDriver)}
+                className="btn-ghost py-1.5 px-3 text-[11.5px] text-status-danger hover:bg-status-danger/10"
+              >
+                {t("Delete", "حذف السائق")}
+              </button>
+            </div>
           </aside>
         )}
       </div>
@@ -572,6 +715,305 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                 className="btn-ghost w-full py-2 text-[12px]"
               >
                 {t("Copy Phone Number", "نسخ رقم الهاتف")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADD DRIVER MODAL ── */}
+      {showAddDriverModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-lg bg-surface-1 rounded-[14px] p-5 border border-border-subtle shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <h3 className="font-bold text-[15px] text-text-primary">
+                {t("Add Fleet Captain / Driver", "إضافة كابتن أسطول جديد")}
+              </h3>
+              <button onClick={() => setShowAddDriverModal(false)} className="btn-icon-sm">
+                <IconClose size={15} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddDriverSubmit} className="mt-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Driver Full Name", "اسم السائق الرباعي")} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="مثال: فهد بن عبد الرحمن الشمري"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Phone Number", "رقم الجوال")} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formPhone}
+                    onChange={(e) => setFormPhone(e.target.value)}
+                    placeholder="+966 5x xxx xxxx"
+                    dir="ltr"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("National ID / Iqama", "رقم الهوية الوطنية / الإقامة")} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formNationalId}
+                    onChange={(e) => setFormNationalId(e.target.value)}
+                    placeholder="10xxxxxxxx"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Heavy Driving License No.", "رقم رخصة القيادة العمومي")} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formLicense}
+                    onChange={(e) => setFormLicense(e.target.value)}
+                    placeholder="DL-SA-xxxxx"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("License Expiry Date", "تاريخ انتهاء الرخصة")}
+                  </label>
+                  <input
+                    type="date"
+                    value={formLicenseExpiry}
+                    onChange={(e) => setFormLicenseExpiry(e.target.value)}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Initial Operational Status", "الحالة الميدانية")}
+                  </label>
+                  <select
+                    value={formStatus}
+                    onChange={(e) => setFormStatus(e.target.value as any)}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  >
+                    <option value="available">{t("Available", "متاح للتكليف")}</option>
+                    <option value="rest">{t("Mandatory Rest", "راحة نظامية")}</option>
+                    <option value="leave">{t("On Leave", "إجازة دورية")}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Assign Heavy Truck (Optional)", "تخصيص شاحنة من الأسطول")}
+                  </label>
+                  <select
+                    value={formAssignedTruck}
+                    onChange={(e) => setFormAssignedTruck(e.target.value)}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  >
+                    <option value="">{t("None / Unassigned", "بدون شاحنة حالياً")}</option>
+                    {trucks.map((tr) => (
+                      <option key={tr.id} value={tr.id}>
+                        {tr.plate} ({tr.brand} {tr.model})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Mobile App Password", "كلمة مرور تطبيق السائق")}
+                  </label>
+                  <input
+                    type="text"
+                    value={formPassword}
+                    onChange={(e) => setFormPassword(e.target.value)}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle">
+                <button
+                  type="button"
+                  onClick={() => setShowAddDriverModal(false)}
+                  className="btn-ghost text-[12px]"
+                >
+                  {t("Cancel", "إلغاء")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn-primary text-[12px] px-4 py-2"
+                >
+                  {isSubmitting ? t("Adding…", "جارٍ الإضافة…") : t("Confirm & Save Driver", "تأكيد وإضافة السائق")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT DRIVER MODAL ── */}
+      {editingDriver && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md bg-surface-1 rounded-[14px] p-5 border border-border-subtle shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <h3 className="font-bold text-[15px] text-text-primary">
+                {t("Edit Driver Data", "تعديل بيانات وحالة السائق")}
+              </h3>
+              <button onClick={() => setEditingDriver(null)} className="btn-icon-sm">
+                <IconClose size={15} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditDriverSubmit} className="mt-4 space-y-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  {t("Driver Name", "اسم السائق")}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingDriver.name}
+                  onChange={(e) => setEditingDriver({ ...editingDriver, name: e.target.value })}
+                  className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-[12px]">
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Phone Number", "رقم الجوال")}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingDriver.phone}
+                    onChange={(e) => setEditingDriver({ ...editingDriver, phone: e.target.value })}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                    {t("Status", "الحالة التشغيلية")}
+                  </label>
+                  <select
+                    value={editingDriver.status}
+                    onChange={(e) => setEditingDriver({ ...editingDriver, status: e.target.value as any })}
+                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  >
+                    <option value="available">{t("Available", "متاح")}</option>
+                    <option value="on_trip">{t("On Trip", "في رحلة")}</option>
+                    <option value="rest">{t("Rest", "راحة")}</option>
+                    <option value="leave">{t("Leave", "إجازة")}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  {t("License Number", "رقم الرخصة")}
+                </label>
+                <input
+                  type="text"
+                  value={editingDriver.license}
+                  onChange={(e) => setEditingDriver({ ...editingDriver, license: e.target.value })}
+                  className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-[12px] text-text-primary font-mono outline-none focus:border-brand"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  {t("Assigned Vehicle", "الشاحنة المخصصة")}
+                </label>
+                <select
+                  value={editingDriver.assignedTruckId || ""}
+                  onChange={(e) => setEditingDriver({ ...editingDriver, assignedTruckId: e.target.value || undefined })}
+                  className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                >
+                  <option value="">{t("None", "بدون شاحنة")}</option>
+                  {trucks.map((tr) => (
+                    <option key={tr.id} value={tr.id}>
+                      {tr.plate} ({tr.brand} {tr.model})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle">
+                <button
+                  type="button"
+                  onClick={() => setEditingDriver(null)}
+                  className="btn-ghost text-[12px]"
+                >
+                  {t("Cancel", "إلغاء")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn-primary text-[12px] px-4 py-2"
+                >
+                  {isSubmitting ? t("Saving…", "جارٍ الحفظ…") : t("Save Changes", "حفظ التعديلات")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── DELETE DRIVER MODAL ── */}
+      {deletingDriver && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md bg-surface-1 rounded-[14px] p-5 border border-status-danger/40 shadow-2xl">
+            <h3 className="font-bold text-[16px] text-status-danger">
+              {t("Delete Driver Account", "تأكيد حذف كابتن الأسطول")}
+            </h3>
+            <p className="mt-2 text-[12.5px] text-text-secondary leading-relaxed">
+              {t(
+                "Are you sure you want to remove this driver from the fleet? This will release any assigned vehicle.",
+                "هل أنت متأكد من رغبتك في حذف هذا السائق من سجل الأسطول المعتمد؟ سيتم فك ارتباط أي شاحنة مخصصة له.",
+              )}
+            </p>
+            <div className="mt-3 rounded-[8px] bg-surface-2 p-2.5 text-[12px] font-bold text-text-primary flex items-center justify-between">
+              <span>{deletingDriver.name}</span>
+              <span className="font-mono text-text-muted">{deletingDriver.phone}</span>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingDriver(null)}
+                className="btn-ghost text-[12px]"
+              >
+                {t("Cancel", "تراجع")}
+              </button>
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleDeleteDriverSubmit}
+                className="rounded-[8px] bg-status-danger px-4 py-2 text-[12px] font-bold text-white transition-opacity hover:opacity-90"
+              >
+                {isSubmitting ? t("Deleting…", "جارٍ الحذف…") : t("Confirm Delete", "تأكيد الحذف")}
               </button>
             </div>
           </div>

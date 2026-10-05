@@ -21,6 +21,7 @@ import { LiveOperationsCenter } from "./LiveOperationsCenter";
 import { ExecutiveOverview } from "./ExecutiveOverview";
 import { AnalyticsReports } from "./AnalyticsReports";
 import { DriversManager } from "./DriversManager";
+import { CustomersManager } from "./CustomersManager";
 import { DispatchChatCenter } from "./DispatchChatCenter";
 import { TripHistoryAudit } from "./TripHistoryAudit";
 import { AIAssistant } from "./AIAssistant";
@@ -43,6 +44,7 @@ export const SECTION_KEYS: Record<string, { title: I18nKey; hint?: I18nKey }> = 
   fleet: { title: "nav.fleet", hint: "nav.fleetGroup" },
   "vehicle-assets": { title: "nav.vehicleAssets", hint: "nav.fleetGroup" },
   drivers: { title: "nav.drivers", hint: "nav.fleetGroup" },
+  customers: { title: "nav.customers", hint: "nav.fleetGroup" },
   chats: { title: "nav.chats", hint: "nav.operations" },
   registrations: { title: "nav.registrations", hint: "nav.fleetGroup" },
   tracking: { title: "nav.tracking", hint: "nav.operations" },
@@ -338,6 +340,11 @@ export function WebConsole({
                 selectTruck(truckId);
                 setNav("fleet");
               }}
+            />
+          ) : nav === "customers" ? (
+            <CustomersManager
+              onOpenShipments={() => setNav("shipments")}
+              onOpenCreateShipment={() => setModalKind("cargo")}
             />
           ) : nav === "chats" ? (
             <DispatchChatCenter

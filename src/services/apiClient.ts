@@ -221,6 +221,10 @@ export const apiClient = {
         method: "PATCH",
         body: JSON.stringify(data),
       }),
+    delete: (id: string) =>
+      request<any>(`/api/vehicles/${id}`, {
+        method: "DELETE",
+      }),
   },
   drivers: {
     getAll: () => request<{ total: number; drivers: any[] }>("/api/drivers"),
@@ -230,13 +234,32 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+    update: (id: string, data: any) =>
+      request<any>(`/api/drivers/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      request<any>(`/api/drivers/${id}`, {
+        method: "DELETE",
+      }),
   },
   customers: {
     getAll: () => request<{ total: number; customers: any[] }>("/api/customers"),
+    getById: (id: string) => request<any>(`/api/customers/${id}`),
     create: (data: any) =>
       request<any>("/api/customers", {
         method: "POST",
         body: JSON.stringify(data),
+      }),
+    update: (id: string, data: any) =>
+      request<any>(`/api/customers/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      request<any>(`/api/customers/${id}`, {
+        method: "DELETE",
       }),
   },
   tariffs: {

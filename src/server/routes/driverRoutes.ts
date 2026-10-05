@@ -107,18 +107,121 @@ router.post("/", authenticate, requirePermission("drivers.create"), (req: Authen
       });
     }
 
+    // If direct instant creation requested by staff, ensure driver is populated in active database
+    let directDriver = null;
+    if (req.body?.direct || ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"].includes(req.user?.role || "")) {
+      const driverId = `d-${Date.now()}`;
+      directDriver = {
+        id: driverId,
+        fullName,
+        phone,
+        nationalId,
+        licenseNumber,
+        licenseExpiry,
+        assignedVehicleId: req.body?.assignedVehicleId || undefined,
+        status: (req.body?.status as any) || "available",
+        rating: 5.0,
+        totalTrips: 0,
+      };
+      db.drivers.set(driverId, directDriver);
+      if (req.body?.assignedVehicleId) {
+        const v = db.vehicles.get(req.body.assignedVehicleId);
+        if (v) v.assignedDriverId = driverId;
+      }
+    }
+
     return res.status(201).json({
-      message: "Driver request submitted — جاري معالجة الطلب",
-      messageAr: "تم إرسال طلب إضافة السائق بنجاح. الحالة: جاري معالجة الطلب، وسيظهر في لوحة التحكم للمراجعة.",
+      message: "Driver added / request submitted",
+      messageAr: "تمت إضافة السائق بنجاح وإدراجه في سجل الأسطول المعتمد.",
       status: result.request.status,
       statusAr: REGISTRATION_STATUS_AR[result.request.status],
       request: result.request,
       accountCreated: result.accountCreated,
+      driver: directDriver,
     });
   } catch (err: any) {
     const status = err?.status || 500;
     return res.status(status).json({ error: err?.message || "Driver creation failed", code: err?.code });
   }
+});
+
+// PATCH /api/drivers/:id — update driver details and status
+router.patch("/:id", authenticate, requirePermission("drivers.edit", "drivers.manage"), (req: AuthenticatedRequest, res: Response) => {
+  const id = String(req.params.id);
+  const driver = db.drivers.get(id);
+  if (!driver) {
+    return res.status(404).json({ error: "Driver not found", errorAr: "السائق غير موجود" });
+  }
+
+  const { fullName, phone, nationalId, licenseNumber, licenseExpiry, status, assignedVehicleId } = req.body || {};
+
+  if (fullName !== undefined) driver.fullName = fullName;
+  if (phone !== undefined) driver.phone = phone;
+  if (nationalId !== undefined) driver.nationalId = nationalId;
+  if (licenseNumber !== undefined) driver.licenseNumber = licenseNumber;
+  if (licenseExpiry !== undefined) driver.licenseExpiry = licenseExpiry;
+  if (status !== undefined) driver.status = status;
+
+  if (assignedVehicleId !== undefined) {
+    const nextVehId = assignedVehicleId ? String(assignedVehicleId) : undefined;
+    if (driver.assignedVehicleId && driver.assignedVehicleId !== nextVehId) {
+      const oldVeh = db.vehicles.get(driver.assignedVehicleId);
+      if (oldVeh && oldVeh.assignedDriverId === id) {
+        oldVeh.assignedDriverId = undefined;
+      }
+    }
+    if (nextVehId) {
+      const newVeh = db.vehicles.get(nextVehId);
+      if (newVeh) {
+        if (newVeh.assignedDriverId && newVeh.assignedDriverId !== id) {
+          const oldD = db.drivers.get(newVeh.assignedDriverId);
+          if (oldD) oldD.assignedVehicleId = undefined;
+        }
+        newVeh.assignedDriverId = id;
+      }
+    }
+    driver.assignedVehicleId = nextVehId;
+  }
+
+  return res.json({
+    message: "Driver updated successfully",
+    messageAr: "تم تحديث بيانات السائق وحالته التشغيلية بنجاح",
+    driver,
+  });
+});
+
+// DELETE /api/drivers/:id — delete or retire driver
+router.delete("/:id", authenticate, requirePermission("drivers.delete", "drivers.manage"), (req: AuthenticatedRequest, res: Response) => {
+  const id = String(req.params.id);
+  const driver = db.drivers.get(id);
+  if (!driver) {
+    return res.status(404).json({ error: "Driver not found", errorAr: "السائق غير موجود" });
+  }
+
+  const activeTrip = Array.from(db.trips.values()).find(
+    (t) => t.driverId === id && !["DELIVERED", "POD_CONFIRMED", "SETTLED", "CANCELLED"].includes(t.status)
+  );
+  if (activeTrip || driver.status === "on_trip") {
+    return res.status(400).json({
+      error: `Cannot delete driver '${driver.fullName}' while assigned to an active trip`,
+      errorAr: `لا يمكن حذف السائق '${driver.fullName}' لأنه مرتبط برحلة شحن نشطة حالياً.`,
+      code: "DRIVER_IN_ACTIVE_TRIP",
+    });
+  }
+
+  if (driver.assignedVehicleId) {
+    const veh = db.vehicles.get(driver.assignedVehicleId);
+    if (veh && veh.assignedDriverId === id) {
+      veh.assignedDriverId = undefined;
+    }
+  }
+
+  db.drivers.delete(id);
+  return res.json({
+    message: "Driver removed successfully",
+    messageAr: `تم حذف السائق '${driver.fullName}' من سجل الأسطول بنجاح`,
+    id,
+  });
 });
 
 export default router;

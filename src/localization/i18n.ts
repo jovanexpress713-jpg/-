@@ -44,6 +44,8 @@ export const MESSAGES = {
   "nav.fleet": { ar: "الأسطول (٤ أنواع)", en: "Fleet (4 Types)", ur: "فلیٹ (چار اقسام)" },
   "nav.vehicleAssets": { ar: "أصول المركبات", en: "Vehicle Assets", ur: "گاڑیوں کے اثاثے" },
   "nav.drivers": { ar: "السائقون", en: "Drivers", ur: "ڈرائیورز" },
+  "nav.customers": { ar: "العملاء", en: "Customers", ur: "گاہک / کلائنٹس" },
+  "nav.customersHint": { ar: "إدارة حسابات وسجلات العملاء", en: "Manage customer profiles and accounts", ur: "کلائنٹس کے ریکارڈ کا انتظام" },
   "nav.registrations": { ar: "طلبات التسجيل", en: "Registration Requests", ur: "رجسٹریشن درخواستیں" },
   "nav.tariffs": { ar: "قائمة الأسعار والتعرفة", en: "Pricing & Tariffs", ur: "قیمتوں کی فہرست" },
   "nav.tariffsHint": { ar: "إدارة تعرفة النقل ديناميكيًا", en: "Manage dynamic freight tariffs", ur: "متحرک کرایہ فہرست کا انتظام" },

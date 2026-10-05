@@ -101,6 +101,7 @@ const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const MAX_MODEL_BYTES = 24 * 1024 * 1024;
 
 const ALLOWED_IMAGE_EXT: Record<string, string> = {
+  ".svg": "image/svg+xml",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",

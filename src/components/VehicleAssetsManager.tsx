@@ -22,7 +22,6 @@ import { IconUpload, IconTruck, IconCheck, IconAlertCircle, IconClose, IconSearc
  * the fleet registry, vehicle add/edit screens, trip screens and shipment cards.
  */
 
-const ALLOWED_IMAGE_EXT = [".png", ".jpg", ".jpeg", ".webp", ".avif"];
 const ALLOWED_MODEL_EXT = [".glb", ".gltf"];
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -99,8 +98,13 @@ export function VehicleAssetsManager() {
 
   const handleImagePicked = async (file: File, target: ImageTarget | null = imageTarget) => {
     const ext = `.${file.name.split(".").pop()?.toLowerCase() || ""}`;
-    if (!ALLOWED_IMAGE_EXT.includes(ext)) {
-      setError(t("Unsupported image format. Use PNG, JPG, WEBP or AVIF.", "صيغة الصورة غير مدعومة. استخدم PNG أو JPG أو WEBP أو AVIF."));
+    if (ext !== ".svg" && file.type !== "image/svg+xml") {
+      setError(
+        t(
+          "Uploaded images must be in SVG format (.svg).",
+          "يجب أن تكون الصور المرفوعة بصيغة SVG (.svg) لضمان دقة العرض الفائقة وعدم التأثير على الأداء.",
+        ),
+      );
       return;
     }
     if (file.size > registry.limits.maxImageBytes) {
@@ -694,7 +698,7 @@ export function VehicleAssetsManager() {
       <input
         ref={imageInputRef}
         type="file"
-        accept={ALLOWED_IMAGE_EXT.join(",")}
+        accept=".svg,image/svg+xml"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -704,7 +708,7 @@ export function VehicleAssetsManager() {
       <input
         ref={vehicleImageInputRef}
         type="file"
-        accept={ALLOWED_IMAGE_EXT.join(",")}
+        accept=".svg,image/svg+xml"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];

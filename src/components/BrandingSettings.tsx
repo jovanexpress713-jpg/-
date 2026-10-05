@@ -76,6 +76,11 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
 
   const handleLogoUpload = async (file: File | null) => {
     if (!file) return;
+    const isSvg = file.name.toLowerCase().endsWith(".svg") || file.type === "image/svg+xml";
+    if (!isSvg) {
+      setUploadMsg("يجب أن تكون الصور المرفوعة بصيغة SVG لضمان خفة الحجم والدقة العالية.");
+      return;
+    }
     setUploading(true);
     setUploadMsg(null);
     try {
@@ -85,7 +90,7 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
       if (url) {
         setBranding((prev) => ({ ...prev, [FIELD_BY_VARIANT[logoVariant]]: url }));
         await refreshBranding();
-        setUploadMsg("تم رفع الشعار وتعميمه مباشرة عبر النظام.");
+        setUploadMsg("تم رفع الشعار وتعميمه مباشرة عبر النظام بصيغة SVG متجهة.");
       }
     } catch (err: any) {
       const msg = String(err?.message || "");
@@ -304,7 +309,7 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
                 {uploading ? t("Uploading...", "جارٍ الرفع...") : t("Choose & Upload", "اختيار ورفع")}
                 <input
                   type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  accept="image/svg+xml,.svg"
                   className="hidden"
                   disabled={uploading}
                   onChange={(e) => {
@@ -315,7 +320,7 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
               </label>
             </div>
             <p className="text-[11px] text-text-muted">
-              {t("PNG / JPG / WEBP / SVG · up to 4MB", "PNG / JPG / WEBP / SVG · حتى 4 ميجابايت")}
+              {t("SVG Vector Only · scalable without pixelation", "صيغة SVG متجهة فقط · دقة فائقة وحجم فائق الخفة")}
             </p>
             {uploadMsg && (
               <div className="rounded-[10px] bg-surface-3 border border-border-subtle p-2 text-[11.5px] text-text-secondary">

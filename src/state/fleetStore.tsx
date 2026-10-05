@@ -194,6 +194,10 @@ interface FleetStoreContextType {
   createNewTrip: (tripData: Partial<Trip>) => Trip;
   addVehicle: (vehicle: Vehicle) => void;
   updateVehicle: (vehicleId: string, updates: Partial<Vehicle>) => void;
+  deleteVehicle: (vehicleId: string) => void;
+  addDriver: (driver: Driver) => void;
+  updateDriver: (driverId: string, updates: Partial<Driver>) => void;
+  deleteDriver: (driverId: string) => void;
   resolveAlert: (alertId: string) => void;
   /** Escalate an unhandled alert one severity step and hand it to the next owner. */
   escalateAlert: (alertId: string, actor: string) => void;
@@ -645,7 +649,23 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
     return SEEDED_TRIPS;
   });
 
-  const [drivers] = useState<Driver[]>(INITIAL_DRIVERS);
+  const [drivers, setDrivers] = useState<Driver[]>(() => {
+    try {
+      const saved = localStorage.getItem("ejaz_drivers_store");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn("Failed reading drivers store", e);
+    }
+    return INITIAL_DRIVERS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ejaz_drivers_store", JSON.stringify(drivers));
+    } catch (e) {
+      console.warn("Failed saving drivers store", e);
+    }
+  }, [drivers]);
 
   const [alerts, setAlerts] = useState<SmartAlert[]>(() => {
     try {
@@ -1111,6 +1131,44 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const deleteVehicle = (vehicleId: string) => {
+    setTrucks((prev) => prev.filter((v) => v.id !== vehicleId));
+    recordAuditLog(
+      `حذف شاحنة من الأسطول (${vehicleId})`,
+      `Deleted vehicle from fleet (${vehicleId})`,
+      vehicleId
+    );
+  };
+
+  const addDriver = (driver: Driver) => {
+    setDrivers((prev) => [driver, ...prev]);
+    recordAuditLog(
+      `إضافة كابتن جديد (${driver.name})`,
+      `Added new driver (${driver.name})`,
+      driver.name
+    );
+  };
+
+  const updateDriver = (driverId: string, updates: Partial<Driver>) => {
+    setDrivers((prev) =>
+      prev.map((d) => (d.name === driverId || (d as any).id === driverId ? { ...d, ...updates } : d))
+    );
+    recordAuditLog(
+      `تحديث بيانات السائق (${driverId})`,
+      `Updated driver profile (${driverId})`,
+      driverId
+    );
+  };
+
+  const deleteDriver = (driverId: string) => {
+    setDrivers((prev) => prev.filter((d) => d.name !== driverId && (d as any).id !== driverId));
+    recordAuditLog(
+      `حذف سائق (${driverId})`,
+      `Deleted driver (${driverId})`,
+      driverId
+    );
+  };
+
   const escalateAlert = (alertId: string, actor: string) => {
     setAlerts((prev) =>
       prev.map((a) =>
@@ -1250,6 +1308,10 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
         createNewTrip,
         addVehicle,
         updateVehicle,
+        deleteVehicle,
+        addDriver,
+        updateDriver,
+        deleteDriver,
         resolveAlert,
         escalateAlert,
         sendChatMessage,

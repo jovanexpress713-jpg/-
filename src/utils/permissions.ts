@@ -213,6 +213,7 @@ export const NAV_PAGES: NavPage[] = [
   { id: "fleet", sectionId: "fleet", titleKey: "nav.fleet", hintKey: "nav.fleetGroup", viewKey: "vehicles.view" },
   { id: "vehicle-assets", sectionId: "fleet", titleKey: "nav.vehicleAssets", hintKey: "nav.fleetGroup", viewKey: "vehicles.view" },
   { id: "drivers", sectionId: "fleet", titleKey: "nav.drivers", hintKey: "nav.fleetGroup", viewKey: "drivers.view" },
+  { id: "customers", sectionId: "fleet", titleKey: "nav.customers", hintKey: "nav.customersHint", viewKey: "customers.view" },
   { id: "registrations", sectionId: "fleet", titleKey: "nav.registrations", hintKey: "nav.fleetGroup", viewKey: "registrations.view" },
 
   { id: "reports", sectionId: "finance", titleKey: "nav.reports", hintKey: "nav.insights", viewKey: "reports.view" },
