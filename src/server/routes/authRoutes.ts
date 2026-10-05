@@ -3,7 +3,12 @@ import { db } from "../db";
 import { comparePassword, generateToken } from "../auth/jwt";
 import { statusForUser, REGISTRATION_STATUS_AR } from "../services/registrationService";
 import { authenticate, type AuthenticatedRequest } from "../auth/middleware";
-import { getRolePermissions } from "../services/permissionService";
+import {
+  getRolePermissions,
+  getEffectivePermissionList,
+  getEffectiveDataScope,
+  isRoleEnabled,
+} from "../services/permissionService";
 import { logAuditEvent } from "../services/auditService";
 import { config } from "../config";
 
@@ -24,19 +29,21 @@ function resolveAccountAccess(user: {
 }) {
   const isApplicantRole = user.role === "DRIVER" || user.role === "CUSTOMER";
   const registration = isApplicantRole ? statusForUser({ userId: user.id, email: user.email }) : null;
-  // Fail closed if the request store is unavailable but the user record still
-  // carries a registration marker; legacy accounts without one remain active.
   const approved = !isApplicantRole
     ? true
     : registration
       ? registration.approved
       : !user.registrationId || user.registrationStatus === "APPROVED";
-  // The LIVE registry grant — not the factory defaults — so an administrator's
-  // change reaches the account on its next sign-in without a code deploy.
-  const base = getRolePermissions(user.role);
+  const base =
+    user.role === "SUPER_ADMIN"
+      ? getRolePermissions("SUPER_ADMIN")
+      : getEffectivePermissionList(user.role, user.id);
+  const dataScope = getEffectiveDataScope({ userId: user.id, role: user.role });
   return {
     registration,
     approved,
+    dataScope,
+    roleEnabled: isRoleEnabled(user.role),
     permissions: approved ? base : ["registration.status_own"],
   };
 }

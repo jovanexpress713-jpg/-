@@ -74,6 +74,10 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
         return true; // the account menu must always stay reachable
       case "branding":
         return can("branding.manage");
+      case "permissions":
+        return can("permissions.manage");
+      case "finance":
+        return pageVisible("finance") || can("finance.view") || can("invoices.view") || can("settlements.view");
       default:
         return pageVisible(key);
     }
@@ -189,6 +193,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
         {/* Finance & insights — financial surfaces are gated separately from
             operational ones, so a role can run trips without seeing money. */}
         {group("nav.insights", [
+          row("finance", tk("nav.finance"), IconReport),
           row("reports", tk("nav.reports"), IconReport, { count: counts.reports }),
           row("analysis", tk("nav.analysis"), IconAnalysis),
           row("history", tk("nav.history"), IconHistory),
@@ -196,6 +201,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
 
         {/* Identity & tools */}
         {group("nav.identity", [
+          row("permissions", tk("settings.systemRoles"), IconDoc),
           row("settings", tk("nav.settings"), IconDoc, { modal: true }),
           row("branding", tk("nav.branding"), IconLayers, { modal: true }),
           row("alerts", tk("nav.alerts"), IconBolt, { modal: true }),

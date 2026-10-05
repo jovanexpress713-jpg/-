@@ -25,7 +25,10 @@ export type ApiRole =
   | "WAREHOUSE"
   | "BROKER"
   | "CUSTOMS_BROKER"
-  | "REPRESENTATIVE";
+  | "REPRESENTATIVE"
+  | (string & {});
+
+export type DataScope = "OWN" | "ASSIGNED" | "BRANCH" | "REGION" | "TEAM" | "ALL";
 
 export interface SessionUser {
   id?: string;
@@ -34,6 +37,7 @@ export interface SessionUser {
   phone?: string;
   role?: string;
   permissions?: string[];
+  dataScope?: DataScope;
   accountApproved?: boolean;
   driverId?: string;
   customerId?: string;
@@ -50,10 +54,13 @@ export type Capability =
   | "trips.assign"
   | "trips.transition"
   | "trips.approve"
+  | "trips.reject"
   | "trips.cancel"
   | "trips.reopen"
   | "trips.request"
   | "trips.track"
+  | "trips.export"
+  | "trips.print"
   | "trips.manage"
   | "vehicles.view"
   | "vehicles.create"
@@ -70,6 +77,7 @@ export type Capability =
   | "drivers.manage"
   | "customers.view"
   | "customers.create"
+  | "customers.edit"
   | "customers.manage"
   | "tariffs.view"
   | "tariffs.manage"
@@ -80,8 +88,37 @@ export type Capability =
   | "finance.settle"
   | "finance.pay"
   | "finance.approve"
+  | "finance.postapprove"
+  | "finance.delete"
+  | "revenue.edit"
+  | "expenses.edit"
+  | "commissions.edit"
   | "invoices.view"
+  | "invoices.create"
+  | "invoices.edit"
+  | "invoices.approve"
+  | "invoices.reject"
+  | "invoices.issue"
+  | "invoices.cancel"
+  | "invoices.print"
+  | "invoices.download"
+  | "settlements.view"
+  | "settlements.create"
+  | "settlements.edit"
+  | "settlements.approve"
+  | "settlements.reject"
+  | "settlements.reopen"
+  | "settlements.export"
+  | "settlements.print"
+  | "payments.view"
   | "payments.record"
+  | "payments.edit"
+  | "payments.cancel"
+  | "payments.receive"
+  | "review.view"
+  | "review.perform"
+  | "review.approve"
+  | "review.reject"
   | "claims.view"
   | "claims.create"
   | "claims.manage"
@@ -97,13 +134,129 @@ export type Capability =
   | "documents.view"
   | "documents.upload"
   | "documents.download"
+  | "documents.verify"
   | "pod.view"
   | "pod.create"
+  | "pod.verify"
   | "gps.view"
   | "gps.configure"
   | "notifications.view"
   | "assistant.act"
   | (string & {});
+
+/** Canonical uppercase alias map mirrored from the server registry. */
+export const PERMISSION_ALIASES: Record<string, string> = {
+  VIEW_OVERVIEW: "overview.view",
+  VIEW_TRIPS: "trips.view",
+  CREATE_TRIP: "trips.create",
+  EDIT_TRIP: "trips.edit",
+  DELETE_TRIP: "trips.delete",
+  ASSIGN_DRIVER: "trips.assign",
+  CHANGE_DRIVER: "trips.assign",
+  ASSIGN_TRUCK: "trips.assign",
+  CHANGE_TRUCK: "trips.assign",
+  TRANSITION_TRIP: "trips.transition",
+  APPROVE_TRIP: "trips.approve",
+  REJECT_TRIP: "trips.reject",
+  CANCEL_TRIP: "trips.cancel",
+  REOPEN_TRIP: "trips.reopen",
+  EXPORT_TRIPS: "trips.export",
+  PRINT_TRIPS: "trips.print",
+  TRACK_TRIP: "trips.track",
+  REQUEST_TRIP: "trips.request",
+
+  VIEW_FLEET: "vehicles.view",
+  VIEW_VEHICLES: "vehicles.view",
+  CREATE_VEHICLE: "vehicles.create",
+  EDIT_VEHICLE: "vehicles.edit",
+  DELETE_VEHICLE: "vehicles.delete",
+  ASSIGN_VEHICLE: "vehicles.assign",
+
+  VIEW_DRIVERS: "drivers.view",
+  CREATE_DRIVER: "drivers.create",
+  EDIT_DRIVER: "drivers.edit",
+  DELETE_DRIVER: "drivers.delete",
+
+  VIEW_CUSTOMERS: "customers.view",
+  CREATE_CUSTOMER: "customers.create",
+  EDIT_CUSTOMER: "customers.edit",
+  MANAGE_CUSTOMERS: "customers.manage",
+  VIEW_CUSTOMER_FINANCIAL_DATA: "finance.view",
+
+  VIEW_FINANCE: "finance.view",
+  VIEW_FINANCIAL_DATA: "finance.view",
+  EDIT_REVENUE: "revenue.edit",
+  EDIT_EXPENSES: "expenses.edit",
+  EDIT_COMMISSION: "commissions.edit",
+  EDIT_AMOUNT_AFTER_APPROVAL: "finance.postapprove",
+  DELETE_FINANCIAL_DOCUMENT: "finance.delete",
+
+  VIEW_INVOICES: "invoices.view",
+  CREATE_INVOICE: "invoices.create",
+  EDIT_INVOICE: "invoices.edit",
+  APPROVE_INVOICE: "invoices.approve",
+  REJECT_INVOICE: "invoices.reject",
+  ISSUE_INVOICE: "invoices.issue",
+  CANCEL_INVOICE: "invoices.cancel",
+  PRINT_INVOICE: "invoices.print",
+  DOWNLOAD_INVOICE: "invoices.download",
+
+  VIEW_SETTLEMENTS: "settlements.view",
+  CREATE_SETTLEMENT: "settlements.create",
+  EDIT_SETTLEMENT: "settlements.edit",
+  APPROVE_SETTLEMENT: "settlements.approve",
+  REJECT_SETTLEMENT: "settlements.reject",
+  REOPEN_SETTLEMENT: "settlements.reopen",
+  EXPORT_SETTLEMENTS: "settlements.export",
+  PRINT_SETTLEMENTS: "settlements.print",
+
+  VIEW_PAYMENTS: "payments.view",
+  RECORD_PAYMENT: "payments.record",
+  EDIT_PAYMENT: "payments.edit",
+  CANCEL_PAYMENT: "payments.cancel",
+  RECEIVE_PAYMENT: "payments.receive",
+
+  VIEW_FINANCIAL_REVIEW: "review.view",
+  PERFORM_FINANCIAL_REVIEW: "review.perform",
+  APPROVE_FINANCIAL_REVIEW: "review.approve",
+  REJECT_FINANCIAL_REVIEW: "review.reject",
+
+  VIEW_CLAIMS: "claims.view",
+  CREATE_CLAIM: "claims.create",
+  MANAGE_CLAIMS: "claims.manage",
+
+  VIEW_REPORTS: "reports.view",
+  EXPORT_REPORTS: "reports.export",
+  PRINT_REPORTS: "reports.print",
+
+  VIEW_AUDIT: "audit.view",
+  VIEW_DOCUMENTS: "documents.view",
+  UPLOAD_DOCUMENTS: "documents.upload",
+  DOWNLOAD_DOCUMENTS: "documents.download",
+  VERIFY_DOCUMENTS: "documents.verify",
+
+  VIEW_POD: "pod.view",
+  CREATE_POD: "pod.create",
+  VERIFY_POD: "pod.verify",
+
+  VIEW_GPS: "gps.view",
+  CONFIGURE_GPS: "gps.configure",
+
+  VIEW_USERS: "users.view",
+  MANAGE_USERS: "users.manage",
+  MANAGE_ROLES: "permissions.manage",
+  MANAGE_PERMISSIONS: "permissions.manage",
+  MANAGE_SETTINGS: "settings.manage",
+  MANAGE_BRANDING: "branding.manage",
+};
+
+export function normalizePermissionKey(key: string): string {
+  const trimmed = String(key || "").trim();
+  if (!trimmed) return "";
+  if (PERMISSION_ALIASES[trimmed]) return PERMISSION_ALIASES[trimmed];
+  if (PERMISSION_ALIASES[trimmed.toUpperCase()]) return PERMISSION_ALIASES[trimmed.toUpperCase()];
+  return trimmed;
+}
 
 /**
  * Factory grants — mirror of the server's DEFAULT_ROLE_PERMISSIONS.
@@ -113,8 +266,13 @@ export const DEFAULT_CLIENT_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ["*"],
   GENERAL_MANAGER: [
     "overview.view",
-    "trips.view", "trips.approve", "trips.cancel", "trips.reopen", "trips.assign", "trips.track",
-    "finance.view", "finance.approve", "finance.settle", "claims.view", "claims.manage",
+    "trips.view", "trips.approve", "trips.reject", "trips.cancel", "trips.reopen", "trips.assign", "trips.track", "trips.export", "trips.print",
+    "finance.view", "finance.approve", "finance.settle",
+    "invoices.view", "invoices.approve", "invoices.print", "invoices.download",
+    "settlements.view", "settlements.approve", "settlements.reopen", "settlements.export", "settlements.print",
+    "payments.view",
+    "review.view", "review.perform", "review.approve", "review.reject",
+    "claims.view", "claims.manage",
     "tariffs.view", "tariffs.manage",
     "customers.view", "customers.create", "customers.manage",
     "notifications.view", "pod.view",
@@ -125,19 +283,22 @@ export const DEFAULT_CLIENT_PERMISSIONS: Record<string, string[]> = {
   OPERATIONS_MANAGER: [
     "overview.view",
     "trips.view", "trips.create", "trips.edit", "trips.assign", "trips.transition",
-    "trips.cancel", "trips.approve", "trips.track", "trips.request",
+    "trips.cancel", "trips.approve", "trips.reject", "trips.track", "trips.request", "trips.export", "trips.print",
     "tariffs.view", "tariffs.manage",
     "claims.view", "claims.manage",
-    "customers.view", "customers.create", "customers.manage",
-    "notifications.view", "pod.view", "pod.create",
+    "customers.view", "customers.create", "customers.edit", "customers.manage",
+    "notifications.view", "pod.view", "pod.create", "pod.verify",
     "vehicles.view", "vehicles.create", "vehicles.edit", "vehicles.assign",
     "drivers.view", "drivers.create", "drivers.edit",
-    "gps.view", "documents.view", "documents.upload", "documents.download",
+    "gps.view", "documents.view", "documents.upload", "documents.download", "documents.verify",
     "registrations.view", "registrations.review", "assets.view",
   ],
   ACCOUNTANT: [
     "finance.view", "finance.create", "finance.approve", "finance.settle", "finance.pay",
-    "invoices.view", "payments.record",
+    "invoices.view", "invoices.create", "invoices.edit", "invoices.approve", "invoices.issue", "invoices.print", "invoices.download",
+    "settlements.view", "settlements.create", "settlements.edit", "settlements.approve", "settlements.export", "settlements.print",
+    "payments.view", "payments.record", "payments.receive",
+    "review.view", "review.perform",
     "tariffs.view", "tariffs.manage",
     "claims.view", "claims.manage",
     "trips.view", "customers.view", "notifications.view", "pod.view",
@@ -152,13 +313,15 @@ export const DEFAULT_CLIENT_PERMISSIONS: Record<string, string[]> = {
     "trips.view", "trips.create", "trips.track",
     "documents.view", "documents.download",
     "claims.create", "claims.view",
-    "invoices.view", "notifications.view", "pod.view",
+    "invoices.view", "invoices.download", "invoices.print",
+    "notifications.view", "pod.view",
   ],
   CLIENT: [
     "trips.view", "trips.create", "trips.track",
     "documents.view", "documents.download",
     "claims.create", "claims.view",
-    "invoices.view", "notifications.view", "pod.view",
+    "invoices.view", "invoices.download", "invoices.print",
+    "notifications.view", "pod.view",
   ],
   DISPATCHER: [
     "overview.view",
@@ -216,11 +379,13 @@ export const NAV_PAGES: NavPage[] = [
   { id: "customers", sectionId: "fleet", titleKey: "nav.customers", hintKey: "nav.customersHint", viewKey: "customers.view" },
   { id: "registrations", sectionId: "fleet", titleKey: "nav.registrations", hintKey: "nav.fleetGroup", viewKey: "registrations.view" },
 
+  { id: "finance", sectionId: "finance", titleKey: "nav.finance", hintKey: "nav.finance", viewKey: "finance.view" },
   { id: "reports", sectionId: "finance", titleKey: "nav.reports", hintKey: "nav.insights", viewKey: "reports.view" },
   { id: "analysis", sectionId: "insights", titleKey: "nav.analysis", hintKey: "nav.insights", viewKey: "reports.view" },
   { id: "history", sectionId: "insights", titleKey: "nav.history", hintKey: "nav.insights", viewKey: "audit.view" },
 
   { id: "chats", sectionId: "operations", titleKey: "nav.chats", hintKey: "nav.operations", viewKey: "trips.view" },
+  { id: "permissions", sectionId: "identity", titleKey: "settings.systemRoles", hintKey: "nav.identity", viewKey: "permissions.manage" },
   { id: "settings", sectionId: "identity", titleKey: "nav.settings", hintKey: "nav.identity", viewKey: "notifications.view" },
   { id: "branding", sectionId: "identity", titleKey: "nav.branding", hintKey: "nav.identity", viewKey: "branding.manage" },
 ];
@@ -258,13 +423,14 @@ export function isStaffRole(role?: string) {
  */
 export function can(user: SessionUser | null | undefined, capability: Capability): boolean {
   if (!user) return false;
+  const canonical = normalizePermissionKey(capability);
   if (Array.isArray(user.permissions)) {
     if (user.permissions.includes("*")) return true;
-    if (user.permissions.includes(capability)) return true;
+    if (user.permissions.includes(canonical) || user.permissions.includes(capability)) return true;
   }
   const granted = DEFAULT_CLIENT_PERMISSIONS[user.role || ""];
   if (!granted) return false;
-  return granted.includes("*") || granted.includes(capability);
+  return granted.includes("*") || granted.includes(canonical) || granted.includes(capability);
 }
 
 /** Console personas (the role switch inside the control room). */
@@ -277,8 +443,9 @@ const PERSONA_CAPABILITIES: Record<string, string[] | "*"> = {
 
 export function canPersona(persona: string, capability: Capability): boolean {
   const granted = PERSONA_CAPABILITIES[persona];
+  const canonical = normalizePermissionKey(capability);
   if (granted === "*") return true;
-  return Array.isArray(granted) && granted.includes(capability);
+  return Array.isArray(granted) && (granted.includes(canonical) || granted.includes(capability));
 }
 
 /**
@@ -300,4 +467,8 @@ export const SENSITIVE_ACTIONS: Capability[] = [
   "branding.manage",
   "settings.manage",
   "permissions.manage",
+  "settlements.reopen",
+  "finance.postapprove",
+  "finance.delete",
+  "revenue.edit",
 ];

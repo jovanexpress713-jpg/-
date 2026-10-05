@@ -630,3 +630,45 @@ export const IconNavigate = (p: IconProps) => (
     <path d="M12 8.4v7.2" />
   </Svg>
 );
+
+export const IconRefresh = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M21 12a9 9 0 0 1-15.4 6.4L3 16" />
+    <path d="M3 12a9 9 0 0 1 15.4-6.4L21 8" />
+    <path d="M21 3v5h-5" />
+    <path d="M3 21v-5h5" />
+  </Svg>
+);
+
+export const IconShield = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 3 4.5 6.2v5.3c0 5 3.2 8.6 7.5 9.8 4.3-1.2 7.5-4.8 7.5-9.8V6.2z" />
+    <path d="m9.2 12 2 2 3.8-4" />
+  </Svg>
+);
+
+export const IconSparkles = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m12 3 1.8 4.6L18.4 9l-4.6 1.8L12 15.4l-1.8-4.6L5.6 9l4.6-1.4z" />
+    <path d="M19 15v4" />
+    <path d="M17 17h4" />
+  </Svg>
+);
+
+export const IconUsers = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="9" cy="8.5" r="3.2" />
+    <path d="M3.5 19.5a5.8 5.8 0 0 1 11 0" />
+    <circle cx="16.5" cy="9.5" r="2.4" />
+    <path d="M15.5 19.5a4.5 4.5 0 0 1 5.5-4.2" />
+  </Svg>
+);
+
+export const IconDownload = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 4.5v12" />
+    <path d="m7.5 12 4.5 4.5 4.5-4.5" />
+    <path d="M4.5 20h15" />
+  </Svg>
+);
+

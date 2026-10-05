@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "../settings";
 import { apiClient } from "../services/apiClient";
+import { usePermissions } from "../state/permissionStore";
 import {
   IconClose,
   IconDoc,
@@ -39,6 +40,10 @@ interface FinanceRow {
 
 export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
   const { t, td } = useSettings();
+  const { can } = usePermissions();
+  const canViewFinance = can("finance.view");
+  const canExport = can("reports.export");
+  const canPrint = can("reports.print");
   const [summary, setSummary] = useState<any | null>(null);
   const [finance, setFinance] = useState<FinanceRow[]>([]);
   const [trips, setTrips] = useState<any[]>([]);
@@ -186,15 +191,21 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={exportPdf} className="btn-primary gap-1.5 px-3 py-2 text-[11.5px]">
-            <IconDoc size={14} /> PDF
-          </button>
-          <button onClick={exportExcel} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-[11.5px]">
-            <IconReport size={14} /> Excel
-          </button>
-          <button onClick={() => window.print()} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-[11.5px]">
-            ⎙ {t("Print", "طباعة")}
-          </button>
+          {canPrint && (
+            <button onClick={exportPdf} className="btn-primary gap-1.5 px-3 py-2 text-[11.5px]">
+              <IconDoc size={14} /> PDF
+            </button>
+          )}
+          {canExport && (
+            <button onClick={exportExcel} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-[11.5px]">
+              <IconReport size={14} /> Excel
+            </button>
+          )}
+          {canPrint && (
+            <button onClick={() => window.print()} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-[11.5px]">
+              ⎙ {t("Print", "طباعة")}
+            </button>
+          )}
           {onClose && (
             <button onClick={onClose} className="btn-icon" aria-label={t("Close", "إغلاق")}>
               <IconClose size={16} />
@@ -217,13 +228,17 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
         <FilterInput label={t("Vehicle", "المركبة")} value={vehicle} onChange={setVehicle} />
         <FilterInput label={t("Month (YYYY-MM)", "الشهر (YYYY-MM)")} value={month} onChange={setMonth} placeholder="2026-10" />
         <FilterInput label={t("Year", "السنة")} value={year} onChange={setYear} placeholder="2026" />
-        <FilterInput label={t("Min revenue (SAR)", "الحد الأدنى للإيراد")} value={minRevenue} onChange={setMinRevenue} />
-        <FilterSelect
-          label={t("Payments", "المدفوعات")}
-          value={payment}
-          onChange={setPayment}
-          options={[...new Set(finance.map((f) => String(f.paymentStatus || "")))].filter(Boolean)}
-        />
+        {canViewFinance && (
+          <>
+            <FilterInput label={t("Min revenue (SAR)", "الحد الأدنى للإيراد")} value={minRevenue} onChange={setMinRevenue} />
+            <FilterSelect
+              label={t("Payments", "المدفوعات")}
+              value={payment}
+              onChange={setPayment}
+              options={[...new Set(finance.map((f) => String(f.paymentStatus || "")))].filter(Boolean)}
+            />
+          </>
+        )}
       </div>
 
       {/* Summary cards — real metrics */}
@@ -235,12 +250,14 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
         <div className="card mt-3 p-8 text-center text-[12px] text-status-danger">{loadError}</div>
       ) : (
         <>
-          <div className="mt-3 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-            <StatCard label={t("Trips (filtered)", "الرحلات (المفلترة)")} value={String(filtered.length)} icon={IconStar} />
-            <StatCard label={t("Gross revenue (SAR)", "الإيرادات (ر.س)")} value={totals.revenue.toLocaleString()} icon={IconReport} />
-            <StatCard label={t("Expenses (SAR)", "المصروفات (ر.س)")} value={totals.expenses.toLocaleString()} icon={IconReport} />
-            <StatCard label={t("Payments (SAR)", "المدفوعات (ر.س)")} value={totals.payments.toLocaleString()} icon={IconStar} />
-          </div>
+          {canViewFinance && (
+            <div className="mt-3 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+              <StatCard label={t("Trips (filtered)", "الرحلات (المفلترة)")} value={String(filtered.length)} icon={IconStar} />
+              <StatCard label={t("Gross revenue (SAR)", "الإيرادات (ر.س)")} value={totals.revenue.toLocaleString()} icon={IconReport} />
+              <StatCard label={t("Expenses (SAR)", "المصروفات (ر.س)")} value={totals.expenses.toLocaleString()} icon={IconReport} />
+              <StatCard label={t("Payments (SAR)", "المدفوعات (ر.س)")} value={totals.payments.toLocaleString()} icon={IconStar} />
+            </div>
+          )}
 
           <div className="mt-2.5 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
             <StatCard label={t("Total trips", "إجمالي الرحلات")} value={String(metric.totalTrips ?? "—")} icon={IconStar} />
@@ -254,8 +271,16 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="text-text-muted">
-                  {[t("Trip", "الرحلة"), t("Status", "الحالة"), t("Customer", "العميل"), t("Driver", "السائق"),
-                    t("Vehicle", "المركبة"), t("Revenue", "الإيراد"), t("Expenses", "المصروفات"), t("Payments", "المدفوعات")].map((h) => (
+                  {[
+                    t("Trip", "الرحلة"),
+                    t("Status", "الحالة"),
+                    t("Customer", "العميل"),
+                    t("Driver", "السائق"),
+                    t("Vehicle", "المركبة"),
+                    ...(canViewFinance
+                      ? [t("Revenue", "الإيراد"), t("Expenses", "المصروفات"), t("Payments", "المدفوعات")]
+                      : []),
+                  ].map((h) => (
                     <th key={h} className="p-1.5 text-start font-semibold">{h}</th>
                   ))}
                 </tr>
@@ -263,7 +288,7 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
               <tbody>
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-text-muted">
+                    <td colSpan={canViewFinance ? 8 : 5} className="p-6 text-center text-text-muted">
                       {t("No trips match the selected filters.", "لا توجد رحلات مطابقة للفلاتر المحددة.")}
                     </td>
                   </tr>
@@ -277,9 +302,13 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
                       <td className="p-1.5">{tr.customerName || "—"}</td>
                       <td className="p-1.5">{tr.driverName || "—"}</td>
                       <td className="p-1.5">{tr.vehiclePlate || tr.vehicleId || "—"}</td>
-                      <td className="p-1.5 tabular-nums">{Number(fin.freightPrice || 0).toLocaleString()}</td>
-                      <td className="p-1.5 tabular-nums">{Number(fin.expenses || 0).toLocaleString()}</td>
-                      <td className="p-1.5 tabular-nums">{Number(fin.paidAmount || 0).toLocaleString()}</td>
+                      {canViewFinance && (
+                        <>
+                          <td className="p-1.5 tabular-nums">{Number(fin.freightPrice || 0).toLocaleString()}</td>
+                          <td className="p-1.5 tabular-nums">{Number(fin.expenses || 0).toLocaleString()}</td>
+                          <td className="p-1.5 tabular-nums">{Number(fin.paidAmount || 0).toLocaleString()}</td>
+                        </>
+                      )}
                     </tr>
                   );
                 })}

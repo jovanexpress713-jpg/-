@@ -670,7 +670,149 @@ export async function runPermissionTests() {
   await runAccountMenuTests(admin.token, ops.token);
   await runAuthGateTests();
 
-  /* ── 18. Restore the registry so later suites see the factory state ──── */
+  /* ── 18. Custom Role creation, cloning, status toggle & safe deletion (§3) */
+  const createRoleRes = await api("POST", "/api/permissions/roles", {
+    token: admin.token,
+    body: {
+      id: "REGIONAL_SUPERVISOR",
+      labelAr: "مشرف إقليمي",
+      labelEn: "Regional Supervisor",
+      permissions: ["trips.view", "vehicles.view"],
+      dataScope: "REGION",
+    },
+  });
+  assert.strictEqual(createRoleRes.status, 201, "Super Admin can create a custom role");
+  assert.strictEqual(createRoleRes.body.role.dataScope, "REGION");
+
+  const cloneRoleRes = await api("POST", "/api/permissions/roles/REGIONAL_SUPERVISOR/clone", {
+    token: admin.token,
+    body: {
+      id: "BRANCH_SUPERVISOR",
+      labelAr: "مشرف فرع",
+      labelEn: "Branch Supervisor",
+    },
+  });
+  assert.strictEqual(cloneRoleRes.status, 201, "Super Admin can clone a role");
+
+  const disableRoleRes = await api("POST", "/api/permissions/roles/BRANCH_SUPERVISOR/status", {
+    token: admin.token,
+    body: { enabled: false, reason: "اختبار تعطيل الدور" },
+  });
+  assert.strictEqual(disableRoleRes.status, 200);
+  assert.strictEqual(disableRoleRes.body.enabled, false);
+
+  const deleteBuiltinRes = await api("DELETE", "/api/permissions/roles/OPERATIONS_MANAGER", {
+    token: admin.token,
+  });
+  assert.strictEqual(deleteBuiltinRes.status, 409, "Built-in roles cannot be deleted");
+
+  const deleteCustom1 = await api("DELETE", "/api/permissions/roles/REGIONAL_SUPERVISOR", {
+    token: admin.token,
+  });
+  assert.strictEqual(deleteCustom1.status, 200, "Custom role with 0 users can be deleted");
+  const deleteCustom2 = await api("DELETE", "/api/permissions/roles/BRANCH_SUPERVISOR", {
+    token: admin.token,
+  });
+  assert.strictEqual(deleteCustom2.status, 200);
+
+  /* ── 19. Individual User Overrides: Allow / Deny precedence & Data Scope (§9, §10) */
+  const grantOpsFinance = await api("PUT", "/api/permissions/users/u-ops", {
+    token: admin.token,
+    body: {
+      allow: ["finance.view"],
+      deny: ["vehicles.delete", "trips.cancel"],
+      dataScope: "BRANCH",
+      reason: "منح اطلاع مالي خاص لمدير العمليات مع منع الإلغاء",
+    },
+  });
+  assert.strictEqual(grantOpsFinance.status, 200);
+  const meOpsCustom = await api("GET", "/api/permissions/me", { token: ops.token });
+  assert.ok(meOpsCustom.body.permissions.includes("finance.view"), "User +Allow grants finance.view");
+  assert.ok(!meOpsCustom.body.permissions.includes("trips.cancel"), "User -Deny revokes trips.cancel from role");
+  assert.strictEqual(meOpsCustom.body.dataScope, "BRANCH", "User dataScope override applies");
+
+  // Reset user override back to inherited role permissions
+  const resetOpsUser = await api("POST", "/api/permissions/users/u-ops/reset", {
+    token: admin.token,
+    body: { reason: "إعادة للوراثة من الدور" },
+  });
+  assert.strictEqual(resetOpsUser.status, 200);
+
+  /* ── 20. Temporary Permissions & Global Permission Enable/Disable (§12, §13) */
+  const tempRes = await api("POST", "/api/permissions/temporary", {
+    token: admin.token,
+    body: {
+      targetType: "USER",
+      targetId: "u-ops",
+      permission: "reports.view",
+      validFrom: new Date(Date.now() - 60000).toISOString(),
+      validTo: new Date(Date.now() + 3600000).toISOString(),
+      reason: "صلاحية تقارير مؤقتة لمدة ساعة",
+    },
+  });
+  assert.strictEqual(tempRes.status, 201);
+  const meOpsTemp = await api("GET", "/api/permissions/me", { token: ops.token });
+  assert.ok(meOpsTemp.body.permissions.includes("reports.view"), "Active temporary grant appears in /me");
+
+  const revokeTempRes = await api("DELETE", `/api/permissions/temporary/${tempRes.body.grant.id}`, {
+    token: admin.token,
+    body: { reason: "انتهاء المهمة" },
+  });
+  assert.strictEqual(revokeTempRes.status, 200);
+
+  // Global permission switch
+  const disablePermRes = await api("POST", "/api/permissions/keys/trips.reopen/status", {
+    token: admin.token,
+    body: { enabled: false, reason: "إيقاف إعادة فتح الرحلات مؤقتًا" },
+  });
+  assert.strictEqual(disablePermRes.status, 200);
+  const reEnablePermRes = await api("POST", "/api/permissions/keys/trips.reopen/status", {
+    token: admin.token,
+    body: { enabled: true, reason: "إعادة تفعيل الصلاحية" },
+  });
+  assert.strictEqual(reEnablePermRes.status, 200);
+
+  /* ── 21. Financial Settlements Lock after Approval & Reopen Guard (§16) ── */
+  const finListRes = await api("GET", "/api/finance/trips", { token: accountant.token });
+  assert.strictEqual(finListRes.status, 200);
+  const pricedFin =
+    finListRes.body.financials.find((f: any) => f.freightPrice > 0 && f.paymentStatus === "UNPAID") ||
+    finListRes.body.financials.find((f: any) => f.freightPrice > 0);
+  assert.ok(pricedFin, "There is at least one priced trip in finance");
+  const targetTripId = pricedFin.tripId;
+
+  const approveSettlementRes = await api("POST", `/api/finance/settlements/${targetTripId}/approve`, {
+    token: accountant.token,
+    body: { notes: "اعتماد التسوية المالية" },
+  });
+  assert.strictEqual(approveSettlementRes.status, 200);
+  assert.ok(
+    ["APPROVED", "PARTIALLY_PAID", "PAID"].includes(approveSettlementRes.body.settlement.settlementApprovalStatus)
+  );
+
+  // Once approved, editing without postapprove or reopening is blocked (409 SETTLEMENT_LOCKED)
+  const editLockedSettlement = await api("POST", "/api/finance/settlements", {
+    token: accountant.token,
+    body: { tripId: targetTripId, paidAmount: 9999 },
+  });
+  assert.strictEqual(editLockedSettlement.status, 409, "Approved settlement is locked against edits");
+
+  // Accountant does not hold settlements.reopen by default -> 403
+  const acctReopenAttempt = await api("POST", `/api/finance/settlements/${targetTripId}/reopen`, {
+    token: accountant.token,
+    body: { reason: "محاولة إعادة فتح" },
+  });
+  assert.strictEqual(acctReopenAttempt.status, 403, "Accountant cannot reopen an approved settlement without REOPEN_SETTLEMENT");
+
+  // Super Admin holds settlements.reopen -> 200
+  const adminReopenRes = await api("POST", `/api/finance/settlements/${targetTripId}/reopen`, {
+    token: admin.token,
+    body: { reason: "مراجعة فرق الوقود" },
+  });
+  assert.strictEqual(adminReopenRes.status, 200, "Super Admin can reopen an approved settlement with reason");
+  assert.strictEqual(adminReopenRes.body.settlement.settlementApprovalStatus, "REOPENED");
+
+  /* ── 22. Restore the registry so later suites see the factory state ──── */
   for (const role of ROLES.filter((r) => !r.locked).map((r) => r.id)) {
     resetRolePermissions(role, TEARDOWN_ACTOR, "test teardown");
   }

@@ -24,7 +24,7 @@ import {
   type ReactNode,
 } from "react";
 import { apiClient, getAuthToken } from "../services/apiClient";
-import { DEFAULT_CLIENT_PERMISSIONS } from "../utils/permissions";
+import { DEFAULT_CLIENT_PERMISSIONS, normalizePermissionKey, type DataScope } from "../utils/permissions";
 
 export interface PermissionState {
   role: string;
@@ -34,6 +34,8 @@ export interface PermissionState {
   pages: string[];
   /** Console section ids that contain at least one visible page. */
   sections: string[];
+  /** Effective data scope for this user/role. */
+  dataScope?: DataScope;
   version: number;
   canManagePermissions: boolean;
 }
@@ -44,6 +46,7 @@ const EMPTY: PermissionState = {
   permissions: [],
   pages: [],
   sections: [],
+  dataScope: "OWN",
   version: 0,
   canManagePermissions: false,
 };
@@ -100,6 +103,7 @@ export function PermissionProvider({
           permissions: Array.isArray(me.permissions) ? me.permissions : [],
           pages: Array.from(new Set([...(me.pages || []), ...ALWAYS_AVAILABLE_PAGES])),
           sections: me.sections || [],
+          dataScope: me.dataScope || "OWN",
           version: Number(me.version) || 0,
           canManagePermissions: !!me.canManagePermissions,
         });
@@ -151,6 +155,7 @@ export function PermissionProvider({
       permissions: list,
       pages: state.pages.length ? state.pages : [],
       sections: state.sections,
+      dataScope: state.dataScope || (wildcard ? "ALL" : "OWN"),
       version: state.version,
       canManagePermissions: wildcard || list.includes("permissions.manage"),
     };
@@ -159,7 +164,8 @@ export function PermissionProvider({
   const can = useCallback(
     (permission: string) => {
       if (effective.wildcard) return true;
-      return effective.permissions.includes(permission);
+      const canonical = normalizePermissionKey(permission);
+      return effective.permissions.includes(canonical) || effective.permissions.includes(permission);
     },
     [effective]
   );
@@ -227,7 +233,7 @@ export function usePermissions(): PermissionContextValue {
  */
 export function withPermissions(
   node: ReactNode,
-  grant: { permissions?: string[]; pages?: string[]; sections?: string[]; role?: string; wildcard?: boolean } = {}
+  grant: { permissions?: string[]; pages?: string[]; sections?: string[]; role?: string; wildcard?: boolean; dataScope?: DataScope } = {}
 ): ReactNode {
   const permissions = grant.permissions ?? [];
   const wildcard = grant.wildcard ?? permissions.includes("*");
@@ -239,6 +245,7 @@ export function withPermissions(
         permissions,
         pages: grant.pages ?? [],
         sections: grant.sections ?? [],
+        dataScope: grant.dataScope ?? (wildcard ? "ALL" : "OWN"),
         version: 1,
         canManagePermissions: wildcard || permissions.includes("permissions.manage"),
       }}

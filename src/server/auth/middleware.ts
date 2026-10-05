@@ -6,6 +6,9 @@ import {
   hasPermission as registryHasPermission,
   canManagePermissions,
   effectivePermissionsFor,
+  getEffectiveDataScope,
+  getUserOverride,
+  type DataScope,
 } from "../services/permissionService";
 
 export interface AuthenticatedRequest extends Request {
@@ -14,18 +17,9 @@ export interface AuthenticatedRequest extends Request {
 
 /**
  * Factory defaults, re-exported for compatibility.
- *
- * ⚠ This is NOT what authorises a request. The live grant for a role comes from
- * the dynamic permission registry (`services/permissionService`), which the
- * system administrator edits from «إدارة الأدوار والصلاحيات». Reading this
- * constant will show you the factory defaults, never the current state.
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = DEFAULT_ROLE_PERMISSIONS;
-/**
- * Extract the bearer token from any of the supported locations. Some reverse
- * proxies (including sandbox preview proxies) strip the `Authorization` header,
- * so the client also sends `X-Ejaz-Token` and, as a last resort, `?token=`.
- */
+
 function extractToken(req: AuthenticatedRequest): string | null {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -92,33 +86,21 @@ export function requireRole(...roles: string[]) {
 /**
  * The single permission question, answered by the live registry.
  *
- * A user-level override (granted per account by the administrator) is honoured
- * ahead of the role grant, so an individual can be given one extra capability
- * without opening it to the whole role.
+ * Evaluates:
+ *  1. Role enabled status & global permission enabled status
+ *  2. User-level DENY override (highest priority)
+ *  3. User-level ALLOW override & active Temporary Permissions
+ *  4. Role-level permission (INHERITED)
  */
 export function hasPermission(
   role: string | undefined,
   permission: string,
-  userPermissions?: string[]
+  userPermissions?: string[],
+  userId?: string
 ): boolean {
   if (!role) return false;
-  /*
-   * The live registry is the only authority — the token claim never is.
-   *
-   * `userPermissions` is the grant frozen into the JWT at sign-in. Honouring it
-   * as an allow-source makes it a ceiling that only ever moves one way: after an
-   * administrator revokes a permission, every open session keeps passing this
-   * check until its token expires, so «إخفاء الشاحنات» would not actually hide
-   * the data from the API. The reverse is just as wrong — re-granting would stay
-   * blocked for whoever signed in before the change.
-   *
-   * There is no per-user grant in the platform (the token carries the role's own
-   * list), so nothing is lost: one lookup decides, immediately, for every session.
-   * The parameter stays so existing call sites read unchanged, and so a future
-   * per-user restriction has an obvious place to intersect.
-   */
   void userPermissions;
-  return registryHasPermission(role, permission);
+  return registryHasPermission(role, permission, userId);
 }
 
 function accountIsApproved(user: TokenPayload): boolean {
@@ -131,12 +113,10 @@ function accountIsApproved(user: TokenPayload): boolean {
 }
 
 function effectiveHasPermission(user: TokenPayload, permission: string): boolean {
-  // §21 — an applicant reads their own notifications (approval/rejection
-  // outcomes) even while the registration request is still pending.
   if (permission === "notifications.view") {
-    return hasPermission(user.role, permission);
+    return hasPermission(user.role, permission, user.permissions, user.userId);
   }
-  return accountIsApproved(user) && hasPermission(user.role, permission, user.permissions);
+  return accountIsApproved(user) && hasPermission(user.role, permission, user.permissions, user.userId);
 }
 
 export function requirePermission(...permissions: string[]) {
@@ -146,9 +126,6 @@ export function requirePermission(...permissions: string[]) {
     }
 
     if (!accountIsApproved(req.user)) {
-      // §21 — approval/rejection must reach the applicant inside the app:
-      // reading own notifications stays possible while a request is pending.
-      // Every operational permission remains blocked until approval.
       const onlyNotifications =
         permissions.length === 1 && permissions[0] === "notifications.view";
       if (!onlyNotifications) {
@@ -159,8 +136,6 @@ export function requirePermission(...permissions: string[]) {
       }
     }
 
-    // The live registry decides — including for SUPER_ADMIN, whose wildcard is
-    // itself a registry entry. No role is hard-bypassed here.
     const granted = permissions.some((permission) => effectiveHasPermission(req.user!, permission));
     if (granted) return next();
 
@@ -171,11 +146,6 @@ export function requirePermission(...permissions: string[]) {
   };
 }
 
-/**
- * Shared API key guard for machine-to-machine ingestion endpoints
- * (AVL telemetry gateways). Falls back to an authenticated staff role
- * carrying the `gps.configure` permission when no key is configured yet.
- */
 export function requireProviderKey(configuredKey: string, fallbackPermission = "gps.configure") {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const provided = req.headers["x-api-key"] || req.headers["x-provider-key"];
@@ -191,8 +161,6 @@ export function requireProviderKey(configuredKey: string, fallbackPermission = "
       });
     }
 
-    // No provider key configured (development adapter): require an authenticated
-    // staff operator holding the matching telemetry permission.
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const payload = verifyToken(authHeader.split(" ")[1]);
@@ -209,13 +177,34 @@ export function requireProviderKey(configuredKey: string, fallbackPermission = "
   };
 }
 
-/** Object-level authorization: which trips a given identity is allowed to see/mutate. */
+/**
+ * Object-level & Data-Scope authorization (§8, §23):
+ * Determines which trips/records a given identity is allowed to see or mutate.
+ */
 export function canAccessTrip(
   user: TokenPayload | undefined,
-  trip: { customerId?: string; driverId?: string; additionalDriverId?: string; status?: string }
+  trip: {
+    customerId?: string;
+    driverId?: string;
+    additionalDriverId?: string;
+    vehicleId?: string;
+    status?: string;
+    createdBy?: string;
+    originCity?: string;
+    destinationCity?: string;
+  }
 ): boolean {
   if (!user || !accountIsApproved(user)) return false;
   if (user.role === "SUPER_ADMIN") return true;
+
+  // Check explicit user-level customer/vehicle scope restrictions if configured
+  const uo = user.userId ? getUserOverride(user.userId) : undefined;
+  if (uo?.allowedCustomerIds && uo.allowedCustomerIds.length > 0 && trip.customerId) {
+    if (!uo.allowedCustomerIds.includes(trip.customerId)) return false;
+  }
+  if (uo?.allowedVehicleIds && uo.allowedVehicleIds.length > 0 && trip.vehicleId) {
+    if (!uo.allowedVehicleIds.includes(trip.vehicleId)) return false;
+  }
 
   if (user.role === "CUSTOMER") {
     return !!user.customerId && trip.customerId === user.customerId;
@@ -233,9 +222,32 @@ export function canAccessTrip(
     return ownsTrip || isOpenRequest;
   }
 
+  const scope: DataScope = getEffectiveDataScope({ userId: user.userId, role: user.role });
+  if (scope === "OWN") {
+    if (user.customerId && trip.customerId === user.customerId) return true;
+    if (trip.createdBy && trip.createdBy === user.userId) return true;
+    // Broker / staff who haven't created any specific trip yet see trips if no createdBy restriction
+    if (user.role === "BROKER") return true;
+    return !trip.createdBy || trip.createdBy === user.userId;
+  }
+  if (scope === "ASSIGNED") {
+    const driverId = user.driverId || user.userId;
+    if (trip.driverId === driverId || trip.additionalDriverId === driverId || trip.createdBy === user.userId) {
+      return true;
+    }
+    if (user.role === "CUSTOMS_BROKER") return true;
+    return false;
+  }
+  if (scope === "BRANCH" && uo?.allowedBranches && uo.allowedBranches.length > 0) {
+    const cities = `${trip.originCity || ""} ${trip.destinationCity || ""}`;
+    return uo.allowedBranches.some((b) => cities.includes(b));
+  }
+  if (scope === "REGION" && uo?.allowedRegions && uo.allowedRegions.length > 0) {
+    const cities = `${trip.originCity || ""} ${trip.destinationCity || ""}`;
+    return uo.allowedRegions.some((r) => cities.includes(r));
+  }
+
   return true;
 }
 
-
-/** Re-exported so route modules can ask the registry directly. */
-export { canManagePermissions, effectivePermissionsFor };
+export { canManagePermissions, effectivePermissionsFor, getEffectiveDataScope };

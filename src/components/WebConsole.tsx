@@ -27,6 +27,8 @@ import { TripHistoryAudit } from "./TripHistoryAudit";
 import { AIAssistant } from "./AIAssistant";
 import { AlertsCenter } from "./AlertsCenter";
 import { BrandingSettings } from "./BrandingSettings";
+import { FinanceCenter } from "./FinanceCenter";
+import { RolePermissionsManager } from "./RolePermissionsManager";
 import { useToast } from "./Toast";
 import { usePermissions } from "../state/permissionStore";
 import { NAV_PAGES, NAV_ALIASES } from "../utils/permissions";
@@ -48,12 +50,14 @@ export const SECTION_KEYS: Record<string, { title: I18nKey; hint?: I18nKey }> = 
   chats: { title: "nav.chats", hint: "nav.operations" },
   registrations: { title: "nav.registrations", hint: "nav.fleetGroup" },
   tracking: { title: "nav.tracking", hint: "nav.operations" },
+  finance: { title: "nav.finance", hint: "nav.insights" },
   reports: { title: "nav.reports", hint: "nav.insights" },
   history: { title: "nav.history", hint: "nav.insights" },
   analysis: { title: "nav.analysis", hint: "nav.insights" },
   trucks: { title: "nav.fleet", hint: "nav.fleetGroup" },
   cargos: { title: "nav.shipments", hint: "nav.operations" },
   repair: { title: "nav.fleet", hint: "nav.fleetGroup" },
+  permissions: { title: "settings.systemRoles", hint: "nav.identity" },
   branding: { title: "nav.branding", hint: "nav.identity" },
   settings: { title: "nav.settings", hint: "nav.identity" },
 };
@@ -377,6 +381,14 @@ export function WebConsole({
                 setNav("tracking");
               }}
             />
+          ) : nav === "finance" ? (
+            <div className="scroll-thin flex-1 overflow-y-auto p-4">
+              <FinanceCenter />
+            </div>
+          ) : nav === "permissions" ? (
+            <div className="scroll-thin flex-1 overflow-y-auto p-4">
+              <RolePermissionsManager />
+            </div>
           ) : nav === "reports" || nav === "analysis" ? (
             <AnalyticsReports />
           ) : (

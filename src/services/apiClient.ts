@@ -297,10 +297,101 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    settle: (data: { tripId: string; paidAmount: number; settlementStatus?: string }) =>
+    editRevenue: (tripId: string, data: { revenue: number; reason?: string }) =>
+      request<any>(`/api/finance/trips/${tripId}/revenue`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    editCommission: (tripId: string, data: { driverCommission?: number; commissionRatePct?: number; reason?: string }) =>
+      request<any>(`/api/finance/trips/${tripId}/commission`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    settle: (data: { tripId: string; paidAmount: number; settlementStatus?: string; notes?: string }) =>
       request<any>("/api/finance/settle", {
         method: "POST",
         body: JSON.stringify(data),
+      }),
+    getInvoices: () => request<{ total: number; invoices: any[] }>("/api/finance/invoices"),
+    getInvoice: (id: string) => request<any>(`/api/finance/invoices/${encodeURIComponent(id)}`),
+    createInvoice: (data: { tripId: string; amount?: number; taxRatePct?: number; dueDate?: string; notes?: string }) =>
+      request<any>("/api/finance/invoices", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updateInvoice: (id: string, data: { amount?: number; taxRatePct?: number; dueDate?: string; notes?: string; reason?: string }) =>
+      request<any>(`/api/finance/invoices/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    approveInvoice: (id: string) =>
+      request<any>(`/api/finance/invoices/${encodeURIComponent(id)}/approve`, { method: "POST" }),
+    rejectInvoice: (id: string, reason: string) =>
+      request<any>(`/api/finance/invoices/${encodeURIComponent(id)}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    issueInvoice: (id: string) =>
+      request<any>(`/api/finance/invoices/${encodeURIComponent(id)}/issue`, { method: "POST" }),
+    cancelInvoice: (id: string, reason: string) =>
+      request<any>(`/api/finance/invoices/${encodeURIComponent(id)}/cancel`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    getSettlements: () => request<{ total: number; settlements: any[] }>("/api/finance/settlements"),
+    createOrUpdateSettlement: (data: { tripId: string; paidAmount?: number; settlementStatus?: string; notes?: string; reason?: string }) =>
+      request<any>("/api/finance/settlements", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    approveSettlement: (tripId: string, notes?: string) =>
+      request<any>(`/api/finance/settlements/${encodeURIComponent(tripId)}/approve`, {
+        method: "POST",
+        body: JSON.stringify({ notes }),
+      }),
+    rejectSettlement: (tripId: string, reason: string) =>
+      request<any>(`/api/finance/settlements/${encodeURIComponent(tripId)}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    reopenSettlement: (tripId: string, reason: string) =>
+      request<any>(`/api/finance/settlements/${encodeURIComponent(tripId)}/reopen`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    getPayments: () => request<{ total: number; payments: any[] }>("/api/finance/payments"),
+    recordPayment: (data: { tripId: string; invoiceId?: string; amount: number; direction?: string; method?: string; reference?: string; notes?: string }) =>
+      request<any>("/api/finance/payments", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updatePayment: (id: string, data: { amount?: number; method?: string; reference?: string; notes?: string; reason?: string }) =>
+      request<any>(`/api/finance/payments/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    confirmPayment: (id: string) =>
+      request<any>(`/api/finance/payments/${encodeURIComponent(id)}/confirm`, { method: "POST" }),
+    cancelPayment: (id: string, reason: string) =>
+      request<any>(`/api/finance/payments/${encodeURIComponent(id)}/cancel`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    getReviews: () => request<{ total: number; reviews: any[] }>("/api/finance/review"),
+    performReview: (tripId: string, notes?: string) =>
+      request<any>(`/api/finance/review/${encodeURIComponent(tripId)}/perform`, {
+        method: "POST",
+        body: JSON.stringify({ notes }),
+      }),
+    approveReview: (tripId: string, notes?: string) =>
+      request<any>(`/api/finance/review/${encodeURIComponent(tripId)}/approve`, {
+        method: "POST",
+        body: JSON.stringify({ notes }),
+      }),
+    rejectReview: (tripId: string, reason: string) =>
+      request<any>(`/api/finance/review/${encodeURIComponent(tripId)}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
       }),
   },
   pod: {
@@ -431,15 +522,72 @@ export const apiClient = {
     catalog: () => request<any>("/api/permissions/catalog"),
     roles: () => request<any>("/api/permissions/roles"),
     role: (role: string) => request<any>(`/api/permissions/roles/${encodeURIComponent(role)}`),
-    save: (role: string, permissions: string[], reason?: string) =>
+    save: (role: string, permissions: string[], reason?: string, dataScope?: string) =>
       request<any>(`/api/permissions/roles/${encodeURIComponent(role)}`, {
         method: "PUT",
-        body: JSON.stringify({ permissions, reason }),
+        body: JSON.stringify({ permissions, reason, dataScope }),
       }),
     reset: (role: string, reason?: string) =>
       request<any>(`/api/permissions/roles/${encodeURIComponent(role)}/reset`, {
         method: "POST",
         body: JSON.stringify({ reason }),
+      }),
+    createRole: (data: { id: string; labelAr: string; labelEn?: string; descriptionAr?: string; descriptionEn?: string; permissions?: string[]; dataScope?: string }) =>
+      request<any>("/api/permissions/roles", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    cloneRole: (sourceRole: string, data: { id: string; labelAr: string; labelEn?: string; descriptionAr?: string; descriptionEn?: string }) =>
+      request<any>(`/api/permissions/roles/${encodeURIComponent(sourceRole)}/clone`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    updateRoleMeta: (role: string, data: { labelAr?: string; labelEn?: string; descriptionAr?: string; descriptionEn?: string; dataScope?: string }) =>
+      request<any>(`/api/permissions/roles/${encodeURIComponent(role)}/meta`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    setRoleStatus: (role: string, enabled: boolean, reason?: string) =>
+      request<any>(`/api/permissions/roles/${encodeURIComponent(role)}/status`, {
+        method: "POST",
+        body: JSON.stringify({ enabled, reason }),
+      }),
+    deleteRole: (role: string) =>
+      request<any>(`/api/permissions/roles/${encodeURIComponent(role)}`, {
+        method: "DELETE",
+      }),
+    setModuleAccessLevel: (role: string, sectionId: string, level: string, reason?: string) =>
+      request<any>(`/api/permissions/roles/${encodeURIComponent(role)}/module/${encodeURIComponent(sectionId)}`, {
+        method: "POST",
+        body: JSON.stringify({ level, reason }),
+      }),
+    users: () => request<{ users: any[]; version: number }>("/api/permissions/users"),
+    user: (userId: string) => request<any>(`/api/permissions/users/${encodeURIComponent(userId)}`),
+    saveUser: (userId: string, data: { role?: string; allow?: string[]; deny?: string[]; dataScope?: string; allowedBranches?: string[]; allowedRegions?: string[]; reason?: string }) =>
+      request<any>(`/api/permissions/users/${encodeURIComponent(userId)}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    resetUser: (userId: string, reason?: string) =>
+      request<any>(`/api/permissions/users/${encodeURIComponent(userId)}/reset`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    temporary: () => request<{ grants: any[]; version: number }>("/api/permissions/temporary"),
+    grantTemporary: (data: { targetType: "USER" | "ROLE"; targetId: string; permission: string; validFrom?: string; validTo: string; reason?: string }) =>
+      request<any>("/api/permissions/temporary", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    revokeTemporary: (id: string, reason?: string) =>
+      request<any>(`/api/permissions/temporary/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        body: JSON.stringify({ reason }),
+      }),
+    togglePermission: (permission: string, enabled: boolean, reason?: string) =>
+      request<any>(`/api/permissions/keys/${encodeURIComponent(permission)}/status`, {
+        method: "POST",
+        body: JSON.stringify({ enabled, reason }),
       }),
     audit: (limit = 100) => request<any>(`/api/permissions/audit?limit=${limit}`),
   },
