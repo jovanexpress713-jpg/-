@@ -169,12 +169,26 @@ export function WebConsole({
     if (window.innerWidth < 1280) setDetailsOpen(true);
   };
 
-  const handleAddVehicle = (v: Vehicle) => {
+  const handleAddVehicle = (v: Vehicle, requestKind?: RequestKind) => {
     selectTruck(v.id);
-    setNav("tracking");
+    if (requestKind === "repair") {
+      setNav("repair");
+      toast("تم تسجيل طلب الصيانة", `${v.plate} · أمر الورشة`);
+    } else if (requestKind === "driver") {
+      setNav("drivers");
+      toast("تم اعتماد تكليف السائق", `${v.driver.name} · ${v.plate}`);
+    } else if (requestKind === "report") {
+      setNav("reports");
+      toast("تم استخراج التقرير الرسمي", "جاهز للمعاينة والتحميل");
+    } else if (requestKind === "cargo") {
+      setNav("shipments");
+      toast("تم إنشاء طلب الشحنة", `${v.shipment} · ${v.partner}`);
+    } else {
+      setNav("fleet");
+      toast("تم تسجيل الشاحنة في الأسطول", `${v.plate} · ${v.model}`);
+    }
     setResetKey((k) => k + 1);
     setModalKind(null);
-    toast("Shipment created", `${v.shipment} · ${v.model}`);
   };
 
   const handleNavSelect = (key: string) => {
