@@ -157,10 +157,10 @@ export function Dashboard({
           <IconMenu size={17} />
         </button>
         <div className="min-w-0 flex-1">
-          <h1 className="text-[26px] leading-tight font-medium text-text-primary">
+          <h1 className="text-hero leading-tight font-medium text-text-primary">
             {t(title[0], title[1])}
           </h1>
-          <p className="mt-0.5 text-[11.5px] text-text-muted">
+          <p className="mt-0.5 text-label-lg text-text-muted">
             {isTracking
               ? t(
                   `${filtered.length} of ${vehicles.length} shipments · live telemetry`,
@@ -185,7 +185,7 @@ export function Dashboard({
                 "Search shipment, driver, plate…",
                 "ابحث برقم الشحنة أو السائق أو اللوحة…",
               )}
-              className="w-[170px] bg-transparent text-[12.5px] outline-none xl:w-[230px]"
+              className="w-[170px] bg-transparent text-body outline-none xl:w-[230px]"
             />
           )}
           <button
@@ -205,7 +205,7 @@ export function Dashboard({
         <>
           <div className="scroll-thin max-h-[248px] space-y-3 overflow-y-auto border-b border-border-subtle px-4 py-4 lg:px-5">
             <div>
-              <div className="mb-2 text-[10.5px] tracking-wide text-text-muted uppercase">
+              <div className="mb-2 text-label tracking-wide text-text-muted uppercase">
                 {t("Filter by Brand", "الفلترة حسب الماركة")}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -223,7 +223,7 @@ export function Dashboard({
             </div>
 
             <div>
-              <div className="mb-2 text-[10.5px] tracking-wide text-text-muted uppercase">
+              <div className="mb-2 text-label tracking-wide text-text-muted uppercase">
                 {t("Filter by Partners", "الفلترة حسب الشريك")}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -242,7 +242,7 @@ export function Dashboard({
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-[10.5px] tracking-wide text-text-muted uppercase">
+                <span className="text-label tracking-wide text-text-muted uppercase">
                   {t("Show", "عرض")}
                 </span>
                 <div className="flex gap-1 rounded-full bg-surface-2 p-1">
@@ -257,7 +257,7 @@ export function Dashboard({
                       key={id}
                       onClick={() => setTab(id)}
                       className={cn(
-                        "rounded-full px-3 py-1 text-[11.5px] transition-all duration-200 active:scale-95",
+                        "rounded-full px-3 py-1 text-label-lg transition-all duration-200 active:scale-95",
                         tab === id
                           ? "bg-brand font-semibold text-on-brand"
                           : "text-text-secondary hover:text-text-primary",
@@ -269,7 +269,7 @@ export function Dashboard({
                 </div>
               </div>
               {(brands.size > 0 || partners.size > 0 || query || tab !== "all") && (
-                <button onClick={reset} className="text-[11.5px] text-brand hover:opacity-80">
+                <button onClick={reset} className="text-label-lg text-brand hover:opacity-80">
                   {t("Reset filters", "إعادة ضبط الفلاتر")}
                 </button>
               )}
@@ -283,10 +283,10 @@ export function Dashboard({
                   <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-surface-3 text-text-muted">
                     <IconTracking size={22} />
                   </span>
-                  <h3 className="mt-4 text-[17px] font-medium text-text-primary">
+                  <h3 className="mt-4 text-section-title font-medium text-text-primary">
                     {t("No shipments found", "لا توجد شحنات مطابقة")}
                   </h3>
-                  <p className="mt-1 text-[12px] text-text-muted">
+                  <p className="mt-1 text-label-lg text-text-muted">
                     {t(
                       "Nothing matches the current brand, partner or status filters.",
                       "لا يوجد ما يطابق الفلاتر الحالية للماركة أو الشريك أو الحالة.",

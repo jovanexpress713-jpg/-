@@ -35,7 +35,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
-            className="animate-fade-up pointer-events-auto flex items-center gap-3 rounded-[12px] bg-surface-4 px-4 py-3"
+            className="animate-fade-up pointer-events-auto flex items-center gap-3 rounded-inner bg-surface-4 px-4 py-3"
             style={{
               boxShadow:
                 "0 18px 40px -18px color-mix(in oklab, var(--color-brand) 45%, transparent), 0 0 0 1px var(--color-border-subtle)",
@@ -45,8 +45,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <IconCheck size={14} />
             </span>
             <div className="leading-tight">
-              <div className="text-[13px] font-medium text-text-primary">{t.text}</div>
-              {t.sub && <div className="text-[11px] text-text-muted">{t.sub}</div>}
+              <div className="text-body font-medium text-text-primary">{t.text}</div>
+              {t.sub && <div className="text-label text-text-muted">{t.sub}</div>}
             </div>
           </div>
         ))}

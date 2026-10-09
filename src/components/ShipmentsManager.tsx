@@ -111,10 +111,10 @@ export function ShipmentsManager({
       <div className="shrink-0 border-b border-border-subtle p-4 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-[22px] font-bold text-text-primary tracking-tight">
+            <h1 className="text-hero-sm font-bold text-text-primary tracking-tight">
               {t("Enterprise Shipments Control", "مركز إدارة الشحنات اللوجستية")}
             </h1>
-            <p className="text-[12px] text-text-secondary mt-0.5">
+            <p className="text-label-lg text-text-secondary mt-0.5">
               {t(
                 `Tracking ${filteredShipments.length} active consignments across Saudi corridors`,
                 `متابعة وتدقيق ${filteredShipments.length} شحنة نشطة عبر الممرات اللوجستية بالمملكة`
@@ -133,7 +133,7 @@ export function ShipmentsManager({
                 "Search shipment, trip, customer, plate...",
                 "ابحث برقم الشحنة، الرحلة، العميل، اللوحة..."
               )}
-              className="w-full bg-transparent text-[12.5px] text-text-primary placeholder:text-text-muted outline-none"
+              className="w-full bg-transparent text-body text-text-primary placeholder:text-text-muted outline-none"
             />
             {search && (
               <button
@@ -150,13 +150,13 @@ export function ShipmentsManager({
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border-subtle/60">
           {/* 4 Approved Vehicle Types */}
           <div className="flex items-center gap-1.5 overflow-x-auto">
-            <span className="text-[11px] font-semibold text-text-muted me-1">
+            <span className="text-label font-semibold text-text-muted me-1">
               {t("Type", "النوع")}:
             </span>
             <button
               onClick={() => setSelectedTypeFilter("ALL")}
               className={cn(
-                "px-3 py-1 rounded-full text-[11.5px] font-semibold transition-colors",
+                "px-3 py-1 rounded-full text-label-lg font-semibold transition-colors",
                 selectedTypeFilter === "ALL"
                   ? "bg-brand text-on-brand shadow-sm"
                   : "bg-surface-2 text-text-secondary hover:text-text-primary"
@@ -172,7 +172,7 @@ export function ShipmentsManager({
                   key={tid}
                   onClick={() => setSelectedTypeFilter(tid)}
                   className={cn(
-                    "px-3 py-1 rounded-full text-[11.5px] font-semibold transition-colors flex items-center gap-1.5 border",
+                    "px-3 py-1 rounded-full text-label-lg font-semibold transition-colors flex items-center gap-1.5 border",
                     isSelected
                       ? "bg-brand text-on-brand border-brand font-bold shadow-sm"
                       : "bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary"
@@ -190,7 +190,7 @@ export function ShipmentsManager({
 
           {/* Status Filter */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-text-muted me-1">
+            <span className="text-label font-semibold text-text-muted me-1">
               {t("Status", "الحالة")}:
             </span>
             {[
@@ -203,7 +203,7 @@ export function ShipmentsManager({
                 key={st}
                 onClick={() => setSelectedStatusFilter(st)}
                 className={cn(
-                  "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors",
+                  "px-2.5 py-1 rounded-full text-label font-medium transition-colors",
                   selectedStatusFilter === st
                     ? "bg-surface-4 text-text-primary border border-border-subtle"
                     : "text-text-muted hover:text-text-secondary"
@@ -219,12 +219,12 @@ export function ShipmentsManager({
       {/* Main Content Area: High-Density Shipments Grid */}
       <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         {filteredShipments.length === 0 ? (
-          <div className="flex h-64 flex-col items-center justify-center text-center p-6 bg-surface-1 rounded-[14px] border border-border-subtle">
+          <div className="flex h-64 flex-col items-center justify-center text-center p-6 bg-surface-1 rounded-inner border border-border-subtle">
             <IconTruck size={36} className="text-text-muted mb-2" />
-            <h3 className="text-[14px] font-semibold text-text-primary">
+            <h3 className="text-card-title font-semibold text-text-primary">
               {t("No shipments found", "لا توجد شحنات مطابقة")}
             </h3>
-            <p className="text-[12px] text-text-muted mt-1 max-w-sm">
+            <p className="text-label-lg text-text-muted mt-1 max-w-sm">
               {t(
                 "Try adjusting your search criteria or resetting the 4-type vehicle filters.",
                 "يرجى تعديل معايير البحث أو اختيار أحد أنواع الشاحنات الأربعة المعتمدة."
@@ -243,7 +243,7 @@ export function ShipmentsManager({
               return (
                 <div
                   key={tr.id}
-                  className="bg-surface-1 rounded-[12px] border border-border-subtle hover:border-brand/40 transition-all duration-200 shadow-sm flex flex-col justify-between overflow-hidden"
+                  className="bg-surface-1 rounded-inner border border-border-subtle hover:border-brand/40 transition-all duration-200 shadow-sm flex flex-col justify-between overflow-hidden"
                 >
                   {/* Card Header with prominent Truck Type Avatar */}
                   <div className="p-4 border-b border-white/5 flex items-start gap-3">
@@ -251,17 +251,17 @@ export function ShipmentsManager({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-[13px] text-brand">
+                          <span className="font-mono font-bold text-body text-brand">
                             {tr.qrCodeToken || `SH-${tr.tripNumber}`}
                           </span>
-                          <span className="text-text-muted text-[11px]">·</span>
-                          <span className="font-mono text-[11px] text-text-secondary">
+                          <span className="text-text-muted text-label">·</span>
+                          <span className="font-mono text-label text-text-secondary">
                             {tr.tripNumber}
                           </span>
                         </div>
                         <span
                           className={cn(
-                            "rounded-full px-2.5 py-0.5 text-[10px] font-bold border",
+                            "rounded-full px-2.5 py-0.5 text-micro font-bold border",
                             statusBadge.color
                           )}
                         >
@@ -269,32 +269,32 @@ export function ShipmentsManager({
                         </span>
                       </div>
 
-                      <div className="mt-1 text-[13px] font-semibold text-text-primary truncate">
+                      <div className="mt-1 text-body font-semibold text-text-primary truncate">
                         {tr.shipper}
                       </div>
                     </div>
                   </div>
 
                   {/* Card Body: Route, Vehicle, Cargo, Driver */}
-                  <div className="p-4 space-y-3 text-[12px]">
+                  <div className="p-4 space-y-3 text-label-lg">
                     {/* Origin -> Destination Route */}
-                    <div className="flex items-center justify-between gap-2 bg-surface-2 p-2 rounded-[8px] border border-white/5">
+                    <div className="flex items-center justify-between gap-2 bg-surface-2 p-2 rounded-chip border border-white/5">
                       <div className="truncate">
-                        <div className="text-[10px] text-text-muted">{t("From", "من")}</div>
+                        <div className="text-micro text-text-muted">{t("From", "من")}</div>
                         <div className="font-semibold text-text-primary truncate">{tr.originCity}</div>
                       </div>
                       <span className="text-brand font-bold">→</span>
                       <div className="truncate text-end">
-                        <div className="text-[10px] text-text-muted">{t("To", "إلى")}</div>
+                        <div className="text-micro text-text-muted">{t("To", "إلى")}</div>
                         <div className="font-semibold text-text-primary truncate">{tr.destinationCity}</div>
                       </div>
                     </div>
 
                     {/* Vehicle & 4-Type Badge */}
-                    <div className="flex items-center justify-between gap-2 text-[11.5px]">
+                    <div className="flex items-center justify-between gap-2 text-label-lg">
                       <div className="flex items-center gap-2">
                         <span
-                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] font-bold text-[10.5px]"
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-micro font-bold text-label"
                           style={{
                             backgroundColor: meta.badgeBg,
                             color: meta.accentColor,
@@ -305,13 +305,13 @@ export function ShipmentsManager({
                         </span>
                         <span className="font-mono text-text-primary">{truck.plate}</span>
                       </div>
-                      <div className="text-text-muted text-[11px] tabular-nums">
+                      <div className="text-text-muted text-label tabular-nums">
                         {tr.cargoWeightTons} / {tr.maxCapacityTons} {t("tons", "طن")}
                       </div>
                     </div>
 
                     {/* Driver & Telemetry */}
-                    <div className="flex items-center justify-between text-[11px] text-text-secondary border-t border-white/5 pt-2">
+                    <div className="flex items-center justify-between text-label text-text-secondary border-t border-white/5 pt-2">
                       <div className="flex items-center gap-1.5 truncate">
                         <span className="h-2 w-2 rounded-full bg-status-active" />
                         <span className="truncate">{driver.name}</span>
@@ -328,7 +328,7 @@ export function ShipmentsManager({
                   <div className="bg-surface-2 px-4 py-2.5 border-t border-border-subtle flex items-center justify-between gap-2">
                     <button
                       onClick={() => handleOpenDetails(tr)}
-                      className="text-brand hover:underline text-[11.5px] font-semibold"
+                      className="text-brand hover:underline text-label-lg font-semibold"
                     >
                       {t("Shipment Details & 3D", "تفاصيل الشحنة والمجسم")}
                     </button>
@@ -339,7 +339,7 @@ export function ShipmentsManager({
                             selectTrip(tr.id);
                             onOpenTrip(tr.id);
                           }}
-                          className="p-1 rounded-[6px] bg-surface-3 hover:bg-surface-4 text-text-secondary hover:text-text-primary transition-colors text-[10.5px] px-2 font-medium"
+                          className="p-1 rounded-micro bg-surface-3 hover:bg-surface-4 text-text-secondary hover:text-text-primary transition-colors text-label px-2 font-medium"
                           title={t("Trip Manager", "إدارة الرحلة")}
                         >
                           {t("Trip", "الرحلة")}
@@ -351,7 +351,7 @@ export function ShipmentsManager({
                             selectTruck(tr.truckId);
                             onOpenTruck(tr.truckId);
                           }}
-                          className="p-1 rounded-[6px] bg-surface-3 hover:bg-surface-4 text-text-secondary hover:text-text-primary transition-colors text-[10.5px] px-2 font-medium"
+                          className="p-1 rounded-micro bg-surface-3 hover:bg-surface-4 text-text-secondary hover:text-text-primary transition-colors text-label px-2 font-medium"
                           title={t("Fleet Manager", "إدارة الأسطول")}
                         >
                           {t("Truck", "الشاحنة")}
@@ -364,7 +364,7 @@ export function ShipmentsManager({
                             selectTruck(tr.truckId);
                             onOpenLiveMap(tr.id);
                           }}
-                          className="p-1 rounded-[6px] bg-surface-3 hover:bg-surface-4 text-text-secondary hover:text-text-primary transition-colors text-[10.5px] px-2 font-medium"
+                          className="p-1 rounded-micro bg-surface-3 hover:bg-surface-4 text-text-secondary hover:text-text-primary transition-colors text-label px-2 font-medium"
                           title={t("Track on Live Map", "تتبع على الخريطة")}
                         >
                           {t("Map", "الخريطة")}
@@ -382,20 +382,20 @@ export function ShipmentsManager({
       {/* Shipment Details Hierarchy Modal: Shipment -> Trip -> Vehicle 3D -> Driver -> GPS -> Timeline -> POD */}
       {selectedShipmentTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 lg:p-6 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-4xl max-h-[90vh] bg-surface-1 rounded-[16px] border border-border-subtle shadow-2xl flex flex-col overflow-hidden text-text-primary">
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-surface-1 rounded-panel border border-border-subtle shadow-2xl flex flex-col overflow-hidden text-text-primary">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 lg:px-6 border-b border-border-subtle">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-[15px] text-brand">
+                  <span className="font-mono font-bold text-page-title text-brand">
                     {selectedShipmentTrip.qrCodeToken || `SH-${selectedShipmentTrip.tripNumber}`}
                   </span>
                   <span className="text-text-muted">·</span>
-                  <span className="font-mono text-[13px] text-text-secondary">
+                  <span className="font-mono text-body text-text-secondary">
                     {selectedShipmentTrip.tripNumber}
                   </span>
                 </div>
-                <div className="text-[12px] text-text-secondary mt-0.5">
+                <div className="text-label-lg text-text-secondary mt-0.5">
                   {selectedShipmentTrip.shipper} → {selectedShipmentTrip.consignee}
                 </div>
               </div>
@@ -411,12 +411,12 @@ export function ShipmentsManager({
             {/* Modal Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
               {/* 1. 3D Vehicle Showcase (Real Vehicle Mode) */}
-              <div className="bg-surface-2 rounded-[14px] border border-border-subtle overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-white/5 flex items-center justify-between text-[12px]">
+              <div className="bg-surface-2 rounded-inner border border-border-subtle overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-white/5 flex items-center justify-between text-label-lg">
                   <span className="font-semibold text-text-secondary">
                     {t("3D Verified Vehicle Model", "مجسم المركبة ثلاثي الأبعاد المعتمد")}
                   </span>
-                  <span className="text-[11px] font-mono text-brand">
+                  <span className="text-label font-mono text-brand">
                     {getVehicleTypeMeta(selectedShipmentTrip.cargoType).arabicName}
                   </span>
                 </div>
@@ -431,46 +431,46 @@ export function ShipmentsManager({
               </div>
 
               {/* 2. Shipment & Route Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[12px]">
-                <div className="bg-surface-2 p-4 rounded-[10px] border border-white/5 space-y-2.5">
-                  <div className="text-[11px] font-bold text-text-muted uppercase tracking-wide">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-label-lg">
+                <div className="bg-surface-2 p-4 rounded-control border border-white/5 space-y-2.5">
+                  <div className="text-label font-bold text-text-muted uppercase tracking-wide">
                     {t("Pickup & Loading Point", "نقطة التحميل والاستلام")}
                   </div>
                   <div className="font-semibold text-text-primary">
                     {selectedShipmentTrip.originCity}
                   </div>
-                  <div className="text-text-secondary text-[11.5px]">
+                  <div className="text-text-secondary text-label-lg">
                     {selectedShipmentTrip.originTerminal}
                   </div>
-                  <div className="text-[10.5px] text-text-muted">
+                  <div className="text-label text-text-muted">
                     {t("Departure", "وقت المغادرة")}: {selectedShipmentTrip.departureTime || "اليوم ٠٧:١٥ ص"}
                   </div>
                 </div>
 
-                <div className="bg-surface-2 p-4 rounded-[10px] border border-white/5 space-y-2.5">
-                  <div className="text-[11px] font-bold text-text-muted uppercase tracking-wide">
+                <div className="bg-surface-2 p-4 rounded-control border border-white/5 space-y-2.5">
+                  <div className="text-label font-bold text-text-muted uppercase tracking-wide">
                     {t("Delivery Point & Consignee", "نقطة التسليم والتفريغ")}
                   </div>
                   <div className="font-semibold text-text-primary">
                     {selectedShipmentTrip.destinationCity}
                   </div>
-                  <div className="text-text-secondary text-[11.5px]">
+                  <div className="text-text-secondary text-label-lg">
                     {selectedShipmentTrip.destinationTerminal}
                   </div>
-                  <div className="text-[10.5px] text-text-muted">
+                  <div className="text-label text-text-muted">
                     {t("Est. Arrival", "الوصول المقدر")}: {selectedShipmentTrip.etaMinutes} {t("minutes", "دقيقة")}
                   </div>
                 </div>
               </div>
 
               {/* 3. Canonical Trip Timeline (Section 9) */}
-              <div className="bg-surface-2 p-4 rounded-[12px] border border-white/5">
-                <div className="text-[12px] font-bold text-text-primary mb-3">
+              <div className="bg-surface-2 p-4 rounded-inner border border-white/5">
+                <div className="text-label-lg font-bold text-text-primary mb-3">
                   {t("Shipment & Trip Lifecycle Timeline", "المخطط الزمني لمراحل الشحنة والرحلة")}
                 </div>
 
                 {/* Canonical Statuses only */}
-                <div className="relative ps-6 space-y-4 text-[11.5px]">
+                <div className="relative ps-6 space-y-4 text-label-lg">
                   <span className="absolute top-2 bottom-2 start-[7px] w-0.5 bg-border-subtle" />
 
                   {[
@@ -506,7 +506,7 @@ export function ShipmentsManager({
                       >
                         {node.labelAr}
                       </span>
-                      <span className="text-[10px] text-text-muted font-mono">
+                      <span className="text-micro text-text-muted font-mono">
                         {node.state === "done" ? "✓" : node.state === "current" ? "● الآن" : "○"}
                       </span>
                     </div>
@@ -515,18 +515,18 @@ export function ShipmentsManager({
               </div>
 
               {/* 4. Electronic POD & Documents */}
-              <div className="bg-surface-2 p-4 rounded-[12px] border border-white/5 flex items-center justify-between">
+              <div className="bg-surface-2 p-4 rounded-inner border border-white/5 flex items-center justify-between">
                 <div>
-                  <div className="text-[12px] font-bold text-text-primary">
+                  <div className="text-label-lg font-bold text-text-primary">
                     {t("Electronic POD & Consignment Docs", "إثبات التسليم الإلكتروني (POD) والوثائق")}
                   </div>
-                  <div className="text-[11px] text-text-muted mt-0.5">
+                  <div className="text-label text-text-muted mt-0.5">
                     {t("Digital Bill of Lading, Weight Ticket & Inspection Certificate", "بوليصة شحن رقمية، بطاقة وزن، وشهادة فحص الشاحنة")}
                   </div>
                 </div>
                 <button
                   onClick={() => setShowPodModal(true)}
-                  className="btn-primary text-[11.5px] px-3.5 py-1.5"
+                  className="btn-primary text-label-lg px-3.5 py-1.5"
                 >
                   <IconDoc size={14} />
                   <span>{t("View POD & Documents", "عرض الوثائق و POD")}</span>
@@ -538,7 +538,7 @@ export function ShipmentsManager({
             <div className="p-4 border-t border-border-subtle bg-surface-2 flex items-center justify-between">
               <button
                 onClick={() => setSelectedShipmentTrip(null)}
-                className="btn-ghost text-[12px]"
+                className="btn-ghost text-label-lg"
               >
                 {t("Close", "إغلاق")}
               </button>
@@ -553,7 +553,7 @@ export function ShipmentsManager({
                       selectTruck(tr.truckId);
                       onOpenLiveMap(tr.id);
                     }}
-                    className="btn-primary text-[12px] px-4"
+                    className="btn-primary text-label-lg px-4"
                   >
                     <span>{t("Track on Live Map", "تتبع المركبة على الخريطة")}</span>
                     <IconArrowRight size={14} />
@@ -568,32 +568,32 @@ export function ShipmentsManager({
       {/* Simple POD Viewer Modal */}
       {showPodModal && selectedShipmentTrip && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg bg-surface-1 rounded-[14px] p-5 border border-border-subtle text-text-primary">
+          <div className="w-full max-w-lg bg-surface-1 rounded-inner p-5 border border-border-subtle text-text-primary">
             <div className="flex items-center justify-between pb-3 border-b border-white/5">
-              <h3 className="font-bold text-[14px] text-brand">
+              <h3 className="font-bold text-card-title text-brand">
                 {t("Official Electronic Proof of Delivery (POD)", "إثبات التسليم الإلكتروني الرسمي (POD)")}
               </h3>
               <button onClick={() => setShowPodModal(false)} className="btn-icon-sm">
                 <IconClose size={15} />
               </button>
             </div>
-            <div className="py-4 space-y-3 text-[12px]">
-              <div className="bg-surface-2 p-3 rounded-[8px] space-y-1">
-                <div className="text-[10.5px] text-text-muted">{t("Consignment ID", "رقم الشحنة")}</div>
+            <div className="py-4 space-y-3 text-label-lg">
+              <div className="bg-surface-2 p-3 rounded-chip space-y-1">
+                <div className="text-label text-text-muted">{t("Consignment ID", "رقم الشحنة")}</div>
                 <div className="font-mono font-bold text-text-primary">{selectedShipmentTrip.qrCodeToken}</div>
               </div>
-              <div className="bg-surface-2 p-3 rounded-[8px] space-y-1">
-                <div className="text-[10.5px] text-text-muted">{t("Approved Vehicle Category", "فئة المركبة المعتمدة")}</div>
+              <div className="bg-surface-2 p-3 rounded-chip space-y-1">
+                <div className="text-label text-text-muted">{t("Approved Vehicle Category", "فئة المركبة المعتمدة")}</div>
                 <div className="font-bold text-brand">{getVehicleTypeMeta(selectedShipmentTrip.cargoType).arabicName}</div>
               </div>
-              <div className="bg-surface-2 p-3 rounded-[8px] space-y-1">
-                <div className="text-[10.5px] text-text-muted">{t("Security Seal Code", "رمز الختم الجمركي المعتمد")}</div>
+              <div className="bg-surface-2 p-3 rounded-chip space-y-1">
+                <div className="text-label text-text-muted">{t("Security Seal Code", "رمز الختم الجمركي المعتمد")}</div>
                 <div className="font-mono text-status-active font-bold">EJAZ-SEAL-2026-9941</div>
               </div>
             </div>
             <button
               onClick={() => setShowPodModal(false)}
-              className="w-full btn-primary py-2 text-[12px] font-bold mt-2"
+              className="w-full btn-primary py-2 text-label-lg font-bold mt-2"
             >
               {t("Done", "تم")}
             </button>

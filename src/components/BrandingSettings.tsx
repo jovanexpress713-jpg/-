@@ -134,16 +134,16 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-[620px] max-h-[90vh] overflow-y-auto rounded-[20px] bg-surface-1 border border-border-subtle shadow-2xl p-6 text-text-primary">
+      <div className="relative w-full max-w-[620px] max-h-[90vh] overflow-y-auto rounded-card bg-surface-1 border border-border-subtle shadow-2xl p-6 text-text-primary">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
           <div className="flex items-center gap-3">
             <BrandLogo size={32} showSub={false} />
             <div>
-              <h2 className="text-[17px] font-bold text-text-primary">
+              <h2 className="text-section-title font-bold text-text-primary">
                 {t("Central Branding & Identity Settings", "إعدادات الهوية والعلامة التجارية المركزية")}
               </h2>
-              <p className="text-[11.5px] text-text-muted">
+              <p className="text-label-lg text-text-muted">
                 {t(
                   "Propagates official logo and company branding across Admin, Mobile, Reports and Login",
                   "تحديث وتعميم الشعار الرسمي وهوية إيجاز عبر لوحة التحكم والتطبيق والتقارير وشاشات الدخول"
@@ -162,7 +162,7 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
 
         {/* Feedback Messages */}
         {savedSuccess && (
-          <div className="mt-4 rounded-[12px] bg-status-active/15 border border-status-active/30 p-3 text-[12px] text-status-active font-semibold flex items-center gap-2">
+          <div className="mt-4 rounded-inner bg-status-active/15 border border-status-active/30 p-3 text-label-lg text-status-active font-semibold flex items-center gap-2">
             <IconCheck size={16} />
             <span>
               {t(
@@ -174,27 +174,27 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
         )}
 
         {errorMsg && (
-          <div className="mt-4 rounded-[12px] bg-status-danger/15 border border-status-danger/30 p-3 text-[12px] text-status-danger">
+          <div className="mt-4 rounded-inner bg-status-danger/15 border border-status-danger/30 p-3 text-label-lg text-status-danger">
             {errorMsg}
           </div>
         )}
 
         {/* Main Branding Form */}
-        <form onSubmit={handleSave} className="mt-5 space-y-4 text-[12px]">
+        <form onSubmit={handleSave} className="mt-5 space-y-4 text-label-lg">
           {/* Logo Preview & Vector Emblem Indicator */}
-          <div className="rounded-[14px] bg-surface-2 p-4 border border-border-subtle flex items-center justify-between gap-4">
+          <div className="rounded-inner bg-surface-2 p-4 border border-border-subtle flex items-center justify-between gap-4">
             <div>
-              <div className="text-[11px] font-bold text-text-muted uppercase">
+              <div className="text-label font-bold text-text-muted uppercase">
                 {t("Official Vector Emblem & Asset", "الشعار المعتمد الحالي")}
               </div>
-              <div className="text-[13px] font-bold text-white mt-1">
+              <div className="text-body font-bold text-white mt-1">
                 {branding.officialNameAr}
               </div>
-              <div className="text-[11px] text-brand">
+              <div className="text-label text-brand">
                 {branding.officialNameEn} · {branding.officialNameUr}
               </div>
             </div>
-            <div className="h-16 w-24 rounded-[10px] bg-navy flex items-center justify-center p-2 border border-white/10 shrink-0">
+            <div className="h-16 w-24 rounded-control bg-navy flex items-center justify-center p-2 border border-white/10 shrink-0">
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}
@@ -210,38 +210,38 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
           {/* Official Names */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+              <label className="block text-label font-semibold text-text-secondary mb-1">
                 {t("Name (Arabic)", "الاسم الرسمي (بالعربية)")}
               </label>
               <input
                 type="text"
                 value={branding.officialNameAr}
                 onChange={(e) => setBranding({ ...branding, officialNameAr: e.target.value })}
-                className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
+                className="w-full h-10 rounded-control bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
                 required
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+              <label className="block text-label font-semibold text-text-secondary mb-1">
                 {t("Name (English)", "الاسم الرسمي (بالإنجليزية)")}
               </label>
               <input
                 type="text"
                 value={branding.officialNameEn}
                 onChange={(e) => setBranding({ ...branding, officialNameEn: e.target.value })}
-                className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
+                className="w-full h-10 rounded-control bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
                 required
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+              <label className="block text-label font-semibold text-text-secondary mb-1">
                 {t("Name (Urdu)", "الاسم الرسمي (بالأوردو)")}
               </label>
               <input
                 type="text"
                 value={branding.officialNameUr}
                 onChange={(e) => setBranding({ ...branding, officialNameUr: e.target.value })}
-                className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
+                className="w-full h-10 rounded-control bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
                 required
               />
             </div>
@@ -250,54 +250,54 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
           {/* Taglines */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+              <label className="block text-label font-semibold text-text-secondary mb-1">
                 {t("Tagline (Arabic)", "الشعار اللفظي (بالعربية)")}
               </label>
               <input
                 type="text"
                 value={branding.taglineAr}
                 onChange={(e) => setBranding({ ...branding, taglineAr: e.target.value })}
-                className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
+                className="w-full h-10 rounded-control bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+              <label className="block text-label font-semibold text-text-secondary mb-1">
                 {t("Tagline (English)", "الشعار اللفظي (بالإنجليزية)")}
               </label>
               <input
                 type="text"
                 value={branding.taglineEn}
                 onChange={(e) => setBranding({ ...branding, taglineEn: e.target.value })}
-                className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
+                className="w-full h-10 rounded-control bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+              <label className="block text-label font-semibold text-text-secondary mb-1">
                 {t("Tagline (Urdu)", "الشعار اللفظي (بالأوردو)")}
               </label>
               <input
                 type="text"
                 value={branding.taglineUr}
                 onChange={(e) => setBranding({ ...branding, taglineUr: e.target.value })}
-                className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
+                className="w-full h-10 rounded-control bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
               />
             </div>
           </div>
 
           {/* Upload a logo file from the device */}
-          <div className="rounded-[14px] bg-surface-2 border border-border-subtle p-4 space-y-3">
-            <div className="text-[11px] font-bold text-text-muted uppercase">
+          <div className="rounded-inner bg-surface-2 border border-border-subtle p-4 space-y-3">
+            <div className="text-label font-bold text-text-muted uppercase">
               {t("Upload Logo File", "رفع ملف الشعار من الجهاز")}
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
               <div className="flex-1 min-w-0">
-                <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+                <label className="block text-label font-semibold text-text-secondary mb-1">
                   {t("Logo Target", "وجهة الشعار")}
                 </label>
                 <select
                   value={logoVariant}
                   onChange={(e) => setLogoVariant(e.target.value as any)}
-                  className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
+                  className="w-full h-10 rounded-control bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand"
                 >
                   <option value="master">{t("Master (all surfaces)", "الرئيسي (كل الشاشات)")}</option>
                   <option value="header">{t("Admin header / sidebar", "هيدر ولوحة التحكم")}</option>
@@ -305,7 +305,7 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
                   <option value="report">{t("Reports / PDF", "التقارير والطباعة")}</option>
                 </select>
               </div>
-              <label className="btn-primary h-10 inline-flex items-center justify-center gap-2 rounded-[10px] px-4 text-[12px] font-bold text-navy bg-brand hover:bg-brand-600 cursor-pointer shrink-0">
+              <label className="btn-primary h-10 inline-flex items-center justify-center gap-2 rounded-control px-4 text-label-lg font-bold text-navy bg-brand hover:bg-brand-600 cursor-pointer shrink-0">
                 {uploading ? t("Uploading...", "جارٍ الرفع...") : t("Choose & Upload", "اختيار ورفع")}
                 <input
                   type="file"
@@ -319,11 +319,11 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
                 />
               </label>
             </div>
-            <p className="text-[11px] text-text-muted">
+            <p className="text-label text-text-muted">
               {t("SVG Vector Only · scalable without pixelation", "صيغة SVG متجهة فقط · دقة فائقة وحجم فائق الخفة")}
             </p>
             {uploadMsg && (
-              <div className="rounded-[10px] bg-surface-3 border border-border-subtle p-2 text-[11.5px] text-text-secondary">
+              <div className="rounded-control bg-surface-3 border border-border-subtle p-2 text-label-lg text-text-secondary">
                 {uploadMsg}
               </div>
             )}
@@ -331,7 +331,7 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
 
           {/* Custom Logo URL */}
           <div>
-            <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+            <label className="block text-label font-semibold text-text-secondary mb-1">
               {t("Custom Logo Asset URL (optional)", "رابط ملف الشعار المخصص (اختياري - يترك فارغاً للشعار المتجهي الرسمي)")}
             </label>
             <input
@@ -339,14 +339,14 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
               value={branding.logoUrl}
               onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })}
               placeholder="https://.../logo.png"
-              className="w-full h-10 rounded-[10px] bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand font-mono text-[11.5px]"
+              className="w-full h-10 rounded-control bg-surface-2 px-3 text-text-primary border border-border-subtle outline-none focus:border-brand font-mono text-label-lg"
             />
           </div>
 
           {/* Color Palettes */}
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+              <label className="block text-label font-semibold text-text-secondary mb-1">
                 {t("Primary Orange Accent Color", "لون الهوية البرتقالي المعتمد")}
               </label>
               <div className="flex items-center gap-2">
@@ -354,19 +354,19 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
                   type="color"
                   value={branding.primaryColor}
                   onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
-                  className="h-10 w-12 rounded-[8px] bg-surface-2 border border-border-subtle cursor-pointer p-0.5"
+                  className="h-10 w-12 rounded-chip bg-surface-2 border border-border-subtle cursor-pointer p-0.5"
                 />
                 <input
                   type="text"
                   value={branding.primaryColor}
                   onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
-                  className="w-full h-10 rounded-[10px] bg-surface-2 px-3 font-mono text-[12px] text-text-primary border border-border-subtle"
+                  className="w-full h-10 rounded-control bg-surface-2 px-3 font-mono text-label-lg text-text-primary border border-border-subtle"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1">
+              <label className="block text-label font-semibold text-text-secondary mb-1">
                 {t("Navy Anchor Brand Color", "لون الهوية الكحلي المعتمد (Navy)")}
               </label>
               <div className="flex items-center gap-2">
@@ -374,13 +374,13 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
                   type="color"
                   value={branding.navyColor}
                   onChange={(e) => setBranding({ ...branding, navyColor: e.target.value })}
-                  className="h-10 w-12 rounded-[8px] bg-surface-2 border border-border-subtle cursor-pointer p-0.5"
+                  className="h-10 w-12 rounded-chip bg-surface-2 border border-border-subtle cursor-pointer p-0.5"
                 />
                 <input
                   type="text"
                   value={branding.navyColor}
                   onChange={(e) => setBranding({ ...branding, navyColor: e.target.value })}
-                  className="w-full h-10 rounded-[10px] bg-surface-2 px-3 font-mono text-[12px] text-text-primary border border-border-subtle"
+                  className="w-full h-10 rounded-control bg-surface-2 px-3 font-mono text-label-lg text-text-primary border border-border-subtle"
                 />
               </div>
             </div>
@@ -391,14 +391,14 @@ export function BrandingSettings({ isOpen, onClose }: BrandingSettingsProps) {
             <button
               type="button"
               onClick={onClose}
-              className="btn-ghost px-5 py-2.5 rounded-[10px] text-[12px]"
+              className="btn-ghost px-5 py-2.5 rounded-control text-label-lg"
             >
               {t("Cancel", "إلغاء")}
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary px-6 py-2.5 rounded-[10px] text-[12.5px] font-bold shadow-lg"
+              className="btn-primary px-6 py-2.5 rounded-control text-body font-bold shadow-lg"
             >
               {loading ? t("Saving...", "جاري الحفظ...") : t("Save & Propagate Branding", "حفظ وتعميم الهوية")}
             </button>

@@ -72,7 +72,7 @@ export function AppHeader({
         <div className="flex shrink-0 items-center gap-2.5">
           <BrandEmblem size={34} variant="header" />
           <div className="hidden min-w-0 leading-tight lg:block">
-            <div className="truncate text-[13.5px] font-extrabold text-text-primary">
+            <div className="truncate text-card-title font-extrabold text-text-primary">
               {tk("app.name")}
             </div>
             <div className="tagline truncate">{tk("app.tagline")}</div>
@@ -83,11 +83,11 @@ export function AppHeader({
 
         {/* Current page — the one piece of context an operator always needs. */}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[var(--type-page-title)] font-bold text-text-primary">
+          <h1 className="truncate text-page-title font-bold text-text-primary">
             {pageTitle}
           </h1>
           {pageHint && (
-            <p className="hidden truncate text-[10.5px] text-text-muted sm:block">{pageHint}</p>
+            <p className="hidden truncate text-label text-text-muted sm:block">{pageHint}</p>
           )}
         </div>
 
@@ -111,7 +111,7 @@ export function AppHeader({
         {/* Assistant */}
         <button
           onClick={onOpenAssistant}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-brand/35 px-2.5 text-[11.5px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-brand/35 px-2.5 text-label-lg font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
           title={tk("header.assistantTitle")}
           aria-label={tk("header.assistantTitle")}
         >
@@ -128,7 +128,7 @@ export function AppHeader({
         >
           <IconBell size={16} />
           {unreadAlerts > 0 && (
-            <span className="num absolute -top-0.5 -end-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-status-danger px-1 text-[9px] font-extrabold text-white">
+            <span className="num absolute -top-0.5 -end-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-status-danger px-1 text-micro font-extrabold text-white">
               {unreadAlerts > 99 ? "99+" : unreadAlerts}
             </span>
           )}
@@ -157,7 +157,7 @@ export function AppHeader({
           />
           <button
             onClick={() => setSearchOpen(false)}
-            className="mt-2 w-full rounded-[10px] py-2 text-center text-[11.5px] font-semibold text-text-muted hover:text-text-primary"
+            className="mt-2 w-full rounded-control py-2 text-center text-label-lg font-semibold text-text-muted hover:text-text-primary"
           >
             {tk("common.close")}
           </button>

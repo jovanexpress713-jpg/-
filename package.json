@@ -12,7 +12,9 @@
     "test": "tsx tests/runAllTests.ts",
     "verify:fleet-imagery": "tsx scripts/verify-fleet-imagery.tsx",
     "verify:upload": "node scripts/verify-upload-propagation.mjs",
-    "verify:registration": "node scripts/verify-registration-flow.mjs"
+    "verify:registration": "node scripts/verify-registration-flow.mjs",
+    "verify:design-scale": "node scripts/migrate-design-tokens.mjs --check",
+    "migrate:design-scale": "node scripts/migrate-design-tokens.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

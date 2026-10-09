@@ -36,8 +36,8 @@ function Panel({
     <div className="animate-fade-up card p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-[17px] font-medium text-text-primary">{title}</h3>
-          {hint && <p className="mt-0.5 text-[11px] text-text-muted">{hint}</p>}
+          <h3 className="text-section-title font-medium text-text-primary">{title}</h3>
+          {hint && <p className="mt-0.5 text-label text-text-muted">{hint}</p>}
         </div>
         {action}
       </div>
@@ -71,11 +71,11 @@ export function DashboardView({ vehicles, onSelect, onToast }: ViewProps) {
             style={{ animationDelay: `${i * 45}ms` }}
             className="animate-fade-up card p-4 text-start transition-all duration-200 hover:bg-surface-4 active:scale-[0.98]"
           >
-            <div className="text-[10.5px] tracking-wide text-text-muted uppercase">{k}</div>
-            <div className="mt-2 text-[26px] leading-none font-medium tabular-nums text-text-primary">
+            <div className="text-label tracking-wide text-text-muted uppercase">{k}</div>
+            <div className="mt-2 text-hero leading-none font-medium tabular-nums text-text-primary">
               {v}
             </div>
-            <div className="mt-2 text-[11px] text-text-secondary">{s}</div>
+            <div className="mt-2 text-label text-text-secondary">{s}</div>
           </button>
         ))}
       </div>
@@ -92,14 +92,14 @@ export function DashboardView({ vehicles, onSelect, onToast }: ViewProps) {
             <button
               key={v.id}
               onClick={() => onSelect(v.id)}
-              className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2.5 text-start transition-colors duration-200 hover:bg-surface-4"
+              className="flex w-full items-center gap-3 rounded-chip px-2 py-2.5 text-start transition-colors duration-200 hover:bg-surface-4"
             >
               <TruckTypeAvatar truckType={v.body} size={36} iconSize={18} showBadge />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[12.5px] tabular-nums text-text-primary">
+                <span className="block truncate text-body tabular-nums text-text-primary">
                   {v.shipment} · {getVehicleTypeMeta(v.body).arabicName}
                 </span>
-                <span className="block truncate text-[10.5px] text-text-muted">
+                <span className="block truncate text-label text-text-muted">
                   {v.from} → {v.to} · {v.partner}
                 </span>
               </span>
@@ -130,19 +130,19 @@ export function ChatsView({ vehicles, onSelect, onToast }: ViewProps) {
                 onSelect(v.id);
                 onToast(t("Opened thread", "تم فتح المحادثة"), v.driver.name);
               }}
-              className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2.5 text-start transition-colors duration-200 hover:bg-surface-4"
+              className="flex w-full items-center gap-3 rounded-chip px-2 py-2.5 text-start transition-colors duration-200 hover:bg-surface-4"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-5 text-[11px] font-semibold text-text-primary">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-5 text-label font-semibold text-text-primary">
                 {v.driver.initials}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
-                  <span className="truncate text-[12.5px] font-medium text-text-primary">
+                  <span className="truncate text-body font-medium text-text-primary">
                     {v.driver.name}
                   </span>
-                  <span className="text-[10.5px] tabular-nums text-text-muted">{last.time}</span>
+                  <span className="text-label tabular-nums text-text-muted">{last.time}</span>
                 </span>
-                <span className="block truncate text-[11px] text-text-muted">{last.text}</span>
+                <span className="block truncate text-label text-text-muted">{last.text}</span>
               </span>
               <span className="badge bg-brand/15 text-brand">{v.shipment.slice(0, 2)}</span>
             </button>
@@ -175,13 +175,13 @@ export function PartnersView({ vehicles, onPartner, onToast }: ViewProps) {
           className="animate-fade-up card p-4 text-start transition-all duration-200 hover:bg-surface-4 active:scale-[0.98]"
         >
           <div className="flex items-start justify-between">
-            <span className="grid h-9 w-9 place-items-center rounded-[8px] bg-surface-4 text-[11px] font-semibold text-brand">
+            <span className="grid h-9 w-9 place-items-center rounded-chip bg-surface-4 text-label font-semibold text-brand">
               {name.slice(0, 2).toUpperCase()}
             </span>
             <span className="badge bg-surface-5 text-text-secondary">{list.length}</span>
           </div>
-          <div className="mt-3 text-[13.5px] font-medium text-text-primary">{name}</div>
-          <div className="mt-1 text-[11px] tabular-nums text-text-muted">
+          <div className="mt-3 text-card-title font-medium text-text-primary">{name}</div>
+          <div className="mt-1 text-label tabular-nums text-text-muted">
             {list.reduce((s, v) => s + v.load, 0).toFixed(1)} {t("t payload", "طن حمولة")} ·{" "}
             {list.filter((v) => v.status === "active").length} {t("on route", "على الطريق")}
           </div>
@@ -211,7 +211,7 @@ export function AnalysisView({ vehicles }: ViewProps) {
         <div className="space-y-3">
           {rows.map((r) => (
             <div key={r.id} className="flex items-center gap-3">
-              <span className="w-[124px] shrink-0 truncate text-[11.5px] text-text-secondary">
+              <span className="w-[124px] shrink-0 truncate text-label-lg text-text-secondary">
                 {t(r.label[0], r.label[1])}
               </span>
               <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-4">
@@ -220,10 +220,10 @@ export function AnalysisView({ vehicles }: ViewProps) {
                   style={{ width: `${(r.util / max) * 100}%` }}
                 />
               </span>
-              <span className="w-14 text-end text-[11.5px] tabular-nums text-text-primary">
+              <span className="w-14 text-end text-label-lg tabular-nums text-text-primary">
                 {r.util.toFixed(0)}%
               </span>
-              <span className="w-8 text-end text-[10.5px] tabular-nums text-text-muted">
+              <span className="w-8 text-end text-label tabular-nums text-text-muted">
                 {r.count}
               </span>
             </div>
@@ -241,8 +241,8 @@ export function AnalysisView({ vehicles }: ViewProps) {
           [t("Fleet size", "حجم الأسطول"), vehicles.length],
         ].map(([k, v]) => (
           <div key={k} className="card p-4">
-            <div className="text-[10.5px] tracking-wide text-text-muted uppercase">{k}</div>
-            <div className="mt-2 text-[22px] font-medium tabular-nums text-text-primary">{v}</div>
+            <div className="text-label tracking-wide text-text-muted uppercase">{k}</div>
+            <div className="mt-2 text-hero-sm font-medium tabular-nums text-text-primary">{v}</div>
           </div>
         ))}
       </div>
@@ -275,8 +275,8 @@ export function HistoryView({ vehicles, onSelect }: ViewProps) {
           >
             <span className="absolute top-1.5 -start-5 h-[11px] w-[11px] rounded-full border-2 border-surface-3 bg-brand" />
             <div className="flex items-baseline gap-2">
-              <span className="text-[10.5px] tabular-nums text-text-muted">{e.time}</span>
-              <span className="text-[12.5px] text-text-primary">
+              <span className="text-label tabular-nums text-text-muted">{e.time}</span>
+              <span className="text-body text-text-primary">
                 {t(
                   e.state === "active"
                     ? `${e.title} · departed`
@@ -291,7 +291,7 @@ export function HistoryView({ vehicles, onSelect }: ViewProps) {
                 )}
               </span>
             </div>
-            <div className="text-[10.5px] text-text-muted">{e.sub}</div>
+            <div className="text-label text-text-muted">{e.sub}</div>
           </button>
         ))}
       </div>
@@ -310,20 +310,20 @@ export function TrucksView({ vehicles, onSelect }: ViewProps) {
             <button
               key={v.id}
               onClick={() => onSelect(v.id)}
-              className="flex w-full items-center gap-3.5 rounded-[12px] p-2.5 text-start transition-colors duration-200 hover:bg-surface-4 border border-border-subtle/40 bg-surface-2/40"
+              className="flex w-full items-center gap-3.5 rounded-inner p-2.5 text-start transition-colors duration-200 hover:bg-surface-4 border border-border-subtle/40 bg-surface-2/40"
             >
               {/* Circular Avatar matching user's reference */}
               <TruckTypeAvatar truckType={v.body} size={44} iconSize={22} showBadge />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-[13.5px] text-text-primary truncate">
+                  <span className="font-bold text-card-title text-text-primary truncate">
                     {v.brand} {v.model}
                   </span>
-                  <span className="font-mono text-[12px] font-bold text-brand tabular-nums shrink-0">
+                  <span className="font-mono text-label-lg font-bold text-brand tabular-nums shrink-0">
                     {v.plate}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 text-[11px] text-text-muted">
+                <div className="flex items-center gap-2 mt-0.5 text-label text-text-muted">
                   <span className="font-semibold text-text-secondary">{meta.arabicName} ({meta.englishName})</span>
                   <span>·</span>
                   <span className="truncate">{v.partner}</span>
@@ -358,19 +358,19 @@ export function CargosView({ vehicles, onSelect }: ViewProps) {
               <TruckTypeAvatar truckType={v.body} size={42} iconSize={22} showBadge />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-mono font-bold text-text-primary tabular-nums">
+                  <span className="text-body font-mono font-bold text-text-primary tabular-nums">
                     {v.shipment}
                   </span>
                   <StatusChip status={v.status} />
                 </div>
-                <div className="mt-0.5 text-[11.5px] text-text-muted font-medium truncate">
+                <div className="mt-0.5 text-label-lg text-text-muted font-medium truncate">
                   {v.partner} · <span style={{ color: meta.accentColor }}>{meta.arabicName}</span>
                 </div>
               </div>
             </div>
 
             <div className="mt-3 border-t border-border-subtle pt-2">
-              <div className="flex items-center justify-between text-[11px] tabular-nums text-text-secondary">
+              <div className="flex items-center justify-between text-label tabular-nums text-text-secondary">
                 <span>
                   {v.load} / {v.maxLoad} {t("t", "طن")}
                 </span>
@@ -416,19 +416,19 @@ export function RepairView({ vehicles, onSelect, onToast }: ViewProps) {
             <button
               key={v.id}
               onClick={() => onSelect(v.id)}
-              className="flex w-full items-center gap-3.5 rounded-[12px] p-2.5 text-start transition-colors duration-200 hover:bg-surface-4 border border-border-subtle/40 bg-surface-2/40"
+              className="flex w-full items-center gap-3.5 rounded-inner p-2.5 text-start transition-colors duration-200 hover:bg-surface-4 border border-border-subtle/40 bg-surface-2/40"
             >
               <TruckTypeAvatar truckType={v.body} size={42} iconSize={22} showBadge />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="block truncate text-[13px] font-bold text-text-primary">
+                  <span className="block truncate text-body font-bold text-text-primary">
                     {v.shipment} · {v.plate}
                   </span>
-                  <span className="font-semibold text-[11px]" style={{ color: meta.accentColor }}>
+                  <span className="font-semibold text-label" style={{ color: meta.accentColor }}>
                     {meta.arabicName}
                   </span>
                 </div>
-                <span className="block truncate text-[11px] text-text-muted mt-0.5">
+                <span className="block truncate text-label text-text-muted mt-0.5">
                   {v.stops[v.stops.length - 1]?.place || "الورشة المركزية"} · {v.model}
                 </span>
               </div>
@@ -452,17 +452,17 @@ export function DriversView({ vehicles, onSelect }: ViewProps) {
           style={{ animationDelay: `${i * 45}ms` }}
           className="animate-fade-up card flex items-center gap-3 p-4 text-start transition-all duration-200 hover:bg-surface-4 active:scale-[0.98]"
         >
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-5 text-[12px] font-semibold text-text-primary">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-5 text-label-lg font-semibold text-text-primary">
             {v.driver.initials}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-medium text-text-primary">
+            <span className="block truncate text-body font-medium text-text-primary">
               {v.driver.name}
             </span>
-            <span className="block truncate text-[10.5px] tabular-nums text-text-muted">
+            <span className="block truncate text-label tabular-nums text-text-muted">
               {v.driver.phone}
             </span>
-            <span className="mt-1 flex items-center gap-1 text-[10.5px] tabular-nums text-status-waiting">
+            <span className="mt-1 flex items-center gap-1 text-label tabular-nums text-status-waiting">
               <IconStar size={11} />
               {v.driver.rating} · {v.driver.trips} {t("trips", "رحلة")}
             </span>
@@ -492,11 +492,11 @@ export function ReportsView({ onToast }: ViewProps) {
         {PHOTO_REPORTS.map((p) => (
           <div
             key={p.src}
-            className="relative aspect-[4/3] overflow-hidden rounded-[8px] bg-surface-2"
+            className="relative aspect-[4/3] overflow-hidden rounded-chip bg-surface-2"
           >
             <img src={p.src} alt={p.ar} className="h-full w-full object-cover" />
             <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
-            <span className="pointer-events-none absolute inset-x-1.5 bottom-1.5 text-start text-[10.5px] leading-tight text-white">
+            <span className="pointer-events-none absolute inset-x-1.5 bottom-1.5 text-start text-label leading-tight text-white">
               {t(p.en, p.ar)}
             </span>
           </div>
@@ -518,7 +518,7 @@ export function FleetStrip({
     <div className="card overflow-hidden">
       <div className="flex items-center gap-2 border-b border-border-subtle px-4 py-3">
         <IconPin size={15} className="text-brand" />
-        <span className="text-[11px] tracking-wide text-text-muted uppercase">
+        <span className="text-label tracking-wide text-text-muted uppercase">
           {t(`Live fleet · ${vehicles.length} units`, `الأسطول الحي · ${vehicles.length} وحدة`)}
         </span>
       </div>
@@ -527,19 +527,19 @@ export function FleetStrip({
           <button
             key={v.id}
             onClick={() => onSelect(v.id)}
-            className="group w-[150px] shrink-0 rounded-[8px] bg-surface-2 p-2.5 text-start transition-all duration-200 hover:bg-surface-4 active:scale-95"
+            className="group w-[150px] shrink-0 rounded-chip bg-surface-2 p-2.5 text-start transition-all duration-200 hover:bg-surface-4 active:scale-95"
           >
-            <span className="block overflow-hidden rounded-[6px] bg-black px-1">
+            <span className="block overflow-hidden rounded-micro bg-black px-1">
               <TruckImage
                 vehicle={v}
                 alt=""
                 className="h-10 w-full object-contain transition-transform duration-500 group-hover:scale-105"
               />
             </span>
-            <div className="mt-1 truncate text-[10.5px] tabular-nums text-text-primary">
+            <div className="mt-1 truncate text-label tabular-nums text-text-primary">
               {v.shipment}
             </div>
-            <div className="truncate text-[10px] text-text-muted">{v.model}</div>
+            <div className="truncate text-micro text-text-muted">{v.model}</div>
             <div className="mt-1.5">
               <StatusChip status={v.status} />
             </div>
@@ -554,7 +554,7 @@ export function RowLink({ label, onClick }: { label: string; onClick: () => void
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 text-[11.5px] text-brand transition-opacity duration-200 hover:opacity-80"
+      className="inline-flex items-center gap-1.5 text-label-lg text-brand transition-opacity duration-200 hover:opacity-80"
     >
       {label}
       <IconArrowRight size={13} />

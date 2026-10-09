@@ -89,7 +89,11 @@ function runStylesheetTests() {
   /* Slice spans the base rule AND its hover, which is a separate block. */
   const card = css.slice(css.indexOf("  .card {"), css.indexOf("  /* Selected card"));
   assert.match(card, /border-radius: var\(--ds-radius-card\)/, "the card must use the 20px token");
-  assert.strictEqual(token(css, "--ds-radius-card"), "20px");
+  /* `--ds-radius-card` is now an alias onto the canonical `--radius-*` scale
+     that the `rounded-*` utilities are generated from, so the card and every
+     `rounded-card` call site are the same number by construction. */
+  assert.strictEqual(token(css, "--ds-radius-card"), "var(--radius-card)");
+  assert.strictEqual(token(css, "--radius-card"), "20px");
   assert.match(card, /box-shadow: var\(--ds-card-shadow\), var\(--ds-card-inner\)/);
   assert.match(css, /--ds-card-shadow: 0 8px 32px rgb\(0 0 0 \/ 0\.35\)/, "spec §2 shadow");
   assert.match(css, /--ds-card-inner: inset 0 1px 0 rgb\(255 255 255 \/ 0\.03\)/, "spec §2 inner glow");

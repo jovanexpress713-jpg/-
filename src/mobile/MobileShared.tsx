@@ -88,13 +88,13 @@ export function MobileNotificationsList({
   return (
     <div className="px-5 py-4 space-y-3 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-bold text-white">
+        <h2 className="text-page-title font-bold text-white">
           {t("Notifications", "الإشعارات")}
         </h2>
         {onReload && (
           <button
             onClick={onReload}
-            className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-bold text-white/80 hover:bg-white/20"
+            className="rounded-full bg-white/10 px-2.5 py-1 text-micro font-bold text-white/80 hover:bg-white/20"
           >
             {t("Refresh", "تحديث")}
           </button>
@@ -102,13 +102,13 @@ export function MobileNotificationsList({
       </div>
 
       {loading ? (
-        <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-6 text-center text-[11px] text-text-muted">
+        <div className="rounded-inner border border-border-subtle bg-surface-1 p-6 text-center text-label text-text-muted">
           {t("Loading…", "جاري التحميل…")}
         </div>
       ) : notifications.length === 0 ? (
-        <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-6 text-center">
+        <div className="rounded-inner border border-border-subtle bg-surface-1 p-6 text-center">
           <IconBell size={22} className="mx-auto text-text-muted" />
-          <p className="mt-2 text-[11.5px] text-text-muted">
+          <p className="mt-2 text-label-lg text-text-muted">
             {t("No notifications yet.", "لا توجد إشعارات حتى الآن.")}
           </p>
         </div>
@@ -122,7 +122,7 @@ export function MobileNotificationsList({
               key={n.id}
               onClick={() => !n.isRead && onMarkRead(n.id)}
               className={cn(
-                "w-full rounded-[14px] border p-3 text-start transition-colors",
+                "w-full rounded-inner border p-3 text-start transition-colors",
                 n.isRead
                   ? "border-border-subtle bg-surface-1 opacity-75"
                   : "border-brand/40 bg-surface-1",
@@ -145,18 +145,18 @@ export function MobileNotificationsList({
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-[12px] font-bold text-white">
+                    <span className="truncate text-label-lg font-bold text-white">
                       {titleOf(n)}
                     </span>
                     {!n.isRead && (
                       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
                     )}
                   </div>
-                  <p className="mt-0.5 text-[10.5px] leading-relaxed text-text-muted">
+                  <p className="mt-0.5 text-label leading-relaxed text-text-muted">
                     {messageOf(n)}
                   </p>
                   {n.createdAt && (
-                    <span className="mt-1 block text-[9.5px] text-text-muted/80">
+                    <span className="mt-1 block text-micro text-text-muted/80">
                       {td(new Date(n.createdAt).toLocaleString())}
                     </span>
                   )}
@@ -186,12 +186,12 @@ export function MobileSection({
     <section className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-[12.5px] font-bold text-white">{title}</h3>
-          {hint && <p className="mt-0.5 text-[10px] text-text-muted">{hint}</p>}
+          <h3 className="text-body font-bold text-white">{title}</h3>
+          {hint && <p className="mt-0.5 text-micro text-text-muted">{hint}</p>}
         </div>
         {action}
       </div>
-      <div className="rounded-[16px] border border-border-subtle bg-surface-1">{children}</div>
+      <div className="rounded-panel border border-border-subtle bg-surface-1">{children}</div>
     </section>
   );
 }
@@ -219,7 +219,7 @@ export function MobileRow({
       {Icon && (
         <span
           className={cn(
-            "grid h-8 w-8 shrink-0 place-items-center rounded-[10px]",
+            "grid h-8 w-8 shrink-0 place-items-center rounded-control",
             danger ? "bg-status-danger/15 text-status-danger" : "bg-brand/12 text-brand",
           )}
         >
@@ -229,16 +229,16 @@ export function MobileRow({
       <span className="min-w-0 flex-1">
         <span
           className={cn(
-            "block truncate text-[12px] font-semibold",
+            "block truncate text-label-lg font-semibold",
             danger ? "text-status-danger" : "text-white",
           )}
         >
           {label}
         </span>
-        {hint && <span className="block truncate text-[10px] text-text-muted">{hint}</span>}
+        {hint && <span className="block truncate text-micro text-text-muted">{hint}</span>}
       </span>
       {value && (
-        <span className="shrink-0 text-[11px] font-semibold text-text-muted">{value}</span>
+        <span className="shrink-0 text-label font-semibold text-text-muted">{value}</span>
       )}
       {trailing}
     </>

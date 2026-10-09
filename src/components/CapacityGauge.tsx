@@ -37,7 +37,7 @@ export function CapacityGauge({ load, maxLoad }: { load: number; maxLoad: number
         {stats.map(([k, v]) => (
           <div key={k} className="rounded-inner bg-surface-2 p-2.5">
             <dt className="label-sm">{k}</dt>
-            <dd className="num mt-1.5 text-[15px]">{v}</dd>
+            <dd className="num mt-1.5 text-page-title">{v}</dd>
           </div>
         ))}
       </dl>

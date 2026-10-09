@@ -226,10 +226,10 @@ export function VehicleAssetsManager() {
       {/* Header — matches the existing console header rhythm */}
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-[19px] font-extrabold text-text-primary">
+          <h1 className="text-headline font-extrabold text-text-primary">
             {t("Vehicle Assets (Official Source of Truth)", "أصول المركبات (المصدر الرسمي الموحد)")}
           </h1>
-          <p className="mt-1 text-[12.5px] text-text-secondary">
+          <p className="mt-1 text-body text-text-secondary">
             {t(
               "The Android app and this control room read the same catalogue: one official image and one official 3D model per approved category.",
               "التطبيق ولوحة التحكم يقرآن نفس الكتالوج: صورة رسمية واحدة ومجسم ثلاثي الأبعاد واحد لكل نوع معتمد.",
@@ -237,7 +237,7 @@ export function VehicleAssetsManager() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-[11px]">
+        <div className="flex items-center gap-2 text-label">
           <span className="rounded-full border border-border-subtle bg-surface-2 px-3 py-1.5 font-semibold text-text-secondary">
             {t("Official images", "صور رسمية")}: <span className="text-brand tabular-nums">{publishedCount}/4</span>
           </span>
@@ -255,7 +255,7 @@ export function VehicleAssetsManager() {
       </div>
 
       {/* Operating procedure — the asset pipeline in three steps */}
-      <div className="mb-4 grid gap-2 rounded-[14px] border border-border-subtle bg-surface-1 p-3 sm:grid-cols-3">
+      <div className="mb-4 grid gap-2 rounded-inner border border-border-subtle bg-surface-1 p-3 sm:grid-cols-3">
         {[
           {
             n: "1",
@@ -274,16 +274,16 @@ export function VehicleAssetsManager() {
           },
         ].map((step) => (
           <div key={step.n} className="flex items-start gap-2">
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand/15 text-[11px] font-extrabold text-brand">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand/15 text-label font-extrabold text-brand">
               {step.n}
             </span>
-            <span className="text-[11.5px] leading-relaxed text-text-secondary">{t(step.en, step.ar)}</span>
+            <span className="text-label-lg leading-relaxed text-text-secondary">{t(step.en, step.ar)}</span>
           </div>
         ))}
       </div>
 
       {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-[12px] border border-status-danger/30 bg-status-danger/10 p-3 text-[12px] text-status-danger">
+        <div className="mb-4 flex items-start gap-2 rounded-inner border border-status-danger/30 bg-status-danger/10 p-3 text-label-lg text-status-danger">
           <IconAlertCircle size={15} />
           <span className="flex-1">{error}</span>
           <button onClick={() => setError(null)} className="opacity-70 hover:opacity-100">
@@ -308,7 +308,7 @@ export function VehicleAssetsManager() {
               onClick={() => setActiveType(vt.id)}
               aria-pressed={isActive}
               className={cn(
-                "group overflow-hidden rounded-[14px] border bg-surface-1 text-start transition-all",
+                "group overflow-hidden rounded-inner border bg-surface-1 text-start transition-all",
                 isActive ? "border-brand/60 shadow-lg" : "border-border-subtle hover:border-brand/30",
               )}
             >
@@ -323,25 +323,25 @@ export function VehicleAssetsManager() {
                 />
                 <span
                   className={cn(
-                    "absolute top-2 end-2 rounded-full px-2 py-[2px] text-[9.5px] font-bold backdrop-blur",
+                    "absolute top-2 end-2 rounded-full px-2 py-[2px] text-micro font-bold backdrop-blur",
                     entry.hasOfficialImage ? "bg-status-active/20 text-status-active" : "bg-black/45 text-white/80",
                   )}
                 >
                   {entry.hasOfficialImage ? t("OFFICIAL", "رسمية") : t("BASELINE", "أساسية")}
                 </span>
                 {entry.hasOfficialModel && (
-                  <span className="absolute bottom-2 start-2 rounded-full bg-brand/85 px-2 py-[2px] text-[9.5px] font-bold text-on-brand">
+                  <span className="absolute bottom-2 start-2 rounded-full bg-brand/85 px-2 py-[2px] text-micro font-bold text-on-brand">
                     3D
                   </span>
                 )}
               </div>
               <div className="p-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-bold text-text-primary">{vt.arabicName}</span>
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-text-muted"><span>{vt.categoryCode}</span><span style={{ color: vt.accentColor }}><TruckTypeIcon truckType={vt.id} size={16} /></span></span>
+                  <span className="text-body font-bold text-text-primary">{vt.arabicName}</span>
+                  <span className="inline-flex items-center gap-1.5 text-micro font-mono text-text-muted"><span>{vt.categoryCode}</span><span style={{ color: vt.accentColor }}><TruckTypeIcon truckType={vt.id} size={16} /></span></span>
                 </div>
-                <div className="mt-0.5 text-[10.5px] text-text-muted">{vt.englishName}</div>
-                <div className="mt-2 flex items-center justify-between gap-2 border-t border-border-subtle pt-2 text-[10px]">
+                <div className="mt-0.5 text-label text-text-muted">{vt.englishName}</div>
+                <div className="mt-2 flex items-center justify-between gap-2 border-t border-border-subtle pt-2 text-micro">
                   <span className="text-text-muted">{typeTrip ? `${typeTrip.cargoWeightTons.toLocaleString()} / ${typeTrip.maxCapacityTons} ${t("tons", "طن")}` : "—"}</span>
                   <strong className="tabular-nums text-text-primary">{typeTrip ? `${Math.round(typeLoadPercent)}%` : "—"}</strong>
                 </div>
@@ -358,17 +358,17 @@ export function VehicleAssetsManager() {
           <section
             {...dropProps("image")}
             className={cn(
-              "rounded-[16px] border bg-surface-1 p-4 transition-colors",
+              "rounded-panel border bg-surface-1 p-4 transition-colors",
               dropTarget === "image" ? "border-brand bg-brand/5 ring-2 ring-brand/30" : "border-border-subtle",
             )}
           >
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-[13.5px] font-bold text-text-primary">
+              <h2 className="text-card-title font-bold text-text-primary">
                 {t("Official reference image", "الصورة الرسمية للنوع")} · {asset.arabicName}
               </h2>
               <span
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-[10px] font-bold",
+                  "rounded-full px-2.5 py-1 text-micro font-bold",
                   asset.hasOfficialImage ? "bg-status-active/15 text-status-active" : "bg-status-waiting/15 text-status-waiting",
                 )}
               >
@@ -376,11 +376,11 @@ export function VehicleAssetsManager() {
               </span>
             </div>
 
-            <div className="overflow-hidden rounded-[12px] border border-border-subtle bg-surface-2">
+            <div className="overflow-hidden rounded-inner border border-border-subtle bg-surface-2">
               <TruckImage body={activeType} className="h-[190px] w-full object-cover" loading="eager" />
             </div>
 
-            <dl className="mt-3 space-y-1 text-[11px]">
+            <dl className="mt-3 space-y-1 text-label">
               <div className="flex justify-between gap-3">
                 <dt className="text-text-muted">{t("Public path", "المسار العام")}</dt>
                 <dd className="truncate font-mono text-text-secondary">{asset.officialImage}</dd>
@@ -405,7 +405,7 @@ export function VehicleAssetsManager() {
                 imageInputRef.current?.click();
               }}
               disabled={busy === "image"}
-              className="btn-primary mt-3 w-full gap-2 py-2.5 text-[12.5px] disabled:opacity-60"
+              className="btn-primary mt-3 w-full gap-2 py-2.5 text-body disabled:opacity-60"
             >
               <IconUpload size={15} />
               {busy === "image"
@@ -414,7 +414,7 @@ export function VehicleAssetsManager() {
                   ? t("Replace the official image", "استبدال الصورة الرسمية")
                   : t("Publish the official image", "نشر الصورة الرسمية")}
             </button>
-            <p className="mt-2 text-[10.5px] leading-relaxed text-text-muted">
+            <p className="mt-2 text-label leading-relaxed text-text-muted">
               {t(
                 "Drop the file here, or use the button above. The uploaded file is preserved byte-for-byte as the original and is used across every screen without alteration.",
                 "أفلت الملف هنا أو استخدم الزر أعلاه. يُحفظ الملف المرفوع كما هو بايت ببايت كنسخة أصلية، ويُستخدم في كل الشاشات دون أي تعديل على المركبة.",
@@ -425,17 +425,17 @@ export function VehicleAssetsManager() {
           <section
             {...dropProps("model")}
             className={cn(
-              "rounded-[16px] border bg-surface-1 p-4 transition-colors",
+              "rounded-panel border bg-surface-1 p-4 transition-colors",
               dropTarget === "model" ? "border-brand bg-brand/5 ring-2 ring-brand/30" : "border-border-subtle",
             )}
           >
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-[13.5px] font-bold text-text-primary">
+              <h2 className="text-card-title font-bold text-text-primary">
                 {t("Official 3D model (GLB / glTF)", "المجسم الرسمي ثلاثي الأبعاد (GLB / glTF)")}
               </h2>
               <span
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-[10px] font-bold",
+                  "rounded-full px-2.5 py-1 text-micro font-bold",
                   asset.hasOfficialModel ? "bg-status-active/15 text-status-active" : "bg-status-waiting/15 text-status-waiting",
                 )}
               >
@@ -445,7 +445,7 @@ export function VehicleAssetsManager() {
 
             {asset.hasOfficialModel ? (
               <div className="space-y-3">
-                <dl className="space-y-1 text-[11px]">
+                <dl className="space-y-1 text-label">
                   <div className="flex justify-between gap-3">
                     <dt className="text-text-muted">{t("File", "الملف")}</dt>
                     <dd className="truncate font-mono text-text-secondary">{asset.model.fileName}</dd>
@@ -467,7 +467,7 @@ export function VehicleAssetsManager() {
                     { key: "yOffset" as const, label: t("Height offset", "ارتفاع"), min: -3, max: 3, step: 0.05, value: asset.model.yOffset },
                   ].map((ctl) => (
                     <label key={ctl.key} className="block">
-                      <span className="mb-1 flex items-center justify-between text-[10.5px] font-semibold text-text-secondary">
+                      <span className="mb-1 flex items-center justify-between text-label font-semibold text-text-secondary">
                         {ctl.label}
                         <span className="font-mono text-text-muted">{Number(ctl.value).toFixed(2)}</span>
                       </span>
@@ -492,7 +492,7 @@ export function VehicleAssetsManager() {
                       modelInputRef.current?.click();
                     }}
                     disabled={busy === "model"}
-                    className="btn-ghost flex-1 gap-2 border border-border-subtle py-2 text-[12px] disabled:opacity-60"
+                    className="btn-ghost flex-1 gap-2 border border-border-subtle py-2 text-label-lg disabled:opacity-60"
                   >
                     <IconUpload size={14} />
                     {t("Replace the model", "استبدال المجسم")}
@@ -500,7 +500,7 @@ export function VehicleAssetsManager() {
                   <button
                     onClick={withdrawModel}
                     disabled={busy === "withdraw"}
-                    className="btn-ghost gap-2 border border-status-danger/30 py-2 text-[12px] text-status-danger hover:bg-status-danger/10 disabled:opacity-60"
+                    className="btn-ghost gap-2 border border-status-danger/30 py-2 text-label-lg text-status-danger hover:bg-status-danger/10 disabled:opacity-60"
                   >
                     <IconClose size={14} />
                     {t("Withdraw", "سحب")}
@@ -509,7 +509,7 @@ export function VehicleAssetsManager() {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-start gap-2 rounded-[12px] border border-status-waiting/25 bg-status-waiting/8 p-3 text-[11.5px] leading-relaxed text-status-waiting">
+                <div className="flex items-start gap-2 rounded-inner border border-status-waiting/25 bg-status-waiting/8 p-3 text-label-lg leading-relaxed text-status-waiting">
                   <IconAlertCircle size={15} className="mt-[1px] shrink-0" />
                   <span>
                     {t(
@@ -521,7 +521,7 @@ export function VehicleAssetsManager() {
                 <button
                   onClick={() => modelInputRef.current?.click()}
                   disabled={busy === "model"}
-                  className="btn-primary w-full gap-2 py-2.5 text-[12.5px] disabled:opacity-60"
+                  className="btn-primary w-full gap-2 py-2.5 text-body disabled:opacity-60"
                 >
                   <IconUpload size={15} />
                   {busy === "model" ? t("Uploading…", "جارٍ الرفع…") : t("Publish the official 3D model", "نشر المجسم الرسمي")}
@@ -533,27 +533,27 @@ export function VehicleAssetsManager() {
 
         {/* Right: live viewer + per-vehicle photographs */}
         <div className="space-y-4">
-          <section className="rounded-[16px] border border-border-subtle bg-surface-1 p-4">
+          <section className="rounded-panel border border-border-subtle bg-surface-1 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-[13.5px] font-bold text-text-primary">
+              <h2 className="text-card-title font-bold text-text-primary">
                 {t("Live asset preview", "معاينة مباشرة للأصل")}
               </h2>
               <button
                 onClick={() => setShow3DPreview((v) => !v)}
-                className="rounded-full border border-border-subtle bg-surface-2 px-3 py-1 text-[10.5px] font-semibold text-text-secondary transition-colors hover:text-brand"
+                className="rounded-full border border-border-subtle bg-surface-2 px-3 py-1 text-label font-semibold text-text-secondary transition-colors hover:text-brand"
               >
                 {show3DPreview ? t("Show image", "عرض الصورة") : t("Show viewer", "عرض المجسم")}
               </button>
             </div>
 
-            <div className="h-[340px] overflow-hidden rounded-[12px] border border-border-subtle">
+            <div className="h-[340px] overflow-hidden rounded-inner border border-border-subtle">
               {show3DPreview ? (
                 <Vehicle3DViewer vehicleType={activeType} height="100%" showControls />
               ) : (
                 <TruckImage body={activeType} className="h-full w-full object-contain p-4" loading="eager" />
               )}
             </div>
-            <p className="mt-2 text-[10.5px] leading-relaxed text-text-muted">
+            <p className="mt-2 text-label leading-relaxed text-text-muted">
               {t(
                 "This is the exact asset rendered by the Android app and every console screen for this category.",
                 "هذا هو نفس الأصل المعروض في تطبيق الأندرويد وكل شاشات لوحة التحكم لهذا النوع.",
@@ -561,24 +561,24 @@ export function VehicleAssetsManager() {
             </p>
           </section>
 
-          <section className="rounded-[16px] border border-border-subtle bg-surface-1 p-4">
-            <h2 className="mb-1 text-[13.5px] font-bold text-text-primary">
+          <section className="rounded-panel border border-border-subtle bg-surface-1 p-4">
+            <h2 className="mb-1 text-card-title font-bold text-text-primary">
               {t("Vehicle photographs", "صور المركبات الفعلية")}
             </h2>
-            <p className="mb-3 text-[11px] leading-relaxed text-text-muted">
+            <p className="mb-3 text-label leading-relaxed text-text-muted">
               {t(
                 "Upload a photograph for any truck in the fleet — it replaces the category image for that unit only and is applied on every screen the moment it is published. Drag a file onto a card, or use its upload button.",
                 "ارفع صورة لأي شاحنة في الأسطول — تحل محل صورة النوع لهذه المركبة فقط وتُطبَّق على كل الشاشات لحظة النشر. أفلت الملف على البطاقة أو استخدم زر الرفع.",
               )}
             </p>
 
-            <div className="mb-2.5 flex items-center gap-2 rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-1.5">
+            <div className="mb-2.5 flex items-center gap-2 rounded-control border border-border-subtle bg-surface-2 px-3 py-1.5">
               <IconSearch size={14} className="shrink-0 text-text-muted" />
               <input
                 value={vehicleQuery}
                 onChange={(e) => setVehicleQuery(e.target.value)}
                 placeholder={t("Search by plate, model or type…", "ابحث باللوحة أو الموديل أو النوع…")}
-                className="w-full bg-transparent text-[11.5px] text-text-primary outline-none placeholder:text-text-muted"
+                className="w-full bg-transparent text-label-lg text-text-primary outline-none placeholder:text-text-muted"
               />
               {vehicleQuery && (
                 <button
@@ -614,21 +614,21 @@ export function VehicleAssetsManager() {
                       handleImagePicked(file, target);
                     }}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-[12px] border bg-surface-2 p-2.5 transition-colors",
+                      "flex items-center gap-2.5 rounded-inner border bg-surface-2 p-2.5 transition-colors",
                       vehicleDropId === v.id ? "border-brand bg-brand/10 ring-1 ring-brand/40" : "border-border-subtle",
                     )}
                   >
-                    <div className="h-11 w-14 shrink-0 overflow-hidden rounded-[8px] bg-surface-3">
+                    <div className="h-11 w-14 shrink-0 overflow-hidden rounded-chip bg-surface-3">
                       <TruckImage vehicle={v as any} className="h-full w-full object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[11.5px] font-bold text-text-primary">{v.model}</div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                      <div className="truncate text-label-lg font-bold text-text-primary">{v.model}</div>
+                      <div className="flex items-center gap-1.5 text-micro text-text-muted">
                         <span className="font-mono">{v.plate}</span>
                         <span>·</span>
                         <span>{registry.types[typeId].arabicName}</span>
                         {published && (
-                          <span className="rounded-full bg-status-active/15 px-1.5 py-[1px] text-[9px] font-bold text-status-active">
+                          <span className="rounded-full bg-status-active/15 px-1.5 py-[1px] text-micro font-bold text-status-active">
                             {t("custom", "خاصة")}
                           </span>
                         )}
@@ -643,7 +643,7 @@ export function VehicleAssetsManager() {
                           vehicleImageInputRef.current?.click();
                         }}
                         disabled={busy === "image"}
-                        className="inline-flex items-center gap-1 rounded-[8px] border border-brand/40 px-2 py-1 text-[10.5px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand disabled:opacity-50"
+                        className="inline-flex items-center gap-1 rounded-chip border border-brand/40 px-2 py-1 text-label font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand disabled:opacity-50"
                         title={t("Publish a photograph for this vehicle", "نشر صورة لهذه المركبة")}
                       >
                         <IconUpload size={12} />
@@ -652,7 +652,7 @@ export function VehicleAssetsManager() {
                       {published && (
                         <button
                           onClick={() => removeVehiclePhoto(v.id)}
-                          className="rounded-[8px] border border-status-danger/25 p-1.5 text-status-danger transition-colors hover:bg-status-danger/10"
+                          className="rounded-chip border border-status-danger/25 p-1.5 text-status-danger transition-colors hover:bg-status-danger/10"
                           title={t("Remove and restore the official asset", "حذف وإعادة الأصل الرسمي")}
                         >
                           <IconClose size={13} />
@@ -665,12 +665,12 @@ export function VehicleAssetsManager() {
             </div>
           </section>
 
-          <section className="rounded-[16px] border border-border-subtle bg-surface-1 p-4">
-            <h2 className="mb-2 flex items-center gap-2 text-[13.5px] font-bold text-text-primary">
+          <section className="rounded-panel border border-border-subtle bg-surface-1 p-4">
+            <h2 className="mb-2 flex items-center gap-2 text-card-title font-bold text-text-primary">
               <IconCheck size={15} className="text-brand" />
               {t("How this propagates", "كيف ينتشر هذا الأصل")}
             </h2>
-            <ul className="space-y-1.5 text-[11.5px] leading-relaxed text-text-secondary">
+            <ul className="space-y-1.5 text-label-lg leading-relaxed text-text-secondary">
               {[
                 t("Android application (driver & client modes)", "تطبيق الأندرويد (وضع السائق والعميل)"),
                 t("Fleet registry cards and vehicle details", "بطاقات الأسطول وتفاصيل المركبة"),
@@ -684,7 +684,7 @@ export function VehicleAssetsManager() {
                 </li>
               ))}
             </ul>
-            <div className="mt-3 flex items-center gap-2 rounded-[12px] border border-border-subtle bg-surface-2 p-2.5 text-[11px] text-text-muted">
+            <div className="mt-3 flex items-center gap-2 rounded-inner border border-border-subtle bg-surface-2 p-2.5 text-label text-text-muted">
               <IconTruck size={14} className="text-brand" />
               <span>
                 {t("Approved categories: Flatbed · Refrigerated · Dry Van · Curtainsider — and no fifth type.", "الأنواع المعتمدة: سطحة · براد · جاف · ستارة — ولا نوع خامس.")}

@@ -162,7 +162,7 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
       <div className="flex items-center gap-2.5 px-2">
         <BrandEmblem size={28} />
         <div className="min-w-0 leading-tight">
-          <div className="truncate text-[12.5px] font-extrabold text-text-primary">
+          <div className="truncate text-body font-extrabold text-text-primary">
             {tk("app.name")}
           </div>
           <div className="tagline truncate">{tk("app.tagline")}</div>
@@ -237,10 +237,10 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
             <IconPlus size={18} />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-[13px] font-semibold text-brand">
+            <span className="block truncate text-body font-semibold text-brand">
               {tk("nav.createRequest")}
             </span>
-            <span className="block truncate text-[10.5px] text-text-muted">
+            <span className="block truncate text-label text-text-muted">
               {tk("nav.createHint")}
             </span>
           </span>

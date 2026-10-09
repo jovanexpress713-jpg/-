@@ -156,17 +156,17 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="animate-fade-up flex max-h-[90vh] w-full max-w-[680px] flex-col overflow-hidden rounded-[20px] border border-border-subtle bg-surface-1 shadow-2xl"
+        className="animate-fade-up flex max-h-[90vh] w-full max-w-[680px] flex-col overflow-hidden rounded-card border border-border-subtle bg-surface-1 shadow-2xl"
       >
         {/* Header */}
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border-subtle p-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-status-danger/15 text-status-danger">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-inner bg-status-danger/15 text-status-danger">
               <IconBell size={18} />
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="truncate text-[var(--type-page-title)] font-extrabold text-text-primary">
+                <h3 className="truncate text-page-title font-extrabold text-text-primary">
                   {tk("alerts.center")}
                 </h3>
                 {unread.length > 0 && (
@@ -175,7 +175,7 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
                   </span>
                 )}
               </div>
-              <p className="truncate text-[11px] text-text-muted">{tk("alerts.subtitle")}</p>
+              <p className="truncate text-label text-text-muted">{tk("alerts.subtitle")}</p>
             </div>
           </div>
           <button onClick={onClose} className="btn-icon shrink-0" aria-label={tk("common.close")}>
@@ -193,14 +193,14 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
                   key={f.id}
                   onClick={() => setFilter(f.id)}
                   className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition-colors",
+                    "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-label-lg font-semibold transition-colors",
                     filter === f.id
                       ? "bg-brand text-on-brand"
                       : "bg-surface-2 text-text-secondary hover:bg-surface-3",
                   )}
                 >
                   {tk(f.key)}
-                  <span className="num text-[10px] opacity-80">{count}</span>
+                  <span className="num text-micro opacity-80">{count}</span>
                 </button>
               );
             })}
@@ -251,13 +251,13 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
                           </span>
                         )}
                       </div>
-                      <p className="mt-1.5 text-[12px] leading-relaxed text-text-secondary">
+                      <p className="mt-1.5 text-label-lg leading-relaxed text-text-secondary">
                         {t(alert.descEn, alert.descAr)}
                       </p>
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="num text-[11px] text-text-muted">{td(alert.timestamp)}</span>
+                    <span className="num text-label text-text-muted">{td(alert.timestamp)}</span>
                     {alert.resolved && (
                       <span className="pill pill-success">
                         <IconCheck size={11} /> {tk("alerts.resolved")}
@@ -270,21 +270,21 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
                 {(alert.reasonAr || alert.actionAr || alert.reasonEn || alert.actionEn) && (
                   <div className="mt-2.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                     {(alert.reasonAr || alert.reasonEn) && (
-                      <div className="rounded-[10px] bg-surface-2 px-2.5 py-2">
-                        <div className="text-[10px] font-semibold text-text-muted">
+                      <div className="rounded-control bg-surface-2 px-2.5 py-2">
+                        <div className="text-micro font-semibold text-text-muted">
                           {tk("alerts.reason")}
                         </div>
-                        <div className="mt-0.5 text-[11.5px] leading-relaxed text-text-secondary">
+                        <div className="mt-0.5 text-label-lg leading-relaxed text-text-secondary">
                           {t(alert.reasonEn ?? "", alert.reasonAr ?? "")}
                         </div>
                       </div>
                     )}
                     {(alert.actionAr || alert.actionEn) && (
-                      <div className="rounded-[10px] bg-surface-2 px-2.5 py-2">
-                        <div className="text-[10px] font-semibold text-text-muted">
+                      <div className="rounded-control bg-surface-2 px-2.5 py-2">
+                        <div className="text-micro font-semibold text-text-muted">
                           {tk("alerts.action")}
                         </div>
-                        <div className="mt-0.5 text-[11.5px] leading-relaxed text-text-secondary">
+                        <div className="mt-0.5 text-label-lg leading-relaxed text-text-secondary">
                           {t(alert.actionEn ?? "", alert.actionAr ?? "")}
                         </div>
                       </div>
@@ -293,7 +293,7 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
                 )}
 
                 <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle pt-2.5">
-                  <span className="text-[10.5px] text-text-muted">
+                  <span className="text-label text-text-muted">
                     {tk("alerts.owner")}:{" "}
                     {tk(`alertOwner.${alert.owner}` as I18nKey, {})}
                     {alert.acknowledgedAt && ` · ${tk("alerts.ackBy")} ${alert.acknowledgedAt.slice(11, 16)}`}
@@ -306,7 +306,7 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
                           onSelectTrip?.(alert.tripId!);
                           onClose();
                         }}
-                        className="btn-ghost py-1 px-3 text-[11px]"
+                        className="btn-ghost py-1 px-3 text-label"
                       >
                         {tk("alerts.inspectTrip")}
                         <IconArrowRight size={12} className="rtl:rotate-180" />
@@ -318,7 +318,7 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
                           onClick={() => handleEscalate(alert)}
                           disabled={!actionable}
                           title={actionable ? undefined : tk("alerts.denied")}
-                          className="btn-ghost py-1 px-3 text-[11px] disabled:opacity-40"
+                          className="btn-ghost py-1 px-3 text-label disabled:opacity-40"
                         >
                           <IconBolt size={12} /> {tk("alerts.escalate")}
                         </button>
@@ -326,7 +326,7 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
                           onClick={() => handleAck(alert)}
                           disabled={!actionable || busy === alert.id}
                           title={actionable ? undefined : tk("alerts.denied")}
-                          className="btn-primary py-1 px-3 text-[11px] disabled:opacity-40"
+                          className="btn-primary py-1 px-3 text-label disabled:opacity-40"
                         >
                           <IconCheck size={12} /> {tk("alerts.ack")}
                         </button>
@@ -339,10 +339,10 @@ export function AlertsCenter({ isOpen, onClose, user = null, onSelectTrip }: Ale
           })}
 
           {filtered.length === 0 && (
-            <div className="rounded-[14px] border border-border-subtle bg-surface-2 p-8 text-center">
+            <div className="rounded-inner border border-border-subtle bg-surface-2 p-8 text-center">
               <IconCheck size={20} className="mx-auto text-status-active" />
-              <p className="mt-2 text-[12.5px] font-semibold text-text-primary">{tk("alerts.empty")}</p>
-              <p className="mt-1 text-[11px] text-text-muted">{tk("alerts.emptyHint")}</p>
+              <p className="mt-2 text-body font-semibold text-text-primary">{tk("alerts.empty")}</p>
+              <p className="mt-1 text-label text-text-muted">{tk("alerts.emptyHint")}</p>
             </div>
           )}
         </div>

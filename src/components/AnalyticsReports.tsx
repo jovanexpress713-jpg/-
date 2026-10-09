@@ -183,26 +183,26 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
       {/* Toolbar */}
       <div className="no-print flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-[var(--type-page-title)] font-extrabold text-text-primary">
+          <h2 className="text-page-title font-extrabold text-text-primary">
             {t("Reports & analytics", "التقارير والتحليلات")}
           </h2>
-          <p className="text-[11px] text-text-muted">
+          <p className="text-label text-text-muted">
             {t("Real operational & financial data from the enterprise backend", "بيانات تشغيلية ومالية حقيقية من الخادم المركزي")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {canPrint && (
-            <button onClick={exportPdf} className="btn-primary gap-1.5 px-3 py-2 text-[11.5px]">
+            <button onClick={exportPdf} className="btn-primary gap-1.5 px-3 py-2 text-label-lg">
               <IconDoc size={14} /> PDF
             </button>
           )}
           {canExport && (
-            <button onClick={exportExcel} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-[11.5px]">
+            <button onClick={exportExcel} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-label-lg">
               <IconReport size={14} /> Excel
             </button>
           )}
           {canPrint && (
-            <button onClick={() => window.print()} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-[11.5px]">
+            <button onClick={() => window.print()} className="btn-ghost gap-1.5 border border-border-subtle px-3 py-2 text-label-lg">
               ⎙ {t("Print", "طباعة")}
             </button>
           )}
@@ -243,11 +243,11 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
 
       {/* Summary cards — real metrics */}
       {loading ? (
-        <div className="card mt-3 p-8 text-center text-[12px] text-text-muted">
+        <div className="card mt-3 p-8 text-center text-label-lg text-text-muted">
           {t("Loading real report data…", "جاري تحميل بيانات التقارير الحقيقية…")}
         </div>
       ) : loadError ? (
-        <div className="card mt-3 p-8 text-center text-[12px] text-status-danger">{loadError}</div>
+        <div className="card mt-3 p-8 text-center text-label-lg text-status-danger">{loadError}</div>
       ) : (
         <>
           {canViewFinance && (
@@ -268,7 +268,7 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
 
           {/* Real trips table */}
           <div className="card mt-3 overflow-x-auto p-3">
-            <table className="w-full text-[11px]">
+            <table className="w-full text-label">
               <thead>
                 <tr className="text-text-muted">
                   {[
@@ -317,7 +317,7 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
           </div>
 
           {filtered.length > 0 && (
-            <p className="mt-2 text-[10px] text-text-muted">
+            <p className="mt-2 text-micro text-text-muted">
               {t("Report generated from live data", "تم إنشاء التقرير من البيانات الحيّة")} · {new Date().toLocaleString()}
             </p>
           )}
@@ -330,12 +330,12 @@ export function AnalyticsReports({ onClose }: AnalyticsReportsProps) {
 function StatCard({ label, value, icon: Icon }: { label: string; value: string; icon: typeof IconStar }) {
   return (
     <div className="card flex items-center gap-3 p-3.5">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-brand/12 text-brand">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-brand/12 text-brand">
         <Icon size={16} />
       </span>
       <div className="min-w-0">
-        <div className="truncate text-[10.5px] text-text-muted">{label}</div>
-        <div className="truncate text-[13px] font-extrabold text-text-primary tabular-nums" dir="ltr">{value}</div>
+        <div className="truncate text-label text-text-muted">{label}</div>
+        <div className="truncate text-body font-extrabold text-text-primary tabular-nums" dir="ltr">{value}</div>
       </div>
     </div>
   );
@@ -354,12 +354,12 @@ function FilterInput({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-semibold text-text-muted">{label}</span>
+      <span className="mb-1 block text-micro font-semibold text-text-muted">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-[8px] border border-border-subtle bg-surface-2 px-2.5 text-[11px] text-text-primary focus:border-brand focus:outline-none"
+        className="h-9 w-full rounded-chip border border-border-subtle bg-surface-2 px-2.5 text-label text-text-primary focus:border-brand focus:outline-none"
       />
     </label>
   );
@@ -379,11 +379,11 @@ function FilterSelect({
   const { t } = useSettings();
   return (
     <label className="block">
-      <span className="mb-1 block text-[10px] font-semibold text-text-muted">{label}</span>
+      <span className="mb-1 block text-micro font-semibold text-text-muted">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full rounded-[8px] border border-border-subtle bg-surface-2 px-2 text-[11px] text-text-primary focus:border-brand focus:outline-none"
+        className="h-9 w-full rounded-chip border border-border-subtle bg-surface-2 px-2 text-label text-text-primary focus:border-brand focus:outline-none"
       >
         <option value="">{t("All", "الكل")}</option>
         {options.map((opt) => (

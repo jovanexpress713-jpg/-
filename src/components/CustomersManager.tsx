@@ -260,14 +260,14 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-[8px] bg-brand/12 text-brand">
+              <span className="grid h-8 w-8 place-items-center rounded-chip bg-brand/12 text-brand">
                 <IconDoc size={18} />
               </span>
-              <h1 className="text-[20px] font-bold text-text-primary lg:text-[22px]">
+              <h1 className="text-headline font-bold text-text-primary lg:text-hero-sm">
                 {t("Customer Directory & Client Accounts", "سجل وإدارة العملاء والشركات المتعاقدة")}
               </h1>
             </div>
-            <p className="mt-1 text-[12px] text-text-secondary">
+            <p className="mt-1 text-label-lg text-text-secondary">
               {t(
                 "Authoritative registry of corporate shippers, commercial registrations, VAT certificates & contracts",
                 "السجل الرسمي لشركات الشحن، السجلات التجارية، الأرقام الضريبية، وعقود النقل اللوجستي",
@@ -283,7 +283,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("Search by customer, CR, VAT, city...", "ابحث بالاسم، السجل، الضريبة، المدينة...")}
-                className="w-full rounded-[8px] border border-border-subtle bg-surface-2 px-3 py-1.5 ps-9 text-[12px] text-text-primary placeholder:text-text-muted outline-none focus:border-brand"
+                className="w-full rounded-chip border border-border-subtle bg-surface-2 px-3 py-1.5 ps-9 text-label-lg text-text-primary placeholder:text-text-muted outline-none focus:border-brand"
               />
               <span className="absolute start-3 top-1/2 -translate-y-1/2 text-text-muted">
                 <IconSearch size={14} />
@@ -301,7 +301,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
             {/* Add Customer Button */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="btn-primary text-[12px] px-3.5 py-1.5 gap-1.5"
+              className="btn-primary text-label-lg px-3.5 py-1.5 gap-1.5"
             >
               <IconPlus size={15} />
               <span>{t("Add Customer", "إضافة عميل جديد")}</span>
@@ -311,11 +311,11 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
 
         {/* Quick KPIs & Filter */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-1 rounded-[10px] bg-surface-2 p-1 border border-border-subtle">
+          <div className="flex flex-wrap items-center gap-1 rounded-control bg-surface-2 p-1 border border-border-subtle">
             <button
               onClick={() => setSelectedCity("ALL")}
               className={cn(
-                "rounded-[7px] px-3 py-1 text-[11.5px] font-semibold transition-all",
+                "rounded-chip px-3 py-1 text-label-lg font-semibold transition-all",
                 selectedCity === "ALL"
                   ? "bg-surface-4 text-text-primary shadow-sm"
                   : "text-text-secondary hover:text-text-primary",
@@ -328,7 +328,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                 key={city}
                 onClick={() => setSelectedCity(city)}
                 className={cn(
-                  "rounded-[7px] px-3 py-1 text-[11.5px] font-semibold transition-all",
+                  "rounded-chip px-3 py-1 text-label-lg font-semibold transition-all",
                   selectedCity === city
                     ? "bg-surface-4 text-text-primary shadow-sm"
                     : "text-text-secondary hover:text-text-primary",
@@ -339,11 +339,11 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
             ))}
           </div>
 
-          <div className="flex items-center gap-3 text-[12px] font-mono tabular-nums">
-            <span className="rounded-[6px] border border-border-subtle bg-surface-2 px-2.5 py-1 text-text-muted">
+          <div className="flex items-center gap-3 text-label-lg font-mono tabular-nums">
+            <span className="rounded-micro border border-border-subtle bg-surface-2 px-2.5 py-1 text-text-muted">
               {t("Active Accounts", "الحسابات النشطة")}: <strong className="text-text-primary font-bold">{customers.length}</strong>
             </span>
-            <span className="rounded-[6px] border border-border-subtle bg-surface-2 px-2.5 py-1 text-text-muted">
+            <span className="rounded-micro border border-border-subtle bg-surface-2 px-2.5 py-1 text-text-muted">
               {t("Active Corridors", "المسارات المتعاقد عليها")}: <strong className="text-brand font-bold">16</strong>
             </span>
           </div>
@@ -353,24 +353,24 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 scroll-thin">
         {loading ? (
-          <div className="grid h-64 place-items-center text-text-muted text-[13px]">
+          <div className="grid h-64 place-items-center text-text-muted text-body">
             {t("Loading customer registry…", "جارٍ تحميل سجل العملاء المعتمدين…")}
           </div>
         ) : filteredCustomers.length === 0 ? (
-          <div className="grid h-64 place-items-center rounded-[12px] border border-dashed border-border-subtle p-8 text-center">
+          <div className="grid h-64 place-items-center rounded-inner border border-dashed border-border-subtle p-8 text-center">
             <div>
               <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-surface-2 text-text-muted">
                 <IconDoc size={22} />
               </span>
-              <p className="mt-3 text-[14px] font-semibold text-text-primary">
+              <p className="mt-3 text-card-title font-semibold text-text-primary">
                 {t("No customers found", "لم يتم العثور على عملاء مطابقين للبحث")}
               </p>
-              <p className="mt-1 text-[12px] text-text-muted">
+              <p className="mt-1 text-label-lg text-text-muted">
                 {t("Adjust search query or add a new corporate customer manually", "عدّل خيارات البحث أو قم بإضافة عميل جديد يدوياً")}
               </p>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="btn-primary mt-4 text-[12px] mx-auto gap-1.5"
+                className="btn-primary mt-4 text-label-lg mx-auto gap-1.5"
               >
                 <IconPlus size={14} />
                 <span>{t("Add Customer Now", "إضافة عميل الآن")}</span>
@@ -387,16 +387,16 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
               return (
                 <div
                   key={cust.id}
-                  className="group relative flex flex-col justify-between rounded-[12px] border border-border-subtle bg-surface-1 p-4 transition-all duration-200 hover:border-brand/40 hover:shadow-lg"
+                  className="group relative flex flex-col justify-between rounded-inner border border-border-subtle bg-surface-1 p-4 transition-all duration-200 hover:border-brand/40 hover:shadow-lg"
                 >
                   <div>
                     {/* Header: Company Name & City */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <span className="inline-block rounded-[5px] bg-brand/12 px-2 py-0.5 text-[10.5px] font-bold text-brand">
+                        <span className="inline-block rounded-micro bg-brand/12 px-2 py-0.5 text-label font-bold text-brand">
                           {cust.city || "المملكة العربية السعودية"}
                         </span>
-                        <h3 className="mt-1.5 text-[14.5px] font-bold text-text-primary leading-tight">
+                        <h3 className="mt-1.5 text-card-title font-bold text-text-primary leading-tight">
                           {cust.name}
                         </h3>
                       </div>
@@ -406,7 +406,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                     </div>
 
                     {/* Contact Person & Info */}
-                    <div className="mt-3 space-y-1.5 text-[11.5px] text-text-secondary border-t border-border-subtle pt-2.5">
+                    <div className="mt-3 space-y-1.5 text-label-lg text-text-secondary border-t border-border-subtle pt-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-text-muted">{t("Contact Person", "المسؤول / المفوض")}:</span>
                         <span className="font-semibold text-text-primary">{cust.contactPerson || "—"}</span>
@@ -418,19 +418,19 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                       {cust.email && (
                         <div className="flex items-center justify-between truncate">
                           <span className="text-text-muted">{t("Email", "البريد")}:</span>
-                          <span className="font-mono text-text-muted text-[11px] truncate max-w-[170px]">{cust.email}</span>
+                          <span className="font-mono text-text-muted text-label truncate max-w-[170px]">{cust.email}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Compliance Badges: CR & VAT */}
-                    <div className="mt-3 grid grid-cols-2 gap-2 rounded-[8px] bg-surface-2 p-2 text-[10.5px] font-mono">
+                    <div className="mt-3 grid grid-cols-2 gap-2 rounded-chip bg-surface-2 p-2 text-label font-mono">
                       <div
                         onClick={() => copyToClipboard(cust.commercialReg, "السجل التجاري")}
                         className="cursor-pointer hover:text-brand"
                         title={t("Click to copy CR", "انقر لنسخ رقم السجل")}
                       >
-                        <span className="block text-[9.5px] text-text-muted font-sans">{t("CR Number", "س.ت")}:</span>
+                        <span className="block text-micro text-text-muted font-sans">{t("CR Number", "س.ت")}:</span>
                         <span className="font-bold text-text-primary truncate block">{cust.commercialReg || "1010000000"}</span>
                       </div>
                       <div
@@ -438,22 +438,22 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                         className="cursor-pointer hover:text-brand"
                         title={t("Click to copy VAT", "انقر لنسخ الرقم الضريبي")}
                       >
-                        <span className="block text-[9.5px] text-text-muted font-sans">{t("VAT Number", "الضريبة")}:</span>
+                        <span className="block text-micro text-text-muted font-sans">{t("VAT Number", "الضريبة")}:</span>
                         <span className="font-bold text-text-primary truncate block">{cust.vatNumber || "3000000000"}</span>
                       </div>
                     </div>
 
                     {/* Physical Address */}
                     {cust.address && (
-                      <p className="mt-2.5 text-[11px] text-text-muted truncate">
+                      <p className="mt-2.5 text-label text-text-muted truncate">
                         📍 {cust.address}
                       </p>
                     )}
                   </div>
 
                   {/* Footer Actions */}
-                  <div className="mt-4 flex items-center justify-between border-t border-border-subtle pt-3 text-[11.5px]">
-                    <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                  <div className="mt-4 flex items-center justify-between border-t border-border-subtle pt-3 text-label-lg">
+                    <div className="flex items-center gap-1.5 font-mono text-label">
                       {activeTripsCount > 0 ? (
                         <button
                           type="button"
@@ -474,7 +474,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                       {onOpenCreateShipment && (
                         <button
                           onClick={() => onOpenCreateShipment(cust.name)}
-                          className="btn-ghost text-[11px] py-1 px-2 text-brand hover:bg-brand/10"
+                          className="btn-ghost text-label py-1 px-2 text-brand hover:bg-brand/10"
                           title={t("Create shipment for this customer", "إنشاء شحنة لهذا العميل")}
                         >
                           <IconCargo size={13} />
@@ -484,14 +484,14 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
 
                       <button
                         onClick={() => setEditingCustomer(cust)}
-                        className="btn-ghost text-[11px] py-1 px-2 hover:text-text-primary"
+                        className="btn-ghost text-label py-1 px-2 hover:text-text-primary"
                       >
                         {t("Edit", "تعديل")}
                       </button>
 
                       <button
                         onClick={() => setDeletingCustomer(cust)}
-                        className="btn-ghost text-[11px] py-1 px-2 text-status-danger hover:bg-status-danger/10"
+                        className="btn-ghost text-label py-1 px-2 text-status-danger hover:bg-status-danger/10"
                       >
                         {t("Delete", "حذف")}
                       </button>
@@ -507,13 +507,13 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
       {/* ── ADD CUSTOMER MODAL ── */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-[14px] border border-border-subtle bg-surface-1 p-5 shadow-2xl">
+          <div className="w-full max-w-lg rounded-inner border border-border-subtle bg-surface-1 p-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-border-subtle pb-3">
               <div>
-                <h2 className="text-[16px] font-bold text-text-primary">
+                <h2 className="text-page-title font-bold text-text-primary">
                   {t("Add New Corporate Customer", "إضافة منشأة / عميل جديد")}
                 </h2>
-                <p className="text-[11.5px] text-text-muted mt-0.5">
+                <p className="text-label-lg text-text-muted mt-0.5">
                   {t("Creates approved client account and commercial profile", "إنشاء وتفعيل حساب العميل الرسمي في سجلات إيجاز")}
                 </p>
               </div>
@@ -527,7 +527,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
 
             <form onSubmit={handleAddSubmit} className="mt-4 space-y-3">
               <div>
-                <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                <label className="block text-label-lg font-semibold text-text-muted mb-1">
                   {t("Company / Organization Name", "اسم الشركة أو المؤسسة")} *
                 </label>
                 <input
@@ -536,13 +536,13 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="مثال: شركة سدافكو للأغذية والمشروبات"
-                  className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                  className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("Authorized Contact Person", "اسم المسؤول / المفوض")} *
                   </label>
                   <input
@@ -551,12 +551,12 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                     value={formContact}
                     onChange={(e) => setFormContact(e.target.value)}
                     placeholder="مثال: م. طارق منصور"
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("Contact Phone", "رقم الجوال الرسمي")} *
                   </label>
                   <input
@@ -566,14 +566,14 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                     onChange={(e) => setFormPhone(e.target.value)}
                     placeholder="+966 5x xxx xxxx"
                     dir="ltr"
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("Commercial Registration (CR)", "رقم السجل التجاري (١٠ أرقام)")}
                   </label>
                   <input
@@ -581,12 +581,12 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                     value={formCR}
                     onChange={(e) => setFormCR(e.target.value)}
                     placeholder="1010xxxxxx"
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("VAT Number", "الرقم الضريبي (١٥ رقم)")}
                   </label>
                   <input
@@ -594,20 +594,20 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                     value={formVAT}
                     onChange={(e) => setFormVAT(e.target.value)}
                     placeholder="3000xxxxxxxx003"
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("City", "المدينة الرئيسية")}
                   </label>
                   <select
                     value={formCity}
                     onChange={(e) => setFormCity(e.target.value)}
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                   >
                     <option value="الرياض">الرياض (Riyadh)</option>
                     <option value="جدة">جدة (Jeddah)</option>
@@ -623,7 +623,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                 </div>
 
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("Email Address", "البريد الإلكتروني")}
                   </label>
                   <input
@@ -631,13 +631,13 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
                     placeholder="logistics@company.com"
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                <label className="block text-label-lg font-semibold text-text-muted mb-1">
                   {t("Physical Address / Warehouse", "العنوان وموقع المستودعات")}
                 </label>
                 <input
@@ -645,12 +645,12 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                   value={formAddress}
                   onChange={(e) => setFormAddress(e.target.value)}
                   placeholder="مثال: المنطقة الصناعية الأولى، بوابة المستودعات رقم ٤"
-                  className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                  className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                <label className="block text-label-lg font-semibold text-text-muted mb-1">
                   {t("Portal Password (for client mobile app)", "كلمة مرور بوابة العميل وتطبيق الجوال")}
                 </label>
                 <input
@@ -658,7 +658,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                   value={formPassword}
                   onChange={(e) => setFormPassword(e.target.value)}
                   placeholder="Ejaz@2026Client"
-                  className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary font-mono outline-none focus:border-brand"
+                  className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary font-mono outline-none focus:border-brand"
                 />
               </div>
 
@@ -666,14 +666,14 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="btn-ghost text-[12px]"
+                  className="btn-ghost text-label-lg"
                 >
                   {t("Cancel", "إلغاء")}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary text-[12px] px-4 py-2"
+                  className="btn-primary text-label-lg px-4 py-2"
                 >
                   {isSubmitting ? t("Saving…", "جارٍ الحفظ…") : t("Confirm & Create Customer", "تأكيد وإضافة العميل")}
                 </button>
@@ -686,13 +686,13 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
       {/* ── EDIT CUSTOMER MODAL ── */}
       {editingCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-[14px] border border-border-subtle bg-surface-1 p-5 shadow-2xl">
+          <div className="w-full max-w-lg rounded-inner border border-border-subtle bg-surface-1 p-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-border-subtle pb-3">
               <div>
-                <h2 className="text-[16px] font-bold text-text-primary">
+                <h2 className="text-page-title font-bold text-text-primary">
                   {t("Edit Customer Details", "تعديل بيانات العميل")}
                 </h2>
-                <p className="text-[11.5px] text-text-muted mt-0.5">
+                <p className="text-label-lg text-text-muted mt-0.5">
                   {editingCustomer.name}
                 </p>
               </div>
@@ -706,7 +706,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
 
             <form onSubmit={handleEditSubmit} className="mt-4 space-y-3">
               <div>
-                <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                <label className="block text-label-lg font-semibold text-text-muted mb-1">
                   {t("Company Name", "اسم المنشأة")}
                 </label>
                 <input
@@ -714,97 +714,97 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                   required
                   value={editingCustomer.name}
                   onChange={(e) => setEditingCustomer({ ...editingCustomer, name: e.target.value })}
-                  className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                  className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("Contact Person", "المسؤول / المفوض")}
                   </label>
                   <input
                     type="text"
                     value={editingCustomer.contactPerson}
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, contactPerson: e.target.value })}
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("Phone", "رقم الجوال")}
                   </label>
                   <input
                     type="text"
                     value={editingCustomer.phone}
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, phone: e.target.value })}
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("CR Number", "رقم السجل التجاري")}
                   </label>
                   <input
                     type="text"
                     value={editingCustomer.commercialReg}
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, commercialReg: e.target.value })}
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("VAT Number", "الرقم الضريبي")}
                   </label>
                   <input
                     type="text"
                     value={editingCustomer.vatNumber}
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, vatNumber: e.target.value })}
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("City", "المدينة")}
                   </label>
                   <input
                     type="text"
                     value={editingCustomer.city}
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, city: e.target.value })}
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label-lg font-semibold text-text-muted mb-1">
                     {t("Email", "البريد الإلكتروني")}
                   </label>
                   <input
                     type="email"
                     value={editingCustomer.email}
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, email: e.target.value })}
-                    className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                    className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11.5px] font-semibold text-text-muted mb-1">
+                <label className="block text-label-lg font-semibold text-text-muted mb-1">
                   {t("Address", "العنوان")}
                 </label>
                 <input
                   type="text"
                   value={editingCustomer.address}
                   onChange={(e) => setEditingCustomer({ ...editingCustomer, address: e.target.value })}
-                  className="w-full rounded-[8px] border border-border-subtle bg-surface-2 p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                  className="w-full rounded-chip border border-border-subtle bg-surface-2 p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                 />
               </div>
 
@@ -812,14 +812,14 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                 <button
                   type="button"
                   onClick={() => setEditingCustomer(null)}
-                  className="btn-ghost text-[12px]"
+                  className="btn-ghost text-label-lg"
                 >
                   {t("Cancel", "إلغاء")}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary text-[12px] px-4 py-2"
+                  className="btn-primary text-label-lg px-4 py-2"
                 >
                   {isSubmitting ? t("Saving…", "جارٍ التحديث…") : t("Save Changes", "حفظ التعديلات")}
                 </button>
@@ -832,17 +832,17 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
       {/* ── DELETE CONFIRMATION MODAL ── */}
       {deletingCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[14px] border border-status-danger/40 bg-surface-1 p-5 shadow-2xl">
-            <h3 className="text-[16px] font-bold text-status-danger">
+          <div className="w-full max-w-md rounded-inner border border-status-danger/40 bg-surface-1 p-5 shadow-2xl">
+            <h3 className="text-page-title font-bold text-status-danger">
               {t("Delete Customer Account", "تأكيد حذف حساب العميل")}
             </h3>
-            <p className="mt-2 text-[12.5px] text-text-secondary leading-relaxed">
+            <p className="mt-2 text-body text-text-secondary leading-relaxed">
               {t(
                 "Are you sure you want to delete this customer account? This will remove the record from active directories.",
                 "هل أنت متأكد من رغبتك في حذف حساب العميل هذا؟ سيتم إزالته من السجلات التشغيلية.",
               )}
             </p>
-            <div className="mt-3 rounded-[8px] bg-surface-2 p-2.5 text-[12px] font-bold text-text-primary">
+            <div className="mt-3 rounded-chip bg-surface-2 p-2.5 text-label-lg font-bold text-text-primary">
               {deletingCustomer.name} · {deletingCustomer.city}
             </div>
 
@@ -850,7 +850,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
               <button
                 type="button"
                 onClick={() => setDeletingCustomer(null)}
-                className="btn-ghost text-[12px]"
+                className="btn-ghost text-label-lg"
               >
                 {t("Cancel", "تراجع")}
               </button>
@@ -858,7 +858,7 @@ export function CustomersManager({ onOpenShipments, onOpenCreateShipment }: Cust
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleDeleteSubmit}
-                className="rounded-[8px] bg-status-danger px-4 py-2 text-[12px] font-bold text-white transition-opacity hover:opacity-90"
+                className="rounded-chip bg-status-danger px-4 py-2 text-label-lg font-bold text-white transition-opacity hover:opacity-90"
               >
                 {isSubmitting ? t("Deleting…", "جارٍ الحذف…") : t("Confirm Delete", "تأكيد الحذف النهائي")}
               </button>

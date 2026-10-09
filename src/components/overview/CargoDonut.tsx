@@ -28,8 +28,8 @@ export function CargoDonut({ trips }: { trips: Trip[] }) {
     <section className="card animate-fade-up flex flex-col p-5" style={{ animationDelay: "120ms" }}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="text-[16px] font-semibold text-text-primary">{t("Cargo Mix", "توزيع الحمولات")}</h2>
-          <p className="mt-0.5 text-[11.5px] text-text-muted">{t("Tonnage by trailer type", "الأطنان حسب نوع المقطورة")}</p>
+          <h2 className="text-page-title font-semibold text-text-primary">{t("Cargo Mix", "توزيع الحمولات")}</h2>
+          <p className="mt-0.5 text-label-lg text-text-muted">{t("Tonnage by trailer type", "الأطنان حسب نوع المقطورة")}</p>
         </div>
       </div>
 
@@ -43,7 +43,7 @@ export function CargoDonut({ trips }: { trips: Trip[] }) {
                 onFocus={() => setHover(i)}
                 onBlur={() => setHover(null)}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-[10px] px-2 py-1.5 text-start text-[12px] transition-colors",
+                  "flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-start text-label-lg transition-colors",
                   hover === i ? "bg-surface-4 text-text-primary" : "text-text-secondary",
                 )}
               >
@@ -85,11 +85,11 @@ export function CargoDonut({ trips }: { trips: Trip[] }) {
           </svg>
           <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
             <div>
-              <div className="text-[10.5px] text-text-muted">
+              <div className="text-label text-text-muted">
                 {hover === null ? t("Total load", "إجمالي الحمولة") : t(CARGO_LABEL[segments[hover].type][0], CARGO_LABEL[segments[hover].type][1])}
               </div>
-              <div className="text-[22px] font-semibold tabular-nums text-text-primary">{shownTotal.toFixed(1)}</div>
-              <div className="text-[10.5px] text-text-muted">{t("tons", "طن")}</div>
+              <div className="text-hero-sm font-semibold tabular-nums text-text-primary">{shownTotal.toFixed(1)}</div>
+              <div className="text-label text-text-muted">{t("tons", "طن")}</div>
             </div>
           </div>
         </div>

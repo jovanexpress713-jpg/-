@@ -24,15 +24,15 @@ export interface SpecRowProps {
 export function SpecRow({ icon, label, value, className, valueClassName }: SpecRowProps) {
   return (
     <div className={cn("flex items-center justify-between gap-3 py-2.5", className)}>
-      <span className="flex min-w-0 items-center gap-2 text-[12px] text-text-muted">
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] bg-surface-4 text-text-secondary">
+      <span className="flex min-w-0 items-center gap-2 text-label-lg text-text-muted">
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-micro bg-surface-4 text-text-secondary">
           {icon}
         </span>
         <span className="truncate">{label}</span>
       </span>
       <span
         className={cn(
-          "shrink-0 text-[12.5px] tabular-nums text-text-primary",
+          "shrink-0 text-body tabular-nums text-text-primary",
           valueClassName,
         )}
       >
@@ -61,15 +61,15 @@ export function SpecTile({
   valueClassName,
 }: SpecTileProps) {
   return (
-    <div className={cn("rounded-[10px] border border-white/5 bg-surface-2 p-3", className)}>
+    <div className={cn("rounded-control border border-white/5 bg-surface-2 p-3", className)}>
       <div className="flex items-center gap-1.5 text-text-muted">
         <span className="shrink-0 text-brand">{icon}</span>
-        <span className="truncate text-[10.5px]">{label}</span>
+        <span className="truncate text-label">{label}</span>
       </div>
       <div className={cn("mt-0.5 truncate font-semibold text-text-primary", valueClassName)}>
         {value}
       </div>
-      {hint && <div className="truncate text-[10px] text-text-muted">{hint}</div>}
+      {hint && <div className="truncate text-micro text-text-muted">{hint}</div>}
     </div>
   );
 }
@@ -86,7 +86,7 @@ export function SpecInline({
   valueClassName,
 }: Omit<SpecTileProps, "hint">) {
   return (
-    <div className={cn("flex items-center justify-between gap-2 text-[10.5px]", className)}>
+    <div className={cn("flex items-center justify-between gap-2 text-label", className)}>
       <span className="flex min-w-0 items-center gap-1.5 text-text-muted">
         <span className="shrink-0">{icon}</span>
         <span className="truncate">{label}</span>

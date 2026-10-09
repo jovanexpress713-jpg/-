@@ -235,17 +235,17 @@ export function AIAssistant({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="animate-fade-up flex max-h-[92vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[20px] border border-border-subtle bg-surface-1 shadow-2xl"
+        className="animate-fade-up flex max-h-[92vh] w-full max-w-[760px] flex-col overflow-hidden rounded-card border border-border-subtle bg-surface-1 shadow-2xl"
       >
         {/* Header */}
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border-subtle p-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-brand text-on-brand">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-inner bg-brand text-on-brand">
               <IconBolt size={20} />
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="truncate text-[var(--type-page-title)] font-extrabold text-text-primary">
+                <h3 className="truncate text-page-title font-extrabold text-text-primary">
                   {tk("assistant.title")}
                 </h3>
                 <span className="pill pill-success hidden sm:inline-flex">
@@ -253,7 +253,7 @@ export function AIAssistant({
                   {tk("common.online")}
                 </span>
               </div>
-              <p className="truncate text-[11px] text-text-muted">{tk("assistant.subtitle")}</p>
+              <p className="truncate text-label text-text-muted">{tk("assistant.subtitle")}</p>
             </div>
           </div>
           <button onClick={onClose} className="btn-icon shrink-0" aria-label={tk("common.close")}>
@@ -275,8 +275,8 @@ export function AIAssistant({
           </div>
 
           {/* Scope + hint */}
-          <div className="rounded-[12px] border border-border-subtle bg-surface-2 p-3">
-            <div className="flex items-center gap-2 text-[11.5px] font-semibold text-text-secondary">
+          <div className="rounded-inner border border-border-subtle bg-surface-2 p-3">
+            <div className="flex items-center gap-2 text-label-lg font-semibold text-text-secondary">
               <IconTruck size={14} className="text-brand" />
               {tk("assistant.scope")}
             </div>
@@ -288,7 +288,7 @@ export function AIAssistant({
               <ScopeChip on={ctx.capabilities.viewFinance} label={tk("nav.finance")} />
               <ScopeChip on={ctx.capabilities.act} label={tk("assistant.actEscalate")} />
             </div>
-            <p className="mt-2 text-[10.5px] text-text-muted">
+            <p className="mt-2 text-label text-text-muted">
               {ctx.scope === "driver"
                 ? tk("assistant.hintDriver")
                 : ctx.scope === "client"
@@ -300,18 +300,18 @@ export function AIAssistant({
           {/* Detected issues */}
           <section>
             <div className="mb-2 flex items-center justify-between gap-2">
-              <h4 className="text-[var(--type-card-title)] font-bold text-text-primary">
+              <h4 className="text-card-title font-bold text-text-primary">
                 {tk("assistant.insights")}
               </h4>
-              <span className="text-[10.5px] text-text-muted">
+              <span className="text-label text-text-muted">
                 {tk("assistant.issuesCount", { count: issues.length })}
               </span>
             </div>
 
             {issues.length === 0 ? (
-              <div className="rounded-[12px] border border-status-active/25 bg-status-active/8 p-4 text-center">
+              <div className="rounded-inner border border-status-active/25 bg-status-active/8 p-4 text-center">
                 <IconCheck size={18} className="mx-auto text-status-active" />
-                <p className="mt-1.5 text-[12px] text-text-secondary">{tk("assistant.noIssues")}</p>
+                <p className="mt-1.5 text-label-lg text-text-secondary">{tk("assistant.noIssues")}</p>
               </div>
             ) : (
               <div className="space-y-2.5">
@@ -328,12 +328,12 @@ export function AIAssistant({
                               : "text-text-muted"
                         }
                       />
-                      <span className="text-[12.5px] font-bold text-text-primary">
+                      <span className="text-body font-bold text-text-primary">
                         {tk(issue.keys.title)}
                       </span>
                       {severityChip(issue.severity)}
                       {issue.signals.trip && (
-                        <span className="num text-[10.5px] text-text-muted" dir="ltr">
+                        <span className="num text-label text-text-muted" dir="ltr">
                           {issue.signals.trip}
                         </span>
                       )}
@@ -365,7 +365,7 @@ export function AIAssistant({
                             }}
                             className={cn(
                               action.id === "escalate" ? "btn-primary" : "btn-ghost",
-                              "text-[11px] py-1.5 px-3",
+                              "text-label py-1.5 px-3",
                             )}
                           >
                             {confirming === `${issue.id}:${action.id}` && <IconAlertCircle size={12} />}
@@ -384,7 +384,7 @@ export function AIAssistant({
 
           {/* Ask */}
           <section className="space-y-2.5">
-            <div className="flex items-center gap-2 rounded-[12px] border border-border-subtle bg-surface-2 p-2 focus-within:border-brand">
+            <div className="flex items-center gap-2 rounded-inner border border-border-subtle bg-surface-2 p-2 focus-within:border-brand">
               <IconSearch size={17} className="shrink-0 text-text-muted ps-1.5" />
               <input
                 value={question}
@@ -392,12 +392,12 @@ export function AIAssistant({
                 onKeyDown={(e) => e.key === "Enter" && handleAsk(question)}
                 placeholder={tk("assistant.ask")}
                 aria-label={tk("assistant.ask")}
-                className="min-w-0 flex-1 bg-transparent text-[13px] text-text-primary outline-none"
+                className="min-w-0 flex-1 bg-transparent text-body text-text-primary outline-none"
               />
               <button
                 onClick={() => handleAsk(question)}
                 disabled={isThinking}
-                className="btn-primary shrink-0 py-1.5 px-3.5 text-[11.5px]"
+                className="btn-primary shrink-0 py-1.5 px-3.5 text-label-lg"
               >
                 {isThinking ? tk("assistant.thinking") : tk("assistant.send")}
               </button>
@@ -405,7 +405,7 @@ export function AIAssistant({
 
             {suggestions.length > 0 && (
               <div>
-                <span className="mb-1.5 block text-[10.5px] font-semibold text-text-muted">
+                <span className="mb-1.5 block text-label font-semibold text-text-muted">
                   {tk("assistant.suggestions")}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -413,7 +413,7 @@ export function AIAssistant({
                     <button
                       key={s.id}
                       onClick={() => handleAsk(tk(s.labelKey))}
-                      className="chip text-[11px] py-1.5 px-2.5"
+                      className="chip text-label py-1.5 px-2.5"
                     >
                       {tk(s.labelKey)}
                     </button>
@@ -425,26 +425,26 @@ export function AIAssistant({
             {answer && (
               <div
                 className={cn(
-                  "animate-fade-up rounded-[14px] border p-3.5",
+                  "animate-fade-up rounded-inner border p-3.5",
                   answer.denied
                     ? "border-status-danger/35 bg-status-danger/8"
                     : "border-brand/30 bg-brand/8",
                 )}
               >
-                <div className="mb-1.5 flex items-center gap-2 text-[12px] font-bold text-brand">
+                <div className="mb-1.5 flex items-center gap-2 text-label-lg font-bold text-brand">
                   <IconBolt size={15} />
                   {tk("assistant.title")}
                 </div>
-                <p className="text-[12.5px] leading-relaxed text-text-primary">
+                <p className="text-body leading-relaxed text-text-primary">
                   {tk(answer.key, answer.params)}
                 </p>
                 {answer.issues && answer.issues.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {answer.issues.slice(0, 3).map((issue) => (
-                      <li key={issue.id} className="flex items-center gap-2 text-[11.5px] text-text-secondary">
+                      <li key={issue.id} className="flex items-center gap-2 text-label-lg text-text-secondary">
                         {severityChip(issue.severity)}
                         <span className="truncate">{tk(issue.keys.title)}</span>
-                        <span className="num shrink-0 text-[10px] text-text-muted" dir="ltr">
+                        <span className="num shrink-0 text-micro text-text-muted" dir="ltr">
                           {issue.signals.trip ?? ""}
                         </span>
                       </li>
@@ -470,7 +470,7 @@ export function AIAssistant({
                     {td(ctx.focusTrip.originCity)} → {td(ctx.focusTrip.destinationCity)}
                   </span>
                 </span>
-                <span className="flex shrink-0 items-center gap-1 text-[10.5px] text-text-muted">
+                <span className="flex shrink-0 items-center gap-1 text-label text-text-muted">
                   {tk(tripStatusKey(ctx.focusTrip.status))}
                   <IconArrowRight size={13} className="rtl:rotate-180" />
                 </span>
@@ -493,11 +493,11 @@ function ContextCell({
   tone?: "danger";
 }) {
   return (
-    <div className="rounded-[10px] bg-surface-2 px-3 py-2">
-      <div className="truncate text-[10px] font-semibold text-text-muted">{label}</div>
+    <div className="rounded-control bg-surface-2 px-3 py-2">
+      <div className="truncate text-micro font-semibold text-text-muted">{label}</div>
       <div
         className={cn(
-          "truncate text-[12px] font-bold",
+          "truncate text-label-lg font-bold",
           tone === "danger" ? "text-status-danger" : "text-text-primary",
         )}
       >
@@ -522,9 +522,9 @@ function ScopeChip({ on, label }: { on: boolean; label: string }) {
 
 function IssueRow({ label, value, full }: { label: string; value: string; full?: boolean }) {
   return (
-    <div className={cn("rounded-[10px] bg-surface-2 px-2.5 py-2", full && "sm:col-span-2")}>
-      <dt className="text-[10px] font-semibold text-text-muted">{label}</dt>
-      <dd className="mt-0.5 text-[11.5px] leading-relaxed text-text-secondary">{value}</dd>
+    <div className={cn("rounded-control bg-surface-2 px-2.5 py-2", full && "sm:col-span-2")}>
+      <dt className="text-micro font-semibold text-text-muted">{label}</dt>
+      <dd className="mt-0.5 text-label-lg leading-relaxed text-text-secondary">{value}</dd>
     </div>
   );
 }

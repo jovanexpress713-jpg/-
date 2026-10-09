@@ -201,7 +201,7 @@ export function MobileApp({
         <header className="relative z-30 flex shrink-0 items-center gap-2 border-b border-border-subtle bg-navy px-3 py-2 text-white">
           <BrandLogo size={26} showSub={false} />
           {pageTitle ? (
-            <h1 className="min-w-0 flex-1 truncate text-[12.5px] font-bold">{pageTitle}</h1>
+            <h1 className="min-w-0 flex-1 truncate text-body font-bold">{pageTitle}</h1>
           ) : (
             <div className="min-w-0 flex-1" />
           )}
@@ -240,7 +240,7 @@ export function MobileApp({
           >
             <IconArrowRight size={15} className="rtl:rotate-180" />
           </button>
-          <h1 className="min-w-0 flex-1 truncate text-[12.5px] font-bold">{pageTitle}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-body font-bold">{pageTitle}</h1>
         </header>
       )}
 

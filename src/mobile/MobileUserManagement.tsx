@@ -62,16 +62,16 @@ export function MobileUserManagement({ user }: { user: SessionUser | null }) {
           {mayCreateDriver && (
             <button
               onClick={() => setView("driver")}
-              className="flex w-full items-center gap-3 rounded-[12px] border border-border-subtle bg-surface-2 px-3.5 py-3 text-start transition-colors hover:border-brand/60"
+              className="flex w-full items-center gap-3 rounded-inner border border-border-subtle bg-surface-2 px-3.5 py-3 text-start transition-colors hover:border-brand/60"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-brand/15 text-brand">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-brand/15 text-brand">
                 <IconPlus size={15} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[12px] font-bold text-white">
+                <span className="block text-label-lg font-bold text-white">
                   {t("Add new driver", "إضافة سائق جديد")}
                 </span>
-                <span className="block text-[10px] text-text-muted">
+                <span className="block text-micro text-text-muted">
                   {t("Sends the request to the control room for review", "يُرسل الطلب إلى غرفة التحكم للمراجعة")}
                 </span>
               </span>
@@ -81,16 +81,16 @@ export function MobileUserManagement({ user }: { user: SessionUser | null }) {
           {mayCreateCustomer && (
             <button
               onClick={() => setView("client")}
-              className="flex w-full items-center gap-3 rounded-[12px] border border-border-subtle bg-surface-2 px-3.5 py-3 text-start transition-colors hover:border-accent-2/60"
+              className="flex w-full items-center gap-3 rounded-inner border border-border-subtle bg-surface-2 px-3.5 py-3 text-start transition-colors hover:border-accent-2/60"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-accent-2/15 text-accent-2">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-accent-2/15 text-accent-2">
                 <IconPlus size={15} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[12px] font-bold text-white">
+                <span className="block text-label-lg font-bold text-white">
                   {t("Add new customer", "إضافة عميل جديد")}
                 </span>
-                <span className="block text-[10px] text-text-muted">
+                <span className="block text-micro text-text-muted">
                   {t("Sends the request to the control room for review", "يُرسل الطلب إلى غرفة التحكم للمراجعة")}
                 </span>
               </span>
@@ -240,19 +240,19 @@ function AddUserForm({
         >
           <IconArrowRight size={13} className="rtl:rotate-180" />
         </button>
-        <h3 className="text-[12.5px] font-bold text-white">
+        <h3 className="text-body font-bold text-white">
           {type === "DRIVER" ? t("Add new driver", "إضافة سائق جديد") : t("Add new customer", "إضافة عميل جديد")}
         </h3>
       </div>
 
       {success && (
-        <div className="flex items-start gap-2 rounded-[10px] border border-status-active/40 bg-status-active/10 p-2.5 text-[10.5px] font-semibold text-status-active">
+        <div className="flex items-start gap-2 rounded-control border border-status-active/40 bg-status-active/10 p-2.5 text-label font-semibold text-status-active">
           <IconCheck size={14} className="mt-0.5 shrink-0" />
           <span>{success}</span>
         </div>
       )}
       {error && (
-        <div className="flex items-start gap-2 rounded-[10px] border border-status-danger/40 bg-status-danger/10 p-2.5 text-[10.5px] font-semibold text-status-danger">
+        <div className="flex items-start gap-2 rounded-control border border-status-danger/40 bg-status-danger/10 p-2.5 text-label font-semibold text-status-danger">
           <IconClose size={14} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>
@@ -262,12 +262,12 @@ function AddUserForm({
         const value = values[f.key] || "";
         const isMissing = !!missing?.missingFields?.includes(f.key);
         const common = cn(
-          "w-full rounded-[10px] border bg-surface-2 px-3 py-2 text-[11px] text-white placeholder:text-text-muted focus:border-brand focus:outline-none",
+          "w-full rounded-control border bg-surface-2 px-3 py-2 text-label text-white placeholder:text-text-muted focus:border-brand focus:outline-none",
           isMissing ? "border-status-danger" : "border-border-subtle",
         );
         return (
           <div key={f.key}>
-            <label className="mb-1 block text-[10px] font-semibold text-text-muted">
+            <label className="mb-1 block text-micro font-semibold text-text-muted">
               {label(f)}
               {f.required && <span className="text-status-danger"> *</span>}
             </label>
@@ -305,8 +305,8 @@ function AddUserForm({
       })}
 
       {/* Account data (§17-§18) */}
-      <div className="rounded-[12px] border border-border-subtle bg-surface-2 p-2.5 space-y-2">
-        <div className="text-[10px] font-bold text-text-muted">
+      <div className="rounded-inner border border-border-subtle bg-surface-2 p-2.5 space-y-2">
+        <div className="text-micro font-bold text-text-muted">
           {t("Account data", "بيانات الحساب")}
         </div>
         <input
@@ -314,33 +314,33 @@ function AddUserForm({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={t("Account password (8+ characters)", "كلمة مرور الحساب (٨ أحرف فأكثر)")}
-          className="w-full rounded-[10px] border border-border-subtle bg-surface-1 px-3 py-2 text-[11px] text-white placeholder:text-text-muted focus:border-brand focus:outline-none"
+          className="w-full rounded-control border border-border-subtle bg-surface-1 px-3 py-2 text-label text-white placeholder:text-text-muted focus:border-brand focus:outline-none"
         />
         <input
           type="password"
           value={passwordConfirm}
           onChange={(e) => setPasswordConfirm(e.target.value)}
           placeholder={t("Confirm password", "تأكيد كلمة المرور")}
-          className="w-full rounded-[10px] border border-border-subtle bg-surface-1 px-3 py-2 text-[11px] text-white placeholder:text-text-muted focus:border-brand focus:outline-none"
+          className="w-full rounded-control border border-border-subtle bg-surface-1 px-3 py-2 text-label text-white placeholder:text-text-muted focus:border-brand focus:outline-none"
         />
       </div>
 
       {/* Documents (real schema kinds) */}
       {documents.length > 0 && (
-        <div className="rounded-[12px] border border-border-subtle bg-surface-2 p-2.5 space-y-2">
-          <div className="text-[10px] font-bold text-text-muted">
+        <div className="rounded-inner border border-border-subtle bg-surface-2 p-2.5 space-y-2">
+          <div className="text-micro font-bold text-text-muted">
             {t("Documents", "المستندات")}
           </div>
           {documents.map((doc) => (
             <label
               key={doc.kind}
-              className="flex cursor-pointer items-center gap-2.5 rounded-[10px] border border-border-subtle bg-surface-1 px-3 py-2"
+              className="flex cursor-pointer items-center gap-2.5 rounded-control border border-border-subtle bg-surface-1 px-3 py-2"
             >
               <IconUpload size={14} className={cn("shrink-0", files[doc.kind] ? "text-status-active" : "text-text-muted")} />
-              <span className="min-w-0 flex-1 truncate text-[10.5px] text-white">
+              <span className="min-w-0 flex-1 truncate text-label text-white">
                 {doc.labelAr} · {doc.labelEn}
               </span>
-              <span className={cn("shrink-0 text-[9.5px] font-bold", files[doc.kind] ? "text-status-active" : "text-text-muted")}>
+              <span className={cn("shrink-0 text-micro font-bold", files[doc.kind] ? "text-status-active" : "text-text-muted")}>
                 {files[doc.kind] ? t("Attached", "مرفق") : t("Attach", "إرفاق")}
               </span>
               <input
@@ -367,7 +367,7 @@ function AddUserForm({
       )}
 
       {missing && ((missing.missingDocuments || []).length > 0) && (
-        <div className="rounded-[10px] border border-brand/40 bg-brand/10 p-2.5 text-[10px] text-brand">
+        <div className="rounded-control border border-brand/40 bg-brand/10 p-2.5 text-micro text-brand">
           {t("Missing documents", "مستندات ناقصة")}: {(missing.missingDocuments || []).join("، ")}
         </div>
       )}
@@ -375,7 +375,7 @@ function AddUserForm({
       <button
         onClick={submit}
         disabled={submitting}
-        className="w-full h-11 rounded-[12px] bg-brand text-on-brand text-[12px] font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+        className="w-full h-11 rounded-inner bg-brand text-on-brand text-label-lg font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
       >
         {submitting
           ? t("Submitting…", "جاري الإرسال…")

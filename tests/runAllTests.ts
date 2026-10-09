@@ -21,6 +21,7 @@ import { runTripScreenTests } from "./tripScreen.test";
 import { runTripIdentityTests } from "./tripIdentity.test";
 import { runIntegrationTests } from "./integration.test";
 import { runPermissionTests } from "./permissions.test";
+import { runDesignScaleTests } from "./designScale.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -51,9 +52,10 @@ async function runAll() {
     await runTripIdentityTests();
     await runIntegrationTests();
     await runPermissionTests();
+    runDesignScaleTests();
 
     console.log("============================================================");
-    console.log("  ✅ ALL 23 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 24 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {

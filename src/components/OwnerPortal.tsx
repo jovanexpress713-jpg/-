@@ -18,14 +18,14 @@ export function OwnerPortal() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-[20px] font-bold text-text-primary">
+              <h2 className="text-headline font-bold text-text-primary">
                 {t("Fleet Asset Owner & Investor Dashboard", "لوحة إدارة واستثمار أصول الشاحنات")}
               </h2>
-              <span className="badge bg-brand/20 text-brand text-[11px]">
+              <span className="badge bg-brand/20 text-brand text-label">
                 {trucks.length} {t("Heavy Assets", "شاحنات ثقيلة")}
               </span>
             </div>
-            <p className="text-[12px] text-text-muted mt-0.5">
+            <p className="text-label-lg text-text-muted mt-0.5">
               {t(
                 "Capital efficiency, fleet maintenance schedules, revenue per kilometer, and asset lifecycle",
                 "عائد الأصول الرأسمالية، كفاءة التشغيل بالطن/كم، وجداول الصيانة الدورية للأسطول"
@@ -34,7 +34,7 @@ export function OwnerPortal() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="badge bg-status-active/20 text-status-active py-1.5 px-3 font-semibold text-[11.5px]">
+            <span className="badge bg-status-active/20 text-status-active py-1.5 px-3 font-semibold text-label-lg">
               {activeCount} {t("Units Generating Revenue", "شاحنة في طور التشغيل المباشر")}
             </span>
           </div>
@@ -44,49 +44,49 @@ export function OwnerPortal() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="card p-4 border border-border-subtle">
-          <span className="text-[10.5px] text-text-muted uppercase tracking-wider block">
+          <span className="text-label text-text-muted uppercase tracking-wider block">
             {t("Est. Monthly Fleet Revenue", "العائد الشهري التقديري")}
           </span>
-          <span className="text-[22px] font-bold text-brand tabular-nums block mt-1">
+          <span className="text-hero-sm font-bold text-brand tabular-nums block mt-1">
             ٤٨٢,٠٠٠ {t("SAR", "ر.س")}
           </span>
-          <span className="text-[10.5px] text-status-active font-semibold block mt-1">
+          <span className="text-label text-status-active font-semibold block mt-1">
             +١٤.٢٪ {t("vs last month", "عن الشهر السابق")}
           </span>
         </div>
 
         <div className="card p-4 border border-border-subtle">
-          <span className="text-[10.5px] text-text-muted uppercase tracking-wider block">
+          <span className="text-label text-text-muted uppercase tracking-wider block">
             {t("Total Logged Mileage", "إجمالي المسافات المقطوعة")}
           </span>
-          <span className="text-[22px] font-bold text-text-primary tabular-nums block mt-1">
+          <span className="text-hero-sm font-bold text-text-primary tabular-nums block mt-1">
             {totalOdometer.toLocaleString()} {t("km", "كم")}
           </span>
-          <span className="text-[10.5px] text-text-secondary block mt-1">
+          <span className="text-label text-text-secondary block mt-1">
             {t("Across 14 Prime Movers", "على ١٤ شاحنة ومقطورة")}
           </span>
         </div>
 
         <div className="card p-4 border border-border-subtle">
-          <span className="text-[10.5px] text-text-muted uppercase tracking-wider block">
+          <span className="text-label text-text-muted uppercase tracking-wider block">
             {t("Fleet Utilization Rate", "معدل تشغيل الشاحنات")}
           </span>
-          <span className="text-[22px] font-bold text-status-active tabular-nums block mt-1">
+          <span className="text-hero-sm font-bold text-status-active tabular-nums block mt-1">
             ٨٩.٢٪
           </span>
-          <span className="text-[10.5px] text-text-muted block mt-1">
+          <span className="text-label text-text-muted block mt-1">
             {t("Target: 85%", "المستهدف: ٨٥٪")}
           </span>
         </div>
 
         <div className="card p-4 border border-border-subtle">
-          <span className="text-[10.5px] text-text-muted uppercase tracking-wider block">
+          <span className="text-label text-text-muted uppercase tracking-wider block">
             {t("Maintenance Compliance", "الالتزام ببرامج الصيانة")}
           </span>
-          <span className="text-[22px] font-bold text-text-primary tabular-nums block mt-1">
+          <span className="text-hero-sm font-bold text-text-primary tabular-nums block mt-1">
             ٩٧.٨٪
           </span>
-          <span className="text-[10.5px] text-status-active font-semibold block mt-1">
+          <span className="text-label text-status-active font-semibold block mt-1">
             {t("Zero safety violations", "صفر مخالفات تشغيلية")}
           </span>
         </div>
@@ -96,22 +96,22 @@ export function OwnerPortal() {
       <div className="card p-5 border border-border-subtle space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-[15px] font-bold text-text-primary">
+            <h4 className="text-page-title font-bold text-text-primary">
               {t("Commercial Heavy Vehicles Portfolio", "سجل المركبات والأصول اللوجستية")}
             </h4>
-            <p className="text-[11px] text-text-muted">
+            <p className="text-label text-text-muted">
               {t("Real Mercedes-Benz, Volvo, Scania, and MAN prime movers in service", "شاحنات مرسيدس وفولفو وسكانيا ومان العاملة في المملكة العربية السعودية")}
             </p>
           </div>
-          <span className="text-[11.5px] font-bold text-brand">
+          <span className="text-label-lg font-bold text-brand">
             {trucks.length} {t("Registered Trucks", "شاحنة مسجلة")}
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-start text-[12.5px]">
+          <table className="w-full text-start text-body">
             <thead>
-              <tr className="border-b border-border-subtle text-text-muted text-[11px] uppercase">
+              <tr className="border-b border-border-subtle text-text-muted text-label uppercase">
                 <th className="pb-3 text-start">{t("Truck & Model", "الموديل والشاحنة")}</th>
                 <th className="pb-3 text-start">{t("Plate & Cab", "اللوحة ونوع الكابينة")}</th>
                 <th className="pb-3 text-center">{t("Body Type", "نوع الهيكل")}</th>
@@ -127,7 +127,7 @@ export function OwnerPortal() {
                 return (
                   <tr key={tk.id} className="hover:bg-surface-3/50 transition-colors">
                     <td className="py-3 flex items-center gap-3">
-                      <span className="block h-10 w-16 overflow-hidden rounded-[6px] bg-black p-0.5 shrink-0">
+                      <span className="block h-10 w-16 overflow-hidden rounded-micro bg-black p-0.5 shrink-0">
                         <TruckImage
                           vehicle={tk as any}
                           alt={tk.model}
@@ -138,15 +138,15 @@ export function OwnerPortal() {
                         <span className="font-bold text-text-primary block">
                           {tk.brand} {tk.model}
                         </span>
-                        <span className="text-[10.5px] text-text-muted">{tk.year}</span>
+                        <span className="text-label text-text-muted">{tk.year}</span>
                       </div>
                     </td>
                     <td className="py-3">
                       <span className="font-mono font-bold text-text-primary block">{tk.plate}</span>
-                      <span className="text-[10.5px] text-text-muted">{tk.cab}</span>
+                      <span className="text-label text-text-muted">{tk.cab}</span>
                     </td>
                     <td className="py-3 text-center">
-                      <span className="badge bg-surface-5 text-text-secondary text-[11px]">
+                      <span className="badge bg-surface-5 text-text-secondary text-label">
                         {b ? t(b.label[0], b.label[1]) : tk.body}
                       </span>
                     </td>
@@ -170,7 +170,7 @@ export function OwnerPortal() {
                     <td className="py-3 text-end">
                       <span
                         className={cn(
-                          "badge text-[10.5px]",
+                          "badge text-label",
                           tk.status === "active"
                             ? "bg-status-active/20 text-status-active font-bold"
                             : tk.status === "waiting"

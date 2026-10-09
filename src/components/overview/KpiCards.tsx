@@ -62,7 +62,7 @@ function Kpi({
 
       <div className="num num-lg mt-3">{Math.round(shown)}</div>
 
-      <div className="mt-1.5 flex items-center gap-1.5 text-[12px]">
+      <div className="mt-1.5 flex items-center gap-1.5 text-label-lg">
         <span
           aria-hidden="true"
           className={up ? "text-status-active" : "text-status-danger"}

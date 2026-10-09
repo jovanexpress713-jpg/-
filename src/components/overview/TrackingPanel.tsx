@@ -37,22 +37,22 @@ export function TrackingPanel({ trip, trips, onSelect, onOpenDetails }: Props) {
   return (
     <section className="card animate-fade-up flex flex-col p-5" style={{ animationDelay: "60ms" }}>
       <div className="flex items-start justify-between gap-2">
-        <h2 className="text-[16px] font-semibold text-text-primary">{t("Tracking Delivery", "تتبع التوصيل")}</h2>
-        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold", GROUP_TONE[group])}>
+        <h2 className="text-page-title font-semibold text-text-primary">{t("Tracking Delivery", "تتبع التوصيل")}</h2>
+        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label font-semibold", GROUP_TONE[group])}>
           {inTransit && <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-current" />}
           {t(STATUS_LABEL[trip.status][0], STATUS_LABEL[trip.status][1])}
         </span>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-2 rounded-[12px] bg-surface-4 px-3 py-2">
+      <div className="mt-3 flex items-center justify-between gap-2 rounded-inner bg-surface-4 px-3 py-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <TruckTypeAvatar truckType={trip.cargoType} size={34} iconSize={18} showBadge />
           <div className="min-w-0">
-            <div className="text-[10.5px] text-text-muted flex items-center gap-1.5">
+            <div className="text-label text-text-muted flex items-center gap-1.5">
               <span>{t("Tracking ID", "رقم التتبع")}</span>
               <TruckTypeBadge truckType={trip.cargoType} size={11} withLabel={false} />
             </div>
-            <div className="truncate text-[13px] font-semibold tabular-nums text-text-primary">#{trip.tripNumber}</div>
+            <div className="truncate text-body font-semibold tabular-nums text-text-primary">#{trip.tripNumber}</div>
           </div>
         </div>
         <label className="sr-only" htmlFor="tracking-change">{t("Change shipment", "تغيير الشحنة")}</label>
@@ -60,7 +60,7 @@ export function TrackingPanel({ trip, trips, onSelect, onOpenDetails }: Props) {
           id="tracking-change"
           value={trip.id}
           onChange={(e) => onSelect(e.target.value)}
-          className="max-w-[120px] cursor-pointer rounded-full border border-border-subtle bg-surface-2 px-2.5 py-1 text-[11px] text-text-secondary outline-none hover:text-text-primary"
+          className="max-w-[120px] cursor-pointer rounded-full border border-border-subtle bg-surface-2 px-2.5 py-1 text-label text-text-secondary outline-none hover:text-text-primary"
         >
           {trips.map((tr) => (
             <option key={tr.id} value={tr.id}>
@@ -91,12 +91,12 @@ export function TrackingPanel({ trip, trips, onSelect, onOpenDetails }: Props) {
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-[12.5px] font-semibold text-text-primary">{s.label}</span>
+                <span className="truncate text-body font-semibold text-text-primary">{s.label}</span>
               </div>
-              <div className="truncate text-[11px] text-text-muted">{s.sub}</div>
+              <div className="truncate text-label text-text-muted">{s.sub}</div>
               <span
                 className={cn(
-                  "mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                  "mt-1 inline-block rounded-full px-2 py-0.5 text-micro font-semibold",
                   s.state === "done" ? "bg-status-active/15 text-status-active" : s.state === "current" ? "bg-brand/15 text-brand" : "bg-surface-5 text-text-muted",
                 )}
               >
@@ -108,7 +108,7 @@ export function TrackingPanel({ trip, trips, onSelect, onOpenDetails }: Props) {
       </ol>
 
       {onOpenDetails && (
-        <button onClick={() => onOpenDetails(trip.id)} className="btn-ghost mt-4 w-full justify-center text-[12px]">
+        <button onClick={() => onOpenDetails(trip.id)} className="btn-ghost mt-4 w-full justify-center text-label-lg">
           {t("Open trip details", "فتح تفاصيل الرحلة")}
         </button>
       )}

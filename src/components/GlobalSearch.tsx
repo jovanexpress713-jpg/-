@@ -151,7 +151,7 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
             "Search Trip, Shipment, Truck, Driver...",
             "بحث موحد: رقم الرحلة، الشحنة، اللوحة، السائق..."
           )}
-          className="w-full bg-transparent text-[12px] text-text-primary placeholder:text-text-muted outline-none"
+          className="w-full bg-transparent text-label-lg text-text-primary placeholder:text-text-muted outline-none"
         />
         {query && (
           <button
@@ -168,9 +168,9 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
 
       {/* Autocomplete Dropdown */}
       {isOpen && query.trim() && (
-        <div className="absolute top-full mt-2 inset-x-0 z-50 rounded-[14px] bg-surface-1/95 backdrop-blur-md p-2 shadow-2xl border border-border-subtle max-h-[380px] overflow-y-auto text-[12px] animate-fade-in">
+        <div className="absolute top-full mt-2 inset-x-0 z-50 rounded-inner bg-surface-1/95 backdrop-blur-md p-2 shadow-2xl border border-border-subtle max-h-[380px] overflow-y-auto text-label-lg animate-fade-in">
           {totalResults === 0 ? (
-            <div className="p-4 text-center text-text-muted text-[11.5px]">
+            <div className="p-4 text-center text-text-muted text-label-lg">
               {t("No matching results found for", "لا توجد نتائج مطابقة لـ")} "{query}"
             </div>
           ) : (
@@ -178,29 +178,29 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
               {/* Trips */}
               {results.trips.length > 0 && (
                 <div>
-                  <div className="px-2 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                  <div className="px-2 py-1 text-micro font-bold text-text-muted uppercase tracking-wider">
                     {t("Trips", "الرحلات")}
                   </div>
                   {results.trips.map((tr) => (
                     <button
                       key={tr.id}
                       onClick={() => handleSelectTrip(tr)}
-                      className="w-full p-2 rounded-[8px] hover:bg-surface-2 flex items-center justify-between text-start transition-colors"
+                      className="w-full p-2 rounded-chip hover:bg-surface-2 flex items-center justify-between text-start transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="p-1 rounded-[6px] bg-brand/15 text-brand">
+                        <span className="p-1 rounded-micro bg-brand/15 text-brand">
                           <IconTruck size={14} />
                         </span>
                         <div>
                           <div className="font-mono font-bold text-text-primary">
                             {tr.tripNumber}
                           </div>
-                          <div className="text-[10.5px] text-text-muted">
+                          <div className="text-label text-text-muted">
                             {td(tr.originCity)} → {td(tr.destinationCity)}
                           </div>
                         </div>
                       </div>
-                      <span className="text-[10px] font-mono text-status-active">
+                      <span className="text-micro font-mono text-status-active">
                         {tr.status}
                       </span>
                     </button>
@@ -211,29 +211,29 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
               {/* Shipments */}
               {results.shipments.length > 0 && (
                 <div className="border-t border-white/5 pt-1.5">
-                  <div className="px-2 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                  <div className="px-2 py-1 text-micro font-bold text-text-muted uppercase tracking-wider">
                     {t("Shipments", "الشحنات")}
                   </div>
                   {results.shipments.map((tr) => (
                     <button
                       key={`sh-${tr.id}`}
                       onClick={() => handleSelectShipment(tr)}
-                      className="w-full p-2 rounded-[8px] hover:bg-surface-2 flex items-center justify-between text-start transition-colors"
+                      className="w-full p-2 rounded-chip hover:bg-surface-2 flex items-center justify-between text-start transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="p-1 rounded-[6px] bg-accent-2/15 text-accent-2">
+                        <span className="p-1 rounded-micro bg-accent-2/15 text-accent-2">
                           <IconDoc size={14} />
                         </span>
                         <div>
                           <div className="font-mono font-bold text-text-primary">
                             {tr.qrCodeToken || `SH-${tr.tripNumber}`}
                           </div>
-                          <div className="text-[10.5px] text-text-muted truncate max-w-[200px]">
+                          <div className="text-label text-text-muted truncate max-w-[200px]">
                             {tr.shipper}
                           </div>
                         </div>
                       </div>
-                      <span className="text-[10px] text-brand font-bold">
+                      <span className="text-micro text-brand font-bold">
                         {getVehicleTypeMeta(tr.cargoType).arabicName}
                       </span>
                     </button>
@@ -244,27 +244,27 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
               {/* Trucks */}
               {results.trucks.length > 0 && (
                 <div className="border-t border-white/5 pt-1.5">
-                  <div className="px-2 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                  <div className="px-2 py-1 text-micro font-bold text-text-muted uppercase tracking-wider">
                     {t("Vehicles & Fleet", "الأسطول والشاحنات")}
                   </div>
                   {results.trucks.map((v) => (
                     <button
                       key={v.id}
                       onClick={() => handleSelectTruck(v.id)}
-                      className="w-full p-2 rounded-[8px] hover:bg-surface-2 flex items-center justify-between text-start transition-colors"
+                      className="w-full p-2 rounded-chip hover:bg-surface-2 flex items-center justify-between text-start transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="p-1 rounded-[6px] bg-surface-3 text-text-secondary">
+                        <span className="p-1 rounded-micro bg-surface-3 text-text-secondary">
                           <IconTruck size={14} />
                         </span>
                         <div>
                           <div className="font-mono font-bold text-text-primary">{v.plate}</div>
-                          <div className="text-[10.5px] text-text-muted truncate">
+                          <div className="text-label text-text-muted truncate">
                             {v.brand} {v.model}
                           </div>
                         </div>
                       </div>
-                      <span className="text-[10px] text-text-muted font-mono">{v.body}</span>
+                      <span className="text-micro text-text-muted font-mono">{v.body}</span>
                     </button>
                   ))}
                 </div>
@@ -273,25 +273,25 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
               {/* Drivers */}
               {results.drivers.length > 0 && (
                 <div className="border-t border-white/5 pt-1.5">
-                  <div className="px-2 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                  <div className="px-2 py-1 text-micro font-bold text-text-muted uppercase tracking-wider">
                     {t("Drivers", "السائقون")}
                   </div>
                   {results.drivers.map((d) => (
                     <button
                       key={d.name}
                       onClick={() => handleSelectDriver(d.name)}
-                      className="w-full p-2 rounded-[8px] hover:bg-surface-2 flex items-center justify-between text-start transition-colors"
+                      className="w-full p-2 rounded-chip hover:bg-surface-2 flex items-center justify-between text-start transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="p-1 rounded-[6px] bg-status-active/15 text-status-active">
+                        <span className="p-1 rounded-micro bg-status-active/15 text-status-active">
                           <IconProfile size={14} />
                         </span>
                         <div>
                           <div className="font-semibold text-text-primary">{d.name}</div>
-                          <div className="text-[10.5px] text-text-muted font-mono">{d.phone}</div>
+                          <div className="text-label text-text-muted font-mono">{d.phone}</div>
                         </div>
                       </div>
-                      <span className="text-[10px] text-text-muted">⭐ {d.rating}</span>
+                      <span className="text-micro text-text-muted">⭐ {d.rating}</span>
                     </button>
                   ))}
                 </div>

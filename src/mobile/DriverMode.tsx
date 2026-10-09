@@ -336,25 +336,25 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
         {/* Greeting — the live identity, no hardcoded names or ratings (§32) */}
         <div className="px-5 pt-5 pb-4 bg-gradient-to-b from-navy via-navy to-surface-0 border-b border-border-subtle">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-brand/20 text-[13px] font-bold text-brand border border-brand/30">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-brand/20 text-body font-bold text-brand border border-brand/30">
               {(user?.fullName || "—").slice(0, 2)}
             </span>
             <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-text-muted">
+              <div className="text-micro uppercase tracking-wider text-text-muted">
                 {t("Driver app", "تطبيق السائق")}
               </div>
-              <div className="text-[14px] font-bold text-white truncate max-w-[220px]">
+              <div className="text-card-title font-bold text-white truncate max-w-[220px]">
                 {t("Welcome", "مرحبًا")}، {user?.fullName || user?.email || "—"}
               </div>
             </div>
-            <div className="ms-auto flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-semibold border border-white/10">
+            <div className="ms-auto flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-label font-semibold border border-white/10">
               <span className="text-status-active">{t("On duty", "مناوب")}</span>
             </div>
           </div>
 
           {/* Assigned truck badge — real data only */}
           {active && (
-            <div className="mt-3.5 flex items-center justify-between rounded-[12px] bg-surface-2 p-2.5 border border-border-subtle text-[11px]">
+            <div className="mt-3.5 flex items-center justify-between rounded-inner bg-surface-2 p-2.5 border border-border-subtle text-label">
               <div className="flex items-center gap-2.5 truncate">
                 <TruckTypeAvatar truckType={active.cargoType || "flatbed"} size={30} iconSize={16} showBadge />
                 <div className="truncate">
@@ -371,14 +371,14 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
         </div>
 
         {actionSuccessMsg && (
-          <div className="mx-5 mt-3 rounded-[12px] bg-status-active/15 border border-status-active/30 p-3 text-[11.5px] text-status-active font-semibold text-center animate-fade-in flex items-center justify-center gap-2">
+          <div className="mx-5 mt-3 rounded-inner bg-status-active/15 border border-status-active/30 p-3 text-label-lg text-status-active font-semibold text-center animate-fade-in flex items-center justify-center gap-2">
             <IconCheck size={16} />
             <span>{actionSuccessMsg}</span>
           </div>
         )}
 
         {actionErrorMsg && (
-          <div className="mx-5 mt-3 rounded-[12px] bg-status-danger/15 border border-status-danger/30 p-3 text-[11.5px] text-status-danger font-semibold text-center animate-fade-in flex items-center justify-center gap-2">
+          <div className="mx-5 mt-3 rounded-inner bg-status-danger/15 border border-status-danger/30 p-3 text-label-lg text-status-danger font-semibold text-center animate-fade-in flex items-center justify-center gap-2">
             <span className="font-bold">!</span>
             <span>{actionErrorMsg}</span>
           </div>
@@ -388,15 +388,15 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
         {activeTab === "home" && (
           <div className="px-5 py-4 space-y-4 animate-fade-in">
             {active ? (
-              <div className="rounded-[18px] bg-gradient-to-br from-navy via-surface-1 to-surface-2 p-4 border border-border-subtle shadow-xl space-y-3">
+              <div className="rounded-panel bg-gradient-to-br from-navy via-surface-1 to-surface-2 p-4 border border-border-subtle shadow-xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-text-muted uppercase">{t("Current trip", "الرحلة الحالية")}</span>
-                  <span className="text-[11px] font-bold text-brand tabular-nums">{active.tripNumber}</span>
+                  <span className="text-micro text-text-muted uppercase">{t("Current trip", "الرحلة الحالية")}</span>
+                  <span className="text-label font-bold text-brand tabular-nums">{active.tripNumber}</span>
                 </div>
-                <div className="text-[13.5px] font-bold text-white">
+                <div className="text-card-title font-bold text-white">
                   {td(active.originCity)} ← {td(active.destinationCity)}
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-center text-[10px] rounded-[10px] bg-surface-2 p-2.5 border border-white/5 tabular-nums">
+                <div className="grid grid-cols-3 gap-2 text-center text-micro rounded-control bg-surface-2 p-2.5 border border-white/5 tabular-nums">
                   <div>
                     <div className="text-text-muted">{t("Status", "الحالة")}</div>
                     <div className="font-bold text-white">{statusLabel(active.status)}</div>
@@ -412,20 +412,20 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                 </div>
                 <button
                   onClick={() => setActiveTab("trip")}
-                  className="w-full h-10 rounded-[12px] bg-brand text-on-brand font-bold text-[12px] hover:brightness-110 active:scale-95 transition-all"
+                  className="w-full h-10 rounded-inner bg-brand text-on-brand font-bold text-label-lg hover:brightness-110 active:scale-95 transition-all"
                 >
                   {t("Open current trip", "فتح الرحلة الحالية")}
                 </button>
               </div>
             ) : (
-              <div className="rounded-[18px] border border-border-subtle bg-surface-1 p-6 text-center">
+              <div className="rounded-panel border border-border-subtle bg-surface-1 p-6 text-center">
                 <IconOrders size={22} className="mx-auto text-text-muted" />
-                <p className="mt-2 text-[11.5px] text-text-muted">
+                <p className="mt-2 text-label-lg text-text-muted">
                   {t("No trips are assigned to you yet.", "لا توجد رحلات مسندة إليك حتى الآن.")}
                 </p>
                 <button
                   onClick={() => setActiveTab("trips")}
-                  className="mt-3 rounded-full bg-brand/15 px-4 py-1.5 text-[11px] font-bold text-brand"
+                  className="mt-3 rounded-full bg-brand/15 px-4 py-1.5 text-label font-bold text-brand"
                 >
                   {t("Browse available trips", "تصفح الرحلات المتاحة")}
                 </button>
@@ -437,14 +437,14 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
         {/* ── الرحلات ──────────────────────────────────────────────── */}
         {activeTab === "trips" && (
           <div className="px-5 py-4 space-y-3 animate-fade-in">
-            <h2 className="text-[15px] font-bold text-white">{t("Trips & Available Dispatch", "الرحلات وعروض النقل المتاحة")}</h2>
+            <h2 className="text-page-title font-bold text-white">{t("Trips & Available Dispatch", "الرحلات وعروض النقل المتاحة")}</h2>
             <div className="flex gap-1.5 overflow-x-auto pb-1 scroll-x">
               {(["all", "available", "confirmed", "active", "completed"] as const).map((key) => (
                 <button
                   key={key}
                   onClick={() => setTripsSubTab(key)}
                   className={cn(
-                    "shrink-0 rounded-full px-3 py-1 text-[10px] font-bold transition-colors",
+                    "shrink-0 rounded-full px-3 py-1 text-micro font-bold transition-colors",
                     tripsSubTab === key ? "bg-brand text-on-brand" : "bg-surface-2 text-text-muted hover:text-white"
                   )}
                 >
@@ -454,7 +454,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
             </div>
 
             {driverTrips.length === 0 ? (
-              <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-6 text-center text-[11px] text-text-muted">
+              <div className="rounded-inner border border-border-subtle bg-surface-1 p-6 text-center text-label text-text-muted">
                 {tripsSubTab === "available"
                   ? t("No available trips right now.", "لا توجد رحلات متاحة حاليًا.")
                   : t("No trips in this list.", "لا توجد رحلات في هذه القائمة.")}
@@ -463,14 +463,14 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
               driverTrips.map((tr) => {
                 const meta = statusMeta(tr.status);
                 return (
-                  <div key={tr.id} className="rounded-[14px] border border-border-subtle bg-surface-1 p-3 space-y-2.5">
+                  <div key={tr.id} className="rounded-inner border border-border-subtle bg-surface-1 p-3 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-2">
                         <TruckTypeAvatar truckType={tr.cargoType || "flatbed"} size={26} iconSize={13} showBadge />
-                        <span className="text-[11px] font-bold text-brand tabular-nums">{tr.tripNumber}</span>
+                        <span className="text-label font-bold text-brand tabular-nums">{tr.tripNumber}</span>
                       </span>
                       <span
-                        className="rounded-full px-2 py-0.5 text-[9.5px] font-bold"
+                        className="rounded-full px-2 py-0.5 text-micro font-bold"
                         style={{ backgroundColor: `${meta.badgeColor}26`, color: meta.badgeColor }}
                       >
                         {td(tr.statusAr || meta.ar || tr.status)}
@@ -478,23 +478,23 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                     </div>
 
                     {/* Route — the strongest visual on the card */}
-                    <div className="flex items-center gap-2 rounded-[10px] bg-surface-0/60 border border-border-subtle/60 px-2.5 py-2">
+                    <div className="flex items-center gap-2 rounded-control bg-surface-0/60 border border-border-subtle/60 px-2.5 py-2">
                       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
-                      <span className="truncate text-[12px] font-extrabold text-white">{td(tr.originCity)}</span>
+                      <span className="truncate text-label-lg font-extrabold text-white">{td(tr.originCity)}</span>
                       <span className="shrink-0 text-brand font-black leading-none">←</span>
-                      <span className="truncate text-[12px] font-extrabold text-white">{td(tr.destinationCity)}</span>
+                      <span className="truncate text-label-lg font-extrabold text-white">{td(tr.destinationCity)}</span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 text-center text-[9.5px] tabular-nums">
-                      <span className="rounded-[8px] bg-surface-2/70 py-1">
+                    <div className="grid grid-cols-3 gap-1.5 text-center text-micro tabular-nums">
+                      <span className="rounded-chip bg-surface-2/70 py-1">
                         <span className="block text-text-muted">{t("Distance", "المسافة")}</span>
                         <span className="block font-bold text-text-secondary">{tr.distanceKm ? `${tr.distanceKm} ${t("km", "كم")}` : "—"}</span>
                       </span>
-                      <span className="rounded-[8px] bg-surface-2/70 py-1">
+                      <span className="rounded-chip bg-surface-2/70 py-1">
                         <span className="block text-text-muted">{t("Weight", "الوزن")}</span>
                         <span className="block font-bold text-text-secondary">{tr.cargoWeightTons ? `${tr.cargoWeightTons} ${t("t", "طن")}` : "—"}</span>
                       </span>
-                      <span className="rounded-[8px] bg-surface-2/70 py-1">
+                      <span className="rounded-chip bg-surface-2/70 py-1">
                         <span className="block text-text-muted">{t("Type", "النوع")}</span>
                         <span className="block font-bold text-text-secondary">{getVehicleTypeMeta(tr.cargoType || "flatbed").arabicName}</span>
                       </span>
@@ -506,7 +506,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                           <button
                             onClick={() => handleRequestTrip(tr.id)}
                             disabled={isSubmitting}
-                            className="flex-1 rounded-[8px] bg-brand px-2 py-1.5 text-[10px] font-bold text-on-brand disabled:opacity-50 flex items-center justify-center gap-1"
+                            className="flex-1 rounded-chip bg-brand px-2 py-1.5 text-micro font-bold text-on-brand disabled:opacity-50 flex items-center justify-center gap-1"
                           >
                             <IconCheck size={12} />
                             {t("Accept trip", "قبول الرحلة")}
@@ -514,7 +514,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                           <button
                             onClick={() => handleDeclineTrip(tr.id)}
                             disabled={isSubmitting}
-                            className="rounded-[8px] bg-status-danger/15 border border-status-danger/30 px-2.5 py-1.5 text-[10px] font-bold text-status-danger hover:bg-status-danger hover:text-white transition-all disabled:opacity-50"
+                            className="rounded-chip bg-status-danger/15 border border-status-danger/30 px-2.5 py-1.5 text-micro font-bold text-status-danger hover:bg-status-danger hover:text-white transition-all disabled:opacity-50"
                           >
                             {t("Decline", "رفض الرحلة")}
                           </button>
@@ -525,7 +525,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                             setCurrentTrip(tr);
                             setActiveTab("trip");
                           }}
-                          className="w-full rounded-[8px] bg-surface-2 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-brand hover:text-on-brand"
+                          className="w-full rounded-chip bg-surface-2 px-3 py-1.5 text-micro font-bold text-white hover:bg-brand hover:text-on-brand"
                         >
                           {t("Open", "فتح")}
                         </button>
@@ -543,8 +543,8 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
           <div className="px-5 py-4 space-y-3 animate-fade-in">
             {active ? (
               <>
-                <h2 className="text-[15px] font-bold text-white">{t("Current trip", "الرحلة الحالية")}</h2>
-                <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-3.5 space-y-2 text-[11px]">
+                <h2 className="text-page-title font-bold text-white">{t("Current trip", "الرحلة الحالية")}</h2>
+                <div className="rounded-inner border border-border-subtle bg-surface-1 p-3.5 space-y-2 text-label">
                   <div className="flex items-center justify-between">
                     <span className="text-text-muted">{t("Trip number", "رقم الرحلة")}</span>
                     <span className="font-bold text-brand tabular-nums">{active.tripNumber}</span>
@@ -562,7 +562,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                 <button
                   onClick={() => handleTransitionAction("IN_TRANSIT", "بدء الرحلة")}
                   disabled={isSubmitting}
-                  className="w-full h-11 rounded-[12px] bg-status-active text-navy font-bold text-[13px] shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full h-11 rounded-inner bg-status-active text-navy font-bold text-body shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <IconStraight size={15} />
                   {t("Start trip (IN_TRANSIT)", "بدء الرحلة (قيد النقل)")}
@@ -570,19 +570,19 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                 <button
                   onClick={() => handleTransitionAction("ARRIVED_DESTINATION", "الوصول إلى الوجهة")}
                   disabled={isSubmitting}
-                  className="w-full h-11 rounded-[12px] bg-brand text-on-brand font-bold text-[12.5px] hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                  className="w-full h-11 rounded-inner bg-brand text-on-brand font-bold text-body hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {t("Arrived at destination", "الوصول إلى الوجهة")}
                 </button>
                 <button
                   onClick={() => setActiveTab("pod")}
-                  className="w-full h-11 rounded-[12px] bg-surface-2 border border-border-subtle text-white font-bold text-[12.5px] hover:bg-surface-3 transition-all"
+                  className="w-full h-11 rounded-inner bg-surface-2 border border-border-subtle text-white font-bold text-body hover:bg-surface-3 transition-all"
                 >
                   {t("Proof of delivery (POD)", "إثبات التسليم (POD)")}
                 </button>
               </>
             ) : (
-              <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-6 text-center text-[11px] text-text-muted">
+              <div className="rounded-inner border border-border-subtle bg-surface-1 p-6 text-center text-label text-text-muted">
                 {t("No current trip selected.", "لم يتم تحديد رحلة حالية.")}
               </div>
             )}
@@ -592,14 +592,14 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
         {/* ── إثبات التسليم (POD) ─────────────────────────────────── */}
         {activeTab === "pod" && (
           <form onSubmit={handleSubmitPOD} className="px-5 py-4 space-y-3.5 animate-fade-in">
-            <h2 className="text-[15px] font-bold text-white">{t("Proof of Delivery (POD)", "توثيق إثبات التسليم الرسمي")}</h2>
-            <p className="text-[11.5px] text-text-muted leading-relaxed">
+            <h2 className="text-page-title font-bold text-white">{t("Proof of Delivery (POD)", "توثيق إثبات التسليم الرسمي")}</h2>
+            <p className="text-label-lg text-text-muted leading-relaxed">
               {t("Enter recipient info and capture digital sign-off for", "أدخل بيانات المستلم وتأكيد التوقيع الإلكتروني للشحنة")}{" "}
               <strong className="text-brand">{active?.tripNumber || "—"}</strong>
             </p>
 
             <div>
-              <label className="mb-1 block text-[10px] font-semibold text-text-muted">
+              <label className="mb-1 block text-micro font-semibold text-text-muted">
                 {t("Recipient name", "اسم المستلم")}
                 <span className="text-status-danger"> *</span>
               </label>
@@ -607,30 +607,30 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
                 type="text"
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}
-                className="w-full rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-2 text-[11px] text-white focus:border-brand focus:outline-none"
+                className="w-full rounded-control border border-border-subtle bg-surface-2 px-3 py-2 text-label text-white focus:border-brand focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] font-semibold text-text-muted">
+              <label className="mb-1 block text-micro font-semibold text-text-muted">
                 {t("Recipient phone", "هاتف المستلم")}
               </label>
               <input
                 type="tel"
                 value={recipientPhone}
                 onChange={(e) => setRecipientPhone(e.target.value)}
-                className="w-full rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-2 text-[11px] text-white focus:border-brand focus:outline-none"
+                className="w-full rounded-control border border-border-subtle bg-surface-2 px-3 py-2 text-label text-white focus:border-brand focus:outline-none"
                 inputMode="tel"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] font-semibold text-text-muted">
+              <label className="mb-1 block text-micro font-semibold text-text-muted">
                 {t("Delivery notes", "ملاحظات التسليم")}
               </label>
               <textarea
                 value={deliveryNotes}
                 onChange={(e) => setDeliveryNotes(e.target.value)}
                 rows={2}
-                className="w-full rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-2 text-[11px] text-white focus:border-brand focus:outline-none"
+                className="w-full rounded-control border border-border-subtle bg-surface-2 px-3 py-2 text-label text-white focus:border-brand focus:outline-none"
               />
             </div>
 
@@ -638,7 +638,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
               type="button"
               onClick={() => setSignatureDone((v) => !v)}
               className={cn(
-                "flex w-full items-center gap-2.5 rounded-[12px] border p-3 text-start transition-colors",
+                "flex w-full items-center gap-2.5 rounded-inner border p-3 text-start transition-colors",
                 signatureDone
                   ? "border-status-active/50 bg-status-active/10"
                   : "border-border-subtle bg-surface-2",
@@ -646,13 +646,13 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
             >
               <span
                 className={cn(
-                  "grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border",
+                  "grid h-5 w-5 shrink-0 place-items-center rounded-micro border",
                   signatureDone ? "border-status-active bg-status-active text-navy" : "border-border-subtle",
                 )}
               >
                 {signatureDone && <IconCheck size={12} />}
               </span>
-              <span className="text-[11px] font-semibold text-white">
+              <span className="text-label font-semibold text-white">
                 {t("The recipient signed digitally", "تم التوقيع الإلكتروني من المستلم")}
               </span>
             </button>
@@ -660,7 +660,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 rounded-[12px] bg-status-active text-navy font-bold text-[12.5px] shadow-lg shadow-status-active/25 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full h-11 rounded-inner bg-status-active text-navy font-bold text-body shadow-lg shadow-status-active/25 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
             >
               {isSubmitting ? t("Recording…", "جاري التوثيق…") : t("Confirm delivery (POD)", "اعتماد وتسجيل إثبات التسليم")}
             </button>
@@ -672,15 +672,15 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
           <div className="h-full flex flex-col p-4 animate-fade-in space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[10px] text-text-muted uppercase">{t("Driver Route Navigation", "ملاحة المسار والموقع الميداني")}</span>
-                <div className="text-[14px] font-bold text-white">
+                <span className="text-micro text-text-muted uppercase">{t("Driver Route Navigation", "ملاحة المسار والموقع الميداني")}</span>
+                <div className="text-card-title font-bold text-white">
                   {active ? `${td(active.originCity)} → ${td(active.destinationCity)}` : t("No active trip", "لا توجد رحلة نشطة")}
                 </div>
               </div>
               <button
                 onClick={toggleGpsBroadcast}
                 className={cn(
-                  "px-3 py-1 rounded-[8px] text-[11px] font-bold",
+                  "px-3 py-1 rounded-chip text-label font-bold",
                   isGpsBroadcasting ? "bg-status-danger text-white" : "bg-brand text-on-brand"
                 )}
               >
@@ -689,19 +689,19 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
             </div>
 
             {gpsProviderConfigured === false && (
-              <div className="rounded-[12px] border border-brand/40 bg-brand/10 p-2.5 text-[10.5px] font-semibold text-brand">
+              <div className="rounded-inner border border-brand/40 bg-brand/10 p-2.5 text-label font-semibold text-brand">
                 {t("GPS service is not configured on the platform. Device GPS broadcasting still works; live fleet telemetry requires the provider setup.", "خدمة GPS غير مهيأة على المنصة. بث موقع الجهاز يعمل، لكن تتبع الأسطول المباشر يتطلب إعداد مزود الخدمة.")}
               </div>
             )}
 
             {gpsError && (
-              <div className="rounded-[12px] border border-status-danger/40 bg-status-danger/10 p-2.5 text-[10.5px] text-status-danger">
+              <div className="rounded-inner border border-status-danger/40 bg-status-danger/10 p-2.5 text-label text-status-danger">
                 {gpsError}
               </div>
             )}
 
             {gpsTelemetry && (
-              <div className="grid grid-cols-3 gap-2 rounded-[10px] bg-surface-2 p-2.5 border border-white/5 text-center text-[10px] tabular-nums">
+              <div className="grid grid-cols-3 gap-2 rounded-control bg-surface-2 p-2.5 border border-white/5 text-center text-micro tabular-nums">
                 <div>
                   <div className="text-text-muted">{t("Latitude", "خط العرض")}</div>
                   <div className="font-bold text-white">{gpsTelemetry.latitude.toFixed(5)}</div>
@@ -718,7 +718,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
             )}
 
             {mappedTrip && (
-              <div className="h-[320px] w-full rounded-[16px] overflow-hidden border border-border-subtle shadow-xl">
+              <div className="h-[320px] w-full rounded-panel overflow-hidden border border-border-subtle shadow-xl">
                 <InteractiveMap trip={mappedTrip} compact showCardOverlay={false} />
               </div>
             )}
@@ -738,16 +738,16 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
         {/* ── حسابي ────────────────────────────────────────────────── */}
         {activeTab === "account" && (
           <div className="px-5 py-4 space-y-4 animate-fade-in">
-            <h2 className="text-[15px] font-bold text-white">{t("My account", "حسابي")}</h2>
+            <h2 className="text-page-title font-bold text-white">{t("My account", "حسابي")}</h2>
 
             <MobileSection title={t("Account data", "بيانات الحساب")}>
               <div className="flex items-center gap-3 px-3.5 py-3.5 border-b border-border-subtle">
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-brand/20 text-[13px] font-bold text-brand">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-brand/20 text-body font-bold text-brand">
                   {(user?.fullName || "—").slice(0, 2)}
                 </span>
                 <div className="min-w-0">
-                  <div className="text-[12.5px] font-bold text-white truncate">{user?.fullName || "—"}</div>
-                  <div className="text-[10px] text-text-muted truncate" dir="ltr">{user?.email || "—"}</div>
+                  <div className="text-body font-bold text-white truncate">{user?.fullName || "—"}</div>
+                  <div className="text-micro text-text-muted truncate" dir="ltr">{user?.email || "—"}</div>
                 </div>
               </div>
               <MobileRow label={t("Phone", "الهاتف")} value={user?.phone || "—"} />
@@ -776,7 +776,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
 
             <button
               onClick={onLogout}
-              className="w-full flex h-11 items-center justify-center gap-2 rounded-[12px] bg-status-danger/15 border border-status-danger/30 text-status-danger font-bold text-[12.5px] hover:bg-status-danger hover:text-white transition-all"
+              className="w-full flex h-11 items-center justify-center gap-2 rounded-inner bg-status-danger/15 border border-status-danger/30 text-status-danger font-bold text-body hover:bg-status-danger hover:text-white transition-all"
             >
               <span>{t("Sign out", "تسجيل الخروج")}</span>
             </button>
@@ -785,7 +785,7 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
       </div>
 
       {/* Bottom navigation: الرئيسية · الرحلات · التتبع · الإشعارات · حسابي (§29) */}
-      <div className="absolute bottom-3 inset-x-4 z-40 flex items-center justify-around rounded-[18px] bg-navy/95 border border-white/10 px-2 py-2 shadow-2xl backdrop-blur-xl">
+      <div className="absolute bottom-3 inset-x-4 z-40 flex items-center justify-around rounded-panel bg-navy/95 border border-white/10 px-2 py-2 shadow-2xl backdrop-blur-xl">
         {[
           ["home", t("Home", "الرئيسية"), IconHome],
           ["trips", t("Trips", "الرحلات"), IconOrders],
@@ -799,12 +799,12 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
               key={id}
               onClick={() => setActiveTab(id)}
               className={cn(
-                "flex flex-col items-center gap-1 py-1 px-2 rounded-[10px] transition-all duration-200 active:scale-95",
+                "flex flex-col items-center gap-1 py-1 px-2 rounded-control transition-all duration-200 active:scale-95",
                 isActive ? "text-brand font-bold" : "text-white/50 hover:text-white"
               )}
             >
               <IconComponent size={18} />
-              <span className="text-[9px]">{label}</span>
+              <span className="text-micro">{label}</span>
             </button>
           );
         })}

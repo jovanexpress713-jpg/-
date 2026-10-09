@@ -242,12 +242,12 @@ export function ConsoleAuthGate({
         <button
           type="button"
           onClick={() => setShowLangMenu((v) => !v)}
-          className="flex h-9 items-center gap-2 rounded-full border border-border-subtle bg-surface-1/90 px-3 text-[11.5px] font-semibold text-text-secondary backdrop-blur transition-colors hover:border-brand/60 hover:text-text-primary"
+          className="flex h-9 items-center gap-2 rounded-full border border-border-subtle bg-surface-1/90 px-3 text-label-lg font-semibold text-text-secondary backdrop-blur transition-colors hover:border-brand/60 hover:text-text-primary"
           aria-haspopup="listbox"
           aria-expanded={showLangMenu}
           title={tk("language.choose")}
         >
-          <span className="text-[14px] leading-none">{activeLanguage?.flag}</span>
+          <span className="text-card-title leading-none">{activeLanguage?.flag}</span>
           <span>{tk(activeLanguage?.labelKey ?? "language.ar")}</span>
         </button>
         {showLangMenu && (
@@ -262,17 +262,17 @@ export function ConsoleAuthGate({
 
       <div className="relative z-10 grid w-full max-w-5xl gap-6 lg:grid-cols-[1.1fr_1fr]">
         {/* Identity panel */}
-        <div className="hidden flex-col justify-between rounded-[20px] border border-border-subtle bg-surface-1 p-8 lg:flex">
+        <div className="hidden flex-col justify-between rounded-card border border-border-subtle bg-surface-1 p-8 lg:flex">
           <div>
             <BrandLogo size={46} sub={tk("app.subtitle")} />
             <p className="tagline mt-2.5">{tk("app.tagline")}</p>
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-2xl font-extrabold text-text-primary">
+            <h2 className="text-hero-sm leading-8 font-extrabold text-text-primary">
               {t("Unified Operations Control Room", "غرفة التحكم التشغيلي الموحدة")}
             </h2>
-            <p className="text-[13px] leading-relaxed text-text-secondary">
+            <p className="text-body leading-relaxed text-text-secondary">
               {t(
                 "One authoritative backend. Live AVL telematics, the 18-state trip lifecycle, digital POD, financial settlement and a tamper-evident audit trail — all behind strict role-based access control.",
                 "خادم مركزي واحد موثوق. تتبع لحظي للأجهزة، دورة حياة الرحلة بـ 18 حالة معيارية، إثبات تسليم رقمي، تسويات مالية، وسجل تدقيق غير قابل للتعديل — خلف حماية صارمة للصلاحيات حسب الدور.",
@@ -285,15 +285,15 @@ export function ConsoleAuthGate({
                 { label: t("Official Fleet Types", "أنواع رسمية"), value: "4" },
                 { label: t("Governed Roles", "أدوار محكومة"), value: "11" },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-[14px] border border-border-subtle bg-surface-2 p-3 text-center">
-                  <div className="text-xl font-extrabold text-brand tabular-nums">{stat.value}</div>
-                  <div className="mt-0.5 text-[10.5px] font-semibold text-text-muted">{stat.label}</div>
+                <div key={stat.label} className="rounded-inner border border-border-subtle bg-surface-2 p-3 text-center">
+                  <div className="text-headline leading-7 font-extrabold text-brand tabular-nums">{stat.value}</div>
+                  <div className="mt-0.5 text-label font-semibold text-text-muted">{stat.label}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <p className="text-[11px] text-text-muted">
+          <p className="text-label text-text-muted">
             {t(
               "Authorized personnel only. Every sign-in is recorded in the audit log.",
               "الدخول للمصرح لهم فقط. كل عملية دخول تُسجَّل في سجل التدقيق.",
@@ -302,7 +302,7 @@ export function ConsoleAuthGate({
         </div>
 
         {/* Credentials panel */}
-        <div className="rounded-[20px] border border-border-subtle bg-surface-1 p-6 sm:p-8">
+        <div className="rounded-card border border-border-subtle bg-surface-1 p-6 sm:p-8">
           <div className="mb-6 lg:hidden">
             <BrandLogo size={38} sub={tk("app.subtitle")} />
             <p className="tagline mt-2">{tk("app.tagline")}</p>
@@ -310,12 +310,12 @@ export function ConsoleAuthGate({
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h1 className="text-lg font-extrabold text-text-primary">
+              <h1 className="text-section-title leading-7 font-extrabold text-text-primary">
                 {previewMode
                   ? t("Sign-in screen preview", "معاينة شاشة تسجيل الدخول")
                   : t("Control Room Sign-in", "تسجيل الدخول لغرفة التحكم")}
               </h1>
-              <p className="mt-1 text-[12px] text-text-secondary">
+              <p className="mt-1 text-label-lg text-text-secondary">
                 {previewMode
                   ? t("Preview only — sign-in and app entry are disabled.", "معاينة فقط — تسجيل الدخول ودخول التطبيقات معطّلة.")
                   : t("Instant preview enabled — click below to enter without password.", "وضع الاستعراض المباشر مفعّل — يمكنك الدخول فورا بدون كلمة مرور.")}
@@ -326,13 +326,13 @@ export function ConsoleAuthGate({
           {!previewMode && (
           <div className="mt-5 border-t border-border-subtle pt-4">
             <div className="mb-2.5 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-brand">
+              <span className="text-label font-bold uppercase tracking-wider text-brand">
                 {t(
                   "Choose an account to enter (no password)",
                   "اختر الحساب للدخول (بدون كلمة مرور)",
                 )}
               </span>
-              <span className="text-[10.5px] font-semibold text-status-active">
+              <span className="text-label font-semibold text-status-active">
                 {t("Instant Entry", "دخول مباشر بضغطة واحدة")}
               </span>
             </div>
@@ -344,19 +344,19 @@ export function ConsoleAuthGate({
                   disabled={isSubmitting}
                   onClick={() => handleQuickDemoLogin(acc)}
                   className={cn(
-                    "rounded-[12px] border p-3 text-start transition-all hover:border-brand hover:bg-surface-2 active:scale-[0.99]",
+                    "rounded-inner border p-3 text-start transition-all hover:border-brand hover:bg-surface-2 active:scale-[0.99]",
                     email === acc.email ? "border-brand/60 bg-surface-2" : "border-border-subtle",
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12.5px] font-bold text-text-primary">
+                    <span className="text-body font-bold text-text-primary">
                       {t(acc.titleEn, acc.titleAr)}
                     </span>
-                    <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-[10px] font-bold text-brand">
+                    <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-micro font-bold text-brand">
                       {t("Enter Now →", "دخول فوري ←")}
                     </span>
                   </div>
-                  <div className="mt-1 text-[10.5px] leading-relaxed text-text-muted">
+                  <div className="mt-1 text-label leading-relaxed text-text-muted">
                     {acc.descEn ? t(acc.descEn, acc.descAr) : acc.descAr}
                   </div>
                 </button>
@@ -371,7 +371,7 @@ export function ConsoleAuthGate({
               <button
                 type="button"
                 onClick={() => onOpenMobileApp("client")}
-                className="flex h-10 items-center justify-center gap-2 rounded-[12px] border border-accent-2/40 bg-accent-2/10 text-[11.5px] font-bold text-accent-2 transition-colors hover:bg-accent-2 hover:text-white"
+                className="flex h-10 items-center justify-center gap-2 rounded-inner border border-accent-2/40 bg-accent-2/10 text-label-lg font-bold text-accent-2 transition-colors hover:bg-accent-2 hover:text-white"
               >
                 <IconProfile size={15} />
                 {t("Open the client app", "فتح تطبيق العميل")}
@@ -379,7 +379,7 @@ export function ConsoleAuthGate({
               <button
                 type="button"
                 onClick={() => onOpenMobileApp("driver")}
-                className="flex h-10 items-center justify-center gap-2 rounded-[12px] border border-brand/40 bg-brand/10 text-[11.5px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
+                className="flex h-10 items-center justify-center gap-2 rounded-inner border border-brand/40 bg-brand/10 text-label-lg font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
               >
                 <IconTruck size={15} />
                 {t("Open the driver app", "فتح تطبيق السائق")}
@@ -388,11 +388,11 @@ export function ConsoleAuthGate({
           )}
 
           <form onSubmit={handleSubmit} className="mt-5 border-t border-border-subtle pt-4 space-y-3">
-            <div className="text-[11px] font-semibold text-text-muted">
+            <div className="text-label font-semibold text-text-muted">
               {t("Or sign in manually with credentials:", "أو تسجيل الدخول اليدوي بالبريد وكلمة المرور:")}
             </div>
             <label className="block">
-              <span className="mb-1 block text-[11px] font-semibold text-text-secondary">
+              <span className="mb-1 block text-label font-semibold text-text-secondary">
                 {t("Work Email", "البريد الإلكتروني")}
               </span>
               <div className="relative">
@@ -405,13 +405,13 @@ export function ConsoleAuthGate({
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="username"
                   placeholder="admin@ejaz.sa"
-                  className="w-full rounded-[12px] border border-border-subtle bg-surface-2 py-2 pe-3 ps-9 text-[12.5px] text-text-primary outline-none transition-colors focus:border-brand/60"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 py-2 pe-3 ps-9 text-body text-text-primary outline-none transition-colors focus:border-brand/60"
                 />
               </div>
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-[11px] font-semibold text-text-secondary">
+              <span className="mb-1 block text-label font-semibold text-text-secondary">
                 {t("Password", "كلمة المرور")}
               </span>
               <div className="relative">
@@ -424,7 +424,7 @@ export function ConsoleAuthGate({
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full rounded-[12px] border border-border-subtle bg-surface-2 py-2 pe-10 ps-9 text-[12.5px] text-text-primary outline-none transition-colors focus:border-brand/60"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 py-2 pe-10 ps-9 text-body text-text-primary outline-none transition-colors focus:border-brand/60"
                 />
                 <button
                   type="button"
@@ -438,7 +438,7 @@ export function ConsoleAuthGate({
             </label>
 
             {error && (
-              <div className="flex items-start gap-2 rounded-[12px] border border-status-danger/30 bg-status-danger/10 p-3 text-[12px] text-status-danger">
+              <div className="flex items-start gap-2 rounded-inner border border-status-danger/30 bg-status-danger/10 p-3 text-label-lg text-status-danger">
                 <IconAlertCircle size={15} />
                 <span>{error}</span>
               </div>
@@ -448,7 +448,7 @@ export function ConsoleAuthGate({
               type="submit"
               disabled={isSubmitting}
               className={cn(
-                "flex h-10 w-full items-center justify-center gap-2 rounded-[12px] bg-brand text-[12.5px] font-bold text-on-brand transition-all hover:brightness-110 active:scale-[0.99]",
+                "flex h-10 w-full items-center justify-center gap-2 rounded-inner bg-brand text-body font-bold text-on-brand transition-all hover:brightness-110 active:scale-[0.99]",
                 isSubmitting && "cursor-wait opacity-70",
               )}
             >

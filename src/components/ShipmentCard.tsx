@@ -38,8 +38,8 @@ export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
         <div className="flex items-center gap-2.5 min-w-0">
           <TruckTypeAvatar truckType={v.body} size={36} iconSize={18} showBadge />
           <div className="min-w-0">
-            <div className="truncate text-[15px] font-medium tabular-nums text-text-primary">{v.shipment}</div>
-            <div className="mt-0.5 truncate text-[11px] text-text-muted">
+            <div className="truncate text-page-title font-medium tabular-nums text-text-primary">{v.shipment}</div>
+            <div className="mt-0.5 truncate text-label text-text-muted">
               {v.model} · {v.cab}
             </div>
           </div>
@@ -48,21 +48,21 @@ export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
       </div>
 
       <div className="relative z-10 mt-3 flex min-w-0 gap-2 sm:gap-3">
-        <div className="w-[136px] shrink-0 rounded-[8px] bg-surface-2/70 p-2.5 backdrop-blur-sm sm:w-[168px] sm:p-3">
-          <div className="text-[10.5px] tracking-wide text-text-muted uppercase">
+        <div className="w-[136px] shrink-0 rounded-chip bg-surface-2/70 p-2.5 backdrop-blur-sm sm:w-[168px] sm:p-3">
+          <div className="text-label tracking-wide text-text-muted uppercase">
             {v.status === "inactive"
               ? t("Standing", "متوقفة")
               : t("Arriving in", "الوصول خلال")}
           </div>
           <div
             className={cn(
-              "mt-0.5 text-[17px] font-medium tabular-nums",
+              "mt-0.5 text-section-title font-medium tabular-nums",
               v.status === "inactive" ? "text-text-muted" : "text-text-primary",
             )}
           >
             {v.status === "inactive" ? "—:—:—" : formatCountdown(live.etaSeconds)}
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] tabular-nums text-text-secondary">
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-label tabular-nums text-text-secondary">
             <span className="truncate">
               {Math.round(live.miles).toLocaleString()} {t("mi left", "ميل متبقي")}
             </span>
@@ -72,7 +72,7 @@ export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="text-[10.5px] tracking-wide text-text-muted uppercase">
+          <div className="text-label tracking-wide text-text-muted uppercase">
             {t("Stops", "المحطات")} {done}/{v.stops.length}
           </div>
           <div className="mt-2 space-y-1.5">
@@ -94,7 +94,7 @@ export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
                 />
                 <span
                   className={cn(
-                    "truncate text-[11px]",
+                    "truncate text-label",
                     s.done ? "text-text-secondary" : "text-text-muted",
                   )}
                 >
@@ -106,7 +106,7 @@ export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
         </div>
       </div>
 
-      <div className="relative z-10 mt-3 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-inner bg-surface-0/55 px-2 py-1 text-[10.5px] text-text-secondary backdrop-blur-sm">
+      <div className="relative z-10 mt-3 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-inner bg-surface-0/55 px-2 py-1 text-label text-text-secondary backdrop-blur-sm">
         <IconPin size={13} className="shrink-0 text-brand" />
         <span className="truncate">
           {v.from} → {v.to}
@@ -120,7 +120,7 @@ export function ShipmentCard({ v, live, selected, index, onSelect }: Props) {
         <div className={cn("progress min-w-0 flex-1", late && "progress-late")}>
           <span style={{ width: `${Math.min(100, live.progress)}%` }} />
         </div>
-        <span className="num shrink-0 text-[11px] text-text-secondary">
+        <span className="num shrink-0 text-label text-text-secondary">
           {Math.round(Math.min(100, live.progress))}%
         </span>
       </div>

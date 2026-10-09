@@ -334,7 +334,7 @@ export function FinanceCenter() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <span className="label-sm">{t("FINANCE & SETTLEMENTS", "الوحدة المالية والفواتير والتسويات", "مالیات، انوائسز اور تصفیے")}</span>
-            <h2 className="mt-0.5 text-base font-extrabold text-text-primary">
+            <h2 className="mt-0.5 text-page-title leading-6 font-extrabold text-text-primary">
               {t(
                 "Financial Operations, Invoices, Settlements & Review",
                 "الإدارة المالية، الفواتير، التسويات، المدفوعات والمراجعة المالية",
@@ -354,7 +354,7 @@ export function FinanceCenter() {
                     notes: "",
                   })
                 }
-                className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-3 py-1.5 text-xs font-bold text-on-brand"
+                className="inline-flex items-center gap-1.5 rounded-inner bg-brand px-3 py-1.5 text-label-lg leading-4 font-bold text-on-brand"
               >
                 <IconPlus size={14} />
                 {t("New Invoice", "إنشاء فاتورة", "نئی انوائس")}
@@ -372,7 +372,7 @@ export function FinanceCenter() {
                     reference: `TRX-${Date.now().toString().slice(-5)}`,
                   })
                 }
-                className="inline-flex items-center gap-1.5 rounded-xl border border-brand/40 bg-brand/10 px-3 py-1.5 text-xs font-bold text-brand"
+                className="inline-flex items-center gap-1.5 rounded-inner border border-brand/40 bg-brand/10 px-3 py-1.5 text-label-lg leading-4 font-bold text-brand"
               >
                 <IconPlus size={14} />
                 {t("Record Payment", "تسجيل دفعة", "ادائیگی درج کریں")}
@@ -382,7 +382,7 @@ export function FinanceCenter() {
               type="button"
               onClick={() => void loadFinanceData()}
               disabled={loading}
-              className="btn-ghost h-8 px-3 text-[11px]"
+              className="btn-ghost h-8 px-3 text-label"
             >
               <IconRefresh size={13} />
               {t("Refresh", "تحديث", "تازہ کریں")}
@@ -398,7 +398,7 @@ export function FinanceCenter() {
               type="button"
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "rounded-xl px-3.5 py-2 text-xs font-bold transition",
+                "rounded-inner px-3.5 py-2 text-label-lg leading-4 font-bold transition",
                 activeTab === tab.id
                   ? "bg-brand text-on-brand shadow-sm"
                   : "border border-border-subtle bg-surface-2/60 text-text-secondary hover:text-text-primary"
@@ -444,7 +444,7 @@ export function FinanceCenter() {
       {/* ── TAB 1: FINANCIAL LEDGER ──────────────────────────────────────── */}
       {activeTab === "ledger" && canViewLedger && (
         <div className="card overflow-x-auto p-4">
-          <table className="w-full text-xs">
+          <table className="w-full text-label-lg leading-4">
             <thead>
               <tr className="border-b border-border-subtle text-text-muted">
                 <th className="p-2 text-start">{t("Trip", "الرحلة", "ٹرپ")}</th>
@@ -470,7 +470,7 @@ export function FinanceCenter() {
                   </td>
                   <td className="p-2 tabular-nums">{Number(r.paidAmount || 0).toLocaleString()} SAR</td>
                   <td className="p-2">
-                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10.5px] font-bold">
+                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-label font-bold">
                       {r.settlementStatus} · {r.settlementApprovalStatus || "DRAFT"}
                     </span>
                   </td>
@@ -485,14 +485,14 @@ export function FinanceCenter() {
       {activeTab === "invoices" && canViewInvoices && (
         <div className="card overflow-x-auto p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-xs font-extrabold text-text-primary">
+            <h3 className="text-label-lg leading-4 font-extrabold text-text-primary">
               {t("Tax Invoices Registry (§17)", "سجل الفواتير الضريبية (§17)", "ٹیکس انوائسز کا ریکارڈ")}
             </h3>
-            <span className="text-[11px] text-text-muted">
+            <span className="text-label text-text-muted">
               {invoices.length} {t("invoices", "فاتورة", "انوائسز")}
             </span>
           </div>
-          <table className="w-full text-xs">
+          <table className="w-full text-label-lg leading-4">
             <thead>
               <tr className="border-b border-border-subtle text-text-muted">
                 <th className="p-2 text-start">{t("Invoice #", "رقم الفاتورة", "انوائس نمبر")}</th>
@@ -515,7 +515,7 @@ export function FinanceCenter() {
                   <td className="p-2 tabular-nums">{Number(inv.taxAmount || 0).toLocaleString()} SAR</td>
                   <td className="p-2 tabular-nums font-bold">{Number(inv.totalAmount || 0).toLocaleString()} SAR</td>
                   <td className="p-2">
-                    <span className="rounded-full bg-brand/15 px-2 py-0.5 text-[10.5px] font-bold text-brand">
+                    <span className="rounded-full bg-brand/15 px-2 py-0.5 text-label font-bold text-brand">
                       {inv.status}
                     </span>
                   </td>
@@ -525,7 +525,7 @@ export function FinanceCenter() {
                         <button
                           type="button"
                           onClick={() => void handleApproveInvoice(inv.id)}
-                          className="rounded-lg bg-emerald-500/15 px-2 py-1 text-[10.5px] font-bold text-emerald-500"
+                          className="rounded-chip bg-emerald-500/15 px-2 py-1 text-label font-bold text-emerald-500"
                         >
                           {t("Approve", "اعتماد", "منظور کریں")}
                         </button>
@@ -534,7 +534,7 @@ export function FinanceCenter() {
                         <button
                           type="button"
                           onClick={() => void handleIssueInvoice(inv.id)}
-                          className="rounded-lg bg-brand/15 px-2 py-1 text-[10.5px] font-bold text-brand"
+                          className="rounded-chip bg-brand/15 px-2 py-1 text-label font-bold text-brand"
                         >
                           {t("Issue", "إصدار", "جاری کریں")}
                         </button>
@@ -543,7 +543,7 @@ export function FinanceCenter() {
                         <button
                           type="button"
                           onClick={() => window.print()}
-                          className="rounded-lg border border-border-subtle px-2 py-1 text-[10.5px] font-bold text-text-secondary"
+                          className="rounded-chip border border-border-subtle px-2 py-1 text-label font-bold text-text-secondary"
                         >
                           {t("Print", "طباعة", "پرنٹ")}
                         </button>
@@ -562,10 +562,10 @@ export function FinanceCenter() {
         <div className="card overflow-x-auto p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="text-xs font-extrabold text-text-primary">
+              <h3 className="text-label-lg leading-4 font-extrabold text-text-primary">
                 {t("Financial Settlements (§16)", "التسويات المالية للرحلات (§16)", "ٹرپس کے مالیاتی تصفیے")}
               </h3>
-              <p className="text-[11px] text-text-muted">
+              <p className="text-label text-text-muted">
                 {t(
                   "Approved settlements are locked and cannot be edited unless reopened by a user with REOPEN_SETTLEMENT.",
                   "بعد اعتماد التسوية لا يمكن تعديلها إلا لمن يملك صلاحية إعادة فتح التسوية (REOPEN_SETTLEMENT) مع تسجيل السبب في التدقيق.",
@@ -575,7 +575,7 @@ export function FinanceCenter() {
             </div>
           </div>
 
-          <table className="w-full text-xs">
+          <table className="w-full text-label-lg leading-4">
             <thead>
               <tr className="border-b border-border-subtle text-text-muted">
                 <th className="p-2 text-start">{t("Trip", "الرحلة", "ٹرپ")}</th>
@@ -600,20 +600,20 @@ export function FinanceCenter() {
                     <td className="p-2 font-mono font-bold text-brand">{st.tripNumber || st.tripId}</td>
                     <td className="p-2">
                       <div className="font-bold">{st.customerName || "—"}</div>
-                      <div className="text-[10.5px] text-text-muted">{st.driverName || "—"}</div>
+                      <div className="text-label text-text-muted">{st.driverName || "—"}</div>
                     </td>
                     <td className="p-2 tabular-nums">{Number(st.revenue || 0).toLocaleString()} SAR</td>
                     <td className="p-2 tabular-nums font-bold">{Number(st.paidAmount || 0).toLocaleString()} SAR</td>
                     <td className="p-2 tabular-nums">{Number(st.balanceDue || 0).toLocaleString()} SAR</td>
                     <td className="p-2">
-                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10.5px] font-bold">
+                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-label font-bold">
                         {st.settlementStatus}
                       </span>
                     </td>
                     <td className="p-2">
                       <span
                         className={cn(
-                          "rounded-full px-2 py-0.5 text-[10.5px] font-bold",
+                          "rounded-full px-2 py-0.5 text-label font-bold",
                           isLocked
                             ? "bg-emerald-500/15 text-emerald-500"
                             : st.settlementApprovalStatus === "REOPENED"
@@ -636,7 +636,7 @@ export function FinanceCenter() {
                                 notes: st.settlementNotes || "",
                               })
                             }
-                            className="rounded-lg bg-brand/15 px-2.5 py-1 text-[10.5px] font-bold text-brand"
+                            className="rounded-chip bg-brand/15 px-2.5 py-1 text-label font-bold text-brand"
                           >
                             {t("Settle / Edit", "تسوية / تعديل", "تصفیہ / ترمیم")}
                           </button>
@@ -645,7 +645,7 @@ export function FinanceCenter() {
                           <button
                             type="button"
                             onClick={() => void handleApproveSettlement(st.tripId)}
-                            className="rounded-lg bg-emerald-500/15 px-2.5 py-1 text-[10.5px] font-bold text-emerald-500"
+                            className="rounded-chip bg-emerald-500/15 px-2.5 py-1 text-label font-bold text-emerald-500"
                           >
                             {t("Approve", "اعتماد", "منظور کریں")}
                           </button>
@@ -654,7 +654,7 @@ export function FinanceCenter() {
                           <button
                             type="button"
                             onClick={() => setReopenModal({ tripId: st.tripId, reason: "" })}
-                            className="rounded-lg bg-warning/15 px-2.5 py-1 text-[10.5px] font-bold text-warning"
+                            className="rounded-chip bg-warning/15 px-2.5 py-1 text-label font-bold text-warning"
                           >
                             {t("Reopen Settlement", "إعادة فتح التسوية", "تصفیہ دوبارہ کھولیں")}
                           </button>
@@ -673,14 +673,14 @@ export function FinanceCenter() {
       {activeTab === "payments" && canViewPayments && (
         <div className="card overflow-x-auto p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-xs font-extrabold text-text-primary">
+            <h3 className="text-label-lg leading-4 font-extrabold text-text-primary">
               {t("Payments & Receivables (§18)", "سجل المدفوعات والمقبوضات (§18)", "ادائیگیوں اور وصولیوں کا ریکارڈ")}
             </h3>
-            <span className="text-[11px] text-text-muted">
+            <span className="text-label text-text-muted">
               {payments.length} {t("records", "سند مالي", "ریکارڈز")}
             </span>
           </div>
-          <table className="w-full text-xs">
+          <table className="w-full text-label-lg leading-4">
             <thead>
               <tr className="border-b border-border-subtle text-text-muted">
                 <th className="p-2 text-start">{t("Payment #", "رقم السند", "سند نمبر")}</th>
@@ -705,9 +705,9 @@ export function FinanceCenter() {
                       : t("Driver Payout", "صرف لسائق", "ڈرائیور کو ادائیگی")}
                   </td>
                   <td className="p-2 tabular-nums font-bold">{Number(pmt.amount || 0).toLocaleString()} SAR</td>
-                  <td className="p-2 font-mono text-[10.5px]">{pmt.method}</td>
+                  <td className="p-2 font-mono text-label">{pmt.method}</td>
                   <td className="p-2">
-                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10.5px] font-bold">
+                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-label font-bold">
                       {pmt.status}
                     </span>
                   </td>
@@ -716,7 +716,7 @@ export function FinanceCenter() {
                       <button
                         type="button"
                         onClick={() => void handleConfirmPayment(pmt.id)}
-                        className="rounded-lg bg-emerald-500/15 px-2.5 py-1 text-[10.5px] font-bold text-emerald-500"
+                        className="rounded-chip bg-emerald-500/15 px-2.5 py-1 text-label font-bold text-emerald-500"
                       >
                         {t("Confirm Receipt", "تأكيد الاستلام", "وصولی کی تصدیق")}
                       </button>
@@ -733,11 +733,11 @@ export function FinanceCenter() {
       {activeTab === "review" && canViewReview && (
         <div className="card overflow-x-auto p-4">
           <div className="mb-3">
-            <h3 className="text-xs font-extrabold text-text-primary">
+            <h3 className="text-label-lg leading-4 font-extrabold text-text-primary">
               {t("Financial Review & Audit Approval (§18)", "المراجعة المالية واعتماد التدقيق (§18)", "مالیاتی جائزہ اور آڈٹ منظوری")}
             </h3>
           </div>
-          <table className="w-full text-xs">
+          <table className="w-full text-label-lg leading-4">
             <thead>
               <tr className="border-b border-border-subtle text-text-muted">
                 <th className="p-2 text-start">{t("Trip", "الرحلة", "ٹرپ")}</th>
@@ -755,18 +755,18 @@ export function FinanceCenter() {
                   <td className="p-2">{rv.customerName || "—"}</td>
                   <td className="p-2 tabular-nums font-bold">{Number(rv.netProfit || 0).toLocaleString()} SAR</td>
                   <td className="p-2">
-                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10.5px] font-bold">
+                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-label font-bold">
                       {rv.reviewStatus}
                     </span>
                   </td>
-                  <td className="p-2 text-[11px] text-text-muted">{rv.reviewedByName || "—"}</td>
+                  <td className="p-2 text-label text-text-muted">{rv.reviewedByName || "—"}</td>
                   <td className="p-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                       {can("review.perform") && rv.reviewStatus === "NOT_STARTED" && (
                         <button
                           type="button"
                           onClick={() => void handlePerformReview(rv.tripId)}
-                          className="rounded-lg bg-brand/15 px-2.5 py-1 text-[10.5px] font-bold text-brand"
+                          className="rounded-chip bg-brand/15 px-2.5 py-1 text-label font-bold text-brand"
                         >
                           {t("Perform Review", "إجراء المراجعة", "جائزہ لیں")}
                         </button>
@@ -775,7 +775,7 @@ export function FinanceCenter() {
                         <button
                           type="button"
                           onClick={() => void handleApproveReview(rv.tripId)}
-                          className="rounded-lg bg-emerald-500/15 px-2.5 py-1 text-[10.5px] font-bold text-emerald-500"
+                          className="rounded-chip bg-emerald-500/15 px-2.5 py-1 text-label font-bold text-emerald-500"
                         >
                           {t("Approve Review", "اعتماد المراجعة", "جائزہ منظور کریں")}
                         </button>
@@ -792,11 +792,11 @@ export function FinanceCenter() {
       {/* ── Modal: Reopen Approved Settlement (§16) ───────────────────────── */}
       {reopenModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border-subtle bg-surface-1 p-5 shadow-xl">
-            <h4 className="text-sm font-black text-text-primary">
+          <div className="w-full max-w-md rounded-panel border border-border-subtle bg-surface-1 p-5 shadow-xl">
+            <h4 className="text-card-title leading-5 font-black text-text-primary">
               {t("Reopen Approved Settlement", "إعادة فتح تسوية مالية معتمدة", "منظور شدہ تصفیہ دوبارہ کھولیں")}
             </h4>
-            <p className="mt-1 text-xs text-text-muted">
+            <p className="mt-1 text-label-lg leading-4 text-text-muted">
               {t(
                 "Please enter the mandatory audit reason for reopening this approved settlement.",
                 "يرجى إدخال السبب الإلزامي لإعادة فتح هذه التسوية المعتمدة (سيُسجَّل في سجل التدقيق).",
@@ -808,13 +808,13 @@ export function FinanceCenter() {
               value={reopenModal.reason}
               onChange={(e) => setReopenModal({ ...reopenModal, reason: e.target.value })}
               placeholder={t("Audit reason…", "سبب إعادة الفتح…", "دوبارہ کھولنے کی وجہ…")}
-              className="mt-3 w-full rounded-xl border border-border-subtle bg-surface-2 p-2.5 text-xs text-text-primary"
+              className="mt-3 w-full rounded-inner border border-border-subtle bg-surface-2 p-2.5 text-label-lg leading-4 text-text-primary"
             />
             <div className="mt-3 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setReopenModal(null)}
-                className="rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs font-bold text-text-secondary"
+                className="rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-secondary"
               >
                 {t("Cancel", "إلغاء", "منسوخ کریں")}
               </button>
@@ -822,7 +822,7 @@ export function FinanceCenter() {
                 type="button"
                 disabled={!reopenModal.reason.trim()}
                 onClick={() => void handleReopenSettlement()}
-                className="rounded-xl bg-warning px-4 py-1.5 text-xs font-black text-black disabled:opacity-40"
+                className="rounded-inner bg-warning px-4 py-1.5 text-label-lg leading-4 font-black text-black disabled:opacity-40"
               >
                 {t("Confirm Reopen", "تأكيد إعادة الفتح", "تصدیق کریں")}
               </button>
@@ -834,11 +834,11 @@ export function FinanceCenter() {
       {/* ── Modal: Settle / Edit Settlement ───────────────────────────────── */}
       {settleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border-subtle bg-surface-1 p-5 shadow-xl">
-            <h4 className="text-sm font-black text-text-primary">
+          <div className="w-full max-w-md rounded-panel border border-border-subtle bg-surface-1 p-5 shadow-xl">
+            <h4 className="text-card-title leading-5 font-black text-text-primary">
               {t("Update Trip Settlement", "تحديث التسوية المالية للرحلة", "ٹرپ کا مالیاتی تصفیہ اپڈیٹ کریں")}
             </h4>
-            <div className="mt-3 space-y-3 text-xs">
+            <div className="mt-3 space-y-3 text-label-lg leading-4">
               <div>
                 <label className="mb-1 block font-bold text-text-secondary">
                   {t("Paid Amount (SAR)", "المبلغ المسدد (ريال)", "ادا شدہ رقم")}
@@ -847,7 +847,7 @@ export function FinanceCenter() {
                   type="number"
                   value={settleModal.paidAmount}
                   onChange={(e) => setSettleModal({ ...settleModal, paidAmount: e.target.value })}
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
                 />
               </div>
               <div>
@@ -858,21 +858,21 @@ export function FinanceCenter() {
                   type="text"
                   value={settleModal.notes}
                   onChange={(e) => setSettleModal({ ...settleModal, notes: e.target.value })}
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setSettleModal(null)}
-                  className="rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 font-bold text-text-secondary"
+                  className="rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 font-bold text-text-secondary"
                 >
                   {t("Cancel", "إلغاء", "منسوخ کریں")}
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleSaveSettlement()}
-                  className="rounded-xl bg-brand px-4 py-1.5 font-black text-on-brand"
+                  className="rounded-inner bg-brand px-4 py-1.5 font-black text-on-brand"
                 >
                   {t("Save Settlement", "حفظ التسوية", "محفوظ کریں")}
                 </button>
@@ -885,11 +885,11 @@ export function FinanceCenter() {
       {/* ── Modal: Create Invoice ─────────────────────────────────────────── */}
       {invoiceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border-subtle bg-surface-1 p-5 shadow-xl">
-            <h4 className="text-sm font-black text-text-primary">
+          <div className="w-full max-w-md rounded-panel border border-border-subtle bg-surface-1 p-5 shadow-xl">
+            <h4 className="text-card-title leading-5 font-black text-text-primary">
               {t("Create Tax Invoice", "إنشاء فاتورة ضريبية جديدة", "نئی ٹیکس انوائس بنائیں")}
             </h4>
-            <div className="mt-3 space-y-3 text-xs">
+            <div className="mt-3 space-y-3 text-label-lg leading-4">
               <div>
                 <label className="mb-1 block font-bold text-text-secondary">
                   {t("Trip ID", "معرّف الرحلة", "ٹرپ آئی ڈی")}
@@ -898,7 +898,7 @@ export function FinanceCenter() {
                   type="text"
                   value={invoiceModal.tripId}
                   onChange={(e) => setInvoiceModal({ ...invoiceModal, tripId: e.target.value })}
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
                 />
               </div>
               <div>
@@ -909,21 +909,21 @@ export function FinanceCenter() {
                   type="number"
                   value={invoiceModal.amount}
                   onChange={(e) => setInvoiceModal({ ...invoiceModal, amount: e.target.value })}
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setInvoiceModal(null)}
-                  className="rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 font-bold text-text-secondary"
+                  className="rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 font-bold text-text-secondary"
                 >
                   {t("Cancel", "إلغاء", "منسوخ کریں")}
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleCreateInvoice()}
-                  className="rounded-xl bg-brand px-4 py-1.5 font-black text-on-brand"
+                  className="rounded-inner bg-brand px-4 py-1.5 font-black text-on-brand"
                 >
                   {t("Create Invoice", "إنشاء الفاتورة", "انوائس بنائیں")}
                 </button>
@@ -936,11 +936,11 @@ export function FinanceCenter() {
       {/* ── Modal: Record Payment ─────────────────────────────────────────── */}
       {paymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border-subtle bg-surface-1 p-5 shadow-xl">
-            <h4 className="text-sm font-black text-text-primary">
+          <div className="w-full max-w-md rounded-panel border border-border-subtle bg-surface-1 p-5 shadow-xl">
+            <h4 className="text-card-title leading-5 font-black text-text-primary">
               {t("Record Financial Payment", "تسجيل دفعة مالية", "مالیاتی ادائیگی درج کریں")}
             </h4>
-            <div className="mt-3 space-y-3 text-xs">
+            <div className="mt-3 space-y-3 text-label-lg leading-4">
               <div>
                 <label className="mb-1 block font-bold text-text-secondary">
                   {t("Trip ID", "معرّف الرحلة", "ٹرپ آئی ڈی")}
@@ -949,7 +949,7 @@ export function FinanceCenter() {
                   type="text"
                   value={paymentModal.tripId}
                   onChange={(e) => setPaymentModal({ ...paymentModal, tripId: e.target.value })}
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
                 />
               </div>
               <div>
@@ -960,21 +960,21 @@ export function FinanceCenter() {
                   type="number"
                   value={paymentModal.amount}
                   onChange={(e) => setPaymentModal({ ...paymentModal, amount: e.target.value })}
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setPaymentModal(null)}
-                  className="rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 font-bold text-text-secondary"
+                  className="rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 font-bold text-text-secondary"
                 >
                   {t("Cancel", "إلغاء", "منسوخ کریں")}
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleRecordPayment()}
-                  className="rounded-xl bg-brand px-4 py-1.5 font-black text-on-brand"
+                  className="rounded-inner bg-brand px-4 py-1.5 font-black text-on-brand"
                 >
                   {t("Save Payment", "تسجيل الدفعة", "محفوظ کریں")}
                 </button>
@@ -990,10 +990,10 @@ export function FinanceCenter() {
 function KpiBox({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="card p-3">
-      <div className="truncate text-[10.5px] text-text-muted">{label}</div>
+      <div className="truncate text-label text-text-muted">{label}</div>
       <div
         className={cn(
-          "mt-1 truncate text-xs font-extrabold tabular-nums",
+          "mt-1 truncate text-label-lg leading-4 font-extrabold tabular-nums",
           highlight ? "text-emerald-500" : "text-text-primary"
         )}
         dir="ltr"

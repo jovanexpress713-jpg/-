@@ -82,11 +82,11 @@ function Ring({
         <span className="absolute inset-0 grid place-items-center text-text-secondary">{icon}</span>
       </div>
       <div className="text-center">
-        <div className="text-[13px] font-medium tabular-nums text-text-primary">
+        <div className="text-body font-medium tabular-nums text-text-primary">
           {Math.round(pct)}
           {suffix}
         </div>
-        <div className="text-[10.5px] text-text-muted">{label}</div>
+        <div className="text-label text-text-muted">{label}</div>
       </div>
     </div>
   );
@@ -102,12 +102,12 @@ function Stat({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[8px] bg-surface-2 p-3">
+    <div className="rounded-chip bg-surface-2 p-3">
       <div className="flex items-center gap-1.5 text-text-muted">
         {icon}
-        <span className="text-[10.5px] tracking-wide uppercase">{label}</span>
+        <span className="text-label tracking-wide uppercase">{label}</span>
       </div>
-      <div className="mt-1.5 text-[15px] font-medium tabular-nums text-text-primary">{value}</div>
+      <div className="mt-1.5 text-page-title font-medium tabular-nums text-text-primary">{value}</div>
     </div>
   );
 }
@@ -181,14 +181,14 @@ export function DetailsPanel({
             <TruckTypeAvatar truckType={v.body} size={46} iconSize={24} showBadge />
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-[26px] leading-tight font-medium tabular-nums text-text-primary">
+                <h2 className="text-hero leading-tight font-medium tabular-nums text-text-primary">
                   {v.shipment}
                 </h2>
                 <StatusChip status={v.status} />
               </div>
               <div className="mt-1 flex items-center gap-2 flex-wrap">
                 <TruckTypeBadge truckType={v.body} size={13} />
-                <span className="text-[12px] text-text-muted">
+                <span className="text-label-lg text-text-muted">
                   {v.brand} {v.model} · {v.hp} {t("hp", "حصان")}
                 </span>
               </div>
@@ -207,7 +207,7 @@ export function DetailsPanel({
               key={id}
               onClick={() => setTab(id)}
               className={cn(
-                "relative flex-1 pb-2.5 text-[12.5px] transition-colors duration-200",
+                "relative flex-1 pb-2.5 text-body transition-colors duration-200",
                 tab === id ? "text-text-primary" : "text-text-muted hover:text-text-secondary",
               )}
             >
@@ -261,14 +261,14 @@ export function DetailsPanel({
             />
 
             <div className="card flex items-center gap-3 p-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-5 text-[13px] font-semibold text-text-primary">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-5 text-body font-semibold text-text-primary">
                 {v.driver.initials}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13.5px] font-medium text-text-primary">
+                <div className="truncate text-card-title font-medium text-text-primary">
                   {v.driver.name}
                 </div>
-                <div className="flex items-center gap-1.5 truncate text-[11px] tabular-nums text-text-muted">
+                <div className="flex items-center gap-1.5 truncate text-label tabular-nums text-text-muted">
                   <span>{v.driver.phone}</span>
                   <span>·</span>
                   <span>
@@ -302,8 +302,8 @@ export function DetailsPanel({
 
         {tab === "vehicle" && (
           <>
-            <div className="relative overflow-hidden rounded-[12px] bg-surface-1 border border-border-subtle p-3">
-              <div className="h-[210px] w-full rounded-[8px] overflow-hidden bg-surface-2 border border-white/5">
+            <div className="relative overflow-hidden rounded-inner bg-surface-1 border border-border-subtle p-3">
+              <div className="h-[210px] w-full rounded-chip overflow-hidden bg-surface-2 border border-white/5">
                 <Vehicle3DViewer
                   vehicleType={v.body}
                   vehiclePlate={v.plate}
@@ -314,8 +314,8 @@ export function DetailsPanel({
               </div>
               <div className="relative flex items-end justify-between mt-3 px-1">
                 <div className="min-w-0">
-                  <div className="truncate text-[17px] font-bold text-text-primary">{v.model}</div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-text-muted">
+                  <div className="truncate text-section-title font-bold text-text-primary">{v.model}</div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-label text-text-muted">
                     <span className="truncate">{v.brand} · {v.cab}</span>
                     <span className="inline-flex items-center gap-1 font-semibold text-brand">
                       <TruckTypeIcon truckType={v.body} size={14} />
@@ -412,12 +412,12 @@ export function DetailsPanel({
           <div className="space-y-2">
             {docs.map((d, i) => (
               <div key={d.name} className="card flex items-center gap-3 p-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] bg-surface-4 text-text-secondary">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-chip bg-surface-4 text-text-secondary">
                   <IconDoc size={16} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13px] text-text-primary">{d.name}</div>
-                  <div className="truncate text-[10.5px] tabular-nums text-text-muted">{d.meta}</div>
+                  <div className="truncate text-body text-text-primary">{d.name}</div>
+                  <div className="truncate text-label tabular-nums text-text-muted">{d.meta}</div>
                 </div>
                 <button
                   onClick={() => syncDoc(i)}
@@ -449,7 +449,7 @@ export function DetailsPanel({
                 </button>
               </div>
             ))}
-            <p className="px-1 pt-1 text-[10.5px] text-text-muted">
+            <p className="px-1 pt-1 text-label text-text-muted">
               {t(
                 "Documents refresh automatically every 15 minutes.",
                 "تُحدَّث المستندات تلقائيًا كل ١٥ دقيقة.",
@@ -473,10 +473,10 @@ export function DetailsPanel({
                       m.from === "me" ? "bubble-out" : "bubble-in",
                     )}
                   >
-                    <div className="text-[12.5px] leading-snug">{m.text}</div>
+                    <div className="text-body leading-snug">{m.text}</div>
                     <div
                       className={cn(
-                        "mt-1 text-[10px] tabular-nums",
+                        "mt-1 text-micro tabular-nums",
                         m.from === "me" ? "text-on-orange/70" : "text-text-muted",
                       )}
                     >
@@ -487,7 +487,7 @@ export function DetailsPanel({
               ))}
               {typing && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-1 rounded-[12px] bg-surface-4 px-3 py-2.5">
+                  <div className="flex items-center gap-1 rounded-inner bg-surface-4 px-3 py-2.5">
                     {[0, 1, 2].map((i) => (
                       <span
                         key={i}

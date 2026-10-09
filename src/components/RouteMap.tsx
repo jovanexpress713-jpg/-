@@ -187,7 +187,7 @@ export function RouteMap({ fromCity, toCity, progressPct, corridorKey, className
   };
 
   const controlBtn =
-    "grid h-[38px] w-[38px] place-items-center rounded-[10px] border border-white/10 bg-black/55 text-text-secondary backdrop-blur-md transition-colors hover:text-text-primary";
+    "grid h-[38px] w-[38px] place-items-center rounded-control border border-white/10 bg-black/55 text-text-secondary backdrop-blur-md transition-colors hover:text-text-primary";
 
   return (
     <div className={cn("relative w-full overflow-hidden rounded-inner bg-[#0b0f16]", className)}

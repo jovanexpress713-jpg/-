@@ -179,7 +179,7 @@ export function BrandLogo({
       {/* The published logo already carries the identity — no separate wordmark. */}
       <BrandEmblem size={size} variant="header" className="shrink-0" />
       {showSub && sub && (
-        <span className="truncate text-[10.5px] font-medium text-text-muted tracking-wide">
+        <span className="truncate text-label font-medium text-text-muted tracking-wide">
           {sub}
         </span>
       )}

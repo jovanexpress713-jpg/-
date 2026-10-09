@@ -20,7 +20,7 @@ function SquareField() {
         {Array.from({ length: 9 * 17 }).map((_, i) => (
           <span
             key={i}
-            className="rounded-[7px] border border-white/10"
+            className="rounded-chip border border-white/10"
             style={{ opacity: 0.35 + ((i * 37) % 60) / 100 }}
           />
         ))}
@@ -78,7 +78,7 @@ export function SplashScreen({
         )}
 
         <div className="animate-fade-in mt-8 text-center" style={{ animationDelay: "1.35s" }}>
-          <div className="text-[12px] text-white/70">
+          <div className="text-label-lg text-white/70">
             {t("Heavy Fleet Tracking & Logistics", "تتبع أسطول النقل الثقيل واللوجستيات", "ہیوی فلیٹ ٹریکنگ اور لاجسٹکس")}
           </div>
 
@@ -89,7 +89,7 @@ export function SplashScreen({
                 e.stopPropagation();
                 if (onContinue) onContinue();
               }}
-              className="group relative inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-[12px] font-bold text-navy shadow-lg shadow-brand/25 transition-all hover:bg-brand-soft hover:scale-105 active:scale-95"
+              className="group relative inline-flex items-center gap-2 rounded-full bg-brand px-6 py-2.5 text-label-lg font-bold text-navy shadow-lg shadow-brand/25 transition-all hover:bg-brand-soft hover:scale-105 active:scale-95"
             >
               <span>{t("Tap to Continue", "اضغط للمتابعة", "جاری رکھنے کے لیے دبائیں")}</span>
               <span className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5">➔</span>
@@ -98,7 +98,7 @@ export function SplashScreen({
         </div>
 
         <div
-          className="animate-fade-in absolute bottom-8 text-[10.5px] tracking-wide text-white/40"
+          className="animate-fade-in absolute bottom-8 text-label tracking-wide text-white/40"
           style={{ animationDelay: "2s" }}
         >
           {t("Tap anywhere to enter application", "اضغط في أي مكان للدخول للتطبيق", "داخل ہونے کے لیے کہیں بھی دبائیں")}
