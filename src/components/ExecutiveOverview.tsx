@@ -6,6 +6,8 @@ import { useToast } from "./Toast";
 import { CapacityTruck } from "./CapacityTruck";
 import { TruckTypeAvatar } from "./TruckTypeIcon";
 import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconChevron } from "./Icons";
+import { FuelTankGauge } from "./telemetry/FuelTankGauge";
+import { SpeedometerGauge } from "./telemetry/SpeedometerGauge";
 import { KpiCards } from "./overview/KpiCards";
 import { CargoDonut } from "./overview/CargoDonut";
 import { TripBars } from "./overview/TripBars";
@@ -171,13 +173,57 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
         </section>
 
         <section className="card overflow-hidden border border-border-subtle p-0">
-          {selected ? (
+          {selected ? (() => {
+            const assignedTruck = trucks.find((item) => item.id === selected.truckId);
+            const fuelVal = Math.max(0, Math.min(100, assignedTruck?.fuel ?? 78));
+            const speedVal = Math.max(0, assignedTruck?.speed ?? (statusGroup(selected.status) === "transit" ? 82 : 0));
+            const speedMax = 120;
+
+            // Smart fuel status
+            const fuelTone = fuelVal <= 20
+              ? { bg: "bg-status-danger/15", text: "text-status-danger", border: "border-status-danger/30", label: t("Low fuel", "منخفض", "کم ایندھن") }
+              : fuelVal <= 45
+              ? { bg: "bg-status-waiting/15", text: "text-status-waiting", border: "border-status-waiting/30", label: t("Moderate", "متوسط", "معتدل") }
+              : { bg: "bg-status-active/15", text: "text-status-active", border: "border-status-active/30", label: t("Optimal", "ممتاز", "بہترین") };
+
+            // Smart speed status
+            const speedTone = speedVal === 0
+              ? { bg: "bg-surface-3", text: "text-text-muted", border: "border-border-subtle", label: t("Idle", "متوقفة", "ساکن") }
+              : speedVal > 95
+              ? { bg: "bg-status-danger/15", text: "text-status-danger", border: "border-status-danger/30", label: t("Over limit", "تجاوز السرعة", "حد سے زیادہ") }
+              : { bg: "bg-brand/15", text: "text-brand", border: "border-brand/30", label: t("Cruising", "سرعة مثالية", "معمول کی رفتار") };
+
+            return (
             <div className="relative flex min-h-[510px] flex-col overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,color-mix(in_srgb,var(--color-brand)_7%,transparent),transparent_60%)] px-5 py-5 sm:min-h-[590px] sm:px-8 sm:py-6">
-              <div className="flex items-start justify-between gap-4" dir="ltr">
-                <strong className="pt-0.5 text-start text-page-title font-bold tabular-nums text-text-primary sm:text-section-title">
-                  {selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}
-                </strong>
+              <div className="flex flex-wrap items-start justify-between gap-4" dir="ltr">
+                <div>
+                  <strong className="block text-start text-page-title font-bold tabular-nums text-text-primary sm:text-section-title">
+                    {selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}
+                  </strong>
+                  <span className="mt-0.5 block text-start text-label text-text-muted">
+                    {t("Truck & Payload Live Telemetry", "القياس الحي للحمولة ومؤشرات الشاحنة", "ٹرک اور سامان کی براہ راست ٹیلی میٹری")}
+                  </span>
+                </div>
                 <h2 className="pt-0.5 text-end text-section-title font-bold text-text-primary sm:text-hero-sm" dir="rtl">{t("Truck load capacity", "حمولة الشاحنة")}</h2>
+              </div>
+
+              {/* Modern Smart Fuel & Speed Telemetry Panel */}
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {/* Modern Smart Moving Fuel Tank */}
+                <FuelTankGauge
+                  fuelVal={fuelVal}
+                  tankCapacityLiters={600}
+                  tone={fuelTone}
+                  t={t}
+                />
+
+                {/* Modern Smart Speedometer Clock */}
+                <SpeedometerGauge
+                  speedVal={speedVal}
+                  speedMax={speedMax}
+                  tone={speedTone}
+                  t={t}
+                />
               </div>
 
               <div className="flex flex-1 items-center justify-center py-3 sm:py-4">
@@ -202,7 +248,8 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                 </div>
               </div>
             </div>
-          ) : <div className="p-8 text-center text-card-title leading-5 text-text-muted">{t("No trips match the selected filters.", "لا توجد رحلات تطابق الفلاتر المحددة.")}</div>}
+            );
+          })() : <div className="p-8 text-center text-card-title leading-5 text-text-muted">{t("No trips match the selected filters.", "لا توجد رحلات تطابق الفلاتر المحددة.")}</div>}
         </section>
 
         <section className="card p-4 sm:p-5">
