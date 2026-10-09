@@ -4,8 +4,8 @@ import { apiClient, getAuthToken } from "../services/apiClient";
 import { useFleetStore } from "../state/fleetStore";
 import { useToast } from "./Toast";
 import { CapacityTruck } from "./CapacityTruck";
-import { TruckTypeIcon } from "./TruckTypeIcon";
-import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconSnowflake, IconChevron } from "./Icons";
+import { TruckTypeAvatar } from "./TruckTypeIcon";
+import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconChevron } from "./Icons";
 import { KpiCards } from "./overview/KpiCards";
 import { CargoDonut } from "./overview/CargoDonut";
 import { TripBars } from "./overview/TripBars";
@@ -253,8 +253,8 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                     className="w-full transition-transform duration-300 group-hover:scale-[1.02]"
                     label={t(meta.englishName, meta.arabicName)}
                   />
-                  <span className="absolute right-3 top-3 grid h-8 w-8 place-items-center transition-transform duration-200 group-hover:scale-110" style={{ color: meta.accentColor }} title={t(meta.englishName, meta.arabicName)} aria-label={t(meta.englishName, meta.arabicName)} role="img">
-                    {meta.id === "reefer" ? <IconSnowflake size={26} /> : <TruckTypeIcon truckType={meta.id} size={25} />}
+                  <span className="absolute end-2.5 top-2.5 inline-flex transition-transform duration-200 group-hover:scale-105 drop-shadow-md">
+                    <TruckTypeAvatar truckType={meta.id} size={36} iconSize={20} showBadge />
                   </span>
                 </div>
                 <div className="mt-2 flex min-w-0 items-center justify-between gap-2" dir="ltr">

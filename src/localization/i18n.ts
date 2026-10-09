@@ -88,6 +88,13 @@ export const MESSAGES = {
   "header.viewLabel": { ar: "واجهة العمل", en: "Workspace", ur: "ورک اسپیس" },
   "header.signedInAs": { ar: "مسجل الدخول بصفة", en: "Signed in as", ur: "بطور سائن اِن" },
   "header.theme": { ar: "الوضع الفاتح/الداكن", en: "Light / dark mode", ur: "لائٹ / ڈارک موڈ" },
+  "header.connectionOnline": { ar: "الخادم متصل ومستقر", en: "Server connected & healthy", ur: "سرور منسلک اور مستحکم ہے" },
+  "header.connectionSlow": { ar: "استجابة الخادم بطيئة", en: "Server response is slow", ur: "سرور کا جواب سست ہے" },
+  "header.connectionOffline": { ar: "تعذر الاتصال بالخادم", en: "Server unreachable", ur: "سرور سے رابطہ منقطع ہے" },
+  "header.connectionChecking": { ar: "جارٍ فحص الاتصال…", en: "Checking connection…", ur: "کنکشن چیک ہو رہا ہے…" },
+  "header.connectionPing": { ar: "زمن الاستجابة", en: "Latency", ur: "تاخیر" },
+  "header.batteryLevel": { ar: "البطارية", en: "Battery", ur: "بیٹری" },
+  "header.batteryCharging": { ar: "جارٍ الشحن", en: "Charging", ur: "چارج ہو رہا ہے" },
 
   /* ── Account menu ──────────────────────────────────────────────────── */
   "account.title": { ar: "الحساب والإعدادات", en: "Account & settings", ur: "اکاؤنٹ اور سیٹنگز" },

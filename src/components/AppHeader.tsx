@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { BrandEmblem } from "./Logo";
@@ -7,6 +7,15 @@ import { AccountMenu } from "./AccountMenu";
 import type { SettingsTab } from "./SettingsCenter";
 import type { SessionUser } from "../utils/permissions";
 import { IconBolt, IconBell, IconMenu } from "./Icons";
+
+type ConnectionQuality = "optimal" | "fair" | "offline" | "checking";
+
+interface BatteryManagerLike extends EventTarget {
+  charging: boolean;
+  level: number;
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject): void;
+  removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void;
+}
 
 /**
  * The operational application bar (§2).
@@ -53,6 +62,124 @@ export function AppHeader({
 }) {
   const { tk, lang } = useSettings();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionQuality>("optimal");
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [batteryInfo, setBatteryInfo] = useState<{ level: number; charging: boolean } | null>(null);
+  const isPingingRef = useRef(false);
+
+  // Periodic device battery level check if available from client's system API
+  useEffect(() => {
+    let isMounted = true;
+    let bmRef: BatteryManagerLike | null = null;
+
+    const syncBattery = (bm: BatteryManagerLike) => {
+      if (!isMounted) return;
+      const level = Math.round((bm.level ?? 1) * 100);
+      const charging = Boolean(bm.charging);
+      setBatteryInfo({ level, charging });
+    };
+
+    const onBatteryChange = () => {
+      if (bmRef) syncBattery(bmRef);
+    };
+
+    const nav = typeof navigator !== "undefined" ? (navigator as unknown as { getBattery?: () => Promise<BatteryManagerLike> }) : null;
+    if (nav && typeof nav.getBattery === "function") {
+      nav.getBattery()
+        .then((bm) => {
+          if (!isMounted || !bm) return;
+          bmRef = bm;
+          syncBattery(bm);
+          bm.addEventListener("levelchange", onBatteryChange);
+          bm.addEventListener("chargingchange", onBatteryChange);
+        })
+        .catch(() => {
+          // Gracefully ignore if battery API is unsupported, denied, or unavailable
+        });
+    }
+
+    // Periodic check every 30s as safety fallback for platforms that do not fire events
+    const batteryInterval = setInterval(() => {
+      if (bmRef) {
+        syncBattery(bmRef);
+      }
+    }, 30_000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(batteryInterval);
+      if (bmRef) {
+        bmRef.removeEventListener("levelchange", onBatteryChange);
+        bmRef.removeEventListener("chargingchange", onBatteryChange);
+      }
+    };
+  }, []);
+
+  // Periodic health check ping to ensure server connectivity & display connection quality
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkHealth() {
+      if (isPingingRef.current) return;
+      isPingingRef.current = true;
+      const start = performance.now();
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch("/api/health", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        const elapsed = Math.round(performance.now() - start);
+        if (!isMounted) return;
+
+        if (res.ok) {
+          setLatencyMs(elapsed);
+          setConnectionStatus(elapsed > 1200 ? "fair" : "optimal");
+        } else {
+          setConnectionStatus("offline");
+          setLatencyMs(null);
+        }
+      } catch {
+        if (!isMounted) return;
+        setConnectionStatus("offline");
+        setLatencyMs(null);
+      } finally {
+        isPingingRef.current = false;
+      }
+    }
+
+    // Initial ping on mount
+    checkHealth();
+
+    // Periodic ping every 30 seconds
+    const interval = setInterval(checkHealth, 30_000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const statusLabel =
+    connectionStatus === "optimal"
+      ? tk("header.connectionOnline")
+      : connectionStatus === "fair"
+        ? tk("header.connectionSlow")
+        : connectionStatus === "offline"
+          ? tk("header.connectionOffline")
+          : tk("header.connectionChecking");
+
+  const batteryTooltip = batteryInfo
+    ? ` • ${tk("header.batteryLevel")}: ${batteryInfo.level}%${batteryInfo.charging ? ` (${tk("header.batteryCharging")})` : ""}`
+    : "";
+
+  const tooltipText = latencyMs !== null
+    ? `${statusLabel} (${latencyMs}ms)${batteryTooltip}`
+    : `${statusLabel}${batteryTooltip}`;
 
   return (
     <header className="app-header sticky top-0 z-[60] h-[var(--header-height)] shrink-0">
@@ -133,6 +260,78 @@ export function AppHeader({
             </span>
           )}
         </button>
+
+        {/* Server Connection & Battery Health Indicator */}
+        <div
+          className={cn(
+            "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-1.5 transition-colors",
+            batteryInfo
+              ? "border border-border-subtle bg-surface-2/60 pe-2 ps-1.5"
+              : "justify-center px-1"
+          )}
+          title={tooltipText}
+          aria-label={tooltipText}
+        >
+          <div className="group relative flex items-center">
+            <span
+              className={cn(
+                "relative inline-flex h-2.5 w-2.5 rounded-full transition-all duration-300",
+                connectionStatus === "optimal" && "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.55)]",
+                connectionStatus === "fair" && "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.55)]",
+                connectionStatus === "offline" && "bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.55)]",
+                connectionStatus === "checking" && "bg-slate-400 animate-pulse"
+              )}
+            >
+              {connectionStatus === "optimal" && (
+                <span className="absolute -inset-0.5 rounded-full bg-emerald-400/30 animate-ping opacity-75" />
+              )}
+            </span>
+          </div>
+
+          {/* Battery level badge when supported by browser */}
+          {batteryInfo && (
+            <div className="flex items-center gap-1 text-label font-semibold text-text-secondary select-none">
+              <span className="h-3 w-px bg-border-subtle" aria-hidden="true" />
+              <svg
+                width="16"
+                height="10"
+                viewBox="0 0 20 12"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={cn(
+                  "shrink-0",
+                  batteryInfo.level <= 15
+                    ? "text-rose-500"
+                    : batteryInfo.level <= 30
+                      ? "text-amber-500"
+                      : "text-emerald-500"
+                )}
+                aria-hidden="true"
+              >
+                <rect x="0.75" y="1" width="15.5" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.3" fill="none" opacity="0.65" />
+                <path d="M17.5 4.2C18.1 4.4 18.5 4.8 18.5 5.5V6.5C18.5 7.2 18.1 7.6 17.5 7.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.65" />
+                {!batteryInfo.charging ? (
+                  <rect
+                    x="2.5"
+                    y="2.5"
+                    width={Math.max(1.5, Math.min(12, (batteryInfo.level / 100) * 12))}
+                    height="7"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                ) : (
+                  <path
+                    d="M8.5 1.8L5.5 6.2H8L7.5 10.2L11.5 5.8H9L9.5 1.8H8.5Z"
+                    fill="currentColor"
+                  />
+                )}
+              </svg>
+              <span className="tabular-nums">{batteryInfo.level}%</span>
+            </div>
+          )}
+
+          <span className="sr-only">{tooltipText}</span>
+        </div>
 
         {/* Account — everything secondary lives inside. */}
         <AccountMenu

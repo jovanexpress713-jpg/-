@@ -428,13 +428,12 @@ export const IconTruckFlatbed = (p: IconProps) => (
     <path d="M17 9.5l2.2 2.5H14" />
     <path d="M14 7.5v7.5" />
     <path d="M1.5 13.5h12.5v1.5H1.5z" />
-    <path d="M3.5 13.5v-3.5" />
-    <path d="M7 13.5v-3.5" />
-    <path d="M10.5 13.5v-3.5" />
-    <path d="M3.5 10h7" />
-    <path d="M1.5 15l-0.5-1.5" />
-    <circle cx="6" cy="17.5" r="1.7" />
-    <circle cx="17.5" cy="17.5" r="1.7" />
+    <path d="M4 13.5v-3" />
+    <path d="M7.5 13.5v-3" />
+    <path d="M11 13.5v-3" />
+    <path d="M4 10.5h7" />
+    <circle cx="6" cy="17.5" r="1.8" />
+    <circle cx="17.5" cy="17.5" r="1.8" />
   </Svg>
 );
 
@@ -448,10 +447,10 @@ export const IconTruckReefer = (p: IconProps) => (
     <path d="M11.8 4.9h1.4" />
     <path d="M6.5 8v5" />
     <path d="M4 10.5h5" />
-    <path d="M4.7 8.7l3.6 3.6" />
-    <path d="M8.3 8.7l-3.6 3.6" />
-    <circle cx="6" cy="17.5" r="1.7" />
-    <circle cx="17.5" cy="17.5" r="1.7" />
+    <path d="M4.8 8.8l3.4 3.4" />
+    <path d="M8.2 8.8l-3.4 3.4" />
+    <circle cx="6" cy="17.5" r="1.8" />
+    <circle cx="17.5" cy="17.5" r="1.8" />
   </Svg>
 );
 
@@ -463,12 +462,10 @@ export const IconTruckDry = (p: IconProps) => (
     <path d="M14 6.8c1.8-.6 3.2.2 3.6 2.2" />
     <rect x="2" y="6" width="12" height="9" rx="1.2" />
     <path d="M4.5 6v9" />
-    <path d="M3.2 9.2h1.3" />
-    <path d="M3.2 11.8h1.3" />
     <path d="M6.5 9h5.5" />
     <path d="M6.5 12h5.5" />
-    <circle cx="6" cy="17.5" r="1.7" />
-    <circle cx="17.5" cy="17.5" r="1.7" />
+    <circle cx="6" cy="17.5" r="1.8" />
+    <circle cx="17.5" cy="17.5" r="1.8" />
   </Svg>
 );
 
@@ -483,11 +480,8 @@ export const IconTruckCurtain = (p: IconProps) => (
     <path d="M5 7.8v5.7" />
     <path d="M8 7.8v5.7" />
     <path d="M11 7.8v5.7" />
-    <circle cx="5" cy="10.8" r="0.6" fill="currentColor" />
-    <circle cx="8" cy="10.8" r="0.6" fill="currentColor" />
-    <circle cx="11" cy="10.8" r="0.6" fill="currentColor" />
-    <circle cx="6" cy="17.5" r="1.7" />
-    <circle cx="17.5" cy="17.5" r="1.7" />
+    <circle cx="6" cy="17.5" r="1.8" />
+    <circle cx="17.5" cy="17.5" r="1.8" />
   </Svg>
 );
 

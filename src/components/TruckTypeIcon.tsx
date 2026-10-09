@@ -201,6 +201,13 @@ export function TruckTypeAvatar({
     curtain: "#EA580C", // Deep Orange / ستارة
   };
 
+  const GRADIENTS: Record<CanonicalVehicleTypeId, string> = {
+    flatbed: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+    reefer: "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)",
+    dry: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+    curtain: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+  };
+
   const INITIALS: Record<CanonicalVehicleTypeId, string> = {
     flatbed: "س", // سطحة
     reefer: "ب",  // براد
@@ -209,25 +216,26 @@ export function TruckTypeAvatar({
   };
 
   const bg = BG_COLORS[normType] || BG_COLORS.curtain;
+  const gradient = GRADIENTS[normType] || GRADIENTS.curtain;
   const initial = INITIALS[normType] || "ش";
 
   return (
     <div
       className={cn(
-        "relative shrink-0 rounded-full flex items-center justify-center text-white shadow-sm transition-transform duration-200 select-none",
+        "relative shrink-0 rounded-full flex items-center justify-center text-white shadow-md ring-1 ring-white/30 transition-transform duration-200 select-none",
         className,
       )}
       style={{
         width: size,
         height: size,
-        backgroundColor: bg,
+        background: gradient,
       }}
       title={`${meta.arabicName} — ${meta.englishName}`}
     >
-      <TruckTypeIcon truckType={truckType} size={iconSize} className="text-white" />
+      <TruckTypeIcon truckType={truckType} size={iconSize} className="text-white drop-shadow-xs" />
       {showBadge && (
         <span
-          className="absolute -bottom-0.5 -end-0.5 grid h-4 w-4 place-items-center rounded-full bg-surface-1 text-micro font-extrabold text-white border border-surface-0 shadow-sm"
+          className="absolute -bottom-0.5 -end-0.5 grid h-4 w-4 place-items-center rounded-full bg-surface-0 text-micro font-bold border border-border-subtle shadow-sm"
           style={{ color: bg }}
         >
           {initial}

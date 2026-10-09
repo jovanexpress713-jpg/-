@@ -153,7 +153,12 @@ function formatCoord(value: number) {
   return Number(value.toFixed(2)).toString();
 }
 function materializeGaugeShape(anchors: GaugeAnchors) {
-  const points = anchors.corners.map(([x, y]) => [x * SOURCE_PLANE.width, y * SOURCE_PLANE.height] as const);
+  const points: readonly [Point, Point, Point, Point] = [
+    [anchors.corners[0][0] * SOURCE_PLANE.width, anchors.corners[0][1] * SOURCE_PLANE.height],
+    [anchors.corners[1][0] * SOURCE_PLANE.width, anchors.corners[1][1] * SOURCE_PLANE.height],
+    [anchors.corners[2][0] * SOURCE_PLANE.width, anchors.corners[2][1] * SOURCE_PLANE.height],
+    [anchors.corners[3][0] * SOURCE_PLANE.width, anchors.corners[3][1] * SOURCE_PLANE.height],
+  ];
   const [first, ...rest] = points;
   const clip = `M ${formatCoord(first[0])} ${formatCoord(first[1])} ${rest.map(([x, y]) => `L ${formatCoord(x)} ${formatCoord(y)}`).join(" ")} Z`;
   return {
@@ -167,7 +172,111 @@ function materializeGaugeShape(anchors: GaugeAnchors) {
     deckEnd: anchors.deck ? anchors.corners[1][0] * SOURCE_PLANE.width : 0,
     deckStartY: anchors.deck ? anchors.corners[0][1] * SOURCE_PLANE.height : 0,
     deckEndY: anchors.deck ? anchors.corners[1][1] * SOURCE_PLANE.height : 0,
+    points,
   };
+}
+
+function perspectiveWavePath(
+  points: readonly [Point, Point, Point, Point],
+  p: number,
+  amplitude: number,
+  phase = 0,
+  yOffset = 0
+) {
+  const hFront = points[3][1] - points[0][1];
+  const hRear = points[2][1] - points[1][1];
+  const yFront = points[3][1] - (hFront * p) / 100 + yOffset;
+  const yRear = points[2][1] - (hRear * p) / 100 + yOffset;
+
+  const xStart = Math.min(points[0][0], points[3][0]) - 60;
+  const xEnd = Math.max(points[1][0], points[2][0]) + 60;
+  const dx = xEnd - xStart;
+
+  const steps = 12;
+  const stepX = dx / steps;
+  let d = `M ${formatCoord(xStart)} ${formatCoord(yFront)}`;
+
+  for (let i = 0; i < steps; i++) {
+    const x0 = xStart + i * stepX;
+    const x1 = x0 + stepX;
+    const t0 = (x0 - xStart) / dx;
+    const t1 = (x1 - xStart) / dx;
+    const lineY0 = yFront + t0 * (yRear - yFront);
+    const lineY1 = yFront + t1 * (yRear - yFront);
+
+    const wave0 = Math.sin((i + phase) * 1.4) * amplitude;
+    const wave1 = Math.sin((i + 1 + phase) * 1.4) * amplitude;
+
+    const cp1x = x0 + stepX * 0.35;
+    const cp1y = lineY0 + wave0;
+    const cp2x = x0 + stepX * 0.65;
+    const cp2y = lineY1 + wave1;
+    const destX = x1;
+    const destY = lineY1 + wave1;
+
+    d += ` C ${formatCoord(cp1x)} ${formatCoord(cp1y)}, ${formatCoord(cp2x)} ${formatCoord(cp2y)}, ${formatCoord(destX)} ${formatCoord(destY)}`;
+  }
+
+  const bottomMax = Math.max(points[2][1], points[3][1]) + 80;
+  d += ` L ${formatCoord(xEnd)} ${formatCoord(bottomMax)} L ${formatCoord(xStart)} ${formatCoord(bottomMax)} Z`;
+  return d;
+}
+
+function perspectiveCrestPath(
+  points: readonly [Point, Point, Point, Point],
+  p: number,
+  amplitude: number
+) {
+  const hFront = points[3][1] - points[0][1];
+  const hRear = points[2][1] - points[1][1];
+  const yFront = points[3][1] - (hFront * p) / 100;
+  const yRear = points[2][1] - (hRear * p) / 100;
+
+  const xStart = Math.min(points[0][0], points[3][0]) - 60;
+  const xEnd = Math.max(points[1][0], points[2][0]) + 60;
+  const dx = xEnd - xStart;
+
+  const steps = 12;
+  const stepX = dx / steps;
+  let d = `M ${formatCoord(xStart)} ${formatCoord(yFront)}`;
+
+  for (let i = 0; i < steps; i++) {
+    const x0 = xStart + i * stepX;
+    const x1 = x0 + stepX;
+    const t0 = (x0 - xStart) / dx;
+    const t1 = (x1 - xStart) / dx;
+    const lineY0 = yFront + t0 * (yRear - yFront);
+    const lineY1 = yFront + t1 * (yRear - yFront);
+
+    const wave0 = Math.sin(i * 1.4) * amplitude;
+    const wave1 = Math.sin((i + 1) * 1.4) * amplitude;
+
+    const cp1x = x0 + stepX * 0.35;
+    const cp1y = lineY0 + wave0;
+    const cp2x = x0 + stepX * 0.65;
+    const cp2y = lineY1 + wave1;
+    const destX = x1;
+    const destY = lineY1 + wave1;
+
+    d += ` C ${formatCoord(cp1x)} ${formatCoord(cp1y)}, ${formatCoord(cp2x)} ${formatCoord(cp2y)}, ${formatCoord(destX)} ${formatCoord(destY)}`;
+  }
+  return d;
+}
+
+function perspectiveLiquidPolygon(
+  points: readonly [Point, Point, Point, Point],
+  p: number
+) {
+  const hFront = points[3][1] - points[0][1];
+  const hRear = points[2][1] - points[1][1];
+  const yFront = points[3][1] - (hFront * p) / 100;
+  const yRear = points[2][1] - (hRear * p) / 100;
+
+  const xStart = Math.min(points[0][0], points[3][0]) - 60;
+  const xEnd = Math.max(points[1][0], points[2][0]) + 60;
+  const bottomMax = Math.max(points[2][1], points[3][1]) + 80;
+
+  return `${formatCoord(xStart)},${formatCoord(yFront)} ${formatCoord(xEnd)},${formatCoord(yRear)} ${formatCoord(xEnd)},${formatCoord(bottomMax)} ${formatCoord(xStart)},${formatCoord(bottomMax)}`;
 }
 
 function waterAreaPath(y: number, bottom: number, amplitude = 28) {
@@ -286,13 +395,22 @@ export function CapacityTruck({ pct, className, label, countUp = false, truckTyp
       );
     }
 
-    const bodyHeight = shape.bottom - shape.top;
-    const liquidHeight = bodyHeight * p / 100;
-    const liquidY = shape.bottom - liquidHeight;
-    const typeWave = waterAreaPath(liquidY, shape.bottom, shape.amplitude);
-    const typeWaveSecondary = waterAreaPath(liquidY + shape.amplitude * 0.7, shape.bottom, shape.amplitude * 0.55);
-    const typeTextSize = Math.max(22, Math.min(104, liquidHeight * 0.3));
-    const typeTextY = liquidY + liquidHeight / 2;
+    const hFront = shape.points[3][1] - shape.points[0][1];
+    const hRear = shape.points[2][1] - shape.points[1][1];
+    const tCenter = Math.max(0, Math.min(1, (shape.centerX - shape.points[3][0]) / (shape.points[2][0] - shape.points[3][0])));
+    const floorAtCenter = shape.points[3][1] + tCenter * (shape.points[2][1] - shape.points[3][1]);
+    const waterYFront = shape.points[3][1] - (hFront * p) / 100;
+    const waterYRear = shape.points[2][1] - (hRear * p) / 100;
+    const waterAtCenter = waterYFront + tCenter * (waterYRear - waterYFront);
+    const liquidCenterY = (floorAtCenter + waterAtCenter) / 2;
+
+    const liquidPolygon = perspectiveLiquidPolygon(shape.points, p);
+    const typeWave = perspectiveWavePath(shape.points, p, shape.amplitude, 0, 0);
+    const typeWaveSecondary = perspectiveWavePath(shape.points, p, shape.amplitude * 0.65, 1.4, shape.amplitude * 0.5);
+    const typeWaveCrest = perspectiveCrestPath(shape.points, p, shape.amplitude);
+
+    const typeTextSize = Math.max(26, Math.min(104, (floorAtCenter - waterAtCenter) * 0.38));
+    const typeTextY = p >= 16 ? liquidCenterY : waterAtCenter - 32;
     const captionY = typeTextY + typeTextSize * 0.58;
     const hasLoadCaption = selectedType === "reefer" || selectedType === "curtain";
     return (
@@ -310,12 +428,12 @@ export function CapacityTruck({ pct, className, label, countUp = false, truckTyp
         </defs>
         <image href={typeSpecificSrc} x="0" y="0" width={SOURCE_PLANE.width} height={SOURCE_PLANE.height} preserveAspectRatio="none" />
         <g clipPath={`url(#typed-clip-${uid})`}>
-          <path d={shape.clip} fill="#061323" opacity=".08" />
-          <rect x="0" y={liquidY} width={SOURCE_PLANE.width} height={liquidHeight} fill={`url(#typed-load-${uid})`} opacity=".64" />
+          <path d={shape.clip} fill="#061323" opacity=".1" />
+          <polygon points={liquidPolygon} fill={`url(#typed-load-${uid})`} opacity=".72" />
           {p > 0 && <>
             <path d={typeWave} fill="#59a9ff" opacity=".38" className="capacity-water-wave" />
-            <path d={typeWaveSecondary} fill="#b4dcff" opacity=".2" className="capacity-water-wave capacity-water-wave-highlight" />
-            <path d={typeWave} fill="none" stroke="#d9efff" strokeWidth="4" opacity=".72" className="capacity-water-wave capacity-water-wave-highlight" filter={arrivalGlow ? `url(#typed-water-glow-${uid})` : undefined} />
+            <path d={typeWaveSecondary} fill="#b4dcff" opacity=".22" className="capacity-water-wave capacity-water-wave-highlight" />
+            <path d={typeWaveCrest} fill="none" stroke="#d9efff" strokeWidth="4" opacity=".76" className="capacity-water-wave capacity-water-wave-highlight" filter={arrivalGlow ? `url(#typed-water-glow-${uid})` : undefined} />
           </>}
         </g>
         <path d={shape.clip} fill="none" stroke="#d3e5f4" strokeWidth="2.5" opacity=".7" />
