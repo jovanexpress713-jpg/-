@@ -55,11 +55,11 @@ function MetricCard({
       aria-pressed={onClick ? active : undefined}
       className={`ej-overview-metric card flex min-w-0 items-center gap-3 p-4 text-start transition hover:border-brand/40 ${active ? "border-brand/60 ring-1 ring-brand/20" : ""}`}
     >
-      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tone}`}>{icon}</span>
+      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-inner ${tone}`}>{icon}</span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[11px] text-text-muted">{label}</span>
-        <span className="mt-0.5 block text-[23px] font-bold leading-none tabular-nums text-text-primary">{value.toLocaleString()}</span>
-        <span className="mt-1 block truncate text-[10px] text-text-muted">{hint}</span>
+        <span className="block truncate text-label text-text-muted">{label}</span>
+        <span className="mt-0.5 block text-hero-sm font-bold leading-none tabular-nums text-text-primary">{value.toLocaleString()}</span>
+        <span className="mt-1 block truncate text-micro text-text-muted">{hint}</span>
       </span>
     </Tag>
   );
@@ -130,10 +130,10 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
   if (!trips.length) {
     return (
       <div className="scroll-thin h-full overflow-y-auto bg-surface-0 p-5 lg:p-8">
-        <div className="mx-auto grid min-h-[55vh] max-w-5xl place-items-center rounded-2xl border border-dashed border-border-subtle p-8 text-center">
-          <div><span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-surface-3 text-brand"><IconTruck size={22} /></span>
-            <h1 className="mt-4 text-xl font-semibold text-text-primary">{t("No trips to display", "لا توجد رحلات لعرضها")}</h1>
-            <p className="mt-2 text-sm text-text-muted">{t("Trips will appear here when available to your account.", "ستظهر الرحلات هنا عند توفرها لحسابك.")}</p>
+        <div className="mx-auto grid min-h-[55vh] max-w-5xl place-items-center rounded-panel border border-dashed border-border-subtle p-8 text-center">
+          <div><span className="mx-auto grid h-12 w-12 place-items-center rounded-panel bg-surface-3 text-brand"><IconTruck size={22} /></span>
+            <h1 className="mt-4 text-headline leading-7 font-semibold text-text-primary">{t("No trips to display", "لا توجد رحلات لعرضها")}</h1>
+            <p className="mt-2 text-card-title leading-5 text-text-muted">{t("Trips will appear here when available to your account.", "ستظهر الرحلات هنا عند توفرها لحسابك.")}</p>
           </div>
         </div>
       </div>
@@ -147,16 +147,16 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
           <div className="flex min-w-0 items-start gap-3">
             {onOpenSidebar && <button onClick={onOpenSidebar} className="btn-icon mt-1 lg:hidden" aria-label={t("Menu", "القائمة")}><IconMenu size={17} /></button>}
             <div className="min-w-0">
-              <p className="text-[13px] text-text-secondary">{greeting(t)}{userName ? `، ${userName}` : ""}</p>
-              <h1 className="mt-1 text-[25px] font-bold leading-tight text-text-primary sm:text-[30px]">{t("Logistics Dashboard", "لوحة الخدمات اللوجستية")}</h1>
-              <p className="mt-1 text-[11px] text-text-muted">{t("Operations overview · EJAZ Transport Establishment", "نظرة تشغيلية · مؤسسة إيجاز للنقليات")}</p>
+              <p className="text-body text-text-secondary">{greeting(t)}{userName ? `، ${userName}` : ""}</p>
+              <h1 className="mt-1 text-hero font-bold leading-tight text-text-primary sm:text-metric">{t("Logistics Dashboard", "لوحة الخدمات اللوجستية")}</h1>
+              <p className="mt-1 text-label text-text-muted">{t("Operations overview · EJAZ Transport Establishment", "نظرة تشغيلية · مؤسسة إيجاز للنقليات")}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex h-10 min-w-[220px] items-center gap-2 rounded-xl border border-border-subtle bg-surface-2 px-3 text-text-muted focus-within:border-brand/60">
-              <IconSearch size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search trips, customers, drivers…", "ابحث برحلة أو عميل أو سائق…")} className="min-w-0 flex-1 bg-transparent text-[12px] text-text-primary outline-none placeholder:text-text-muted" />
+            <label className="flex h-10 min-w-[220px] items-center gap-2 rounded-inner border border-border-subtle bg-surface-2 px-3 text-text-muted focus-within:border-brand/60">
+              <IconSearch size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search trips, customers, drivers…", "ابحث برحلة أو عميل أو سائق…")} className="min-w-0 flex-1 bg-transparent text-label-lg text-text-primary outline-none placeholder:text-text-muted" />
             </label>
-            <button onClick={onOpenTracking} className="btn-ghost h-10 gap-2 rounded-xl px-3 text-[11px]" disabled={!onOpenTracking}>
+            <button onClick={onOpenTracking} className="btn-ghost h-10 gap-2 rounded-inner px-3 text-label" disabled={!onOpenTracking}>
               <span className={`h-2 w-2 rounded-full ${gpsState === "configured" ? "bg-status-active" : "bg-status-waiting"}`} />
               {gpsState === "checking" ? t("Checking GPS…", "جارٍ التحقق من GPS…") : gpsState === "configured" ? t("GPS provider connected", "مزود GPS متصل") : gpsState === "unconfigured" ? t("Tracking not configured", "خدمة التتبع غير مهيأة") : t("GPS status unavailable", "حالة GPS غير متاحة")}
             </button>
@@ -174,10 +174,10 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
           {selected ? (
             <div className="relative flex min-h-[510px] flex-col overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,color-mix(in_srgb,var(--color-brand)_7%,transparent),transparent_60%)] px-5 py-5 sm:min-h-[590px] sm:px-8 sm:py-6">
               <div className="flex items-start justify-between gap-4" dir="ltr">
-                <strong className="pt-0.5 text-start text-[16px] font-bold tabular-nums text-text-primary sm:text-[18px]">
+                <strong className="pt-0.5 text-start text-page-title font-bold tabular-nums text-text-primary sm:text-section-title">
                   {selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}
                 </strong>
-                <h2 className="pt-0.5 text-end text-[17px] font-bold text-text-primary sm:text-[21px]" dir="rtl">{t("Truck load capacity", "حمولة الشاحنة")}</h2>
+                <h2 className="pt-0.5 text-end text-section-title font-bold text-text-primary sm:text-hero-sm" dir="rtl">{t("Truck load capacity", "حمولة الشاحنة")}</h2>
               </div>
 
               <div className="flex flex-1 items-center justify-center py-3 sm:py-4">
@@ -193,21 +193,21 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
               </div>
 
               <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-2" dir="ltr">
-                <button onClick={() => onOpenTripDetails?.(selected.id)} className="btn-primary min-h-[54px] rounded-xl px-7 py-3 text-[14px] font-bold sm:min-h-[60px] sm:px-8 sm:text-[16px]">
+                <button onClick={() => onOpenTripDetails?.(selected.id)} className="btn-primary min-h-[54px] rounded-inner px-7 py-3 text-card-title font-bold sm:min-h-[60px] sm:px-8 sm:text-page-title">
                   {t("Trip details", "تفاصيل الرحلة")}
                 </button>
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] sm:gap-x-8 sm:text-[15px]" dir="ltr">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-body sm:gap-x-8 sm:text-page-title" dir="ltr">
                   <span className="flex items-center gap-2 whitespace-nowrap"><span className="text-text-muted">ETA</span><strong className="font-semibold text-text-primary">{selected.etaMinutes > 0 ? `${Math.floor(selected.etaMinutes / 60)}h ${String(selected.etaMinutes % 60).padStart(2, "0")}m` : "—"}</strong></span>
                   <span className="flex items-center gap-2 whitespace-nowrap"><span className="text-text-muted" dir="rtl">{t("Distance", "المسافة")}</span><strong className="font-semibold tabular-nums text-text-primary">{Math.round(selected.distanceTotalKm).toLocaleString()} {t("km", "كم")}</strong></span>
                 </div>
               </div>
             </div>
-          ) : <div className="p-8 text-center text-sm text-text-muted">{t("No trips match the selected filters.", "لا توجد رحلات تطابق الفلاتر المحددة.")}</div>}
+          ) : <div className="p-8 text-center text-card-title leading-5 text-text-muted">{t("No trips match the selected filters.", "لا توجد رحلات تطابق الفلاتر المحددة.")}</div>}
         </section>
 
         <section className="card p-4 sm:p-5">
           <div className="mb-4 flex items-start justify-between gap-4" dir="ltr">
-            <span className="pt-1 text-[11px] font-medium text-text-secondary" dir="rtl">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span>
+            <span className="pt-1 text-label font-medium text-text-secondary" dir="rtl">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span>
             <div className="text-end" dir="rtl">
               <button
                 type="button"
@@ -215,12 +215,12 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                 aria-expanded={truckTypesExpanded}
                 aria-controls="executive-truck-type-cards"
                 aria-label={truckTypesExpanded ? t("Hide truck types", "إخفاء أنواع الشاحنات") : t("Show truck types", "عرض أنواع الشاحنات")}
-                className="inline-flex cursor-pointer items-center gap-1.5 text-[18px] font-bold text-text-primary transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 sm:text-[21px]"
+                className="inline-flex cursor-pointer items-center gap-1.5 text-section-title font-bold text-text-primary transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 sm:text-hero-sm"
               >
                 {t("Truck load capacity", "حمولة الشاحنة")}
                 <IconChevron size={17} className={`transition-transform duration-200 ${truckTypesExpanded ? "rotate-180" : ""}`} />
               </button>
-              <p className="mt-1 text-[10px] text-text-muted sm:text-[12px]">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنتك.")}</p>
+              <p className="mt-1 text-micro text-text-muted sm:text-label-lg">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنتك.")}</p>
             </div>
           </div>
           <div id="executive-truck-type-cards" className={truckTypesExpanded ? "block" : "hidden"}>
@@ -244,8 +244,8 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                 setDriverFilter("all");
                 setQuery("");
                 if (matchingTrip) handleSelect(matchingTrip.id);
-              }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-xl border p-2.5 text-start transition hover:border-brand/55 sm:p-3 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
-                <div className="relative overflow-hidden rounded-lg bg-surface-2/70 p-1">
+              }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-inner border p-2.5 text-start transition hover:border-brand/55 sm:p-3 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
+                <div className="relative overflow-hidden rounded-chip bg-surface-2/70 p-1">
                   <CapacityTruck
                     pct={typeLoadPercent}
                     countUp={Boolean(matchingTrip)}
@@ -259,9 +259,9 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                 </div>
                 <div className="mt-2 flex min-w-0 items-center justify-between gap-2" dir="ltr">
                   <span className="h-4 w-4 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} aria-hidden="true" />
-                  <span className="truncate text-[16px] font-bold text-text-primary sm:text-[18px]" dir="rtl">{t(meta.englishName, meta.arabicName)}</span>
+                  <span className="truncate text-page-title font-bold text-text-primary sm:text-section-title" dir="rtl">{t(meta.englishName, meta.arabicName)}</span>
                 </div>
-                <div className="mt-1 flex min-w-0 items-center justify-between gap-2 text-[10px] text-text-muted sm:text-[11px]" dir="ltr">
+                <div className="mt-1 flex min-w-0 items-center justify-between gap-2 text-micro text-text-muted sm:text-label" dir="ltr">
                   <span className="truncate" dir="rtl">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</span>
                   {matchingTrip
                     ? <strong className="shrink-0 tabular-nums text-text-primary" dir="ltr">{matchingTrip.cargoWeightTons.toLocaleString()} / {matchingTrip.maxCapacityTons} · {Math.round(typeLoadPercent)}%</strong>
@@ -275,14 +275,14 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
 
         <section className="card p-4 sm:p-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <div><h2 className="text-[14px] font-semibold text-text-primary">{t("Operations & fleet snapshot", "لمحة التشغيل والأسطول")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{t("Counts are calculated from the records currently available to you.", "المؤشرات محسوبة من السجلات المتاحة لحسابك حالياً.")}</p></div>
-            <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-surface-2 p-1" role="group" aria-label={t("Cargo type filters", "فلاتر نوع الشاحنة")}>
-              {cargoOptions.map((option) => <button key={option.id} onClick={() => setCargo(option.id)} aria-pressed={cargo === option.id} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[10px] transition ${cargo === option.id ? "bg-brand font-semibold text-on-brand" : "text-text-secondary hover:text-text-primary"}`}>{option.label}</button>)}
+            <div><h2 className="text-card-title font-semibold text-text-primary">{t("Operations & fleet snapshot", "لمحة التشغيل والأسطول")}</h2><p className="mt-0.5 text-micro text-text-muted">{t("Counts are calculated from the records currently available to you.", "المؤشرات محسوبة من السجلات المتاحة لحسابك حالياً.")}</p></div>
+            <div className="flex max-w-full gap-1 overflow-x-auto rounded-inner bg-surface-2 p-1" role="group" aria-label={t("Cargo type filters", "فلاتر نوع الشاحنة")}>
+              {cargoOptions.map((option) => <button key={option.id} onClick={() => setCargo(option.id)} aria-pressed={cargo === option.id} className={`shrink-0 rounded-chip px-2.5 py-1.5 text-micro transition ${cargo === option.id ? "bg-brand font-semibold text-on-brand" : "text-text-secondary hover:text-text-primary"}`}>{option.label}</button>)}
             </div>
           </div>
           <div className="mb-3 grid gap-2 sm:grid-cols-3">
-            <label className="min-w-0 text-[10px] text-text-muted">{t("Trip status", "حالة الرحلة")}
-              <select value={group} onChange={(event) => setGroup(event.target.value as typeof group)} className="mt-1 block h-9 w-full rounded-lg border border-border-subtle bg-surface-2 px-2.5 text-[11px] text-text-primary outline-none focus:border-brand/60">
+            <label className="min-w-0 text-micro text-text-muted">{t("Trip status", "حالة الرحلة")}
+              <select value={group} onChange={(event) => setGroup(event.target.value as typeof group)} className="mt-1 block h-9 w-full rounded-chip border border-border-subtle bg-surface-2 px-2.5 text-label text-text-primary outline-none focus:border-brand/60">
                 <option value="all">{t("All statuses", "كل الحالات")}</option>
                 <option value="pending">{t("Pending", "قيد التجهيز")}</option>
                 <option value="transit">{t("In transit", "على الطريق")}</option>
@@ -290,14 +290,14 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                 <option value="cancelled">{t("Cancelled", "ملغاة")}</option>
               </select>
             </label>
-            <label className="min-w-0 text-[10px] text-text-muted">{t("Customer", "العميل")}
-              <select value={customer} onChange={(event) => setCustomer(event.target.value)} className="mt-1 block h-9 w-full rounded-lg border border-border-subtle bg-surface-2 px-2.5 text-[11px] text-text-primary outline-none focus:border-brand/60">
+            <label className="min-w-0 text-micro text-text-muted">{t("Customer", "العميل")}
+              <select value={customer} onChange={(event) => setCustomer(event.target.value)} className="mt-1 block h-9 w-full rounded-chip border border-border-subtle bg-surface-2 px-2.5 text-label text-text-primary outline-none focus:border-brand/60">
                 <option value="all">{t("All customers", "كل العملاء")}</option>
                 {Array.from(new Set(trips.map((trip) => trip.shipper).filter(Boolean))).sort().map((name) => <option key={name} value={name}>{name}</option>)}
               </select>
             </label>
-            <label className="min-w-0 text-[10px] text-text-muted">{t("Driver", "السائق")}
-              <select value={driverFilter} onChange={(event) => setDriverFilter(event.target.value)} className="mt-1 block h-9 w-full rounded-lg border border-border-subtle bg-surface-2 px-2.5 text-[11px] text-text-primary outline-none focus:border-brand/60">
+            <label className="min-w-0 text-micro text-text-muted">{t("Driver", "السائق")}
+              <select value={driverFilter} onChange={(event) => setDriverFilter(event.target.value)} className="mt-1 block h-9 w-full rounded-chip border border-border-subtle bg-surface-2 px-2.5 text-label text-text-primary outline-none focus:border-brand/60">
                 <option value="all">{t("All drivers", "كل السائقين")}</option>
                 {drivers.filter((person) => trips.some((trip) => trip.driverId === person.id)).map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
               </select>
@@ -312,7 +312,7 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
         </div>
 
         <section className="card overflow-hidden p-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle px-4 py-4 sm:px-5"><div><h2 className="text-[14px] font-semibold text-text-primary">{t("Trips & activity", "الرحلات والنشاط")}</h2><p className="mt-0.5 text-[10px] text-text-muted">{filteredTrips.length} {t("matching records", "سجل مطابق للفلاتر")}</p></div><div className="flex items-center gap-2 text-[10px] text-text-muted"><span className={`h-2 w-2 rounded-full ${gpsState === "configured" ? "bg-status-active" : "bg-status-waiting"}`} />{gpsState === "configured" ? t("Provider configured; live positions are shown only when a device feed is available.", "المزود مهيأ؛ لا تظهر المواقع إلا عند توفر بيانات جهاز فعلية.") : t("Live locations unavailable until a GPS provider is configured.", "المواقع المباشرة غير متاحة حتى تهيئة مزود GPS.")}</div></div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle px-4 py-4 sm:px-5"><div><h2 className="text-card-title font-semibold text-text-primary">{t("Trips & activity", "الرحلات والنشاط")}</h2><p className="mt-0.5 text-micro text-text-muted">{filteredTrips.length} {t("matching records", "سجل مطابق للفلاتر")}</p></div><div className="flex items-center gap-2 text-micro text-text-muted"><span className={`h-2 w-2 rounded-full ${gpsState === "configured" ? "bg-status-active" : "bg-status-waiting"}`} />{gpsState === "configured" ? t("Provider configured; live positions are shown only when a device feed is available.", "المزود مهيأ؛ لا تظهر المواقع إلا عند توفر بيانات جهاز فعلية.") : t("Live locations unavailable until a GPS provider is configured.", "المواقع المباشرة غير متاحة حتى تهيئة مزود GPS.")}</div></div>
           <ActivitiesTable trips={filteredTrips} drivers={drivers} selectedId={selected?.id ?? ""} group={group} onGroup={(next) => setGroup(next)} onSelect={handleSelect} onToast={onToast} />
         </section>
       </div>

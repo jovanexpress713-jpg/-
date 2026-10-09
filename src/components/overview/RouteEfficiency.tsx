@@ -72,7 +72,7 @@ export function RouteEfficiency({ trip }: { trip: Trip }) {
   return (
     <section className="card-accent card-in" style={{ animationDelay: "calc(var(--ds-stagger) * 3)" }}>
       <div className="flex items-start justify-between gap-2">
-        <h2 className="text-[14px] font-semibold text-on-orange">
+        <h2 className="text-card-title font-semibold text-on-orange">
           {t("Route efficiency", "كفاءة المسار")}
         </h2>
         <span
@@ -85,12 +85,12 @@ export function RouteEfficiency({ trip }: { trip: Trip }) {
         </span>
       </div>
 
-      <div className="num mt-2 text-[36px] leading-none text-on-orange">{value}%</div>
+      <div className="num mt-2 text-metric-lg leading-none text-on-orange">{value}%</div>
 
       {/* Spec §4.6 — the threshold rule under the figure. */}
       <div className="mt-2 h-[3px] w-[52%] rounded-full bg-white/70" />
 
-      <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-on-orange/85">
+      <div className="mt-1.5 flex items-center gap-1.5 text-label text-on-orange/85">
         <span aria-hidden="true">★</span>
         <span>
           {t("Threshold", "الحد المستهدف")} ({THRESHOLD}%)

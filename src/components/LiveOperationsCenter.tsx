@@ -391,42 +391,42 @@ export function LiveOperationsCenter({
           {/* Operations Center Brand Label */}
           <div className="flex items-center gap-2">
             <span className="flex h-2.5 w-2.5 rounded-full bg-status-active animate-ping" />
-            <span className="font-bold text-[14px] text-text-primary tracking-wide">
+            <span className="font-bold text-card-title text-text-primary tracking-wide">
               {t("EJAZ LIVE OPERATIONS CENTER", "مركز عمليات وتشغيل إيجاز المباشر")}
             </span>
-            <span className="text-text-muted text-[11px]">|</span>
-            <span className="text-[11.5px] text-text-secondary">
+            <span className="text-text-muted text-label">|</span>
+            <span className="text-label-lg text-text-secondary">
               {t("Highway Fleet Telemetry & Central Dispatch", "تتبع حركة الأسطول اللوجستي والتوجيه المركزي")}
             </span>
           </div>
 
           {/* Quick Metrics KPI Cards */}
-          <div className="flex items-center gap-2 overflow-x-auto text-[11.5px]">
-            <div className="flex items-center gap-1.5 bg-surface-2 px-3 py-1.5 rounded-[8px] border border-white/5">
+          <div className="flex items-center gap-2 overflow-x-auto text-label-lg">
+            <div className="flex items-center gap-1.5 bg-surface-2 px-3 py-1.5 rounded-chip border border-white/5">
               <span className="text-text-muted">{t("Active", "الرحلات النشطة")}:</span>
               <span className="font-bold text-text-primary tabular-nums">{activeTripsCount}</span>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-surface-2 px-3 py-1.5 rounded-[8px] border border-white/5">
+            <div className="flex items-center gap-1.5 bg-surface-2 px-3 py-1.5 rounded-chip border border-white/5">
               <span className="h-2 w-2 rounded-full bg-status-active" />
               <span className="text-text-muted">{t("In Transit", "على الطريق")}:</span>
               <span className="font-bold text-status-active tabular-nums">{inTransitCount}</span>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-surface-2 px-3 py-1.5 rounded-[8px] border border-white/5">
+            <div className="flex items-center gap-1.5 bg-surface-2 px-3 py-1.5 rounded-chip border border-white/5">
               <span className="h-2 w-2 rounded-full bg-status-waiting" />
               <span className="text-text-muted">{t("Loading", "قيد التحميل")}:</span>
               <span className="font-bold text-status-waiting tabular-nums">{loadingCount}</span>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-surface-2 px-3 py-1.5 rounded-[8px] border border-white/5">
+            <div className="flex items-center gap-1.5 bg-surface-2 px-3 py-1.5 rounded-chip border border-white/5">
               <span className="h-2 w-2 rounded-full bg-accent-2" />
               <span className="text-text-muted">{t("Delivered", "تم التسليم")}:</span>
               <span className="font-bold text-accent-2 tabular-nums">{deliveredCount}</span>
             </div>
 
             {activeAlertsCount > 0 && (
-              <div className="flex items-center gap-1.5 bg-status-danger/15 px-3 py-1.5 rounded-[8px] border border-status-danger/30 text-status-danger">
+              <div className="flex items-center gap-1.5 bg-status-danger/15 px-3 py-1.5 rounded-chip border border-status-danger/30 text-status-danger">
                 <span className="h-2 w-2 rounded-full bg-status-danger animate-pulse" />
                 <span className="font-bold">{activeAlertsCount} {t("Alerts", "تنبيهات")}</span>
               </div>
@@ -440,10 +440,10 @@ export function LiveOperationsCenter({
         {gpsConfigured !== true ? (
           <div className="absolute inset-0 z-30 grid place-items-center bg-surface-1 p-6">
             <div className="max-w-md text-center">
-              <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-status-waiting/25 bg-status-waiting/10 text-status-waiting"><IconPin size={23} /></span>
-              <h2 className="mt-4 text-lg font-bold text-text-primary">{gpsConfigured === null ? t("Checking GPS configuration", "جارٍ التحقق من إعداد GPS") : t("GPS service is not configured", "خدمة GPS غير مهيأة")}</h2>
-              <p className="mt-2 text-[12px] leading-6 text-text-muted">{gpsConfigured === null ? t("Live vehicle positions will appear after the provider status is verified.", "ستظهر مواقع المركبات المباشرة بعد التحقق من حالة المزود.") : t("Live tracking is unavailable. Configure a real GPS provider and link vehicle devices to view verified locations.", "التتبع المباشر غير متاح. هيئ مزود GPS حقيقياً واربط أجهزة المركبات لعرض المواقع المعتمدة.")}</p>
-              <p className="mt-3 rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-[10px] text-text-muted">{t("No simulated locations are displayed.", "لا يتم عرض مواقع محاكاة.")}</p>
+              <span className="mx-auto grid h-14 w-14 place-items-center rounded-panel border border-status-waiting/25 bg-status-waiting/10 text-status-waiting"><IconPin size={23} /></span>
+              <h2 className="mt-4 text-section-title leading-7 font-bold text-text-primary">{gpsConfigured === null ? t("Checking GPS configuration", "جارٍ التحقق من إعداد GPS") : t("GPS service is not configured", "خدمة GPS غير مهيأة")}</h2>
+              <p className="mt-2 text-label-lg leading-6 text-text-muted">{gpsConfigured === null ? t("Live vehicle positions will appear after the provider status is verified.", "ستظهر مواقع المركبات المباشرة بعد التحقق من حالة المزود.") : t("Live tracking is unavailable. Configure a real GPS provider and link vehicle devices to view verified locations.", "التتبع المباشر غير متاح. هيئ مزود GPS حقيقياً واربط أجهزة المركبات لعرض المواقع المعتمدة.")}</p>
+              <p className="mt-3 rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-micro text-text-muted">{t("No simulated locations are displayed.", "لا يتم عرض مواقع محاكاة.")}</p>
             </div>
           </div>
         ) : <>
@@ -459,12 +459,12 @@ export function LiveOperationsCenter({
         />
 
         {/* Floating Top Controls Toolbar on Map */}
-        <div className="absolute top-4 start-4 z-20 flex flex-wrap items-center gap-2 bg-surface-1/90 backdrop-blur-md p-1.5 rounded-[12px] border border-border-subtle shadow-xl text-[11.5px]">
+        <div className="absolute top-4 start-4 z-20 flex flex-wrap items-center gap-2 bg-surface-1/90 backdrop-blur-md p-1.5 rounded-inner border border-border-subtle shadow-xl text-label-lg">
           {/* 4 Types Filter */}
           <button
             onClick={() => setTypeFilter("ALL")}
             className={cn(
-              "px-2.5 py-1 rounded-[6px] font-semibold transition-colors",
+              "px-2.5 py-1 rounded-micro font-semibold transition-colors",
               typeFilter === "ALL" ? "bg-brand text-on-brand" : "text-text-secondary hover:text-text-primary"
             )}
           >
@@ -478,7 +478,7 @@ export function LiveOperationsCenter({
                 key={tid}
                 onClick={() => setTypeFilter(tid)}
                 className={cn(
-                  "px-2.5 py-1 rounded-[6px] font-semibold transition-colors flex items-center gap-1",
+                  "px-2.5 py-1 rounded-micro font-semibold transition-colors flex items-center gap-1",
                   isSel ? "bg-brand text-on-brand font-bold" : "text-text-secondary hover:text-text-primary"
                 )}
               >
@@ -493,7 +493,7 @@ export function LiveOperationsCenter({
           {/* Layer switcher */}
           <button
             onClick={() => setMapLayer(mapLayer === "logistics" ? "satellite" : "logistics")}
-            className="px-2.5 py-1 rounded-[6px] bg-surface-3 hover:bg-surface-4 text-text-secondary hover:text-text-primary font-medium flex items-center gap-1"
+            className="px-2.5 py-1 rounded-micro bg-surface-3 hover:bg-surface-4 text-text-secondary hover:text-text-primary font-medium flex items-center gap-1"
           >
             <IconLayers size={13} />
             <span>{mapLayer === "logistics" ? t("Satellite", "قمر صناعي") : t("Logistics", "خريطة الممرات")}</span>
@@ -501,24 +501,24 @@ export function LiveOperationsCenter({
         </div>
 
         {/* Zoom & Recenter Controls */}
-        <div className="absolute bottom-6 end-6 z-20 flex flex-col gap-1.5 bg-surface-1/90 backdrop-blur-md p-1.5 rounded-[10px] border border-border-subtle shadow-xl">
+        <div className="absolute bottom-6 end-6 z-20 flex flex-col gap-1.5 bg-surface-1/90 backdrop-blur-md p-1.5 rounded-control border border-border-subtle shadow-xl">
           <button
             onClick={handleCenterOnTruck}
-            className="p-2 rounded-[6px] text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
+            className="p-2 rounded-micro text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
             title={t("Center on Selected Truck", "توسيط الخريطة على الشاحنة المختارة")}
           >
             <IconPin size={16} className="text-brand" />
           </button>
           <button
             onClick={() => setZoom((z) => Math.min(3.0, z + 0.25))}
-            className="p-2 rounded-[6px] text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
+            className="p-2 rounded-micro text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
             title={t("Zoom In", "تكبير")}
           >
             <IconZoomIn size={16} />
           </button>
           <button
             onClick={() => setZoom((z) => Math.max(0.7, z - 0.25))}
-            className="p-2 rounded-[6px] text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
+            className="p-2 rounded-micro text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors"
             title={t("Zoom Out", "تصغير")}
           >
             <IconZoomOut size={16} />
@@ -527,16 +527,16 @@ export function LiveOperationsCenter({
 
         {/* 3. FLOATING VEHICLE / TRIP PANEL (Section 5 Example) */}
         {showFloatingPanel && focusedTrip && (
-          <div className="absolute top-2 end-2 z-20 flex w-[calc(100%-1rem)] max-w-[340px] flex-col overflow-hidden rounded-[16px] border border-border-subtle bg-surface-1/95 shadow-2xl backdrop-blur-md animate-fade-up sm:top-4 sm:end-4 sm:w-[380px] sm:max-w-none">
+          <div className="absolute top-2 end-2 z-20 flex w-[calc(100%-1rem)] max-w-[340px] flex-col overflow-hidden rounded-panel border border-border-subtle bg-surface-1/95 shadow-2xl backdrop-blur-md animate-fade-up sm:top-4 sm:end-4 sm:w-[380px] sm:max-w-none">
             {/* Header */}
             <div className="p-3.5 border-b border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-status-active animate-pulse" />
-                <span className="font-mono font-bold text-[13px] text-brand">
+                <span className="font-mono font-bold text-body text-brand">
                   {focusedTrip.tripNumber}
                 </span>
-                <span className="text-[11px] text-text-muted">·</span>
-                <span className="text-[11px] font-semibold text-text-secondary">
+                <span className="text-label text-text-muted">·</span>
+                <span className="text-label font-semibold text-text-secondary">
                   {focusedTruck.plate}
                 </span>
               </div>
@@ -561,7 +561,7 @@ export function LiveOperationsCenter({
               />
               <div className="absolute bottom-2 start-2 z-10">
                 <span
-                  className="px-2 py-0.5 rounded-full text-[10px] font-bold shadow-md"
+                  className="px-2 py-0.5 rounded-full text-micro font-bold shadow-md"
                   style={{
                     backgroundColor: getVehicleTypeMeta(focusedTrip.cargoType).badgeBg,
                     color: getVehicleTypeMeta(focusedTrip.cargoType).accentColor,
@@ -573,29 +573,29 @@ export function LiveOperationsCenter({
             </div>
 
             {/* Telemetry & Details Body */}
-            <div className="p-3.5 space-y-2.5 text-[12px]">
+            <div className="p-3.5 space-y-2.5 text-label-lg">
               {/* Route */}
-              <div className="flex items-center justify-between bg-surface-2 p-2 rounded-[8px] border border-white/5">
+              <div className="flex items-center justify-between bg-surface-2 p-2 rounded-chip border border-white/5">
                 <div className="truncate">
-                  <div className="text-[9.5px] text-text-muted">{t("Origin", "الانطلاق")}</div>
+                  <div className="text-micro text-text-muted">{t("Origin", "الانطلاق")}</div>
                   <div className="font-semibold text-text-primary truncate">{focusedTrip.originCity}</div>
                 </div>
-                <span className="text-brand font-bold text-[13px]">→</span>
+                <span className="text-brand font-bold text-body">→</span>
                 <div className="truncate text-end">
-                  <div className="text-[9.5px] text-text-muted">{t("Destination", "الوجهة")}</div>
+                  <div className="text-micro text-text-muted">{t("Destination", "الوجهة")}</div>
                   <div className="font-semibold text-text-primary truncate">{focusedTrip.destinationCity}</div>
                 </div>
               </div>
 
               {/* Driver & Telemetry */}
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div className="bg-surface-2 p-2 rounded-[8px]">
-                  <div className="text-text-muted text-[9.5px]">{t("Driver", "السائق")}</div>
+              <div className="grid grid-cols-2 gap-2 text-label">
+                <div className="bg-surface-2 p-2 rounded-chip">
+                  <div className="text-text-muted text-micro">{t("Driver", "السائق")}</div>
                   <div className="font-semibold text-text-primary truncate mt-0.5">{focusedDriver.name}</div>
                 </div>
 
-                <div className="bg-surface-2 p-2 rounded-[8px]">
-                  <div className="text-text-muted text-[9.5px]">
+                <div className="bg-surface-2 p-2 rounded-chip">
+                  <div className="text-text-muted text-micro">
                     {gpsConfigured
                       ? t("GPS Speed", "السرعة الحية")
                       : t("Speed (route demo)", "السرعة (استعراضية)")}
@@ -608,7 +608,7 @@ export function LiveOperationsCenter({
 
               {/* Progress & Remaining */}
               <div className="space-y-1">
-                <div className="flex items-center justify-between text-[10.5px] text-text-muted tabular-nums">
+                <div className="flex items-center justify-between text-label text-text-muted tabular-nums">
                   <span>{t("Progress", "نسبة الإنجاز")}: {focusedTrip.progressPct}%</span>
                   <span>{t("Remaining", "المتبقي")}: {focusedTrip.distanceRemainingKm} كم ({focusedTrip.etaMinutes} د)</span>
                 </div>
@@ -627,7 +627,7 @@ export function LiveOperationsCenter({
                 onClick={() => {
                   if (onOpenTripDetails) onOpenTripDetails(focusedTrip.id);
                 }}
-                className="btn-primary flex-1 py-1.5 text-[11.5px]"
+                className="btn-primary flex-1 py-1.5 text-label-lg"
               >
                 <span>{t("Full Trip Details", "تفاصيل الرحلة والمسار")}</span>
                 <IconArrowRight size={13} />
@@ -637,7 +637,7 @@ export function LiveOperationsCenter({
                 onClick={() => {
                   if (onOpenShipmentDetails) onOpenShipmentDetails(focusedTrip.id);
                 }}
-                className="btn-ghost py-1.5 px-3 text-[11px]"
+                className="btn-ghost py-1.5 px-3 text-label"
                 title={t("View Waybill & POD", "بوليصة الشحن")}
               >
                 <IconDoc size={14} />
@@ -652,12 +652,12 @@ export function LiveOperationsCenter({
       <div className="shrink-0 bg-surface-1 border-t border-border-subtle p-3 lg:px-6">
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[12px] text-text-primary">
+            <span className="font-bold text-label-lg text-text-primary">
               {t("Trips and shipments", "الرحلات والشحنات")}
             </span>
-            <span className="text-text-muted text-[10.5px]">({trips.length})</span>
+            <span className="text-text-muted text-label">({trips.length})</span>
           </div>
-          <div className="text-[11px] text-text-muted">
+          <div className="text-label text-text-muted">
               {gpsConfigured === true ? t("Select a trip to focus its verified vehicle feed.", "اختر رحلة لعرض بيانات جهازها المعتمدة.") : t("Select a trip to open its operational details.", "اختر رحلة لفتح تفاصيلها التشغيلية.")}
           </div>
         </div>
@@ -679,18 +679,18 @@ export function LiveOperationsCenter({
                   setShowFloatingPanel(true);
                 }}
                 className={cn(
-                  "shrink-0 min-w-[220px] p-2.5 rounded-[10px] text-start border transition-all duration-200 flex flex-col justify-between",
+                  "shrink-0 min-w-[220px] p-2.5 rounded-control text-start border transition-all duration-200 flex flex-col justify-between",
                   isSelected
                     ? "bg-brand/12 border-brand shadow-md"
                     : "bg-surface-2 border-border-subtle hover:bg-surface-3"
                 )}
               >
                 <div className="flex items-center justify-between gap-1 w-full">
-                  <span className="font-mono font-bold text-[11.5px] text-text-primary">
+                  <span className="font-mono font-bold text-label-lg text-text-primary">
                     {tr.tripNumber}
                   </span>
                   <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[9.5px] font-bold"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-micro text-micro font-bold"
                     style={{ backgroundColor: meta.badgeBg, color: meta.accentColor }}
                   >
                     <TruckTypeIcon truckType={tr.cargoType} size={13} />
@@ -698,11 +698,11 @@ export function LiveOperationsCenter({
                   </span>
                 </div>
 
-                <div className="text-[11px] font-medium text-text-secondary truncate mt-1">
+                <div className="text-label font-medium text-text-secondary truncate mt-1">
                   {td(tr.originCity)} → {td(tr.destinationCity)}
                 </div>
 
-                <div className="mt-2 border-t border-white/5 pt-1 text-[10px] tabular-nums text-text-muted">
+                <div className="mt-2 border-t border-white/5 pt-1 text-micro tabular-nums text-text-muted">
                   {tr.cargoWeightTons} {t("tons", "طن")}
                 </div>
               </button>

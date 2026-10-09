@@ -107,7 +107,7 @@ export function TruckTypeBadge({
   return (
     <span
       className={cn(
-        "inline-flex min-w-0 items-center gap-1.5 rounded-full border px-2 py-1 text-[10.5px] font-bold",
+        "inline-flex min-w-0 items-center gap-1.5 rounded-full border px-2 py-1 text-label font-bold",
         !accent && "border-border-subtle bg-surface-3 text-text-secondary",
         className,
       )}
@@ -150,7 +150,7 @@ export function TruckTypeInline({
       title={t(meta.englishName, meta.arabicName)}
     >
       <TruckTypeIcon truckType={truckType} size={size} />
-      <span className="truncate text-[11.5px] font-bold">{t(meta.englishName, meta.arabicName)}</span>
+      <span className="truncate text-label-lg font-bold">{t(meta.englishName, meta.arabicName)}</span>
     </span>
   );
 }
@@ -227,7 +227,7 @@ export function TruckTypeAvatar({
       <TruckTypeIcon truckType={truckType} size={iconSize} className="text-white" />
       {showBadge && (
         <span
-          className="absolute -bottom-0.5 -end-0.5 grid h-4 w-4 place-items-center rounded-full bg-surface-1 text-[9px] font-extrabold text-white border border-surface-0 shadow-sm"
+          className="absolute -bottom-0.5 -end-0.5 grid h-4 w-4 place-items-center rounded-full bg-surface-1 text-micro font-extrabold text-white border border-surface-0 shadow-sm"
           style={{ color: bg }}
         >
           {initial}
@@ -268,7 +268,7 @@ export function TruckTypeLegend({
           onClick={() => onSelect?.("ALL")}
           className={cn(
             "rounded-full font-bold transition-all flex items-center gap-1.5 border",
-            isSm ? "px-2.5 py-1 text-[11px]" : "px-3 py-1.5 text-[12px]",
+            isSm ? "px-2.5 py-1 text-label" : "px-3 py-1.5 text-label-lg",
             selected === "ALL" || !selected
               ? "bg-brand text-on-brand border-brand shadow-sm"
               : "bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary hover:border-brand/40"
@@ -289,7 +289,7 @@ export function TruckTypeLegend({
             onClick={() => onSelect?.(type)}
             className={cn(
               "rounded-full font-bold transition-all flex items-center gap-1.5 border select-none",
-              isSm ? "px-2.5 py-1 text-[11px]" : "px-3 py-1.5 text-[12px]",
+              isSm ? "px-2.5 py-1 text-label" : "px-3 py-1.5 text-label-lg",
               isSelected
                 ? "bg-brand text-on-brand border-brand shadow-sm scale-102"
                 : "bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary hover:border-brand/40"

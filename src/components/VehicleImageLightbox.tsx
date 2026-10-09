@@ -48,14 +48,14 @@ export function VehicleImageLightbox({
           src={src}
           title={t("Document", "مستند")}
           onClick={(e) => e.stopPropagation()}
-          className="h-full w-full max-w-[900px] rounded-[12px] border border-white/10 bg-white"
+          className="h-full w-full max-w-[900px] rounded-inner border border-white/10 bg-white"
         />
       ) : (
         <img
           src={src}
           alt={t("Request document", "مستند الطلب")}
           onClick={(e) => e.stopPropagation()}
-          className="max-h-full max-w-full rounded-[12px] border border-white/10 object-contain"
+          className="max-h-full max-w-full rounded-inner border border-white/10 object-contain"
         />
       )}
     </div>

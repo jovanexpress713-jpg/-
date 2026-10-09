@@ -108,7 +108,7 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="animate-fade-up scroll-thin max-h-[90vh] w-full max-w-[580px] overflow-y-auto rounded-[16px] bg-surface-3 p-5"
+        className="animate-fade-up scroll-thin max-h-[90vh] w-full max-w-[580px] overflow-y-auto rounded-panel bg-surface-3 p-5"
         style={{
           boxShadow:
             "0 40px 90px -30px color-mix(in oklab, var(--color-brand) 35%, transparent), 0 0 0 1px var(--color-border-subtle)",
@@ -116,10 +116,10 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-[20px] font-medium text-text-primary">
+            <h3 className="text-headline font-medium text-text-primary">
               {t("Create new Request", "إنشاء طلب جديد")}
             </h3>
-            <p className="mt-0.5 text-[11.5px] text-text-muted">
+            <p className="mt-0.5 text-label-lg text-text-muted">
               {t(
                 "Dispatch a vehicle to the fleet and start tracking instantly.",
                 "أضف مركبة إلى الأسطول وابدأ التتبع فورًا.",
@@ -237,7 +237,7 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
           <div>
             <div className="flex items-center justify-between">
               <Label>{t("Load ratio", "نسبة الحمولة")}</Label>
-              <span className="text-[12px] font-medium tabular-nums text-brand">{loadPct}%</span>
+              <span className="text-label-lg font-medium tabular-nums text-brand">{loadPct}%</span>
             </div>
             <input
               type="range"
@@ -266,6 +266,6 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-[10.5px] tracking-wide text-text-muted uppercase">{children}</span>
+    <span className="text-label tracking-wide text-text-muted uppercase">{children}</span>
   );
 }

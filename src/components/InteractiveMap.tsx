@@ -360,7 +360,7 @@ export function InteractiveMap({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[14px] bg-surface-1 border border-border-subtle select-none",
+        "relative overflow-hidden rounded-inner bg-surface-1 border border-border-subtle select-none",
         isDragging ? "cursor-grabbing" : "cursor-grab",
         className
       )}
@@ -377,7 +377,7 @@ export function InteractiveMap({
         <canvas ref={canvasRef} className="h-full w-full block" />
       ) : (
         <div className="relative h-full w-full bg-surface-2">
-          <div className="pointer-events-none absolute top-14 start-3 z-10 flex items-center gap-1.5 rounded-full bg-navy/90 px-3 py-1 text-[10.5px] font-semibold text-brand backdrop-blur-md border border-brand/30 shadow-md">
+          <div className="pointer-events-none absolute top-14 start-3 z-10 flex items-center gap-1.5 rounded-full bg-navy/90 px-3 py-1 text-label font-semibold text-brand backdrop-blur-md border border-brand/30 shadow-md">
             <span className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
             <span>{t("Maps Dev Adapter · route preview", "وضع تطوير الخرائط · معاينة المسار")}</span>
           </div>
@@ -395,7 +395,7 @@ export function InteractiveMap({
       {showCardOverlay && (
         <div
           className={cn(
-            "pointer-events-auto absolute top-3 flex items-center gap-2.5 rounded-full bg-navy/85 px-4 py-2 text-white shadow-xl backdrop-blur-md border border-white/10 text-[11.5px]",
+            "pointer-events-auto absolute top-3 flex items-center gap-2.5 rounded-full bg-navy/85 px-4 py-2 text-white shadow-xl backdrop-blur-md border border-white/10 text-label-lg",
             dir === "rtl" ? "right-3" : "left-3"
           )}
         >
@@ -459,7 +459,7 @@ export function InteractiveMap({
           )}
           title={t("Toggle 3D Operational Stage Scene", "عرض المشهد التشغيلي ثلاثي الأبعاد")}
         >
-          <span className="text-[10px] font-extrabold">3D</span>
+          <span className="text-micro font-extrabold">3D</span>
         </button>
 
         {/* Map Layers Dropdown Button */}
@@ -479,7 +479,7 @@ export function InteractiveMap({
       {/* 4) Bottom Live Heading & Waypoint Strip */}
       <div
         className={cn(
-          "pointer-events-auto absolute bottom-3 inset-x-3 flex items-center justify-between gap-2 rounded-[10px] bg-navy/90 px-3.5 py-2 text-white text-[11px] backdrop-blur-md border border-white/10",
+          "pointer-events-auto absolute bottom-3 inset-x-3 flex items-center justify-between gap-2 rounded-control bg-navy/90 px-3.5 py-2 text-white text-label backdrop-blur-md border border-white/10",
           compact && "hidden"
         )}
       >

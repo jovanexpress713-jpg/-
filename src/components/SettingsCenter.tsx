@@ -158,15 +158,15 @@ export function SettingsCenter({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="animate-fade-up flex max-h-[92vh] w-full max-w-[880px] flex-col overflow-hidden rounded-[20px] border border-border-subtle bg-surface-1 shadow-2xl"
+        className="animate-fade-up flex max-h-[92vh] w-full max-w-[880px] flex-col overflow-hidden rounded-card border border-border-subtle bg-surface-1 shadow-2xl"
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 sm:px-5">
           <div className="min-w-0">
-            <h2 className="truncate text-[var(--type-page-title)] font-extrabold text-text-primary">
+            <h2 className="truncate text-page-title font-extrabold text-text-primary">
               {tk("settings.title")}
             </h2>
-            <p className="truncate text-[11px] text-text-muted">{tk("settings.subtitle")}</p>
+            <p className="truncate text-label text-text-muted">{tk("settings.subtitle")}</p>
           </div>
           <button onClick={onClose} className="btn-icon shrink-0" aria-label={tk("common.close")}>
             <IconClose size={16} />
@@ -184,7 +184,7 @@ export function SettingsCenter({
                     key={id}
                     onClick={() => setTab(id)}
                     className={cn(
-                      "flex shrink-0 items-center gap-2 rounded-[10px] px-3 py-2 text-[12.5px] font-semibold transition-colors sm:w-full",
+                      "flex shrink-0 items-center gap-2 rounded-control px-3 py-2 text-body font-semibold transition-colors sm:w-full",
                       active
                         ? "bg-brand text-on-brand shadow-sm"
                         : "text-text-secondary hover:bg-surface-3 hover:text-text-primary",
@@ -210,14 +210,14 @@ export function SettingsCenter({
 
                 <div className="card p-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="grid h-12 w-12 place-items-center rounded-full bg-brand/15 text-[15px] font-bold text-brand">
+                    <span className="grid h-12 w-12 place-items-center rounded-full bg-brand/15 text-page-title font-bold text-brand">
                       {sessionInitials(user?.fullName, user?.email, lang)}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[14px] font-bold text-text-primary">
+                      <div className="truncate text-card-title font-bold text-text-primary">
                         {user?.fullName || "—"}
                       </div>
-                      <div className="truncate text-[11.5px] text-text-muted" dir="ltr">
+                      <div className="truncate text-label-lg text-text-muted" dir="ltr">
                         {user?.email || "—"}
                       </div>
                     </div>
@@ -243,12 +243,12 @@ export function SettingsCenter({
 
                 <PanelHeading title={t("Security & sessions", "الأمان والجلسات")} />
                 <div className="card p-4">
-                  <div className="flex items-center justify-between gap-3 rounded-[10px] bg-surface-2 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3 rounded-control bg-surface-2 px-3 py-2.5">
                     <div className="min-w-0">
-                      <div className="text-[12px] font-semibold text-text-primary">
+                      <div className="text-label-lg font-semibold text-text-primary">
                         {t("Encrypted session token", "رمز جلسة مشفّر")}
                       </div>
-                      <div className="text-[10.5px] text-text-muted">
+                      <div className="text-label text-text-muted">
                         {t("Every sign-in is recorded in the audit log", "كل عملية دخول تُسجَّل في سجل التدقيق")}
                       </div>
                     </div>
@@ -268,14 +268,14 @@ export function SettingsCenter({
                       <div
                         key={`${p.capability}-${idx}`}
                         className={cn(
-                          "flex items-center justify-between gap-2 rounded-[10px] border px-3 py-2 text-[12px]",
+                          "flex items-center justify-between gap-2 rounded-control border px-3 py-2 text-label-lg",
                           p.granted
                             ? "border-status-active/30 bg-status-active/8 text-text-primary"
                             : "border-border-subtle bg-surface-2 text-text-muted",
                         )}
                       >
                         <span className="truncate">
-                          {tk(p.labelKey)} <span className="text-[9.5px] text-text-muted">({p.capability})</span>
+                          {tk(p.labelKey)} <span className="text-micro text-text-muted">({p.capability})</span>
                         </span>
                         <span className="shrink-0">
                           {p.granted ? (
@@ -287,7 +287,7 @@ export function SettingsCenter({
                       </div>
                     ))}
                   </div>
-                  <p className="mt-3 text-[10.5px] text-text-muted">{tk("account.notAllowed")}</p>
+                  <p className="mt-3 text-label text-text-muted">{tk("account.notAllowed")}</p>
                 </div>
               </section>
             )}
@@ -313,15 +313,15 @@ export function SettingsCenter({
                       key={option.id}
                       onClick={() => setTheme(option.id)}
                       className={cn(
-                        "flex items-start justify-between gap-3 rounded-[12px] border p-3 text-start transition-colors",
+                        "flex items-start justify-between gap-3 rounded-inner border p-3 text-start transition-colors",
                         theme === option.id
                           ? "border-brand/60 bg-brand/10"
                           : "border-border-subtle bg-surface-2 hover:border-border-focus",
                       )}
                     >
                       <span className="min-w-0">
-                        <span className="block text-[12.5px] font-bold text-text-primary">{option.label}</span>
-                        <span className="mt-0.5 block text-[10.5px] leading-relaxed text-text-muted">
+                        <span className="block text-body font-bold text-text-primary">{option.label}</span>
+                        <span className="mt-0.5 block text-label leading-relaxed text-text-muted">
                           {option.hint}
                         </span>
                       </span>
@@ -329,7 +329,7 @@ export function SettingsCenter({
                     </button>
                   ))}
                 </div>
-                <p className="text-[10.5px] text-text-muted">
+                <p className="text-label text-text-muted">
                   {t("Active theme", "المظهر المفعّل")}: {resolvedTheme === "dark" ? tk("theme.dark") : tk("theme.light")}
                 </p>
 
@@ -337,16 +337,16 @@ export function SettingsCenter({
                 <div className="card divide-y divide-border-subtle">
                   <div className="flex items-center justify-between gap-3 px-3.5 py-3">
                     <div className="min-w-0">
-                      <div className="text-[12px] font-semibold text-text-primary">{t("Time format", "نظام الوقت")}</div>
-                      <div className="text-[10px] text-text-muted">{t("24-hour or 12-hour clock", "نظام ٢٤ ساعة أو ١٢ ساعة")}</div>
+                      <div className="text-label-lg font-semibold text-text-primary">{t("Time format", "نظام الوقت")}</div>
+                      <div className="text-micro text-text-muted">{t("24-hour or 12-hour clock", "نظام ٢٤ ساعة أو ١٢ ساعة")}</div>
                     </div>
-                    <div className="flex shrink-0 rounded-[8px] border border-border-subtle p-0.5">
+                    <div className="flex shrink-0 rounded-chip border border-border-subtle p-0.5">
                       {(["24", "12"] as const).map((fmt) => (
                         <button
                           key={fmt}
                           onClick={() => setPref("timeFormat", fmt)}
                           className={cn(
-                            "rounded-[6px] px-2.5 py-1 text-[10px] font-bold",
+                            "rounded-micro px-2.5 py-1 text-micro font-bold",
                             prefs.timeFormat === fmt ? "bg-brand text-on-brand" : "text-text-muted",
                           )}
                         >
@@ -357,16 +357,16 @@ export function SettingsCenter({
                   </div>
                   <div className="flex items-center justify-between gap-3 px-3.5 py-3">
                     <div className="min-w-0">
-                      <div className="text-[12px] font-semibold text-text-primary">{t("Date format", "نظام التاريخ")}</div>
-                      <div className="text-[10px] text-text-muted">{t("Gregorian display preference", "تفضيل عرض التاريخ الميلادي")}</div>
+                      <div className="text-label-lg font-semibold text-text-primary">{t("Date format", "نظام التاريخ")}</div>
+                      <div className="text-micro text-text-muted">{t("Gregorian display preference", "تفضيل عرض التاريخ الميلادي")}</div>
                     </div>
-                    <div className="flex shrink-0 rounded-[8px] border border-border-subtle p-0.5">
+                    <div className="flex shrink-0 rounded-chip border border-border-subtle p-0.5">
                       {(["iso", "arabic"] as const).map((fmt) => (
                         <button
                           key={fmt}
                           onClick={() => setPref("dateFormat", fmt)}
                           className={cn(
-                            "rounded-[6px] px-2.5 py-1 text-[10px] font-bold",
+                            "rounded-micro px-2.5 py-1 text-micro font-bold",
                             prefs.dateFormat === fmt ? "bg-brand text-on-brand" : "text-text-muted",
                           )}
                         >
@@ -435,15 +435,15 @@ export function SettingsCenter({
                   <InfoCard label={t("System environment", "بيئة النظام")} value={t("Production", "الإنتاج")} icon={IconBolt} />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-[12px] bg-surface-2 px-3 py-2.5">
-                  <span className="text-[10.5px] text-text-muted">{tk("settings.persistence")}</span>
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-inner bg-surface-2 px-3 py-2.5">
+                  <span className="text-label text-text-muted">{tk("settings.persistence")}</span>
                   <button
                     onClick={() => {
                       reset();
                       setTheme("light");
                       toast(tk("settings.reset"), tk("settings.saved"));
                     }}
-                    className="btn-ghost text-[11px] py-1 px-3"
+                    className="btn-ghost text-label py-1 px-3"
                   >
                     {tk("settings.reset")}
                   </button>
@@ -458,30 +458,30 @@ export function SettingsCenter({
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <button
                     onClick={() => onOpenMobileApp?.("client")}
-                    className="flex flex-col items-center gap-2.5 rounded-[16px] border border-border-subtle bg-surface-2 p-6 transition-colors hover:border-accent-2/60"
+                    className="flex flex-col items-center gap-2.5 rounded-panel border border-border-subtle bg-surface-2 p-6 transition-colors hover:border-accent-2/60"
                   >
                     <span className="grid h-12 w-12 place-items-center rounded-full bg-accent-2/15 text-accent-2">
                       <IconProfile size={22} />
                     </span>
-                    <span className="text-[13px] font-bold text-text-primary">{tk("settings.appsClient")}</span>
-                    <span className="text-[10.5px] text-text-muted">
+                    <span className="text-body font-bold text-text-primary">{tk("settings.appsClient")}</span>
+                    <span className="text-label text-text-muted">
                       {t("Trips, tracking, documents and account", "الرحلات، التتبع، المستندات والحساب")}
                     </span>
                   </button>
                   <button
                     onClick={() => onOpenMobileApp?.("driver")}
-                    className="flex flex-col items-center gap-2.5 rounded-[16px] border border-border-subtle bg-surface-2 p-6 transition-colors hover:border-brand/60"
+                    className="flex flex-col items-center gap-2.5 rounded-panel border border-border-subtle bg-surface-2 p-6 transition-colors hover:border-brand/60"
                   >
                     <span className="grid h-12 w-12 place-items-center rounded-full bg-brand/15 text-brand">
                       <IconTruck size={22} />
                     </span>
-                    <span className="text-[13px] font-bold text-text-primary">{tk("settings.appsDriver")}</span>
-                    <span className="text-[10.5px] text-text-muted">
+                    <span className="text-body font-bold text-text-primary">{tk("settings.appsDriver")}</span>
+                    <span className="text-label text-text-muted">
                       {t("Dispatch, trips, GPS and account", "العمليات، الرحلات، التتبع والحساب")}
                     </span>
                   </button>
                 </div>
-                <p className="text-[10.5px] leading-relaxed text-text-muted">
+                <p className="text-label leading-relaxed text-text-muted">
                   {t(
                     "Both apps run on the same backend, database, accounts and permissions — every action reflects across the whole system.",
                     "كلا التطبيقين يعملان على نفس الخادم وقاعدة البيانات والحسابات والصلاحيات — أي عملية تنعكس على النظام بأكمله.",
@@ -500,10 +500,10 @@ export function SettingsCenter({
                       <IconLock size={18} />
                     </span>
                     <div className="min-w-0">
-                      <div className="text-[12.5px] font-bold text-text-primary">
+                      <div className="text-body font-bold text-text-primary">
                         {t("Preview only", "معاينة فقط")}
                       </div>
-                      <p className="mt-1 text-[11px] leading-relaxed text-text-muted">
+                      <p className="mt-1 text-label leading-relaxed text-text-muted">
                         {t(
                           "Shows exactly what an unauthenticated visitor sees. No control-room, driver-app or client-app entry buttons are included inside the preview.",
                           "تعرض بالضبط ما يراه الزائر غير المسجّل. لا تتضمن أي أزرار دخول للوحة التحكم أو تطبيق السائق أو تطبيق العميل.",
@@ -539,7 +539,7 @@ export function SettingsCenter({
 
                 {/* المستخدمون */}
                 <div>
-                  <h3 className="mb-2 text-[var(--type-card-title)] font-bold text-text-primary">
+                  <h3 className="mb-2 text-card-title font-bold text-text-primary">
                     {t("Users & staff", "المستخدمون والموظفون")}
                   </h3>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -553,29 +553,29 @@ export function SettingsCenter({
                 {/* الأدوار والصلاحيات — live administration, not a static table */}
                 {isPermissionAdmin && (
                   <div>
-                    <h3 className="mb-2 text-[var(--type-card-title)] font-bold text-text-primary">
+                    <h3 className="mb-2 text-card-title font-bold text-text-primary">
                       {t("Roles & permissions (RBAC)", "الأدوار والصلاحيات")}
                     </h3>
                     <div className="card flex flex-wrap items-center gap-3 p-3.5">
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-brand/12 text-brand">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-inner bg-brand/12 text-brand">
                         <IconLock size={17} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[12px] font-semibold text-text-primary">
+                        <div className="text-label-lg font-semibold text-text-primary">
                           {t("Roles & permissions", "إدارة الأدوار والصلاحيات")}
                         </div>
-                        <div className="text-[10.5px] text-text-muted">
+                        <div className="text-label text-text-muted">
                           {t(
                             "Show or hide any section, page or function for any role — applied on save.",
                             "إظهار أو إخفاء أي قسم أو صفحة أو وظيفة لأي دور — يسري فور الحفظ.",
                           )}
                         </div>
                       </div>
-                      <button onClick={() => setTab("permissions")} className="btn-primary px-3.5 py-2 text-[11.5px]">
+                      <button onClick={() => setTab("permissions")} className="btn-primary px-3.5 py-2 text-label-lg">
                         {t("Open", "فتح")}
                       </button>
                     </div>
-                    <p className="mt-2 text-[10px] text-text-muted">
+                    <p className="mt-2 text-micro text-text-muted">
                       {t(
                         "Enforced in the API on every call — hiding a button is never the protection.",
                         "تُفرض في الواجهة البرمجية مع كل طلب — إخفاء الزر ليس حماية أبدًا.",
@@ -586,25 +586,25 @@ export function SettingsCenter({
 
                 {/* إعدادات الرحلات (§22) */}
                 <div>
-                  <h3 className="mb-2 text-[var(--type-card-title)] font-bold text-text-primary">
+                  <h3 className="mb-2 text-card-title font-bold text-text-primary">
                     {tk("settings.systemTrips")}
                   </h3>
                   <div className="card space-y-2 p-3.5">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[11px] text-text-muted">{tk("settings.tripNumberScheme")}</span>
-                      <span className="font-mono text-[11.5px] font-bold text-brand">EJ-YYYY-XXXXXX</span>
+                      <span className="text-label text-text-muted">{tk("settings.tripNumberScheme")}</span>
+                      <span className="font-mono text-label-lg font-bold text-brand">EJ-YYYY-XXXXXX</span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[11px] text-text-muted">{t("Example", "مثال")}</span>
-                      <span className="font-mono text-[11px] text-text-secondary">EJ-2026-000001</span>
+                      <span className="text-label text-text-muted">{t("Example", "مثال")}</span>
+                      <span className="font-mono text-label text-text-secondary">EJ-2026-000001</span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[11px] text-text-muted">{tk("settings.tripStates")}</span>
-                      <span className="text-[10.5px] font-semibold text-text-secondary">
+                      <span className="text-label text-text-muted">{tk("settings.tripStates")}</span>
+                      <span className="text-label font-semibold text-text-secondary">
                         {t("Draft → Pending → Confirmed → Loading → In transit → Arrived → Delivered → Settled", "مسودة → بانتظار الاعتماد → مؤكدة → تحميل → في الطريق → وصلت → سُلّمت → مُسوّاة")}
                       </span>
                     </div>
-                    <p className="text-[10px] text-text-muted">
+                    <p className="text-micro text-text-muted">
                       {t(
                         "Numbers come only from the backend generator; cancellations, reopening and archiving follow the canonical state machine.",
                         "الأرقام تأتي من مُولّد الخادم فقط؛ الإلغاء وإعادة الفتح والأرشفة تتبع آلة الحالات المعتمدة.",
@@ -652,14 +652,14 @@ export function SettingsCenter({
                 </div>
                 <div className="card p-4">
                   <span className="card-title">{tk("settings.helpShortcuts")}</span>
-                  <ul className="mt-2.5 space-y-1.5 text-[12px] text-text-secondary">
+                  <ul className="mt-2.5 space-y-1.5 text-label-lg text-text-secondary">
                     <li className="flex items-center gap-2">
-                      <kbd className="rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 font-mono text-[10.5px]">Esc</kbd>
+                      <kbd className="rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 font-mono text-label">Esc</kbd>
                       {tk("common.close")}
                     </li>
                     <li className="flex items-center gap-2">
-                      <kbd className="rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 font-mono text-[10.5px]">Ctrl</kbd>
-                      <kbd className="rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 font-mono text-[10.5px]">K</kbd>
+                      <kbd className="rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 font-mono text-label">Ctrl</kbd>
+                      <kbd className="rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 font-mono text-label">K</kbd>
                       {tk("common.search")}
                     </li>
                   </ul>
@@ -705,12 +705,12 @@ function SystemRow({
       onClick={onOpen}
       className="card flex items-center gap-3 p-3.5 text-start transition-colors hover:border-brand/50"
     >
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-brand/12 text-brand">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-brand/12 text-brand">
         <Icon size={16} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[12.5px] font-semibold text-text-primary">{label}</span>
-        {hint && <span className="block truncate text-[10px] text-text-muted">{hint}</span>}
+        <span className="block truncate text-body font-semibold text-text-primary">{label}</span>
+        {hint && <span className="block truncate text-micro text-text-muted">{hint}</span>}
       </span>
       <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
     </button>
@@ -729,17 +729,17 @@ function sessionInitials(name?: string, email?: string, lang: "ar" | "en" | "ur"
 function PanelHeading({ title, hint }: { title: string; hint?: string }) {
   return (
     <div>
-      <h3 className="text-[var(--type-card-title)] font-bold text-text-primary">{title}</h3>
-      {hint && <p className="mt-0.5 text-[11px] text-text-muted">{hint}</p>}
+      <h3 className="text-card-title font-bold text-text-primary">{title}</h3>
+      {hint && <p className="mt-0.5 text-label text-text-muted">{hint}</p>}
     </div>
   );
 }
 
 function Field({ label, value, ltr }: { label: string; value: string; ltr?: boolean }) {
   return (
-    <div className="rounded-[10px] bg-surface-2 px-3 py-2">
-      <dt className="text-[10.5px] font-semibold text-text-muted">{label}</dt>
-      <dd className="mt-0.5 truncate text-[12.5px] font-semibold text-text-primary" dir={ltr ? "ltr" : undefined}>
+    <div className="rounded-control bg-surface-2 px-3 py-2">
+      <dt className="text-label font-semibold text-text-muted">{label}</dt>
+      <dd className="mt-0.5 truncate text-body font-semibold text-text-primary" dir={ltr ? "ltr" : undefined}>
         {value}
       </dd>
     </div>
@@ -760,8 +760,8 @@ function Toggle({
   return (
     <div className="flex items-center justify-between gap-3 px-2 py-3">
       <div className="min-w-0">
-        <div className="truncate text-[12.5px] font-semibold text-text-primary">{label}</div>
-        {hint && <div className="truncate text-[10.5px] text-text-muted">{hint}</div>}
+        <div className="truncate text-body font-semibold text-text-primary">{label}</div>
+        {hint && <div className="truncate text-label text-text-muted">{hint}</div>}
       </div>
       <button
         role="switch"
@@ -795,12 +795,12 @@ function InfoCard({
 }) {
   return (
     <div className="card flex items-center gap-3 p-3.5">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-brand/12 text-brand">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-brand/12 text-brand">
         <Icon size={16} />
       </span>
       <div className="min-w-0">
-        <div className="truncate text-[10.5px] text-text-muted">{label}</div>
-        <div className="truncate text-[12.5px] font-semibold text-text-primary" dir="ltr">
+        <div className="truncate text-label text-text-muted">{label}</div>
+        <div className="truncate text-body font-semibold text-text-primary" dir="ltr">
           {value}
         </div>
       </div>

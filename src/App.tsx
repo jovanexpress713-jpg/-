@@ -173,7 +173,7 @@ function Shell() {
       <div className="relative h-full w-full">
         <button
           onClick={() => setPreviewLogin(false)}
-          className="absolute end-3 top-3 z-40 flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2/90 px-3 py-1.5 text-[11px] font-bold text-text-secondary backdrop-blur transition-colors hover:text-brand"
+          className="absolute end-3 top-3 z-40 flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2/90 px-3 py-1.5 text-label font-bold text-text-secondary backdrop-blur transition-colors hover:text-brand"
         >
           <IconArrowRight size={13} className="rtl:rotate-180" />
           {tk("common.back")}
@@ -192,7 +192,7 @@ function Shell() {
               setPreAuthView("web");
               setPreAuthInterface(undefined);
             }}
-            className="absolute end-3 top-3 z-40 flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2/90 px-3 py-1.5 text-[11px] font-bold text-text-secondary backdrop-blur transition-colors hover:text-brand"
+            className="absolute end-3 top-3 z-40 flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2/90 px-3 py-1.5 text-label font-bold text-text-secondary backdrop-blur transition-colors hover:text-brand"
           >
             <IconArrowRight size={13} className="rtl:rotate-180" />
             {tk("login.back")}

@@ -69,16 +69,16 @@ export function TruckCapacity({ trip, truck, driverName, onChangeRoute }: Props)
           <h3 className="card-title">{t("Route", "المسار")}</h3>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span className="num text-[13px] text-text-primary">
+            <span className="num text-body text-text-primary">
               {formatCountdown(trip.etaMinutes * 60)}
             </span>
-            <span className="num text-[13px] text-text-secondary">
+            <span className="num text-body text-text-secondary">
               {milesLeft.toLocaleString()} {t("mi left", "ميل متبقٍ")}
             </span>
             <button
               onClick={onChangeRoute}
               disabled={!onChangeRoute}
-              className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-brand transition-colors hover:text-brand-soft disabled:cursor-not-allowed disabled:opacity-45"
+              className="inline-flex items-center gap-1.5 text-body font-semibold text-brand transition-colors hover:text-brand-soft disabled:cursor-not-allowed disabled:opacity-45"
             >
               <IconPencil size={14} />
               {t("Change Route", "تغيير المسار")}

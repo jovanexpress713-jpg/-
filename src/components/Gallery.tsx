@@ -24,7 +24,7 @@ function SafeImg({
     return (
       <div
         className={cn(
-          "grid place-items-center bg-surface-5 text-[10.5px] text-text-muted",
+          "grid place-items-center bg-surface-5 text-label text-text-muted",
           className,
         )}
       >
@@ -65,7 +65,7 @@ export function Gallery({ items }: { items: GalleryItem[] }) {
   return (
     <div className="card p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-[11px] tracking-wide text-text-muted uppercase">
+        <span className="text-label tracking-wide text-text-muted uppercase">
           {t("Cargo Photo Reports", "تقارير الصور المرفقة")}
         </span>
         <span className="badge bg-surface-5 text-text-secondary">{list.length}</span>
@@ -76,7 +76,7 @@ export function Gallery({ items }: { items: GalleryItem[] }) {
           <button
             key={`${p.src}-${i}`}
             onClick={() => setIdx(i)}
-            className="group relative aspect-[4/3] overflow-hidden rounded-[8px] bg-surface-2"
+            className="group relative aspect-[4/3] overflow-hidden rounded-chip bg-surface-2"
           >
             <SafeImg
               src={p.src}
@@ -84,7 +84,7 @@ export function Gallery({ items }: { items: GalleryItem[] }) {
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
             <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
-            <span className="pointer-events-none absolute inset-x-1.5 bottom-1.5 text-start text-[10.5px] leading-tight text-white">
+            <span className="pointer-events-none absolute inset-x-1.5 bottom-1.5 text-start text-label leading-tight text-white">
               {t(p.en, p.ar)}
             </span>
           </button>
@@ -92,11 +92,11 @@ export function Gallery({ items }: { items: GalleryItem[] }) {
 
         <button
           onClick={() => fileRef.current?.click()}
-          className="group grid aspect-[4/3] place-items-center rounded-[8px] border border-dashed border-border-subtle bg-surface-2 text-text-muted transition-all duration-200 hover:border-brand hover:text-brand active:scale-95"
+          className="group grid aspect-[4/3] place-items-center rounded-chip border border-dashed border-border-subtle bg-surface-2 text-text-muted transition-all duration-200 hover:border-brand hover:text-brand active:scale-95"
         >
           <span className="grid place-items-center gap-1.5">
             <IconUpload size={18} />
-            <span className="text-[10.5px]">{t("Add photo", "إضافة صورة")}</span>
+            <span className="text-label">{t("Add photo", "إضافة صورة")}</span>
           </span>
         </button>
       </div>
@@ -121,14 +121,14 @@ export function Gallery({ items }: { items: GalleryItem[] }) {
             <SafeImg
               src={list[idx].src}
               alt={list[idx].ar}
-              className="max-h-[70vh] w-full rounded-[8px] object-contain"
+              className="max-h-[70vh] w-full rounded-chip object-contain"
             />
             <div className="mt-3 flex items-center justify-between gap-3">
               <div>
-                <div className="text-[15px] font-medium text-white">
+                <div className="text-page-title font-medium text-white">
                   {t(list[idx].en, list[idx].ar)}
                 </div>
-                <div className="text-[11px] tabular-nums text-white/55">
+                <div className="text-label tabular-nums text-white/55">
                   {idx + 1} / {list.length}
                 </div>
               </div>

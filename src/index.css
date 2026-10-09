@@ -198,15 +198,71 @@
 }
 
 /* ============================================================
-   NOVA UTILITIES — only the two radii that are actually used as
-   Tailwind utilities (`rounded-inner`, `rounded-panel`). Everything
-   else in the scale is a plain `--ds-*` token consumed by the
-   component classes below, so nothing is emitted that no call site
-   reaches for.
+   THE CANONICAL SCALE — the only type sizes and radii the product
+   is allowed to render (audit §1 and §3, both previously "open").
+
+   Before this block the console carried 25 competing `text-[Npx]`
+   values (1,423 call sites, half of them half-pixel steps the eye
+   cannot separate) and 11 competing `rounded-[Npx]` values (450
+   call sites). Both are now quantised onto the steps below, every
+   old `--ds-text-*` / `--type-*` token is an alias onto them, and
+   `tests/designScale.test.ts` fails the build if an arbitrary
+   `text-[Npx]` or `rounded-[Npx]` creeps back in.
+
+   Names are deliberately NOT Tailwind's own (`xs`/`sm`/`md`/`lg`)
+   and not the existing component classes (`.text-display`,
+   `.text-title`, `.card-title`): redefining either would silently
+   resize surfaces this block does not own.
+
+   Declared `static` so the variables are emitted even where only
+   the legacy `--ds-*` alias reaches for them.
+
+   Radii, small → large:
+     micro   6px  chips count, tags, tiny wells   (was 4/5/6)
+     chip    8px  buttons, inputs, table cells   (was 7/8)
+    control 10px  cards-in-cards, list rows      (was 9/10)
+    inner   12px  nested wells, panels           (was 11/12/13/14)
+    panel   16px  floating map cards, dialogs    (was 15/16/17/18)
+    card    20px  every top-level card (spec §2) (was 19/20/21/22)
+    hero    24px  hero surfaces, big media       (was 23+)
+
+   Type, small → large. Nothing below 10px survives: the console is
+   `lang="ar" dir="rtl"`, and connected Arabic glyphs at 9–9.5px
+   lose their counters and diacritics entirely (audit §3).
+     micro       10px  overlines, timestamps            (was 9/9.5/10)
+     label       11px  labels, chips, meta              (was 10.5/11)
+     label-lg    12px  dense table text, tagline        (was 11.5/12/12.5)
+     body        13px  body copy, forms, table cells    (was 13/13.5)
+     card-title  14px  card + dialog title              (was 14/14.5)
+     page-title  16px  header / section title           (was 15/16)
+     section-title 18px  sub-section heading            (was 17/18)
+     headline    20px  page headline, big counters      (was 19/20)
+     hero-sm     22px  hero headline (compact)          (was 21/22/23)
+     hero        26px  hero headline                    (was 25/26)
+     metric      28px  KPI figures                      (was 28/30)
+     metric-lg   36px  primary KPI figure               (was 36)
    ============================================================ */
-@theme {
-  --radius-panel: 16px;  /* spec §4.3 — floating map cards */
-  --radius-inner: 12px;  /* nested wells, chips, buttons */
+@theme static {
+  --radius-micro: 6px;
+  --radius-chip: 8px;
+  --radius-control: 10px;
+  --radius-inner: 12px;   /* spec §4.3 — nested wells, chips, buttons */
+  --radius-panel: 16px;   /* spec §4.3 — floating map cards */
+  --radius-card: 20px;    /* spec §2 — every card */
+  --radius-hero: 24px;
+
+  --text-micro: 10px;
+  --text-label: 11px;
+  --text-label-lg: 12px;
+  --text-body: 13px;
+  --text-card-title: 14px;
+  --text-page-title: 16px;
+  --text-section-title: 18px;
+  --text-headline: 20px;
+  --text-hero-sm: 22px;
+  --text-hero: 26px;
+  --text-metric: 28px;
+  --text-metric-lg: 36px;
 }
 
 /* ============================================================
@@ -219,20 +275,27 @@
   --ds-space-1: 4px;  --ds-space-2: 8px;  --ds-space-3: 12px; --ds-space-4: 16px;
   --ds-space-6: 24px; --ds-space-8: 32px; --ds-space-12: 48px; --ds-space-16: 64px;
 
-  --ds-radius-sm: 6px; --ds-radius-md: 12px; --ds-radius-lg: 16px;
-  --ds-radius-xl: 24px; --ds-radius-full: 9999px;
-  --ds-radius-card: 20px;   /* spec §2 — every card */
-  --ds-radius-panel: 16px;  /* spec §4.3 — floating map cards */
-  --ds-radius-inner: 12px;  /* nested wells, chips, buttons */
+  /* Radii — aliases onto the canonical `--radius-*` scale declared in the
+     `@theme static` block above, so the utilities and these legacy tokens
+     can never drift apart again. */
+  --ds-radius-sm: var(--radius-micro);
+  --ds-radius-md: var(--radius-inner);
+  --ds-radius-lg: var(--radius-panel);
+  --ds-radius-xl: var(--radius-hero);
+  --ds-radius-full: 9999px;
+  --ds-radius-card: var(--radius-card);    /* spec §2 — every card */
+  --ds-radius-panel: var(--radius-panel);  /* spec §4.3 — floating map cards */
+  --ds-radius-inner: var(--radius-inner);  /* nested wells, chips, buttons */
 
-  /* Spec §2 type scale. Three sizes for text, three for figures — the audit
-     found 20 competing sizes where half-bixel steps were indistinguishable. */
-  --ds-text-label: 11px;
-  --ds-text-label-lg: 12px;
-  --ds-text-card-title: 14px;
-  --ds-text-body: 13px;
-  --ds-text-metric: 28px;
-  --ds-text-metric-lg: 36px;
+  /* Spec §2 type scale — now aliases onto the canonical `--text-*` steps.
+     Three sizes for text, three for figures; the audit found 25 competing
+     sizes where half-pixel steps were indistinguishable. */
+  --ds-text-label: var(--text-label);
+  --ds-text-label-lg: var(--text-label-lg);
+  --ds-text-card-title: var(--text-card-title);
+  --ds-text-body: var(--text-body);
+  --ds-text-metric: var(--text-metric);
+  --ds-text-metric-lg: var(--text-metric-lg);
 
   --ds-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.25);
   --ds-shadow-md: 0 4px 14px -4px rgb(0 0 0 / 0.35);
@@ -260,14 +323,17 @@
   --ds-text-display: clamp(1.5rem, 1.1rem + 1.8vw, 2.25rem);
   --ds-text-title: clamp(1.125rem, 0.95rem + 0.8vw, 1.5rem);
 
-  /* Unified typography scale (§5) — every new surface picks from these five
-     steps so headings, body, captions and chips stay in one rhythm. */
-  --type-page-title: 16px;   /* header / section title          */
-  --type-card-title: 14px;   /* card + dialog title             */
-  --type-body: 13px;         /* body copy, table cells, forms   */
-  --type-label: 11.5px;      /* labels, chips, meta             */
-  --type-micro: 10.5px;      /* overlines, timestamps           */
-  --type-tagline: 12.5px;    /* «نقلكم .. مسؤوليتنا»            */
+  /* Unified typography scale (§5) — every surface picks from the canonical
+     steps, so headings, body, captions and chips stay in one rhythm. The
+     three half-pixel values this block used to carry on its own (11.5 /
+     10.5 / 12.5) are gone: they were indistinguishable from the integer
+     step beside them and they broke the baseline rhythm (audit §3). */
+  --type-page-title: var(--text-page-title);   /* header / section title        */
+  --type-card-title: var(--text-card-title);   /* card + dialog title           */
+  --type-body: var(--text-body);               /* body copy, table cells, forms */
+  --type-label: var(--text-label);             /* labels, chips, meta           */
+  --type-micro: var(--text-micro);             /* overlines, timestamps         */
+  --type-tagline: var(--text-label-lg);        /* «نقلكم .. مسؤوليتنا»          */
 
   /* Elevated surface used by the header, account menu and settings center. */
   --surface-chrome: color-mix(in oklab, var(--color-surface-1) 92%, transparent);

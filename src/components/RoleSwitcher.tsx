@@ -55,10 +55,10 @@ export function RoleSwitcher() {
   ];
 
   return (
-    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle bg-surface-1 px-3 py-2 text-[12px]">
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle bg-surface-1 px-3 py-2 text-label-lg">
       {/* Role Selector Pills */}
       <div className="scroll-x flex min-w-0 items-center gap-1.5 py-0.5">
-        <span className="me-1.5 hidden shrink-0 text-[10.5px] font-bold uppercase tracking-wider text-text-muted sm:inline">
+        <span className="me-1.5 hidden shrink-0 text-label font-bold uppercase tracking-wider text-text-muted sm:inline">
           {t("Persona Mode:", "نمط التجربة:")}
         </span>
 
@@ -70,7 +70,7 @@ export function RoleSwitcher() {
               key={r.id}
               onClick={() => setRole(r.id)}
               className={cn(
-                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all active:scale-95",
+                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-label font-semibold transition-all active:scale-95",
                 isActive
                   ? "bg-brand text-on-brand shadow-sm font-bold"
                   : "bg-surface-2 text-text-secondary hover:bg-surface-3 hover:text-text-primary"
@@ -101,7 +101,7 @@ export function RoleSwitcher() {
               )}
             />
           </span>
-          <span className="text-[11px] text-text-muted tabular-nums">
+          <span className="text-label text-text-muted tabular-nums">
             {isSimulating
               ? t("Route demo moving · not live GPS", "حركة استعراضية للمسار · لا تتبع GPS حقيقي")
               : t("Route demo paused", "الحركة الاستعراضية متوقفة")}
@@ -110,14 +110,14 @@ export function RoleSwitcher() {
 
         <button
           onClick={toggleSimulation}
-          className="btn-ghost text-[10.5px] py-1 px-2.5 rounded-full border border-border-subtle hover:border-brand"
+          className="btn-ghost text-label py-1 px-2.5 rounded-full border border-border-subtle hover:border-brand"
         >
           {isSimulating ? t("Pause demo", "إيقاف العرض") : t("Resume demo", "استئناف العرض")}
         </button>
 
         <span className="hidden text-text-muted lg:inline">|</span>
 
-        <span className="hidden text-[11px] text-text-muted lg:inline">
+        <span className="hidden text-label text-text-muted lg:inline">
           {trips.length} {t("active trips synced", "رحلات متزامنة")}
         </span>
       </div>

@@ -1207,10 +1207,10 @@ export function Vehicle3DViewer({
       ) : !glSupported ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted p-6 text-center z-0">
           <IconTruck size={42} className="text-brand mb-2" />
-          <div className="font-semibold text-text-primary text-[14px]">
+          <div className="font-semibold text-text-primary text-card-title">
             {t("3D WebGL Viewport", "معرض النماذج ثلاثية الأبعاد")}
           </div>
-          <div className="text-[12px] mt-1 text-text-secondary">
+          <div className="text-label-lg mt-1 text-text-secondary">
             {meta.arabicName} · {meta.englishName}
           </div>
         </div>
@@ -1223,7 +1223,7 @@ export function Vehicle3DViewer({
       {!shouldRender3D && (
         <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center px-4 pointer-events-none">
           <div className="relative w-full max-w-[420px]">
-            <div className="overflow-hidden rounded-[14px] border border-border-subtle bg-surface-1/70 shadow-2xl backdrop-blur-sm">
+            <div className="overflow-hidden rounded-inner border border-border-subtle bg-surface-1/70 shadow-2xl backdrop-blur-sm">
               {vehicle ? (
                 <TruckImage
                   vehicle={vehicle}
@@ -1242,7 +1242,7 @@ export function Vehicle3DViewer({
             </div>
 
             <div className="mt-2 flex flex-col items-center gap-1.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2/80 px-3 py-1 text-[10.5px] font-bold text-text-secondary">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2/80 px-3 py-1 text-label font-bold text-text-secondary">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand" />
                 {showVehiclePhoto
                   ? t("Vehicle photograph", "صورة المركبة الرسمية")
@@ -1255,7 +1255,7 @@ export function Vehicle3DViewer({
                     setInteractiveRequested(true);
                     setContextAttempt((n) => n + 1);
                   }}
-                  className="pointer-events-auto inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-brand/40 bg-brand/15 px-3.5 py-1 text-[10.5px] font-bold text-brand backdrop-blur transition-colors hover:bg-brand hover:text-on-brand"
+                  className="pointer-events-auto inline-flex min-h-[32px] items-center gap-1.5 rounded-full border border-brand/40 bg-brand/15 px-3.5 py-1 text-label font-bold text-brand backdrop-blur transition-colors hover:bg-brand hover:text-on-brand"
                 >
                   <IconRotate360 size={13} />
                   {t("Open the interactive 3D view", "تشغيل العرض ثلاثي الأبعاد التفاعلي 360°")}
@@ -1271,7 +1271,7 @@ export function Vehicle3DViewer({
         {/* Left: Active Vehicle Specs */}
         <div
           className={cn(
-            "pointer-events-auto min-w-0 rounded-[10px] border border-border-subtle bg-surface-1/90 shadow-lg backdrop-blur-md",
+            "pointer-events-auto min-w-0 rounded-control border border-border-subtle bg-surface-1/90 shadow-lg backdrop-blur-md",
             compact ? "max-w-[min(220px,62%)] p-2" : "max-w-[min(280px,72%)] p-2.5 sm:max-w-[280px]",
           )}
         >
@@ -1281,13 +1281,13 @@ export function Vehicle3DViewer({
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: meta.accentColor }}
             />
-            <span className="truncate font-bold text-[12px] text-text-primary sm:text-[13px]">
+            <span className="truncate font-bold text-label-lg text-text-primary sm:text-body">
               {meta.arabicName} — {meta.englishName}
             </span>
           </div>
 
           {!compact && (
-            <div className="mt-1 line-clamp-2 text-[11px] text-text-secondary">
+            <div className="mt-1 line-clamp-2 text-label text-text-secondary">
               {t(meta.descriptionEn, meta.descriptionAr)}
             </div>
           )}
@@ -1326,10 +1326,10 @@ export function Vehicle3DViewer({
           </div>
 
           <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-white/5 pt-1.5">
-            <span className="text-[10.5px] text-text-muted">{t("Asset", "الأصل")}:</span>
+            <span className="text-label text-text-muted">{t("Asset", "الأصل")}:</span>
             <span
               className={cn(
-                "rounded-full px-2 py-[2px] text-[9.5px] font-bold",
+                "rounded-full px-2 py-[2px] text-micro font-bold",
                 assetMode === "OFFICIAL_MODEL" && "bg-status-active/15 text-status-active",
                 assetMode === "CANONICAL_MODEL" && "bg-status-active/15 text-status-active",
                 assetMode === "REFERENCE_ONLY" && "bg-status-waiting/15 text-status-waiting",
@@ -1346,10 +1346,10 @@ export function Vehicle3DViewer({
 
         {/* Right: Interactive 3D Control Actions */}
         {showControls && (
-          <div className="pointer-events-auto flex flex-col gap-1 rounded-[10px] border border-border-subtle bg-surface-1/90 p-1 shadow-lg backdrop-blur-md">
+          <div className="pointer-events-auto flex flex-col gap-1 rounded-control border border-border-subtle bg-surface-1/90 p-1 shadow-lg backdrop-blur-md">
             <button
               onClick={resetCamera}
-              className="grid h-8 w-8 place-items-center rounded-[6px] text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+              className="grid h-8 w-8 place-items-center rounded-micro text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
               title={t("Reset Camera View (3/4 Front)", "إعادة ضبط الكاميرا")}
               aria-label={t("Reset view", "إعادة ضبط العرض")}
             >
@@ -1360,7 +1360,7 @@ export function Vehicle3DViewer({
             </button>
             <button
               onClick={zoomIn}
-              className="grid h-8 w-8 place-items-center rounded-[6px] text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+              className="grid h-8 w-8 place-items-center rounded-micro text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
               title={t("Zoom In", "تكبير")}
               aria-label={t("Zoom in", "تكبير")}
             >
@@ -1368,7 +1368,7 @@ export function Vehicle3DViewer({
             </button>
             <button
               onClick={zoomOut}
-              className="grid h-8 w-8 place-items-center rounded-[6px] text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+              className="grid h-8 w-8 place-items-center rounded-micro text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
               title={t("Zoom Out", "تصغير")}
               aria-label={t("Zoom out", "تصغير")}
             >
@@ -1377,7 +1377,7 @@ export function Vehicle3DViewer({
             <button
               onClick={() => setAutoRotate((r) => !r)}
               className={cn(
-                "grid h-8 w-8 place-items-center rounded-[6px] transition-colors",
+                "grid h-8 w-8 place-items-center rounded-micro transition-colors",
                 autoRotate
                   ? "bg-brand/20 text-brand"
                   : "text-text-muted hover:bg-surface-3 hover:text-text-primary",
@@ -1390,7 +1390,7 @@ export function Vehicle3DViewer({
             <button
               onClick={() => setInteractiveRequested((v) => !v)}
               className={cn(
-                "grid h-8 w-8 place-items-center rounded-[6px] transition-colors",
+                "grid h-8 w-8 place-items-center rounded-micro transition-colors",
                 interactiveRequested
                   ? "bg-brand/20 text-brand"
                   : "text-text-muted hover:bg-surface-3 hover:text-text-primary",
@@ -1412,7 +1412,7 @@ export function Vehicle3DViewer({
       <div className="relative z-10 flex flex-col items-center p-2 sm:p-3 lg:p-4 pointer-events-auto">
         {previewMode ? (
           /* Preview Mode: Full 4-Vehicle Switcher with Dots */
-          <div className="w-full max-w-[460px] bg-surface-1/95 backdrop-blur-md rounded-[12px] p-1.5 sm:p-2 border border-border-subtle shadow-2xl">
+          <div className="w-full max-w-[460px] bg-surface-1/95 backdrop-blur-md rounded-inner p-1.5 sm:p-2 border border-border-subtle shadow-2xl">
             <div className="flex items-stretch justify-between gap-1">
               {APPROVED_VEHICLE_TYPES_LIST.map((vt) => {
                 const isSelected = activeType === vt.id;
@@ -1422,7 +1422,7 @@ export function Vehicle3DViewer({
                     onClick={() => handleSelectType(vt.id)}
                     aria-pressed={isSelected}
                     className={cn(
-                      "flex min-h-[38px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[8px] px-1 py-1.5 text-[11px] font-medium transition-all duration-200 sm:gap-1 sm:text-[12px]",
+                      "flex min-h-[38px] flex-1 flex-col items-center justify-center gap-0.5 rounded-chip px-1 py-1.5 text-label font-medium transition-all duration-200 sm:gap-1 sm:text-label-lg",
                       isSelected
                         ? "bg-brand text-navy font-bold shadow-md"
                         : "text-text-secondary hover:text-text-primary hover:bg-surface-2"
@@ -1441,7 +1441,7 @@ export function Vehicle3DViewer({
                 );
               })}
             </div>
-            <div className="mt-1.5 text-center text-[10px] text-text-muted">
+            <div className="mt-1.5 text-center text-micro text-text-muted">
               {shouldRender3D
                 ? t("360° Interactive 3D Model · Drag to Rotate", "مجسم ثلاثي الأبعاد تفاعلي 360° · اسحب للدوران")
                 : t("Official reference image · tap to open the 3D model", "الصورة الرسمية · اضغط لفتح المجسم ثلاثي الأبعاد")}
@@ -1449,7 +1449,7 @@ export function Vehicle3DViewer({
           </div>
         ) : (
           /* Real Vehicle Mode: Fixed Real Vehicle Indicator */
-          <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-border-subtle bg-surface-1/95 px-3 py-1.5 text-[11px] text-text-secondary shadow-lg backdrop-blur-md sm:px-3.5 sm:text-[11.5px]">
+          <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-border-subtle bg-surface-1/95 px-3 py-1.5 text-label text-text-secondary shadow-lg backdrop-blur-md sm:px-3.5 sm:text-label-lg">
             <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-status-active" />
             <span className="font-semibold text-text-primary">
               {t("Real Fleet Unit", "مركبة أسطول مسجلة")}:
@@ -1459,11 +1459,11 @@ export function Vehicle3DViewer({
               {meta.arabicName}
             </span>
             <span className="text-text-muted">·</span>
-            <span className="font-mono text-[11px]">{vehiclePlate || "EJAZ FLEET"}</span>
+            <span className="font-mono text-label">{vehiclePlate || "EJAZ FLEET"}</span>
             <span className="text-text-muted">·</span>
             <span
               className={cn(
-                "text-[10.5px] font-bold",
+                "text-label font-bold",
                 shouldRender3D ? "text-status-active" : "text-status-waiting",
               )}
             >

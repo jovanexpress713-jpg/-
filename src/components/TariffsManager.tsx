@@ -261,17 +261,17 @@ export function TariffsManager() {
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle p-4 lg:px-6">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-[22px] font-bold text-text-primary">{t("Pricing & Tariff List", "قائمة الأسعار والتعرفة")}</h2>
+            <h2 className="text-hero-sm font-bold text-text-primary">{t("Pricing & Tariff List", "قائمة الأسعار والتعرفة")}</h2>
             <span className="badge bg-brand/15 text-brand tabular-nums">{tariffs.length} {t("Tariffs", "تعرفة")}</span>
           </div>
-          <p className="mt-0.5 text-[12px] text-text-muted">
+          <p className="mt-0.5 text-label-lg text-text-muted">
             {t(
               "Company-managed freight pricing. Prices resolve dynamically by truck type + route + distance + weight — never hardcoded.",
               "تعرفة نقل تديرها الشركة. تُحتسب الأسعار ديناميكيًا حسب نوع الشاحنة والمسار والمسافة والوزن — دون أي أسعار ثابتة."
             )}
           </p>
         </div>
-        <button onClick={openCreate} className="btn-primary text-[12px] py-2 px-4 flex items-center gap-2">
+        <button onClick={openCreate} className="btn-primary text-label-lg py-2 px-4 flex items-center gap-2">
           <IconPlus size={15} />
           {t("Add price", "إضافة سعر")}
         </button>
@@ -283,24 +283,24 @@ export function TariffsManager() {
           <div className="card p-4 border border-status-waiting/40 bg-status-waiting/5">
             <div className="flex items-center gap-2">
               <IconTag size={16} className="text-status-waiting" />
-              <span className="text-[13px] font-bold text-text-primary">
+              <span className="text-body font-bold text-text-primary">
                 {t("Client quote requests (no matching tariff)", "طلبات عرض سعر من العملاء (لا توجد تعرفة مطابقة)")}
               </span>
               <span className="badge bg-status-waiting/20 text-status-waiting tabular-nums">{openQuotes.length}</span>
             </div>
             <div className="mt-3 space-y-2">
               {openQuotes.map((q) => (
-                <div key={q.id} className="flex flex-wrap items-center justify-between gap-2 rounded-[12px] bg-surface-2 border border-border-subtle p-3">
-                  <div className="text-[12px]">
+                <div key={q.id} className="flex flex-wrap items-center justify-between gap-2 rounded-inner bg-surface-2 border border-border-subtle p-3">
+                  <div className="text-label-lg">
                     <span className="font-bold text-text-primary">{td(q.originCity)} ← {td(q.destinationCity)}</span>
                     <span className="mx-2 text-text-muted">·</span>
                     <span className="text-brand font-semibold">{q.truckType}</span>
                     <span className="mx-2 text-text-muted">·</span>
                     <span className="tabular-nums">{q.weightTons} {t("tons", "طن")}</span>
                     {q.distanceKm != null && (<><span className="mx-2 text-text-muted">·</span><span className="tabular-nums">{q.distanceKm} {t("km", "كم")}</span></>)}
-                    {q.requestedByName && (<div className="text-[11px] text-text-muted mt-0.5">{t("Requested by", "مقدم الطلب")}: {q.requestedByName}</div>)}
+                    {q.requestedByName && (<div className="text-label text-text-muted mt-0.5">{t("Requested by", "مقدم الطلب")}: {q.requestedByName}</div>)}
                   </div>
-                  <button onClick={() => resolveQuote(q)} className="btn-ghost text-[11px] py-1.5 px-3 border border-status-active/40 text-status-active">
+                  <button onClick={() => resolveQuote(q)} className="btn-ghost text-label py-1.5 px-3 border border-status-active/40 text-status-active">
                     <IconCheck size={13} />
                     {t("Mark resolved", "تمت المعالجة")}
                   </button>
@@ -312,26 +312,26 @@ export function TariffsManager() {
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 rounded-[10px] bg-surface-2 border border-border-subtle px-3 py-2 focus-within:border-brand">
+          <div className="flex items-center gap-2 rounded-control bg-surface-2 border border-border-subtle px-3 py-2 focus-within:border-brand">
             <IconSearch size={14} className="text-text-muted" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("Search route, type, price…", "ابحث بالمسار أو النوع أو السعر…")}
-              className="w-[190px] bg-transparent text-[12px] text-white outline-none"
+              className="w-[190px] bg-transparent text-label-lg text-white outline-none"
             />
           </div>
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="field !py-2 text-[12px]">
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="field !py-2 text-label-lg">
             <option value="ALL">{t("All truck types", "كل أنواع الشاحنات")}</option>
             {APPROVED_VEHICLE_TYPES_LIST.map((v) => (
               <option key={v.id} value={v.arabicName}>{v.arabicName} · {v.englishName}</option>
             ))}
           </select>
-          <select value={filterOrigin} onChange={(e) => setFilterOrigin(e.target.value)} className="field !py-2 text-[12px]">
+          <select value={filterOrigin} onChange={(e) => setFilterOrigin(e.target.value)} className="field !py-2 text-label-lg">
             <option value="">{t("All origins", "كل مدن الانطلاق")}</option>
             {cities.map((c) => (<option key={c.id} value={c.ar}>{c.ar}</option>))}
           </select>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="field !py-2 text-[12px]">
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="field !py-2 text-label-lg">
             <option value="ALL">{t("All statuses", "كل الحالات")}</option>
             <option value="ACTIVE">{t("Active", "نشطة")}</option>
             <option value="INACTIVE">{t("Stopped", "موقوفة")}</option>
@@ -340,17 +340,17 @@ export function TariffsManager() {
 
         {/* Tariff table */}
         {loading ? (
-          <div className="card p-8 text-center text-text-muted text-[13px]">{t("Loading tariffs…", "جارٍ تحميل قائمة الأسعار…")}</div>
+          <div className="card p-8 text-center text-text-muted text-body">{t("Loading tariffs…", "جارٍ تحميل قائمة الأسعار…")}</div>
         ) : filtered.length === 0 ? (
           <div className="card p-8 text-center">
-            <div className="text-[14px] font-bold text-text-primary">{t("No tariffs yet", "لا توجد تعرفات بعد")}</div>
-            <p className="mt-1 text-[12px] text-text-muted">
+            <div className="text-card-title font-bold text-text-primary">{t("No tariffs yet", "لا توجد تعرفات بعد")}</div>
+            <p className="mt-1 text-label-lg text-text-muted">
               {t("Add the first tariff to start pricing trips dynamically.", "أضف أول تعرفة لبدء تسعير الرحلات ديناميكيًا.")}
             </p>
           </div>
         ) : (
           <div className="card overflow-hidden p-0">
-            <table className="w-full text-start text-[12.5px]">
+            <table className="w-full text-start text-body">
               <thead>
                 <tr className="border-b border-border-subtle text-text-muted">
                   <th className="px-4 py-3 text-start font-semibold">{t("Truck type", "نوع الشاحنة")}</th>
@@ -380,7 +380,7 @@ export function TariffsManager() {
                       {tar.validFrom.slice(0, 10)}{tar.validTo ? ` → ${tar.validTo.slice(0, 10)}` : t(" · open", " · مفتوحة")}
                     </td>
                     <td className="px-3 py-3">
-                      <span className={cn("badge text-[10.5px]", tar.status === "ACTIVE" ? "bg-status-active/20 text-status-active" : "bg-surface-5 text-text-muted")}>
+                      <span className={cn("badge text-label", tar.status === "ACTIVE" ? "bg-status-active/20 text-status-active" : "bg-surface-5 text-text-muted")}>
                         {tar.status === "ACTIVE" ? t("Active", "نشطة") : t("Stopped", "موقوفة")}
                       </span>
                     </td>
@@ -408,13 +408,13 @@ export function TariffsManager() {
       {/* Create / Edit modal */}
       {modalOpen && (
         <div className="animate-fade-in fixed inset-0 z-[90] grid place-items-center bg-black/85 p-4 backdrop-blur-md" onClick={() => setModalOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="animate-fade-up scroll-thin max-h-[92vh] w-full max-w-[680px] overflow-y-auto rounded-[18px] bg-surface-1 p-6 border border-border-subtle shadow-2xl">
+          <div onClick={(e) => e.stopPropagation()} className="animate-fade-up scroll-thin max-h-[92vh] w-full max-w-[680px] overflow-y-auto rounded-panel bg-surface-1 p-6 border border-border-subtle shadow-2xl">
             <div className="flex items-start justify-between border-b border-border-subtle pb-3">
               <div>
-                <h3 className="text-[17px] font-bold text-text-primary">
+                <h3 className="text-section-title font-bold text-text-primary">
                   {editingId ? t("Edit tariff", "تعديل التعرفة") : t("Add a new price", "إضافة سعر جديد")}
                 </h3>
-                <p className="mt-0.5 text-[11.5px] text-text-muted">
+                <p className="mt-0.5 text-label-lg text-text-muted">
                   {t("The price is set by the company and matched by type + route + distance + weight.", "يُحدد السعر من الشركة ويُطابق حسب النوع والمسار والمسافة والوزن.")}
                 </p>
               </div>
@@ -422,12 +422,12 @@ export function TariffsManager() {
             </div>
 
             {formError && (
-              <div className="mt-3 rounded-[12px] border border-status-danger/40 bg-status-danger/10 p-3 text-[12px] text-status-danger font-semibold">
+              <div className="mt-3 rounded-inner border border-status-danger/40 bg-status-danger/10 p-3 text-label-lg text-status-danger font-semibold">
                 {formError}
               </div>
             )}
 
-            <div className="mt-3 rounded-[10px] bg-surface-2/70 border border-border-subtle px-3 py-2 text-[11px] text-text-muted">
+            <div className="mt-3 rounded-control bg-surface-2/70 border border-border-subtle px-3 py-2 text-label text-text-muted">
               {t(
                 "Range convention: the lower bound is exclusive and the upper bound is inclusive — e.g. distance 900–1000 km with weight 5–10 t means “more than 5 up to 10 tons”. Adjacent ranges never overlap.",
                 "اصطلاح النطاقات: الحد الأدنى غير شامل والحد الأعلى شامل — مثال: المسافة ٩٠٠–١٠٠٠ كم مع الوزن ٥–١٠ طن تعني «أكثر من ٥ حتى ١٠ طن». النطاقات المتجاورة لا تتداخل أبدًا."
@@ -444,7 +444,7 @@ export function TariffsManager() {
                       key={v.id}
                       type="button"
                       onClick={() => setForm((f) => ({ ...f, truckType: v.arabicName }))}
-                      className={cn("chip flex items-center gap-1.5 text-[12px]", form.truckType === v.arabicName && "chip-on")}
+                      className={cn("chip flex items-center gap-1.5 text-label-lg", form.truckType === v.arabicName && "chip-on")}
                     >
                       <TruckTypeIcon truckType={v.arabicName} size={15} />
                       {v.arabicName}
@@ -567,33 +567,33 @@ export function TariffsManager() {
       {/* History modal */}
       {historyFor && (
         <div className="animate-fade-in fixed inset-0 z-[90] grid place-items-center bg-black/85 p-4 backdrop-blur-md" onClick={() => setHistoryFor(null)}>
-          <div onClick={(e) => e.stopPropagation()} className="animate-fade-up scroll-thin max-h-[85vh] w-full max-w-[560px] overflow-y-auto rounded-[18px] bg-surface-1 p-6 border border-border-subtle shadow-2xl">
+          <div onClick={(e) => e.stopPropagation()} className="animate-fade-up scroll-thin max-h-[85vh] w-full max-w-[560px] overflow-y-auto rounded-panel bg-surface-1 p-6 border border-border-subtle shadow-2xl">
             <div className="flex items-start justify-between border-b border-border-subtle pb-3">
               <div>
-                <h3 className="text-[16px] font-bold text-text-primary">{t("Tariff change history", "سجل تعديلات التعرفة")}</h3>
-                <p className="mt-0.5 text-[11.5px] text-text-muted">
+                <h3 className="text-page-title font-bold text-text-primary">{t("Tariff change history", "سجل تعديلات التعرفة")}</h3>
+                <p className="mt-0.5 text-label-lg text-text-muted">
                   {historyFor.originCity} ← {historyFor.destinationCity} · {historyFor.truckType}
                 </p>
               </div>
               <button onClick={() => setHistoryFor(null)} className="btn-icon" aria-label={t("Close", "إغلاق")}><IconClose size={16} /></button>
             </div>
             <div className="mt-4 space-y-3">
-              {history.length === 0 && (<div className="text-[12px] text-text-muted">{t("No history recorded yet.", "لا يوجد سجل تعديلات بعد.")}</div>)}
+              {history.length === 0 && (<div className="text-label-lg text-text-muted">{t("No history recorded yet.", "لا يوجد سجل تعديلات بعد.")}</div>)}
               {history.map((h) => (
-                <div key={h.id} className="rounded-[12px] bg-surface-2 border border-border-subtle p-3">
+                <div key={h.id} className="rounded-inner bg-surface-2 border border-border-subtle p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-bold text-text-primary">
+                    <span className="text-label-lg font-bold text-text-primary">
                       {h.action === "CREATED" ? t("Created", "إنشاء") : h.action === "UPDATED" ? t("Updated", "تعديل") : h.action === "DEACTIVATED" ? t("Deactivated", "إيقاف") : t("Reactivated", "إعادة تفعيل")}
                     </span>
-                    <span className="text-[11px] text-text-muted tabular-nums">{new Date(h.timestamp).toLocaleString()}</span>
+                    <span className="text-label text-text-muted tabular-nums">{new Date(h.timestamp).toLocaleString()}</span>
                   </div>
-                  <div className="mt-1 text-[12px] text-text-secondary tabular-nums">
+                  <div className="mt-1 text-label-lg text-text-secondary tabular-nums">
                     {h.oldPrice !== undefined && h.newPrice !== undefined && h.oldPrice !== h.newPrice && (
                       <span>{t("Price", "السعر")}: <span className="line-through text-text-muted">{h.oldPrice}</span> → <span className="text-brand font-bold">{h.newPrice}</span></span>
                     )}
                   </div>
-                  <div className="mt-0.5 text-[11px] text-text-muted">{t("By", "بواسطة")}: {h.userName}{h.userRole ? ` (${h.userRole})` : ""}</div>
-                  {h.reason && (<div className="mt-0.5 text-[11px] text-text-secondary">{t("Reason", "السبب")}: {h.reason}</div>)}
+                  <div className="mt-0.5 text-label text-text-muted">{t("By", "بواسطة")}: {h.userName}{h.userRole ? ` (${h.userRole})` : ""}</div>
+                  {h.reason && (<div className="mt-0.5 text-label text-text-secondary">{t("Reason", "السبب")}: {h.reason}</div>)}
                 </div>
               ))}
             </div>
@@ -605,5 +605,5 @@ export function TariffsManager() {
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <span className="text-[10.5px] tracking-wide text-text-muted uppercase">{children}</span>;
+  return <span className="text-label tracking-wide text-text-muted uppercase">{children}</span>;
 }

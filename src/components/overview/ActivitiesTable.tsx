@@ -57,7 +57,7 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
   return (
     <section className="card animate-fade-up overflow-hidden p-0" style={{ animationDelay: "300ms" }}>
       <div className="flex flex-wrap items-center gap-3 px-5 pt-5 pb-4">
-        <h2 className="me-auto text-[16px] font-semibold text-text-primary">{t("Activities", "النشاطات")}</h2>
+        <h2 className="me-auto text-page-title font-semibold text-text-primary">{t("Activities", "النشاطات")}</h2>
 
         <label className="flex min-w-[200px] flex-1 items-center gap-2 rounded-full border border-border-subtle bg-surface-2 px-3 py-2 sm:max-w-[280px]">
           <IconSearch size={14} />
@@ -66,7 +66,7 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("Search order, driver, city…", "ابحث برقم الطلب أو السائق أو المدينة…")}
-            className="w-full bg-transparent text-[12px] text-text-primary outline-none placeholder:text-text-muted"
+            className="w-full bg-transparent text-label-lg text-text-primary outline-none placeholder:text-text-muted"
           />
         </label>
 
@@ -74,7 +74,7 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
           aria-label={t("Status filter", "فلتر الحالة")}
           value={group}
           onChange={(e) => onGroup(e.target.value as StatusGroup | "all")}
-          className="rounded-full border border-border-subtle bg-surface-2 px-3 py-2 text-[12px] text-text-secondary outline-none"
+          className="rounded-full border border-border-subtle bg-surface-2 px-3 py-2 text-label-lg text-text-secondary outline-none"
         >
           <option value="all">{t("All Status", "كل الحالات")}</option>
           <option value="pending">{t("Pending", "قيد التجهيز")}</option>
@@ -87,7 +87,7 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
           aria-label={t("Cargo filter", "فلتر نوع الحمولة")}
           value={cargo}
           onChange={(e) => setCargo(e.target.value)}
-          className="rounded-full border border-border-subtle bg-surface-2 px-3 py-2 text-[12px] text-text-secondary outline-none"
+          className="rounded-full border border-border-subtle bg-surface-2 px-3 py-2 text-label-lg text-text-secondary outline-none"
         >
           <option value="all">{t("All Types", "كل الأنواع")}</option>
           {Object.entries(CARGO_LABEL).map(([id, l]) => (
@@ -97,16 +97,16 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
           ))}
         </select>
 
-        <button onClick={exportCsv} className="btn-ghost gap-1.5 px-3 text-[12px]">
+        <button onClick={exportCsv} className="btn-ghost gap-1.5 px-3 text-label-lg">
           <IconUpload size={14} />
           {t("Export", "تصدير")}
         </button>
       </div>
 
       <div className="scroll-thin overflow-x-auto">
-        <table className="w-full text-[12px]" style={{ minWidth: 820 }}>
+        <table className="w-full text-label-lg" style={{ minWidth: 820 }}>
           <thead>
-            <tr className="bg-surface-4 text-start text-[11px] text-text-muted">
+            <tr className="bg-surface-4 text-start text-label text-text-muted">
               {[t("Order ID", "رقم الطلب"), t("Shipper", "الشاحن"), t("Driver", "السائق"), t("Route", "المسار"), t("Load", "الحمولة"), t("Progress", "التقدم"), t("ETA", "الوصول"), t("Status", "الحالة")].map((h) => (
                 <th key={h} scope="col" className="px-5 py-3 text-start font-medium">
                   {h}
@@ -146,7 +146,7 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
                     </span>
                   </td>
                   <td className="px-5 py-3 text-text-secondary">
-                    <span className="rounded-full bg-surface-4 px-2.5 py-1 text-[11px]">{tr.shipper}</span>
+                    <span className="rounded-full bg-surface-4 px-2.5 py-1 text-label">{tr.shipper}</span>
                   </td>
                   <td className="px-5 py-3 text-text-primary">{driverName(tr.driverId)}</td>
                   <td className="px-5 py-3 whitespace-nowrap text-text-secondary">
@@ -155,7 +155,7 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
                   <td className="px-5 py-3 tabular-nums text-text-secondary whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       <TruckTypeBadge truckType={tr.cargoType} size={12} />
-                      <span className="text-[11px] text-text-muted">{tr.cargoWeightTons.toFixed(1)} t</span>
+                      <span className="text-label text-text-muted">{tr.cargoWeightTons.toFixed(1)} t</span>
                     </div>
                   </td>
                   <td className="px-5 py-3">
@@ -168,7 +168,7 @@ export function ActivitiesTable({ trips, drivers, selectedId, group, onGroup, on
                   </td>
                   <td className="px-5 py-3 whitespace-nowrap tabular-nums text-text-secondary">{formatEta(tr.etaMinutes, t)}</td>
                   <td className="px-5 py-3">
-                    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold whitespace-nowrap", GROUP_TONE[g])}>
+                    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label font-semibold whitespace-nowrap", GROUP_TONE[g])}>
                       <span className={cn("h-1.5 w-1.5 rounded-full bg-current", g === "transit" && "animate-pulse-dot")} />
                       {t(STATUS_LABEL[tr.status][0], STATUS_LABEL[tr.status][1])}
                     </span>

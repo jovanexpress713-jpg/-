@@ -52,20 +52,20 @@ export function LanguageList({
           >
             <span className="flex min-w-0 items-center gap-2.5">
               <IconGlobe size={15} className="shrink-0 text-text-muted" />
-              <span className="text-[15px] leading-none">{option.flag}</span>
+              <span className="text-page-title leading-none">{option.flag}</span>
               <span className="min-w-0">
                 <span className="block truncate font-semibold">
                   {tk(option.labelKey)}
                 </span>
                 {!compact && (
-                  <span className="block truncate text-[10.5px] text-text-muted">
+                  <span className="block truncate text-label text-text-muted">
                     {tk(option.hintKey)}
                   </span>
                 )}
               </span>
             </span>
             {active && (
-              <span className="flex shrink-0 items-center gap-1 text-[10.5px] font-bold text-brand">
+              <span className="flex shrink-0 items-center gap-1 text-label font-bold text-brand">
                 <IconCheck size={13} />
                 {tk("language.current")}
               </span>
@@ -177,10 +177,10 @@ export function AccountMenu({
           open && "border-brand/70",
         )}
       >
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand/15 text-[10px] font-bold text-brand">
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand/15 text-micro font-bold text-brand">
           {initials}
         </span>
-        <span className="hidden max-w-[110px] truncate text-[11.5px] font-bold text-text-primary sm:block">
+        <span className="hidden max-w-[110px] truncate text-label-lg font-bold text-text-primary sm:block">
           {user?.fullName || user?.email || tk("app.shortName")}
         </span>
         <IconChevronInline />
@@ -194,22 +194,22 @@ export function AccountMenu({
           {panel === "root" && (
             <>
               {/* Identity block */}
-              <div className="mb-1.5 rounded-[10px] bg-surface-2 p-2.5">
+              <div className="mb-1.5 rounded-control bg-surface-2 p-2.5">
                 <div className="flex items-center gap-2.5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/15 text-[12px] font-bold text-brand">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/15 text-label-lg font-bold text-brand">
                     {initials}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-bold text-text-primary">
+                    <div className="truncate text-body font-bold text-text-primary">
                       {user?.fullName || tk("app.shortName")}
                     </div>
-                    <div className="truncate text-[10.5px] text-text-muted" dir="ltr">
+                    <div className="truncate text-label text-text-muted" dir="ltr">
                       {user?.email || "—"}
                     </div>
                   </div>
                   <span className="pill pill-success shrink-0">{tk("account.sessionActive")}</span>
                 </div>
-                <div className="mt-2 flex items-center justify-between gap-2 text-[10.5px] text-text-muted">
+                <div className="mt-2 flex items-center justify-between gap-2 text-label text-text-muted">
                   <span className="truncate">
                     {tk("account.role")}: <span className="font-bold text-text-secondary">{roleLabel(user?.role)}</span>
                   </span>
@@ -251,7 +251,7 @@ export function AccountMenu({
                 <button type="button" className="menu-row" onClick={() => setPanel("apps")}>
                   <IconTruck size={16} className="shrink-0" />
                   <span className="flex-1 text-start">{tk("settings.tabApps")}</span>
-                  <span className="text-[10px] text-text-muted">2</span>
+                  <span className="text-micro text-text-muted">2</span>
                   <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
                 </button>
               )}
@@ -307,7 +307,7 @@ export function AccountMenu({
                 </button>
                 <span className="menu-label">{tk("settings.tabApps")}</span>
               </div>
-              <p className="mb-2 px-1 text-[10.5px] leading-relaxed text-text-muted">
+              <p className="mb-2 px-1 text-label leading-relaxed text-text-muted">
                 {tk("settings.appsHint")}
               </p>
               <button
@@ -320,7 +320,7 @@ export function AccountMenu({
                 </span>
                 <span className="flex-1 text-start">
                   <span className="block font-semibold">{tk("settings.appsClient")}</span>
-                  <span className="block text-[10px] text-text-muted">{tk("settings.appsHint")}</span>
+                  <span className="block text-micro text-text-muted">{tk("settings.appsHint")}</span>
                 </span>
                 <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
               </button>
@@ -334,7 +334,7 @@ export function AccountMenu({
                 </span>
                 <span className="flex-1 text-start">
                   <span className="block font-semibold">{tk("settings.appsDriver")}</span>
-                  <span className="block text-[10px] text-text-muted">{tk("settings.appsHint")}</span>
+                  <span className="block text-micro text-text-muted">{tk("settings.appsHint")}</span>
                 </span>
                 <IconArrowRight size={13} className="shrink-0 text-text-muted rtl:rotate-180" />
               </button>

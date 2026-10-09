@@ -732,26 +732,26 @@ export function RolePermissionsManager() {
   return (
     <div className="space-y-4" data-testid="role-permissions-manager">
       {/* ── Top Executive Banner & Sub-navigation ────────────────────────── */}
-      <div className="rounded-2xl border border-border-subtle bg-surface-2/60 p-4">
+      <div className="rounded-panel border border-border-subtle bg-surface-2/60 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand/15 text-brand">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-inner bg-brand/15 text-brand">
               <IconShield size={20} />
             </span>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-sm font-black text-text-primary">
+                <h3 className="text-card-title leading-5 font-black text-text-primary">
                   {t(
                     "Central Dynamic Permission & Role System (EJAZ RBAC)",
                     "نظام الصلاحيات المركزي الديناميكي — إدارة الأدوار والمستخدمين",
                     "مرکزی متحرک اجازت اور کردار کا نظام"
                   )}
                 </h3>
-                <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-[10.5px] font-bold text-brand">
+                <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-label font-bold text-brand">
                   {t("NO PERMISSION = NO VISIBILITY + NO API", "لا صلاحية = لا ظهور + لا وصول برمجي", "بلا اجازت = نہ ظہور + نہ رسائی")}
                 </span>
               </div>
-              <p className="mt-1 text-xs leading-relaxed text-text-secondary">
+              <p className="mt-1 text-label-lg leading-relaxed text-text-secondary">
                 {t(
                   "Control roles, multi-level permission matrix, data scope (OWN / ASSIGNED / BRANCH / REGION / ALL), individual user Allow/Deny overrides, temporary grants, and full audit logs.",
                   "تحكم مركزي فوري في الأدوار، مصفوفة الصلاحيات متعددة المستويات، نطاق البيانات (OWN / ASSIGNED / BRANCH / REGION / ALL)، استثناءات المستخدمين (سماح / منع)، الصلاحيات المؤقتة، وسجل التدقيق.",
@@ -765,7 +765,7 @@ export function RolePermissionsManager() {
             type="button"
             onClick={() => void loadAll()}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border-subtle bg-surface-1 px-3 py-1.5 text-xs font-bold text-text-secondary hover:border-brand/40 hover:text-text-primary"
+            className="inline-flex items-center gap-1.5 rounded-inner border border-border-subtle bg-surface-1 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-secondary hover:border-brand/40 hover:text-text-primary"
           >
             <IconRefresh size={14} />
             {t("Refresh", "تحديث", "تازہ کریں")}
@@ -801,7 +801,7 @@ export function RolePermissionsManager() {
               type="button"
               onClick={() => setSubTab(tab.id)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all",
+                "inline-flex items-center gap-2 rounded-inner px-3.5 py-2 text-label-lg leading-4 font-bold transition-all",
                 subTab === tab.id
                   ? "bg-brand text-on-brand shadow-sm"
                   : "border border-border-subtle bg-surface-1 text-text-secondary hover:text-text-primary"
@@ -810,7 +810,7 @@ export function RolePermissionsManager() {
               <span>{tab.label}</span>
               <span
                 className={cn(
-                  "rounded-full px-1.5 py-0.5 text-[10.5px] font-bold",
+                  "rounded-full px-1.5 py-0.5 text-label font-bold",
                   subTab === tab.id ? "bg-white/20 text-on-brand" : "bg-surface-2 text-text-muted"
                 )}
               >
@@ -829,13 +829,13 @@ export function RolePermissionsManager() {
           {/* Role selector column */}
           <div className="space-y-2 lg:col-span-4">
             <div className="flex items-center justify-between px-1">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              <div className="text-label font-bold uppercase tracking-wider text-text-muted">
                 {t("System & Custom Roles", "الأدوار الأساسية والتشغيلية والمخصصة", "بنیادی اور مخصوص کردار")}
               </div>
               <button
                 type="button"
                 onClick={() => setShowCreateRoleModal(true)}
-                className="inline-flex items-center gap-1 rounded-lg bg-brand/15 px-2.5 py-1 text-[11px] font-bold text-brand hover:bg-brand/25"
+                className="inline-flex items-center gap-1 rounded-chip bg-brand/15 px-2.5 py-1 text-label font-bold text-brand hover:bg-brand/25"
               >
                 <IconPlus size={12} />
                 {t("New Role", "دور جديد", "نیا کردار")}
@@ -854,7 +854,7 @@ export function RolePermissionsManager() {
                   data-testid={`role-card-${role.id}`}
                   onClick={() => selectRole(role)}
                   className={cn(
-                    "w-full rounded-2xl border p-3.5 text-start transition-all",
+                    "w-full rounded-panel border p-3.5 text-start transition-all",
                     active
                       ? "border-brand bg-brand/10 shadow-sm"
                       : "border-border-subtle bg-surface-1 hover:border-brand/40",
@@ -864,43 +864,43 @@ export function RolePermissionsManager() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="truncate text-xs font-extrabold text-text-primary">
+                        <span className="truncate text-label-lg leading-4 font-extrabold text-text-primary">
                           {isAr ? role.labelAr : role.labelEn}
                         </span>
                         {role.core && (
-                          <span className="rounded-full bg-brand/15 px-2 py-0.5 text-[10.5px] font-bold text-brand">
+                          <span className="rounded-full bg-brand/15 px-2 py-0.5 text-label font-bold text-brand">
                             {t("Core", "أساسي", "بنیادی")}
                           </span>
                         )}
                         {role.custom && (
-                          <span className="rounded-full bg-info/15 px-2 py-0.5 text-[10.5px] font-bold text-info">
+                          <span className="rounded-full bg-info/15 px-2 py-0.5 text-label font-bold text-info">
                             {t("Custom", "مخصص", "مخصوص")}
                           </span>
                         )}
                         {!role.enabled && (
-                          <span className="rounded-full bg-danger/15 px-2 py-0.5 text-[10.5px] font-bold text-danger">
+                          <span className="rounded-full bg-danger/15 px-2 py-0.5 text-label font-bold text-danger">
                             {t("Disabled", "معطّل", "غیر فعال")}
                           </span>
                         )}
                         {role.customized && !role.locked && (
-                          <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10.5px] font-bold text-warning">
+                          <span className="rounded-full bg-warning/15 px-2 py-0.5 text-label font-bold text-warning">
                             {t("Modified", "معدّل", "تبدیل شدہ")}
                           </span>
                         )}
                         {role.locked && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10.5px] font-bold text-emerald-500">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-label font-bold text-emerald-500">
                             <IconLock size={10} />
                             {t("Full", "كامل", "مکمل")}
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 line-clamp-2 text-[11px] text-text-muted">
+                      <div className="mt-1 line-clamp-2 text-label text-text-muted">
                         {isAr ? role.descriptionAr : role.descriptionEn}
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle/70 pt-2 text-[10.5px] text-text-secondary">
+                  <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle/70 pt-2 text-label text-text-secondary">
                     <span>
                       <strong className="font-extrabold text-text-primary">{permCount}</strong>{" "}
                       {t("permissions", "صلاحية", "اجازتیں")} ·{" "}
@@ -908,7 +908,7 @@ export function RolePermissionsManager() {
                       {t("pages", "صفحة", "صفحات")}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-brand">
+                      <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-label font-bold text-brand">
                         {role.dataScope || "OWN"}
                       </span>
                       <span className="inline-flex items-center gap-1 text-text-muted">
@@ -927,35 +927,35 @@ export function RolePermissionsManager() {
             {selectedRole && (
               <>
                 {/* Selected role header + Data Scope + Role lifecycle actions */}
-                <div className="rounded-2xl border border-border-subtle bg-surface-1 p-4">
+                <div className="rounded-panel border border-border-subtle bg-surface-1 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-sm font-black text-text-primary">
+                        <h4 className="text-card-title leading-5 font-black text-text-primary">
                           {isAr ? selectedRole.labelAr : selectedRole.labelEn}
                         </h4>
-                        <span className="rounded-lg bg-surface-2 px-2 py-0.5 font-mono text-[10.5px] text-text-muted">
+                        <span className="rounded-chip bg-surface-2 px-2 py-0.5 font-mono text-label text-text-muted">
                           {selectedRole.id}
                         </span>
                         {!selectedRole.enabled && (
-                          <span className="rounded-full bg-danger/15 px-2.5 py-0.5 text-[10.5px] font-bold text-danger">
+                          <span className="rounded-full bg-danger/15 px-2.5 py-0.5 text-label font-bold text-danger">
                             {t("Role Disabled", "هذا الدور معطّل حاليًا", "یہ کردار اس وقت غیر فعال ہے")}
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-text-secondary">
+                      <p className="mt-1 text-label-lg leading-4 text-text-secondary">
                         {isAr ? selectedRole.descriptionAr : selectedRole.descriptionEn}
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <div className="rounded-xl border border-border-subtle bg-surface-2/60 px-3 py-1.5">
+                    <div className="flex flex-wrap items-center gap-2 text-label-lg leading-4">
+                      <div className="rounded-inner border border-border-subtle bg-surface-2/60 px-3 py-1.5">
                         <span className="text-text-muted">{t("Visible pages:", "الصفحات الظاهرة:", "نظر آنے والے صفحات:")} </span>
                         <strong className="font-black text-text-primary">
                           {visiblePageCount} / {pages.length}
                         </strong>
                       </div>
-                      <div className="rounded-xl border border-border-subtle bg-surface-2/60 px-3 py-1.5">
+                      <div className="rounded-inner border border-border-subtle bg-surface-2/60 px-3 py-1.5">
                         <span className="text-text-muted">{t("Granted actions:", "العمليات المسموحة:", "اجازت یافتہ افعال:")} </span>
                         <strong className="font-black text-brand">
                           {grantedCount} / {allCatalogKeys.length}
@@ -964,7 +964,7 @@ export function RolePermissionsManager() {
                       <button
                         type="button"
                         onClick={() => setShowRoleUsersModal(true)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-border-subtle bg-surface-2/60 px-3 py-1.5 font-bold text-text-primary hover:border-brand/40"
+                        className="inline-flex items-center gap-1.5 rounded-inner border border-border-subtle bg-surface-2/60 px-3 py-1.5 font-bold text-text-primary hover:border-brand/40"
                       >
                         <IconUsers size={13} />
                         {t("Assigned Users", "المستخدمون المرتبطون", "منسلک صارفین")} ({selectedRole.userCount})
@@ -975,14 +975,14 @@ export function RolePermissionsManager() {
                   {/* Role lifecycle toolbar: Clone, Disable/Enable, Delete (custom), Data Scope */}
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle pt-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <label className="text-[11px] font-bold text-text-secondary">
+                      <label className="text-label font-bold text-text-secondary">
                         {t("Data Scope (§8):", "نطاق البيانات (Data Scope):", "ڈیٹا کا دائرہ کار:")}
                       </label>
                       <select
                         disabled={selectedRole.locked}
                         value={draftScope}
                         onChange={(e) => setDraftScope(e.target.value)}
-                        className="rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs font-bold text-text-primary focus:border-brand focus:outline-none disabled:opacity-60"
+                        className="rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-primary focus:border-brand focus:outline-none disabled:opacity-60"
                       >
                         {dataScopes.map((sc) => (
                           <option key={sc.id} value={sc.id}>
@@ -1006,7 +1006,7 @@ export function RolePermissionsManager() {
                           });
                           setShowCloneRoleModal(true);
                         }}
-                        className="rounded-xl border border-border-subtle bg-surface-2 px-2.5 py-1.5 text-[11px] font-bold text-text-secondary hover:text-text-primary"
+                        className="rounded-inner border border-border-subtle bg-surface-2 px-2.5 py-1.5 text-label font-bold text-text-secondary hover:text-text-primary"
                       >
                         {t("Clone Role", "نسخ الدور", "کردار کاپی کریں")}
                       </button>
@@ -1017,7 +1017,7 @@ export function RolePermissionsManager() {
                           onClick={handleToggleRoleEnabled}
                           disabled={saving}
                           className={cn(
-                            "rounded-xl border px-2.5 py-1.5 text-[11px] font-bold",
+                            "rounded-inner border px-2.5 py-1.5 text-label font-bold",
                             selectedRole.enabled
                               ? "border-warning/40 bg-warning/10 text-warning hover:bg-warning/20"
                               : "border-emerald-500/40 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
@@ -1039,7 +1039,7 @@ export function RolePermissionsManager() {
                               ? t("Cannot delete role with assigned users", "لا يمكن حذف دور مرتبط بمستخدمين", "صارفین سے منسلک کردار حذف نہیں ہو سکتا")
                               : undefined
                           }
-                          className="rounded-xl border border-danger/40 bg-danger/10 px-2.5 py-1.5 text-[11px] font-bold text-danger hover:bg-danger/20 disabled:opacity-40"
+                          className="rounded-inner border border-danger/40 bg-danger/10 px-2.5 py-1.5 text-label font-bold text-danger hover:bg-danger/20 disabled:opacity-40"
                         >
                           {t("Delete Role", "حذف الدور", "کردار حذف کریں")}
                         </button>
@@ -1049,8 +1049,8 @@ export function RolePermissionsManager() {
 
                   {/* Module-Level Quick Access Presets (§14: NONE / VIEW / OPERATE / MANAGE / ADMIN) */}
                   {!selectedRole.locked && (
-                    <div className="mt-3 rounded-xl border border-border-subtle bg-surface-2/40 p-3">
-                      <div className="mb-2 text-[11px] font-bold text-text-secondary">
+                    <div className="mt-3 rounded-inner border border-border-subtle bg-surface-2/40 p-3">
+                      <div className="mb-2 text-label font-bold text-text-secondary">
                         {t(
                           "Module Access Levels (NONE / VIEW / OPERATE / MANAGE / ADMIN):",
                           "مستوى الوصول السريع للوحدات (NONE / VIEW / OPERATE / MANAGE / ADMIN):",
@@ -1061,9 +1061,9 @@ export function RolePermissionsManager() {
                         {sections.map((sec) => (
                           <div
                             key={sec.id}
-                            className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-surface-1 px-2.5 py-1.5"
+                            className="flex items-center justify-between gap-2 rounded-chip border border-border-subtle bg-surface-1 px-2.5 py-1.5"
                           >
-                            <span className="truncate text-[11px] font-bold text-text-primary">
+                            <span className="truncate text-label font-bold text-text-primary">
                               {isAr ? sec.labelAr : sec.labelEn}
                             </span>
                             <select
@@ -1073,7 +1073,7 @@ export function RolePermissionsManager() {
                                 if (e.target.value) void handleModuleLevelChange(sec.id, e.target.value);
                                 e.target.value = "";
                               }}
-                              className="rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 text-[10.5px] font-bold text-text-secondary"
+                              className="rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 text-label font-bold text-text-secondary"
                             >
                               <option value="">{t("Set level…", "تحديد المستوى…", "سطح منتخب کریں…")}</option>
                               {accessLevels.map((lvl) => (
@@ -1089,7 +1089,7 @@ export function RolePermissionsManager() {
                   )}
 
                   {selectedRole.locked ? (
-                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-500">
+                    <div className="mt-3 flex items-center gap-2 rounded-inner border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-label-lg leading-4 text-emerald-500">
                       <IconLock size={14} />
                       <span>
                         {t(
@@ -1110,14 +1110,14 @@ export function RolePermissionsManager() {
                           "سبب التعديل (يُسجَّل في سجل تدقيق الصلاحيات)…",
                           "تبدیلی کی وجہ (آڈٹ لاگ کے لیے)…"
                         )}
-                        className="min-w-[220px] flex-1 rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none"
+                        className="min-w-[220px] flex-1 rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none"
                       />
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={handleReset}
                           disabled={saving || !selectedRole.customized}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs font-bold text-text-secondary hover:text-text-primary disabled:opacity-40"
+                          className="inline-flex items-center gap-1.5 rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-secondary hover:text-text-primary disabled:opacity-40"
                         >
                           <IconRefresh size={13} />
                           {t("Restore Default", "إعادة الضبط الافتراضي", "ڈیفالٹ بحال کریں")}
@@ -1127,7 +1127,7 @@ export function RolePermissionsManager() {
                           data-testid="save-role-permissions"
                           onClick={handleSave}
                           disabled={saving || !dirty}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-1.5 text-xs font-black text-on-brand shadow-sm transition hover:opacity-95 disabled:opacity-40"
+                          className="inline-flex items-center gap-1.5 rounded-inner bg-brand px-4 py-1.5 text-label-lg leading-4 font-black text-on-brand shadow-sm transition hover:opacity-95 disabled:opacity-40"
                         >
                           <IconCheck size={14} />
                           {saving
@@ -1155,10 +1155,10 @@ export function RolePermissionsManager() {
                         "ابحث في الصفحات أو الصلاحيات (مثل: التسويات، الفواتير، إعادة فتح، الأسطول)…",
                         "صفحات یا اجازتوں میں تلاش کریں…"
                       )}
-                      className="w-full rounded-xl border border-border-subtle bg-surface-1 py-2 ps-9 pe-3 text-xs text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none"
+                      className="w-full rounded-inner border border-border-subtle bg-surface-1 py-2 ps-9 pe-3 text-label-lg leading-4 text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none"
                     />
                   </div>
-                  <div className="flex items-center gap-1 rounded-xl border border-border-subtle bg-surface-1 p-1">
+                  <div className="flex items-center gap-1 rounded-inner border border-border-subtle bg-surface-1 p-1">
                     {[
                       { id: "all" as const, label: t("All", "الكل", "تمام") },
                       { id: "granted" as const, label: t("Granted", "الممنوحة", "عطا کردہ") },
@@ -1169,7 +1169,7 @@ export function RolePermissionsManager() {
                         type="button"
                         onClick={() => setFilterMode(f.id)}
                         className={cn(
-                          "rounded-lg px-2.5 py-1 text-[11px] font-bold transition",
+                          "rounded-chip px-2.5 py-1 text-label font-bold transition",
                           filterMode === f.id ? "bg-brand text-on-brand" : "text-text-secondary hover:text-text-primary"
                         )}
                       >
@@ -1197,13 +1197,13 @@ export function RolePermissionsManager() {
                   return (
                     <div
                       key={section.id}
-                      className="overflow-hidden rounded-2xl border border-border-subtle bg-surface-1"
+                      className="overflow-hidden rounded-panel border border-border-subtle bg-surface-1"
                     >
                       <div className="flex items-center justify-between border-b border-border-subtle bg-surface-2/50 px-4 py-2.5">
-                        <span className="text-xs font-extrabold text-text-primary">
+                        <span className="text-label-lg leading-4 font-extrabold text-text-primary">
                           {isAr ? section.labelAr : section.labelEn}
                         </span>
-                        <span className="text-[11px] text-text-muted">
+                        <span className="text-label text-text-muted">
                           {sectionPages.length} {t("pages", "صفحات", "صفحات")}
                         </span>
                       </div>
@@ -1223,12 +1223,12 @@ export function RolePermissionsManager() {
                               <div className="flex flex-wrap items-start justify-between gap-2">
                                 <div>
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-xs font-bold text-text-primary">
+                                    <span className="text-label-lg leading-4 font-bold text-text-primary">
                                       {isAr ? page.labelAr : page.labelEn}
                                     </span>
                                     <span
                                       className={cn(
-                                        "rounded-full px-2 py-0.5 text-[10.5px] font-bold",
+                                        "rounded-full px-2 py-0.5 text-label font-bold",
                                         pageShown
                                           ? "bg-emerald-500/15 text-emerald-500"
                                           : "bg-surface-2 text-text-muted"
@@ -1240,25 +1240,25 @@ export function RolePermissionsManager() {
                                     </span>
                                   </div>
                                   {(page.hintAr || page.hintEn) && (
-                                    <div className="mt-0.5 text-[11px] text-text-muted">
+                                    <div className="mt-0.5 text-label text-text-muted">
                                       {isAr ? page.hintAr : page.hintEn}
                                     </div>
                                   )}
                                 </div>
 
                                 {!selectedRole.locked && (
-                                  <div className="flex items-center gap-1.5 text-[11px]">
+                                  <div className="flex items-center gap-1.5 text-label">
                                     <button
                                       type="button"
                                       onClick={() => togglePageViewOnly(page)}
-                                      className="rounded-lg border border-border-subtle bg-surface-2 px-2.5 py-1 font-bold text-text-secondary hover:text-text-primary"
+                                      className="rounded-chip border border-border-subtle bg-surface-2 px-2.5 py-1 font-bold text-text-secondary hover:text-text-primary"
                                     >
                                       {t("View only", "عرض فقط", "صرف دیکھیں")}
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => togglePage(page, !allOn)}
-                                      className="rounded-lg border border-border-subtle bg-surface-2 px-2.5 py-1 font-bold text-text-secondary hover:text-text-primary"
+                                      className="rounded-chip border border-border-subtle bg-surface-2 px-2.5 py-1 font-bold text-text-secondary hover:text-text-primary"
                                     >
                                       {allOn
                                         ? t("Hide page", "إخفاء الصفحة", "صفحہ چھپائیں")
@@ -1277,7 +1277,7 @@ export function RolePermissionsManager() {
                                       key={fn.key}
                                       data-testid={`perm-toggle-${fn.key}`}
                                       className={cn(
-                                        "flex cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs transition",
+                                        "flex cursor-pointer items-center justify-between gap-2 rounded-inner border px-3 py-2 text-label-lg leading-4 transition",
                                         checked
                                           ? "border-brand/40 bg-brand/5 text-text-primary"
                                           : "border-border-subtle bg-surface-2/40 text-text-secondary",
@@ -1291,17 +1291,17 @@ export function RolePermissionsManager() {
                                             {isAr ? fn.labelAr : fn.labelEn}
                                           </span>
                                           {fn.sensitive && (
-                                            <span className="rounded bg-danger/15 px-1.5 py-0.5 text-[10.5px] font-bold text-danger">
+                                            <span className="rounded bg-danger/15 px-1.5 py-0.5 text-label font-bold text-danger">
                                               {t("Sensitive", "حساسة", "حساس")}
                                             </span>
                                           )}
                                           {globallyDisabled && (
-                                            <span className="rounded bg-warning/15 px-1.5 py-0.5 text-[10.5px] font-bold text-warning">
+                                            <span className="rounded bg-warning/15 px-1.5 py-0.5 text-label font-bold text-warning">
                                               {t("Disabled Globally", "معطلة عامًا", "عالمی سطح پر غیر فعال")}
                                             </span>
                                           )}
                                         </div>
-                                        <div className="font-mono text-[10.5px] text-text-muted">
+                                        <div className="font-mono text-label text-text-muted">
                                           {fn.code ? `${fn.code} · ${fn.key}` : fn.key}
                                         </div>
                                       </div>
@@ -1335,7 +1335,7 @@ export function RolePermissionsManager() {
       {subTab === "users" && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <div className="space-y-2 lg:col-span-4">
-            <div className="px-1 text-[11px] font-bold uppercase tracking-wider text-text-muted">
+            <div className="px-1 text-label font-bold uppercase tracking-wider text-text-muted">
               {t("System Users", "المستخدمون والحسابات", "نظام کے صارفین")}
             </div>
             {usersList.map((u) => {
@@ -1348,20 +1348,20 @@ export function RolePermissionsManager() {
                   type="button"
                   onClick={() => selectUser(u)}
                   className={cn(
-                    "w-full rounded-2xl border p-3.5 text-start transition-all",
+                    "w-full rounded-panel border p-3.5 text-start transition-all",
                     active
                       ? "border-brand bg-brand/10 shadow-sm"
                       : "border-border-subtle bg-surface-1 hover:border-brand/40"
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-xs font-extrabold text-text-primary">{u.fullName}</span>
-                    <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[10.5px] font-bold text-brand">
+                    <span className="truncate text-label-lg leading-4 font-extrabold text-text-primary">{u.fullName}</span>
+                    <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-label font-bold text-brand">
                       {u.role}
                     </span>
                   </div>
-                  <div className="mt-1 text-[11px] text-text-muted">{u.email}</div>
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle/70 pt-2 text-[10.5px]">
+                  <div className="mt-1 text-label text-text-muted">{u.email}</div>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle/70 pt-2 text-label">
                     <span className="text-text-secondary">
                       {t("Scope:", "النطاق:", "دائرہ کار:")} <strong>{u.dataScope}</strong>
                     </span>
@@ -1390,13 +1390,13 @@ export function RolePermissionsManager() {
 
           <div className="space-y-4 lg:col-span-8">
             {selectedUser && (
-              <div className="rounded-2xl border border-border-subtle bg-surface-1 p-4">
+              <div className="rounded-panel border border-border-subtle bg-surface-1 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h4 className="text-sm font-black text-text-primary">{selectedUser.fullName}</h4>
-                    <p className="text-xs text-text-muted">{selectedUser.email}</p>
+                    <h4 className="text-card-title leading-5 font-black text-text-primary">{selectedUser.fullName}</h4>
+                    <p className="text-label-lg leading-4 text-text-muted">{selectedUser.email}</p>
                   </div>
-                  <div className="rounded-xl border border-brand/30 bg-brand/5 px-3 py-1.5 text-[11px] font-bold text-brand">
+                  <div className="rounded-inner border border-brand/30 bg-brand/5 px-3 py-1.5 text-label font-bold text-brand">
                     {t(
                       "Rule: DENY overrides ALLOW and Role Permissions",
                       "قاعدة الحسم: المنع الصريح (DENY) يغلب السماح (ALLOW) وصلاحيات الدور",
@@ -1406,7 +1406,7 @@ export function RolePermissionsManager() {
                 </div>
 
                 {selectedUser.id === "u-admin" ? (
-                  <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-500">
+                  <div className="mt-4 rounded-inner border border-emerald-500/30 bg-emerald-500/10 p-3 text-label-lg leading-4 text-emerald-500">
                     {t(
                       "The primary Super Admin account has full permanent permissions and cannot be restricted.",
                       "حساب مدير النظام الأساسي (Super Admin) يمتلك صلاحيات كاملة دائمة ولا يمكن تقييده.",
@@ -1417,13 +1417,13 @@ export function RolePermissionsManager() {
                   <>
                     <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-[11px] font-bold text-text-secondary">
+                        <label className="mb-1 block text-label font-bold text-text-secondary">
                           {t("Assigned Primary Role", "الدور الأساسي للمستخدم", "صارف کا بنیادی کردار")}
                         </label>
                         <select
                           value={userRoleDraft}
                           onChange={(e) => setUserRoleDraft(e.target.value)}
-                          className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-xs font-bold text-text-primary"
+                          className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-label-lg leading-4 font-bold text-text-primary"
                         >
                           {roles.map((r) => (
                             <option key={r.id} value={r.id}>
@@ -1434,13 +1434,13 @@ export function RolePermissionsManager() {
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-[11px] font-bold text-text-secondary">
+                        <label className="mb-1 block text-label font-bold text-text-secondary">
                           {t("User Data Scope Override (§8)", "تخصيص نطاق البيانات للمستخدم (§8)", "صارف کے ڈیٹا کا دائرہ کار")}
                         </label>
                         <select
                           value={userScopeDraft}
                           onChange={(e) => setUserScopeDraft(e.target.value)}
-                          className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-xs font-bold text-text-primary"
+                          className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-label-lg leading-4 font-bold text-text-primary"
                         >
                           <option value="">
                             {t("Inherit from Role", "موروث من الدور تلقائيًا", "کردار سے خودکار وراثت")}
@@ -1464,14 +1464,14 @@ export function RolePermissionsManager() {
                           "سبب تخصيص صلاحيات هذا المستخدم…",
                           "صارف کی اجازت میں تبدیلی کی وجہ…"
                         )}
-                        className="min-w-[200px] flex-1 rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs text-text-primary"
+                        className="min-w-[200px] flex-1 rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 text-text-primary"
                       />
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={handleResetUserOverrides}
                           disabled={saving}
-                          className="rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs font-bold text-text-secondary hover:text-text-primary"
+                          className="rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-secondary hover:text-text-primary"
                         >
                           {t("Reset to Inherited", "إعادة للوراثة من الدور", "موروثی حالت پر بحال کریں")}
                         </button>
@@ -1479,7 +1479,7 @@ export function RolePermissionsManager() {
                           type="button"
                           onClick={handleSaveUserOverrides}
                           disabled={saving}
-                          className="rounded-xl bg-brand px-4 py-1.5 text-xs font-black text-on-brand"
+                          className="rounded-inner bg-brand px-4 py-1.5 text-label-lg leading-4 font-black text-on-brand"
                         >
                           {t("Save User Overrides", "حفظ استثناءات المستخدم", "صارف کی اجازتیں محفوظ کریں")}
                         </button>
@@ -1498,31 +1498,31 @@ export function RolePermissionsManager() {
                         return (
                           <div
                             key={fn.key}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-subtle bg-surface-2/40 px-3 py-2 text-xs"
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-inner border border-border-subtle bg-surface-2/40 px-3 py-2 text-label-lg leading-4"
                           >
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
                                 <span className="font-bold text-text-primary">
                                   {isAr ? fn.labelAr : fn.labelEn}
                                 </span>
-                                <span className="text-[10.5px] text-text-muted">
+                                <span className="text-label text-text-muted">
                                   ({isAr ? fn.pageLabelAr : fn.pageLabelEn})
                                 </span>
                                 {roleHas && (
-                                  <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10.5px] text-text-secondary">
+                                  <span className="rounded bg-surface-2 px-1.5 py-0.5 text-label text-text-secondary">
                                     {t("In Role", "ضمن الدور", "کردار میں شامل")}
                                   </span>
                                 )}
                               </div>
-                              <div className="font-mono text-[10.5px] text-text-muted">{fn.key}</div>
+                              <div className="font-mono text-label text-text-muted">{fn.key}</div>
                             </div>
 
-                            <div className="flex items-center gap-1 rounded-lg border border-border-subtle bg-surface-1 p-0.5 text-[11px]">
+                            <div className="flex items-center gap-1 rounded-chip border border-border-subtle bg-surface-1 p-0.5 text-label">
                               <button
                                 type="button"
                                 onClick={() => setUserPermState(fn.key, "inherited")}
                                 className={cn(
-                                  "rounded-md px-2 py-1 font-bold transition",
+                                  "rounded-micro px-2 py-1 font-bold transition",
                                   !isAllow && !isDeny
                                     ? "bg-surface-2 text-text-primary"
                                     : "text-text-muted hover:text-text-primary"
@@ -1534,7 +1534,7 @@ export function RolePermissionsManager() {
                                 type="button"
                                 onClick={() => setUserPermState(fn.key, "allow")}
                                 className={cn(
-                                  "rounded-md px-2 py-1 font-bold transition",
+                                  "rounded-micro px-2 py-1 font-bold transition",
                                   isAllow
                                     ? "bg-emerald-500 text-white"
                                     : "text-text-muted hover:text-emerald-500"
@@ -1546,7 +1546,7 @@ export function RolePermissionsManager() {
                                 type="button"
                                 onClick={() => setUserPermState(fn.key, "deny")}
                                 className={cn(
-                                  "rounded-md px-2 py-1 font-bold transition",
+                                  "rounded-micro px-2 py-1 font-bold transition",
                                   isDeny ? "bg-danger text-white" : "text-text-muted hover:text-danger"
                                 )}
                               >
@@ -1572,10 +1572,10 @@ export function RolePermissionsManager() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           {/* Temporary Permission Grant Card */}
           <div className="space-y-4 lg:col-span-6">
-            <div className="rounded-2xl border border-border-subtle bg-surface-1 p-4">
+            <div className="rounded-panel border border-border-subtle bg-surface-1 p-4">
               <div className="flex items-center gap-2">
                 <IconSparkles size={16} className="text-brand" />
-                <h4 className="text-xs font-extrabold text-text-primary">
+                <h4 className="text-label-lg leading-4 font-extrabold text-text-primary">
                   {t(
                     "Grant Temporary Time-Bound Permission (§13)",
                     "منح صلاحية مؤقتة مرتبطة بفترة زمنية (§13)",
@@ -1583,7 +1583,7 @@ export function RolePermissionsManager() {
                   )}
                 </h4>
               </div>
-              <p className="mt-1 text-[11px] text-text-muted">
+              <p className="mt-1 text-label text-text-muted">
                 {t(
                   "Automatically expires once the end timestamp is reached.",
                   "تنتهي الصلاحية المؤقتة تلقائيًا فور انتهاء الوقت المحدد دون تدخل يدوي.",
@@ -1594,7 +1594,7 @@ export function RolePermissionsManager() {
               <div className="mt-3 space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold text-text-secondary">
+                    <label className="mb-1 block text-label font-bold text-text-secondary">
                       {t("Target Type", "نوع المستهدف", "ہدف کی قسم")}
                     </label>
                     <select
@@ -1606,7 +1606,7 @@ export function RolePermissionsManager() {
                           targetId: e.target.value === "USER" ? "u-ops" : "OPERATIONS_MANAGER",
                         }))
                       }
-                      className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs font-bold text-text-primary"
+                      className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-primary"
                     >
                       <option value="USER">{t("User", "مستخدم محدد", "مخصوص صارف")}</option>
                       <option value="ROLE">{t("Role", "دور كامل", "مکمل کردار")}</option>
@@ -1614,14 +1614,14 @@ export function RolePermissionsManager() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold text-text-secondary">
+                    <label className="mb-1 block text-label font-bold text-text-secondary">
                       {t("Target", "المستهدف", "ہدف")}
                     </label>
                     {tempForm.targetType === "USER" ? (
                       <select
                         value={tempForm.targetId}
                         onChange={(e) => setTempForm((prev) => ({ ...prev, targetId: e.target.value }))}
-                        className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs font-bold text-text-primary"
+                        className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-primary"
                       >
                         {usersList.map((u) => (
                           <option key={u.id} value={u.id}>
@@ -1633,7 +1633,7 @@ export function RolePermissionsManager() {
                       <select
                         value={tempForm.targetId}
                         onChange={(e) => setTempForm((prev) => ({ ...prev, targetId: e.target.value }))}
-                        className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs font-bold text-text-primary"
+                        className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-primary"
                       >
                         {roles
                           .filter((r) => !r.locked)
@@ -1649,13 +1649,13 @@ export function RolePermissionsManager() {
 
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold text-text-secondary">
+                    <label className="mb-1 block text-label font-bold text-text-secondary">
                       {t("Permission", "الصلاحية الممنوحة", "عطا کردہ اجازت")}
                     </label>
                     <select
                       value={tempForm.permission}
                       onChange={(e) => setTempForm((prev) => ({ ...prev, permission: e.target.value }))}
-                      className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs font-bold text-text-primary"
+                      className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-primary"
                     >
                       {allCatalogFunctions.map((fn) => (
                         <option key={fn.key} value={fn.key}>
@@ -1666,14 +1666,14 @@ export function RolePermissionsManager() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-[11px] font-bold text-text-secondary">
+                    <label className="mb-1 block text-label font-bold text-text-secondary">
                       {t("Expires At", "تنتهي في تاريخ/وقت", "میعاد ختم ہونے کا وقت")}
                     </label>
                     <input
                       type="datetime-local"
                       value={tempForm.validTo}
                       onChange={(e) => setTempForm((prev) => ({ ...prev, validTo: e.target.value }))}
-                      className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs font-bold text-text-primary"
+                      className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 font-bold text-text-primary"
                     />
                   </div>
                 </div>
@@ -1684,13 +1684,13 @@ export function RolePermissionsManager() {
                     value={tempForm.reason}
                     onChange={(e) => setTempForm((prev) => ({ ...prev, reason: e.target.value }))}
                     placeholder={t("Reason for temporary grant…", "سبب منح الصلاحية المؤقتة…", "عارضی اجازت کی وجہ…")}
-                    className="flex-1 rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 text-xs text-text-primary"
+                    className="flex-1 rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 text-label-lg leading-4 text-text-primary"
                   />
                   <button
                     type="button"
                     onClick={handleGrantTemporary}
                     disabled={saving}
-                    className="rounded-xl bg-brand px-4 py-1.5 text-xs font-black text-on-brand"
+                    className="rounded-inner bg-brand px-4 py-1.5 text-label-lg leading-4 font-black text-on-brand"
                   >
                     {t("Grant", "منح مؤقت", "اجازت دیں")}
                   </button>
@@ -1699,35 +1699,35 @@ export function RolePermissionsManager() {
 
               <div className="mt-4 divide-y divide-border-subtle border-t border-border-subtle pt-3">
                 {tempGrants.length === 0 ? (
-                  <div className="py-4 text-center text-xs text-text-muted">
+                  <div className="py-4 text-center text-label-lg leading-4 text-text-muted">
                     {t("No temporary permissions granted yet.", "لا توجد صلاحيات مؤقتة مسجلة حاليًا.", "ابھی تک کوئی عارضی اجازت درج نہیں۔")}
                   </div>
                 ) : (
                   tempGrants.map((g) => {
                     const expired = Date.parse(g.validTo) < Date.now();
                     return (
-                      <div key={g.id} className="flex items-center justify-between gap-2 py-2.5 text-xs">
+                      <div key={g.id} className="flex items-center justify-between gap-2 py-2.5 text-label-lg leading-4">
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="font-bold text-text-primary">{g.permission}</span>
-                            <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[10.5px] text-brand">
+                            <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-label text-brand">
                               {g.targetType}: {g.targetId}
                             </span>
                             {g.revokedAt ? (
-                              <span className="rounded bg-danger/15 px-1.5 py-0.5 text-[10.5px] font-bold text-danger">
+                              <span className="rounded bg-danger/15 px-1.5 py-0.5 text-label font-bold text-danger">
                                 {t("Revoked", "ملغاة", "منسوخ")}
                               </span>
                             ) : expired ? (
-                              <span className="rounded bg-warning/15 px-1.5 py-0.5 text-[10.5px] font-bold text-warning">
+                              <span className="rounded bg-warning/15 px-1.5 py-0.5 text-label font-bold text-warning">
                                 {t("Expired", "منتهية", "ختم شدہ")}
                               </span>
                             ) : (
-                              <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10.5px] font-bold text-emerald-500">
+                              <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-label font-bold text-emerald-500">
                                 {t("Active", "نشطة", "فعال")}
                               </span>
                             )}
                           </div>
-                          <div className="text-[10.5px] text-text-muted">
+                          <div className="text-label text-text-muted">
                             {t("Until:", "حتى:", "تک:")} {new Date(g.validTo).toLocaleString(isAr ? "ar-SA" : "en-US")}
                             {g.reason ? ` — ${g.reason}` : ""}
                           </div>
@@ -1736,7 +1736,7 @@ export function RolePermissionsManager() {
                           <button
                             type="button"
                             onClick={() => void handleRevokeTemporary(g.id)}
-                            className="rounded-lg border border-danger/40 bg-danger/10 px-2.5 py-1 text-[10.5px] font-bold text-danger"
+                            className="rounded-chip border border-danger/40 bg-danger/10 px-2.5 py-1 text-label font-bold text-danger"
                           >
                             {t("Revoke", "إلغاء", "منسوخ کریں")}
                           </button>
@@ -1751,20 +1751,20 @@ export function RolePermissionsManager() {
 
           {/* Global Permission Enable / Disable Switch (§12) */}
           <div className="space-y-4 lg:col-span-6">
-            <div className="rounded-2xl border border-border-subtle bg-surface-1 p-4">
+            <div className="rounded-panel border border-border-subtle bg-surface-1 p-4">
               <div className="flex items-center justify-between gap-2">
-                <h4 className="text-xs font-extrabold text-text-primary">
+                <h4 className="text-label-lg leading-4 font-extrabold text-text-primary">
                   {t(
                     "Global Permission Switchboard (§12)",
                     "تفعيل / تعطيل الصلاحيات على مستوى النظام (§12)",
                     "عالمی سطح پر اجازتوں کی فعالیت"
                   )}
                 </h4>
-                <span className="text-[11px] text-text-muted">
+                <span className="text-label text-text-muted">
                   {disabledPermissions.length} {t("disabled", "معطّلة", "غیر فعال")}
                 </span>
               </div>
-              <p className="mt-1 text-[11px] text-text-muted">
+              <p className="mt-1 text-label text-text-muted">
                 {t(
                   "Disabling a permission here suspends it across all non-Super-Admin roles and users without deleting it.",
                   "تعطيل أي صلاحية هنا يوقف العمل بها فورًا لدى جميع الأدوار والمستخدمين دون حذفها من النظام.",
@@ -1780,20 +1780,20 @@ export function RolePermissionsManager() {
                     return (
                       <div
                         key={fn.key}
-                        className="flex items-center justify-between gap-2 rounded-xl border border-border-subtle bg-surface-2/40 px-3 py-2 text-xs"
+                        className="flex items-center justify-between gap-2 rounded-inner border border-border-subtle bg-surface-2/40 px-3 py-2 text-label-lg leading-4"
                       >
                         <div className="min-w-0">
                           <div className="truncate font-bold text-text-primary">
                             {isAr ? fn.labelAr : fn.labelEn}
                           </div>
-                          <div className="font-mono text-[10.5px] text-text-muted">{fn.key}</div>
+                          <div className="font-mono text-label text-text-muted">{fn.key}</div>
                         </div>
                         <button
                           type="button"
                           onClick={() => void handleToggleGlobalPermission(fn.key, isDisabled)}
                           disabled={saving}
                           className={cn(
-                            "rounded-lg px-2.5 py-1 text-[11px] font-bold transition",
+                            "rounded-chip px-2.5 py-1 text-label font-bold transition",
                             isDisabled
                               ? "bg-danger/15 text-danger hover:bg-danger/25"
                               : "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25"
@@ -1816,21 +1816,21 @@ export function RolePermissionsManager() {
           TAB 4: PERMISSION AUDIT LOG (§26)
          ════════════════════════════════════════════════════════════════════ */}
       {subTab === "audit" && (
-        <div className="rounded-2xl border border-border-subtle bg-surface-1">
+        <div className="rounded-panel border border-border-subtle bg-surface-1">
           <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
             <div className="flex items-center gap-2">
               <IconHistory size={16} className="text-brand" />
-              <span className="text-xs font-extrabold text-text-primary">
+              <span className="text-label-lg leading-4 font-extrabold text-text-primary">
                 {t("Permission Change Log", "سجل تغييرات الصلاحيات والأدوار", "اجازتوں کی تبدیلی کا ریکارڈ")}
               </span>
             </div>
-            <span className="text-[11px] text-text-muted">
+            <span className="text-label text-text-muted">
               {audit.length} {t("recorded changes", "تعديل مسجل", "درج تبدیلیاں")}
             </span>
           </div>
 
           {audit.length === 0 ? (
-            <div className="p-6 text-center text-xs text-text-muted">
+            <div className="p-6 text-center text-label-lg leading-4 text-text-muted">
               {t(
                 "No permission changes have been recorded yet.",
                 "لم تُسجَّل أي تعديلات على الصلاحيات بعد.",
@@ -1843,36 +1843,36 @@ export function RolePermissionsManager() {
                 const added = entry.newValues?.added || [];
                 const removed = entry.newValues?.removed || [];
                 return (
-                  <div key={entry.id} className="px-4 py-3 text-xs">
+                  <div key={entry.id} className="px-4 py-3 text-label-lg leading-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-bold text-text-primary">
                           {entry.actorName || t("System Admin", "مدير النظام", "سسٹم ایڈمن")}
                         </span>
-                        <span className="rounded-md bg-brand/10 px-2 py-0.5 font-mono text-[10.5px] font-bold text-brand">
+                        <span className="rounded-micro bg-brand/10 px-2 py-0.5 font-mono text-label font-bold text-brand">
                           {entry.action}
                         </span>
                         {entry.entityId && (
-                          <span className="rounded-md bg-surface-2 px-2 py-0.5 font-mono text-[10.5px] font-bold text-text-primary">
+                          <span className="rounded-micro bg-surface-2 px-2 py-0.5 font-mono text-label font-bold text-text-primary">
                             {entry.entityId}
                           </span>
                         )}
                       </div>
-                      <span className="font-mono text-[11px] text-text-muted">
+                      <span className="font-mono text-label text-text-muted">
                         {new Date(entry.timestamp).toLocaleString(isAr ? "ar-SA" : "en-US")}
                       </span>
                     </div>
                     {entry.reason && (
-                      <div className="mt-1 text-[11px] text-text-secondary">
+                      <div className="mt-1 text-label text-text-secondary">
                         {t("Reason:", "السبب:", "وجہ:")} {entry.reason}
                       </div>
                     )}
                     {(added.length > 0 || removed.length > 0) && (
-                      <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10.5px]">
+                      <div className="mt-1.5 flex flex-wrap gap-1.5 text-label">
                         {added.map((k) => (
                           <span
                             key={`+${k}`}
-                            className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 font-mono text-emerald-500"
+                            className="rounded-micro bg-emerald-500/15 px-1.5 py-0.5 font-mono text-emerald-500"
                           >
                             +{k}
                           </span>
@@ -1880,7 +1880,7 @@ export function RolePermissionsManager() {
                         {removed.map((k) => (
                           <span
                             key={`-${k}`}
-                            className="rounded-md bg-danger/15 px-1.5 py-0.5 font-mono text-danger"
+                            className="rounded-micro bg-danger/15 px-1.5 py-0.5 font-mono text-danger"
                           >
                             −{k}
                           </span>
@@ -1898,31 +1898,31 @@ export function RolePermissionsManager() {
       {/* ── Modal: Users Linked to Role (§3) ──────────────────────────────── */}
       {showRoleUsersModal && selectedRole && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border-subtle bg-surface-1 p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-panel border border-border-subtle bg-surface-1 p-5 shadow-xl">
             <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-              <h4 className="text-sm font-black text-text-primary">
+              <h4 className="text-card-title leading-5 font-black text-text-primary">
                 {t("Users Assigned to Role:", "المستخدمون المرتبطون بالدور:", "کردار سے منسلک صارفین:")}{" "}
                 {isAr ? selectedRole.labelAr : selectedRole.labelEn}
               </h4>
               <button
                 type="button"
                 onClick={() => setShowRoleUsersModal(false)}
-                className="rounded-lg p-1 text-text-muted hover:text-text-primary"
+                className="rounded-chip p-1 text-text-muted hover:text-text-primary"
               >
                 <IconClose size={16} />
               </button>
             </div>
             <div className="mt-3 max-h-72 divide-y divide-border-subtle overflow-y-auto">
               {(selectedRole.users || []).length === 0 ? (
-                <div className="py-6 text-center text-xs text-text-muted">
+                <div className="py-6 text-center text-label-lg leading-4 text-text-muted">
                   {t("No users currently assigned to this role.", "لا يوجد مستخدمون مرتبطون بهذا الدور حاليًا.", "اس کردار سے کوئی صارف منسلک نہیں۔")}
                 </div>
               ) : (
                 (selectedRole.users || []).map((u) => (
-                  <div key={u.id} className="flex items-center justify-between py-2.5 text-xs">
+                  <div key={u.id} className="flex items-center justify-between py-2.5 text-label-lg leading-4">
                     <div>
                       <div className="font-bold text-text-primary">{u.fullName}</div>
-                      <div className="text-[11px] text-text-muted">{u.email}</div>
+                      <div className="text-label text-text-muted">{u.email}</div>
                     </div>
                     <button
                       type="button"
@@ -1931,7 +1931,7 @@ export function RolePermissionsManager() {
                         setSelectedUserId(u.id);
                         setSubTab("users");
                       }}
-                      className="rounded-lg bg-brand/15 px-2.5 py-1 text-[11px] font-bold text-brand"
+                      className="rounded-chip bg-brand/15 px-2.5 py-1 text-label font-bold text-brand"
                     >
                       {t("Customize User", "تخصيص المستخدم", "صارف کی تخصیص")}
                     </button>
@@ -1946,9 +1946,9 @@ export function RolePermissionsManager() {
       {/* ── Modal: Create / Clone Role (§3) ───────────────────────────────── */}
       {(showCreateRoleModal || showCloneRoleModal) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border-subtle bg-surface-1 p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-panel border border-border-subtle bg-surface-1 p-5 shadow-xl">
             <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-              <h4 className="text-sm font-black text-text-primary">
+              <h4 className="text-card-title leading-5 font-black text-text-primary">
                 {showCloneRoleModal
                   ? t("Clone Role", "نسخ الدور الحالي إلى دور جديد", "موجودہ کردار کاپی کریں")
                   : t("Create New Role", "إنشاء دور وظيفي جديد", "نیا کردار بنائیں")}
@@ -1959,13 +1959,13 @@ export function RolePermissionsManager() {
                   setShowCreateRoleModal(false);
                   setShowCloneRoleModal(false);
                 }}
-                className="rounded-lg p-1 text-text-muted hover:text-text-primary"
+                className="rounded-chip p-1 text-text-muted hover:text-text-primary"
               >
                 <IconClose size={16} />
               </button>
             </div>
 
-            <div className="mt-3 space-y-3 text-xs">
+            <div className="mt-3 space-y-3 text-label-lg leading-4">
               <div>
                 <label className="mb-1 block font-bold text-text-secondary">
                   {t("Role Code (English uppercase)", "معرّف الدور (بالحروف الإنجليزية)", "کردار کا کوڈ")}
@@ -1975,7 +1975,7 @@ export function RolePermissionsManager() {
                   value={newRoleForm.id}
                   onChange={(e) => setNewRoleForm((p) => ({ ...p, id: e.target.value.toUpperCase() }))}
                   placeholder="REGIONAL_SUPERVISOR"
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 font-mono text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 font-mono text-text-primary"
                 />
               </div>
               <div>
@@ -1987,7 +1987,7 @@ export function RolePermissionsManager() {
                   value={newRoleForm.labelAr}
                   onChange={(e) => setNewRoleForm((p) => ({ ...p, labelAr: e.target.value }))}
                   placeholder="مشرف المنطقة"
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
                 />
               </div>
               <div>
@@ -1999,7 +1999,7 @@ export function RolePermissionsManager() {
                   value={newRoleForm.labelEn}
                   onChange={(e) => setNewRoleForm((p) => ({ ...p, labelEn: e.target.value }))}
                   placeholder="Regional Supervisor"
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
                 />
               </div>
               <div>
@@ -2016,7 +2016,7 @@ export function RolePermissionsManager() {
                       descriptionEn: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
+                  className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 text-text-primary"
                 />
               </div>
               {!showCloneRoleModal && (
@@ -2027,7 +2027,7 @@ export function RolePermissionsManager() {
                   <select
                     value={newRoleForm.dataScope}
                     onChange={(e) => setNewRoleForm((p) => ({ ...p, dataScope: e.target.value }))}
-                    className="w-full rounded-xl border border-border-subtle bg-surface-2 px-3 py-2 font-bold text-text-primary"
+                    className="w-full rounded-inner border border-border-subtle bg-surface-2 px-3 py-2 font-bold text-text-primary"
                   >
                     {dataScopes.map((sc) => (
                       <option key={sc.id} value={sc.id}>
@@ -2045,7 +2045,7 @@ export function RolePermissionsManager() {
                     setShowCreateRoleModal(false);
                     setShowCloneRoleModal(false);
                   }}
-                  className="rounded-xl border border-border-subtle bg-surface-2 px-3 py-1.5 font-bold text-text-secondary"
+                  className="rounded-inner border border-border-subtle bg-surface-2 px-3 py-1.5 font-bold text-text-secondary"
                 >
                   {t("Cancel", "إلغاء", "منسوخ کریں")}
                 </button>
@@ -2053,7 +2053,7 @@ export function RolePermissionsManager() {
                   type="button"
                   onClick={showCloneRoleModal ? handleCloneRole : handleCreateRole}
                   disabled={saving || !newRoleForm.id.trim() || !newRoleForm.labelAr.trim()}
-                  className="rounded-xl bg-brand px-4 py-1.5 font-black text-on-brand disabled:opacity-40"
+                  className="rounded-inner bg-brand px-4 py-1.5 font-black text-on-brand disabled:opacity-40"
                 >
                   {showCloneRoleModal
                     ? t("Clone Role", "نسخ الدور", "کاپی کریں")

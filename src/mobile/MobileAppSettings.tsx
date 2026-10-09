@@ -79,19 +79,19 @@ export function MobileAppSettings({
         >
           <IconArrowRight size={15} className="rtl:rotate-180" />
         </button>
-        <h1 className="text-[13.5px] font-bold">{t("App Settings", "إعدادات التطبيق")}</h1>
+        <h1 className="text-card-title font-bold">{t("App Settings", "إعدادات التطبيق")}</h1>
       </header>
 
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* ── الحساب ─────────────────────────────────────────────── */}
         <MobileSection title={tk("account.myAccount")} hint={t("Account data, security and sessions", "بيانات الحساب والأمان والجلسات")}>
           <div className="flex items-center gap-3 px-3.5 py-3.5 border-b border-border-subtle">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand/20 text-[14px] font-bold text-brand">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand/20 text-card-title font-bold text-brand">
               {(user?.fullName || user?.email || "EJ").slice(0, 2)}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[12.5px] font-bold text-white">{user?.fullName || "—"}</div>
-              <div className="truncate text-[10px] text-text-muted" dir="ltr">{user?.email || "—"}</div>
+              <div className="truncate text-body font-bold text-white">{user?.fullName || "—"}</div>
+              <div className="truncate text-micro text-text-muted" dir="ltr">{user?.email || "—"}</div>
             </div>
           </div>
           <MobileRow label={tk("account.phone")} value={user?.phone || "—"} />
@@ -117,14 +117,14 @@ export function MobileAppSettings({
         {/* ── اللغة (Dropdown واضح) ───────────────────────────────── */}
         <MobileSection title={tk("language.title")} hint={t("Choose the interface language", "اختر لغة الواجهة")}>
           <div className="p-3">
-            <label className="mb-1.5 block text-[10px] font-semibold text-text-muted">
+            <label className="mb-1.5 block text-micro font-semibold text-text-muted">
               {tk("language.choose")}
             </label>
             <div className="relative">
               <select
                 value={lang}
                 onChange={(e) => setLang(e.target.value as typeof lang)}
-                className="h-11 w-full appearance-none rounded-[10px] border border-border-subtle bg-surface-2 px-3 text-[12px] font-semibold text-white focus:border-brand focus:outline-none"
+                className="h-11 w-full appearance-none rounded-control border border-border-subtle bg-surface-2 px-3 text-label-lg font-semibold text-white focus:border-brand focus:outline-none"
                 aria-label={tk("language.choose")}
               >
                 {LANGUAGE_OPTIONS.map((option) => (
@@ -137,7 +137,7 @@ export function MobileAppSettings({
                 <IconGlobe size={13} />
               </span>
             </div>
-            <div className="mt-2 flex items-center gap-1.5 text-[10px] text-text-muted">
+            <div className="mt-2 flex items-center gap-1.5 text-micro text-text-muted">
               <IconCheck size={11} className="text-brand" />
               {t("Current", "الحالية")}: {tk(LANGUAGE_OPTIONS.find((o) => o.code === lang)?.labelKey ?? "language.ar")}
             </div>
@@ -158,19 +158,19 @@ export function MobileAppSettings({
                 key={option.id}
                 onClick={() => setTheme(option.id)}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-[10px] border px-2 py-2.5 text-[10px] font-semibold transition-colors",
+                  "flex flex-col items-center gap-1.5 rounded-control border px-2 py-2.5 text-micro font-semibold transition-colors",
                   theme === option.id
                     ? "border-brand bg-brand/15 text-brand"
                     : "border-border-subtle bg-surface-2 text-text-secondary hover:border-border-focus",
                 )}
               >
-                <span className="text-[14px] leading-none">{option.icon}</span>
+                <span className="text-card-title leading-none">{option.icon}</span>
                 <span>{option.label}</span>
                 {theme === option.id && <IconCheck size={11} className="text-brand" />}
               </button>
             ))}
           </div>
-          <div className="px-3.5 pb-3 text-[9.5px] text-text-muted">
+          <div className="px-3.5 pb-3 text-micro text-text-muted">
             {t("Active theme", "المظهر المفعّل")}: {resolvedTheme === "dark" ? tk("theme.dark") : tk("theme.light")}
           </div>
         </MobileSection>
@@ -179,16 +179,16 @@ export function MobileAppSettings({
         <MobileSection title={t("Time & date", "الوقت والتاريخ")} hint={t("Clock and date display preferences", "تفضيلات عرض الساعة والتاريخ")}>
           <div className="flex items-center justify-between gap-3 px-3.5 py-3">
             <div className="min-w-0">
-              <div className="text-[12px] font-semibold text-white">{t("Time format", "نظام الوقت")}</div>
-              <div className="text-[10px] text-text-muted">{t("24-hour or 12-hour clock", "نظام ٢٤ ساعة أو ١٢ ساعة")}</div>
+              <div className="text-label-lg font-semibold text-white">{t("Time format", "نظام الوقت")}</div>
+              <div className="text-micro text-text-muted">{t("24-hour or 12-hour clock", "نظام ٢٤ ساعة أو ١٢ ساعة")}</div>
             </div>
-            <div className="flex shrink-0 rounded-[8px] border border-border-subtle p-0.5">
+            <div className="flex shrink-0 rounded-chip border border-border-subtle p-0.5">
               {(["24", "12"] as const).map((fmt) => (
                 <button
                   key={fmt}
                   onClick={() => setPref("timeFormat", fmt)}
                   className={cn(
-                    "rounded-[6px] px-2.5 py-1 text-[10px] font-bold",
+                    "rounded-micro px-2.5 py-1 text-micro font-bold",
                     prefs.timeFormat === fmt ? "bg-brand text-on-brand" : "text-text-muted",
                   )}
                 >
@@ -199,16 +199,16 @@ export function MobileAppSettings({
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-3.5 py-3">
             <div className="min-w-0">
-              <div className="text-[12px] font-semibold text-white">{t("Date format", "نظام التاريخ")}</div>
-              <div className="text-[10px] text-text-muted">{t("Gregorian display preference", "تفضيل عرض التاريخ الميلادي")}</div>
+              <div className="text-label-lg font-semibold text-white">{t("Date format", "نظام التاريخ")}</div>
+              <div className="text-micro text-text-muted">{t("Gregorian display preference", "تفضيل عرض التاريخ الميلادي")}</div>
             </div>
-            <div className="flex shrink-0 rounded-[8px] border border-border-subtle p-0.5">
+            <div className="flex shrink-0 rounded-chip border border-border-subtle p-0.5">
               {(["iso", "arabic"] as const).map((fmt) => (
                 <button
                   key={fmt}
                   onClick={() => setPref("dateFormat", fmt)}
                   className={cn(
-                    "rounded-[6px] px-2.5 py-1 text-[10px] font-bold",
+                    "rounded-micro px-2.5 py-1 text-micro font-bold",
                     prefs.dateFormat === fmt ? "bg-brand text-on-brand" : "text-text-muted",
                   )}
                 >
@@ -218,8 +218,8 @@ export function MobileAppSettings({
             </div>
           </div>
           <div className="border-t border-border-subtle px-3.5 py-3">
-            <div className="text-[10px] text-text-muted">{t("Preview", "معاينة")}</div>
-            <div className="mt-1 font-mono text-[12px] text-white" dir="ltr">
+            <div className="text-micro text-text-muted">{t("Preview", "معاينة")}</div>
+            <div className="mt-1 font-mono text-label-lg text-white" dir="ltr">
               {formatPreview(new Date(), prefs.timeFormat, prefs.dateFormat)}
             </div>
           </div>
@@ -251,7 +251,7 @@ export function MobileAppSettings({
               <button
                 onClick={() => onSwitchInterface?.("driver")}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-[12px] border px-2 py-3 text-[11px] font-bold transition-colors",
+                  "flex flex-col items-center gap-1.5 rounded-inner border px-2 py-3 text-label font-bold transition-colors",
                   interfacePref === "driver"
                     ? "border-brand bg-brand/15 text-brand"
                     : "border-border-subtle bg-surface-2 text-text-secondary",
@@ -264,7 +264,7 @@ export function MobileAppSettings({
               <button
                 onClick={() => onSwitchInterface?.("client")}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-[12px] border px-2 py-3 text-[11px] font-bold transition-colors",
+                  "flex flex-col items-center gap-1.5 rounded-inner border px-2 py-3 text-label font-bold transition-colors",
                   interfacePref === "client"
                     ? "border-accent-2 bg-accent-2/15 text-accent-2"
                     : "border-border-subtle bg-surface-2 text-text-secondary",

@@ -118,7 +118,7 @@ function Field({
   const { t } = useSettings();
   return (
     <label className="block">
-      <span className="mb-1 block text-[11.5px] font-semibold text-slate-300">
+      <span className="mb-1 block text-label-lg font-semibold text-slate-300">
         {t(spec.labelEn, spec.labelAr)}
         {spec.required && <span className="text-brand"> *</span>}
       </span>
@@ -129,7 +129,7 @@ function Field({
           rows={2}
           dir="rtl"
           className={cn(
-            "w-full rounded-xl border bg-[#0e1626]/90 px-3 py-2.5 text-[13px] text-white outline-none transition-all placeholder-slate-500 focus:border-brand focus:ring-2 focus:ring-brand/20",
+            "w-full rounded-inner border bg-[#0e1626]/90 px-3 py-2.5 text-body text-white outline-none transition-all placeholder-slate-500 focus:border-brand focus:ring-2 focus:ring-brand/20",
             missing ? "border-rose-500/60" : "border-slate-700/60",
           )}
         />
@@ -139,7 +139,7 @@ function Field({
           onChange={(e) => onChange(e.target.value)}
           dir="rtl"
           className={cn(
-            "h-11 w-full rounded-xl border bg-[#0e1626]/90 px-3 text-[13px] text-white outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand/20",
+            "h-11 w-full rounded-inner border bg-[#0e1626]/90 px-3 text-body text-white outline-none transition-all focus:border-brand focus:ring-2 focus:ring-brand/20",
             missing ? "border-rose-500/60" : "border-slate-700/60",
           )}
         >
@@ -157,7 +157,7 @@ function Field({
           onChange={(e) => onChange(e.target.value)}
           dir="rtl"
           className={cn(
-            "h-11 w-full rounded-xl border bg-[#0e1626]/90 px-3 text-[13px] text-white outline-none transition-all placeholder-slate-500 focus:border-brand focus:ring-2 focus:ring-brand/20",
+            "h-11 w-full rounded-inner border bg-[#0e1626]/90 px-3 text-body text-white outline-none transition-all placeholder-slate-500 focus:border-brand focus:ring-2 focus:ring-brand/20",
             missing ? "border-rose-500/60" : "border-slate-700/60",
           )}
         />
@@ -168,7 +168,7 @@ function Field({
 
 function StatusPill({ status }: { status: RegStatus }) {
   return (
-    <span className={cn("rounded-full border px-2.5 py-1 text-[10.5px] font-bold", STATUS_TONE[status] || STATUS_TONE.DRAFT)}>
+    <span className={cn("rounded-full border px-2.5 py-1 text-label font-bold", STATUS_TONE[status] || STATUS_TONE.DRAFT)}>
       {STATUS_AR[status] || status}
     </span>
   );
@@ -319,18 +319,18 @@ export function RegistrationScreen({
       <div className="mx-auto w-full max-w-[720px] px-5 py-6">
         <div className="flex items-center justify-between">
           <BrandLogo size={34} showSub={false} />
-          <button onClick={onBackToLogin} className="text-[11.5px] text-slate-300 underline underline-offset-2 hover:text-white">
+          <button onClick={onBackToLogin} className="text-label-lg text-slate-300 underline underline-offset-2 hover:text-white">
             {t("Back to sign in", "العودة لتسجيل الدخول")}
           </button>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-slate-700/60 bg-[#0b1220]/90 p-4">
-          <h1 className="text-[17px] font-extrabold">
+        <div className="mt-4 rounded-panel border border-slate-700/60 bg-[#0b1220]/90 p-4">
+          <h1 className="text-section-title font-extrabold">
             {existingRequest
               ? t("Complete your registration request", "استكمال طلب التسجيل")
               : t("New registration request", "طلب تسجيل جديد")}
           </h1>
-          <p className="mt-1 text-[11.5px] leading-relaxed text-slate-400">
+          <p className="mt-1 text-label-lg leading-relaxed text-slate-400">
             {t(
               "Creating an account is a request. The administration reviews it, then the account is activated and you are notified.",
               "إنشاء الحساب يُعد طلبًا رسميًا. تقوم الإدارة بمراجعته ثم يُعتمد الحساب ويُفعَّل، ويصلك إشعار بذلك.",
@@ -349,7 +349,7 @@ export function RegistrationScreen({
                   setMissing({ fields: [], documents: [] });
                 }}
                 className={cn(
-                  "flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-[12.5px] font-bold transition-all disabled:opacity-60",
+                  "flex items-center justify-center gap-2 rounded-inner border px-3 py-2.5 text-body font-bold transition-all disabled:opacity-60",
                   type === kind ? "border-brand bg-brand/15 text-brand" : "border-slate-700/60 bg-[#0e1626]/80 text-slate-300",
                 )}
               >
@@ -361,8 +361,8 @@ export function RegistrationScreen({
         </div>
 
         {/* Personal / official / facility / truck data */}
-        <div className="mt-4 rounded-2xl border border-slate-700/60 bg-[#0b1220]/90 p-4">
-          <h2 className="mb-3 text-[13.5px] font-bold">
+        <div className="mt-4 rounded-panel border border-slate-700/60 bg-[#0b1220]/90 p-4">
+          <h2 className="mb-3 text-card-title font-bold">
             {type === "DRIVER" ? t("Personal, licence and truck data", "البيانات الشخصية والرخصة والشاحنة") : t("Contact and facility data", "بيانات التواصل والمنشأة")}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -381,7 +381,7 @@ export function RegistrationScreen({
 
             {!existingRequest && (
               <label className="block">
-                <span className="mb-1 block text-[11.5px] font-semibold text-slate-300">
+                <span className="mb-1 block text-label-lg font-semibold text-slate-300">
                   {t("Account password", "كلمة مرور الحساب")}
                   <span className="text-brand"> *</span>
                 </span>
@@ -391,7 +391,7 @@ export function RegistrationScreen({
                   onChange={(e) => setPassword(e.target.value)}
                   dir="rtl"
                   placeholder={t("At least 8 characters", "٨ أحرف على الأقل")}
-                  className="h-11 w-full rounded-xl border border-slate-700/60 bg-[#0e1626]/90 px-3 text-[13px] text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+                  className="h-11 w-full rounded-inner border border-slate-700/60 bg-[#0e1626]/90 px-3 text-body text-white outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
                 />
               </label>
             )}
@@ -399,9 +399,9 @@ export function RegistrationScreen({
         </div>
 
         {/* Required documents */}
-        <div className="mt-4 rounded-2xl border border-slate-700/60 bg-[#0b1220]/90 p-4">
-          <h2 className="mb-1 text-[13.5px] font-bold">{t("Required documents", "المستندات المطلوبة")}</h2>
-          <p className="mb-3 text-[11px] text-slate-400">
+        <div className="mt-4 rounded-panel border border-slate-700/60 bg-[#0b1220]/90 p-4">
+          <h2 className="mb-1 text-card-title font-bold">{t("Required documents", "المستندات المطلوبة")}</h2>
+          <p className="mb-3 text-label text-slate-400">
             {t("PDF or image. The file is stored with your request for the administration to review.", "PDF أو صورة. يُحفظ الملف مع طلبك لمراجعة الإدارة.")}
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -412,16 +412,16 @@ export function RegistrationScreen({
                 <label
                   key={doc.kind}
                   className={cn(
-                    "flex cursor-pointer items-center gap-2.5 rounded-xl border bg-[#0e1626]/80 p-2.5 transition-colors",
+                    "flex cursor-pointer items-center gap-2.5 rounded-inner border bg-[#0e1626]/80 p-2.5 transition-colors",
                     isMissing ? "border-rose-500/60" : attached ? "border-emerald-500/40" : "border-slate-700/60",
                   )}
                 >
-                  <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-lg", attached ? "bg-emerald-500/15 text-emerald-300" : "bg-white/5 text-slate-300")}>
+                  <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-chip", attached ? "bg-emerald-500/15 text-emerald-300" : "bg-white/5 text-slate-300")}>
                     {attached ? <IconCheck size={15} /> : <IconUpload size={15} />}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[11.5px] font-bold text-slate-100">{t(doc.labelEn, doc.labelAr)}</span>
-                    <span className="block truncate text-[10px] text-slate-400">
+                    <span className="block truncate text-label-lg font-bold text-slate-100">{t(doc.labelEn, doc.labelAr)}</span>
+                    <span className="block truncate text-micro text-slate-400">
                       {attached ? attached.fileName || attached.url : t("Tap to attach", "اضغط للإرفاق")}
                     </span>
                   </span>
@@ -442,14 +442,14 @@ export function RegistrationScreen({
         </div>
 
         {error && (
-          <div className="mt-3 flex items-start gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-[11.5px] text-rose-200">
+          <div className="mt-3 flex items-start gap-2 rounded-inner border border-rose-500/40 bg-rose-500/10 p-3 text-label-lg text-rose-200">
             <IconAlertCircle size={16} className="mt-0.5 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {(missing.fields.length > 0 || missing.documents.length > 0) && (
-          <div className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/10 p-3 text-[11.5px] text-amber-100">
+          <div className="mt-3 rounded-inner border border-amber-400/40 bg-amber-400/10 p-3 text-label-lg text-amber-100">
             <div className="mb-1 font-bold">{t("Missing items", "العناصر الناقصة")}</div>
             <ul className="list-inside list-disc space-y-0.5">
               {missing.fields.map((key) => (
@@ -465,7 +465,7 @@ export function RegistrationScreen({
         <button
           onClick={submit}
           disabled={busy}
-          className="mt-4 w-full rounded-xl bg-brand py-3 text-[13.5px] font-extrabold text-on-brand transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="mt-4 w-full rounded-inner bg-brand py-3 text-card-title font-extrabold text-on-brand transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {busy
             ? t("Sending…", "جارٍ الإرسال…")
@@ -473,7 +473,7 @@ export function RegistrationScreen({
               ? t("Re-send the request for review", "إعادة إرسال الطلب للمراجعة")
               : t("Send the request", "إرسال الطلب")}
         </button>
-        <p className="mt-2 pb-8 text-center text-[10.5px] text-slate-500">
+        <p className="mt-2 pb-8 text-center text-label text-slate-500">
           {t(
             "The account is not approved automatically — the administration reviews every request.",
             "لا يُعتمد الحساب تلقائيًا — الإدارة تراجع كل طلب قبل التفعيل.",
@@ -535,18 +535,18 @@ export function RegistrationStatusCard({
           : request.decisionReason || t("Contact the administration for details.", "يرجى التواصل مع الإدارة للمزيد.");
 
   return (
-    <div className={cn("rounded-2xl border border-slate-700/60 bg-[#0b1220]/95 p-4", compact && "p-3")}>
+    <div className={cn("rounded-panel border border-slate-700/60 bg-[#0b1220]/95 p-4", compact && "p-3")}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[14px] font-extrabold text-white">{headline}</h2>
+        <h2 className="text-card-title font-extrabold text-white">{headline}</h2>
         <StatusPill status={status} />
       </div>
 
-      <p className="mt-2 text-[11.5px] leading-relaxed text-slate-300">{body}</p>
+      <p className="mt-2 text-label-lg leading-relaxed text-slate-300">{body}</p>
 
       {(request.completionRequests || []).length > 0 && (
-        <div className="mt-2.5 rounded-xl border border-sky-400/30 bg-sky-400/10 p-2.5">
-          <div className="mb-1 text-[11px] font-bold text-sky-200">{t("Items requested by the administration", "العناصر المطلوبة من الإدارة")}</div>
-          <ul className="list-inside list-disc space-y-0.5 text-[11px] text-sky-100">
+        <div className="mt-2.5 rounded-inner border border-sky-400/30 bg-sky-400/10 p-2.5">
+          <div className="mb-1 text-label font-bold text-sky-200">{t("Items requested by the administration", "العناصر المطلوبة من الإدارة")}</div>
+          <ul className="list-inside list-disc space-y-0.5 text-label text-sky-100">
             {(request.completionRequests || []).map((item: string) => (
               <li key={item}>{item}</li>
             ))}
@@ -554,14 +554,14 @@ export function RegistrationStatusCard({
         </div>
       )}
 
-      <dl className="mt-3 grid grid-cols-2 gap-2 text-[10.5px] sm:grid-cols-4">
+      <dl className="mt-3 grid grid-cols-2 gap-2 text-label sm:grid-cols-4">
         {[
           [t("Request number", "رقم الطلب"), request.id || "—"],
           [t("Type", "نوع الطلب"), request.type === "CUSTOMER" ? t("Customer", "عميل") : t("Driver", "سائق")],
           [t("Submitted", "تاريخ الإرسال"), request.submittedAt ? new Date(request.submittedAt).toLocaleDateString("ar-SA") : "—"],
           [t("Reviewed by", "الجهة المراجعة"), request.reviewerName || "—"],
         ].map(([label, value]) => (
-          <div key={String(label)} className="rounded-lg bg-white/[0.04] p-2">
+          <div key={String(label)} className="rounded-chip bg-white/[0.04] p-2">
             <dt className="text-slate-400">{label}</dt>
             <dd className="truncate font-mono text-slate-100" title={String(value)}>
               {value}
@@ -573,7 +573,7 @@ export function RegistrationStatusCard({
       {status === "NEEDS_COMPLETION" && onOpenCompletion && (
         <button
           onClick={onOpenCompletion}
-          className="mt-3 w-full rounded-xl bg-brand py-2.5 text-[12.5px] font-extrabold text-on-brand transition-opacity hover:opacity-90"
+          className="mt-3 w-full rounded-inner bg-brand py-2.5 text-body font-extrabold text-on-brand transition-opacity hover:opacity-90"
         >
           {t("Complete the data and re-send", "استكمال البيانات وإعادة الإرسال")}
         </button>
@@ -638,23 +638,23 @@ export function RegistrationStatusScreen({
         {state ? (
           <RegistrationStatusCard state={state} onOpenCompletion={() => setEditing(true)} />
         ) : (
-          <div className="rounded-2xl border border-slate-700/60 bg-[#0b1220]/95 p-4 text-[12px] text-slate-300">
+          <div className="rounded-panel border border-slate-700/60 bg-[#0b1220]/95 p-4 text-label-lg text-slate-300">
             {error || t("Loading your request…", "جارٍ تحميل طلبك…")}
           </div>
         )}
 
         <button
           onClick={load}
-          className="w-full rounded-xl border border-slate-700/60 bg-[#0e1626]/80 py-2.5 text-[12px] font-bold text-slate-200 transition-colors hover:text-white"
+          className="w-full rounded-inner border border-slate-700/60 bg-[#0e1626]/80 py-2.5 text-label-lg font-bold text-slate-200 transition-colors hover:text-white"
         >
           {t("Refresh status", "تحديث الحالة")}
         </button>
         {onLogout && (
-          <button onClick={onLogout} className="w-full rounded-xl border border-slate-700/60 bg-transparent py-2.5 text-[12px] font-bold text-slate-400 transition-colors hover:text-white">
+          <button onClick={onLogout} className="w-full rounded-inner border border-slate-700/60 bg-transparent py-2.5 text-label-lg font-bold text-slate-400 transition-colors hover:text-white">
             {t("Sign out", "تسجيل الخروج")}
           </button>
         )}
-        <p className="text-center text-[10.5px] text-slate-500">
+        <p className="text-center text-label text-slate-500">
           {t("Signed in as", "مسجّل الدخول باسم")}: {user?.email}
         </p>
       </div>
@@ -682,7 +682,7 @@ export function PendingView({
         <RegistrationStatusCard state={{ request, status }} onOpenCompletion={onUpdateRequest} />
         <button
           onClick={onBackToLogin}
-          className="mt-4 w-full rounded-xl border border-slate-700/60 bg-[#0e1626]/80 py-2.5 text-[12.5px] font-bold text-slate-200 transition-colors hover:text-white"
+          className="mt-4 w-full rounded-inner border border-slate-700/60 bg-[#0e1626]/80 py-2.5 text-body font-bold text-slate-200 transition-colors hover:text-white"
         >
           {t("Back to sign in", "العودة لتسجيل الدخول")}
         </button>

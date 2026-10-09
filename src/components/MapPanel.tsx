@@ -76,11 +76,11 @@ export function MapPanel({
   const stroke = accent ? "var(--color-accent-2)" : "var(--color-brand)";
 
   return (
-    <div className={cn("relative overflow-hidden rounded-[8px] bg-surface-1", className)}>
+    <div className={cn("relative overflow-hidden rounded-chip bg-surface-1", className)}>
       {layer === "google" ? (
         <div className="relative h-full w-full">
           {!googleReady && (
-            <div className="absolute inset-0 grid place-items-center text-[11px] text-text-muted">
+            <div className="absolute inset-0 grid place-items-center text-label text-text-muted">
               {t("Loading Google Maps…", "جارٍ تحميل خرائط جوجل…")}
             </div>
           )}
@@ -236,7 +236,7 @@ export function MapPanel({
       {/* route chip with canonical vehicle type */}
       <div
         className={cn(
-          "pointer-events-none absolute top-3 flex items-center gap-2 rounded-full bg-navy/85 px-3 py-1.5 text-[10.5px] text-white backdrop-blur-md border border-white/10 shadow-sm",
+          "pointer-events-none absolute top-3 flex items-center gap-2 rounded-full bg-navy/85 px-3 py-1.5 text-label text-white backdrop-blur-md border border-white/10 shadow-sm",
           dir === "rtl" ? "right-3" : "left-3",
         )}
       >
@@ -285,7 +285,7 @@ export function MapPanel({
         target="_blank"
         rel="noreferrer"
         className={cn(
-          "absolute bottom-3 rounded-full bg-navy/70 px-3 py-1.5 text-[10px] text-white backdrop-blur-md transition-opacity duration-200 hover:opacity-85",
+          "absolute bottom-3 rounded-full bg-navy/70 px-3 py-1.5 text-micro text-white backdrop-blur-md transition-opacity duration-200 hover:opacity-85",
           dir === "rtl" ? "left-3" : "right-3",
         )}
       >

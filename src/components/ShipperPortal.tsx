@@ -44,14 +44,14 @@ export function ShipperPortal() {
             <EjazEmblem size={38} color="var(--color-brand)" />
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-[19px] font-bold text-text-primary">
+                <h2 className="text-headline font-bold text-text-primary">
                   {t("Client Consignment Tracking Portal", "بوابة تتبع الشحنات للعملاء والشركاء")}
                 </h2>
-                <span className="badge bg-brand/20 text-brand text-[10.5px]">
+                <span className="badge bg-brand/20 text-brand text-label">
                   {t("Verified Shipper", "شريك معتمد")}
                 </span>
               </div>
-              <p className="text-[12px] text-text-muted mt-0.5">
+              <p className="text-label-lg text-text-muted mt-0.5">
                 {t(
                   "Real-time GPS tracking, electronic proof of delivery, and cargo condition telemetry",
                   "مراقبة لحظية للشاحنات على الطرق، وثائق التسليم الإلكترونية، وسلامة الحمولات"
@@ -63,14 +63,14 @@ export function ShipperPortal() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowQrModal(true)}
-              className="btn-ghost text-[12px] py-2 px-3.5 border border-border-subtle"
+              className="btn-ghost text-label-lg py-2 px-3.5 border border-border-subtle"
             >
               <IconDoc size={15} />
               {t("View Consignment QR", "رمز البوليصة QR")}
             </button>
             <button
               onClick={handleCopyLink}
-              className="btn-primary text-[12px] py-2 px-4 shadow-md font-bold"
+              className="btn-primary text-label-lg py-2 px-4 shadow-md font-bold"
             >
               <IconLayers size={15} />
               {copiedLink ? t("Link Copied!", "تم نسخ الرابط!") : t("Share Live Link", "مشاركة رابط التتبع")}
@@ -88,27 +88,27 @@ export function ShipperPortal() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[22px] font-extrabold text-text-primary tracking-tight">
+                  <span className="text-hero-sm font-extrabold text-text-primary tracking-tight">
                     {activeTrip.tripNumber}
                   </span>
-                  <span className="badge bg-status-active/20 text-status-active font-bold text-[11px]">
+                  <span className="badge bg-status-active/20 text-status-active font-bold text-label">
                     {activeTrip.status === "on_road" ? t("On Road Live", "على الطريق مباشرة") : activeTrip.status}
                   </span>
-                  <span className="badge bg-surface-5 text-text-muted text-[11px]">
+                  <span className="badge bg-surface-5 text-text-muted text-label">
                     {activeTrip.cargoType}
                   </span>
                 </div>
-                <div className="mt-1 text-[13px] text-text-secondary">
+                <div className="mt-1 text-body text-text-secondary">
                   <strong>{activeTrip.originCity}</strong> ({activeTrip.originTerminal}) →{" "}
                   <strong>{activeTrip.destinationCity}</strong> ({activeTrip.destinationTerminal})
                 </div>
               </div>
 
               <div className="text-end">
-                <span className="text-[10.5px] text-text-muted uppercase block">
+                <span className="text-label text-text-muted uppercase block">
                   {t("Estimated Arrival (ETA)", "الوقت التقديري للوصول")}
                 </span>
-                <span className="text-[20px] font-extrabold text-brand tabular-nums block mt-0.5">
+                <span className="text-headline font-extrabold text-brand tabular-nums block mt-0.5">
                   {Math.floor(activeTrip.etaMinutes / 60)} {t("hrs", "ساعة")} {activeTrip.etaMinutes % 60} {t("min", "دقيقة")}
                 </span>
               </div>
@@ -116,7 +116,7 @@ export function ShipperPortal() {
 
             {/* Live Progress Bar */}
             <div className="mt-4 space-y-1.5 border-t border-border-subtle pt-3.5">
-              <div className="flex items-center justify-between text-[11.5px] tabular-nums text-text-secondary">
+              <div className="flex items-center justify-between text-label-lg tabular-nums text-text-secondary">
                 <span>
                   {t("Progress Covered:", "المسافة المقطوعة:")} {activeTrip.distanceCoveredKm} {t("km", "كم")}
                 </span>
@@ -146,7 +146,7 @@ export function ShipperPortal() {
         <div className="space-y-4">
           {/* List of Shipments under Shipper Account */}
           <div className="card p-5 border border-border-subtle">
-            <h4 className="text-[14px] font-bold text-text-primary mb-3">
+            <h4 className="text-card-title font-bold text-text-primary mb-3">
               {t("My Active Shipments", "شحناتي المتعاقد عليها")} ({trips.length})
             </h4>
 
@@ -161,17 +161,17 @@ export function ShipperPortal() {
                       selectTrip(tr.id);
                     }}
                     className={cn(
-                      "w-full rounded-[12px] p-3 text-start transition-all border",
+                      "w-full rounded-inner p-3 text-start transition-all border",
                       isSelected
                         ? "bg-surface-3 border-brand shadow-sm"
                         : "bg-surface-2 border-border-subtle hover:bg-surface-3"
                     )}
                   >
-                    <div className="flex items-center justify-between text-[12.5px]">
+                    <div className="flex items-center justify-between text-body">
                       <span className="font-bold text-text-primary">{tr.tripNumber}</span>
                       <span className="font-bold text-brand tabular-nums">{tr.progressPct}%</span>
                     </div>
-                    <div className="text-[11.5px] text-text-muted mt-1">
+                    <div className="text-label-lg text-text-muted mt-1">
                       {td(tr.originCity)} → {td(tr.destinationCity)} · {tr.cargoWeightTons} {t("t", "طن")}
                     </div>
                   </button>
@@ -185,19 +185,19 @@ export function ShipperPortal() {
             <div className="card p-4 border border-border-subtle bg-surface-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand/20 text-brand">
+                  <span className="grid h-8 w-8 place-items-center rounded-chip bg-brand/20 text-brand">
                     <IconThermo size={18} />
                   </span>
                   <div>
-                    <span className="text-[11px] text-text-muted block">
+                    <span className="text-label text-text-muted block">
                       {t("Live Cold Chain Sensor", "مستشعر التبريد المباشر")}
                     </span>
-                    <span className="text-[15px] font-bold text-text-primary tabular-nums">
+                    <span className="text-page-title font-bold text-text-primary tabular-nums">
                       -18.5 °C ({t("Target: -18.0°C", "المستهدف: -18°C")})
                     </span>
                   </div>
                 </div>
-                <span className="badge bg-status-active/20 text-status-active font-semibold text-[10.5px]">
+                <span className="badge bg-status-active/20 text-status-active font-semibold text-label">
                   ✓ {t("Optimal", "سليم")}
                 </span>
               </div>
@@ -209,18 +209,18 @@ export function ShipperPortal() {
             <div className="flex items-center justify-between border-b border-border-subtle pb-2.5">
               <div className="flex items-center gap-2">
                 <IconMessage size={16} className="text-brand" />
-                <h4 className="text-[13px] font-bold text-text-primary">
+                <h4 className="text-body font-bold text-text-primary">
                   {t("Ejaz Operations Live Support", "دعم عمليات إيجاز المباشر")}
                 </h4>
               </div>
-              <span className="badge bg-status-active/20 text-status-active text-[10px]">
+              <span className="badge bg-status-active/20 text-status-active text-micro">
                 {t("Online", "متواجد")}
               </span>
             </div>
 
-            <div className="scroll-thin flex-1 overflow-y-auto py-2.5 space-y-2 text-[12px]">
-              <div className="rounded-xl bg-surface-3 p-2.5 text-text-secondary border border-border-subtle">
-                <span className="text-[10px] text-brand font-bold block mb-0.5">
+            <div className="scroll-thin flex-1 overflow-y-auto py-2.5 space-y-2 text-label-lg">
+              <div className="rounded-inner bg-surface-3 p-2.5 text-text-secondary border border-border-subtle">
+                <span className="text-micro text-brand font-bold block mb-0.5">
                   {t("Ejaz Support", "دعم إيجاز")}
                 </span>
                 <p>
@@ -238,9 +238,9 @@ export function ShipperPortal() {
                 onChange={(e) => setChatText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendSupportChat()}
                 placeholder={t("Inquire about delivery...", "استفسر عن موعد التسليم...")}
-                className="field text-[12px] py-1.5 px-3"
+                className="field text-label-lg py-1.5 px-3"
               />
-              <button onClick={handleSendSupportChat} className="btn-primary text-[12px] py-1.5 px-3.5">
+              <button onClick={handleSendSupportChat} className="btn-primary text-label-lg py-1.5 px-3.5">
                 {t("Send", "إرسال")}
               </button>
             </div>
@@ -256,7 +256,7 @@ export function ShipperPortal() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="animate-fade-up relative w-full max-w-[420px] rounded-[18px] bg-white text-navy p-6 shadow-2xl text-center"
+            className="animate-fade-up relative w-full max-w-[420px] rounded-panel bg-white text-navy p-6 shadow-2xl text-center"
           >
             <div className="flex justify-end">
               <button onClick={() => setShowQrModal(false)} className="btn-icon bg-navy/10 text-navy">
@@ -265,15 +265,15 @@ export function ShipperPortal() {
             </div>
 
             <EjazEmblem size={44} color="var(--color-brand)" className="mx-auto" />
-            <h3 className="text-[18px] font-extrabold mt-3">
+            <h3 className="text-section-title font-extrabold mt-3">
               {t("Electronic Consignment Waybill QR", "رمز بوليصة الشحن الإلكترونية")}
             </h3>
-            <p className="text-[12px] text-navy/60 mt-1">
+            <p className="text-label-lg text-navy/60 mt-1">
               {t("Scan using camera to access public live tracking link", "امسح الرمز بكاميرا الجوال للوصول للتتبع المباشر")}
             </p>
 
             {/* QR Visual */}
-            <div className="my-5 mx-auto grid h-48 w-48 place-items-center rounded-2xl bg-navy/5 p-4 border border-navy/15">
+            <div className="my-5 mx-auto grid h-48 w-48 place-items-center rounded-panel bg-navy/5 p-4 border border-navy/15">
               <svg viewBox="0 0 40 40" className="h-full w-full" fill="var(--color-on-brand)">
                 <rect x="2" y="2" width="14" height="14" rx="2" fill="none" stroke="var(--color-on-brand)" strokeWidth="3" />
                 <rect x="6" y="6" width="6" height="6" />
@@ -289,13 +289,13 @@ export function ShipperPortal() {
               </svg>
             </div>
 
-            <span className="font-mono font-bold text-navy text-[13px] block">
+            <span className="font-mono font-bold text-navy text-body block">
               {activeTrip.qrCodeToken}
             </span>
 
             <button
               onClick={() => setShowQrModal(false)}
-              className="btn-primary w-full mt-5 py-2.5 bg-brand text-on-brand font-bold text-[13px]"
+              className="btn-primary w-full mt-5 py-2.5 bg-brand text-on-brand font-bold text-body"
             >
               {t("Done", "تم")}
             </button>

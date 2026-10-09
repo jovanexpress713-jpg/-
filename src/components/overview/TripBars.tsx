@@ -37,8 +37,8 @@ export function TripBars({ trips, selectedId, onSelect }: Props) {
     <section className="card animate-fade-up flex flex-col p-5" style={{ animationDelay: "180ms" }}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-[16px] font-semibold text-text-primary">{t("Shipment Statistic", "إحصائيات الرحلات")}</h2>
-          <p className="mt-0.5 text-[11.5px] text-text-muted">
+          <h2 className="text-page-title font-semibold text-text-primary">{t("Shipment Statistic", "إحصائيات الرحلات")}</h2>
+          <p className="mt-0.5 text-label-lg text-text-muted">
             {t(
               `${Math.round(totalKm).toLocaleString()} km covered across active trips`,
               `${Math.round(totalKm).toLocaleString("ar")} كم مقطوعة عبر الرحلات`,
@@ -53,7 +53,7 @@ export function TripBars({ trips, selectedId, onSelect }: Props) {
               aria-selected={metric === id}
               onClick={() => setMetric(id)}
               className={cn(
-                "rounded-full px-3 py-1 text-[11.5px] transition-all duration-200",
+                "rounded-full px-3 py-1 text-label-lg transition-all duration-200",
                 metric === id ? "bg-brand font-semibold text-on-brand" : "text-text-secondary hover:text-text-primary",
               )}
             >
@@ -78,7 +78,7 @@ export function TripBars({ trips, selectedId, onSelect }: Props) {
               className="group relative flex h-full flex-1 flex-col items-center justify-end gap-2"
             >
               {(isHover || isSel) && (
-                <span className="animate-fade-in absolute -top-1 z-10 rounded-full bg-text-primary px-2 py-0.5 text-[10.5px] font-semibold whitespace-nowrap text-surface-0 tabular-nums">
+                <span className="animate-fade-in absolute -top-1 z-10 rounded-full bg-text-primary px-2 py-0.5 text-label font-semibold whitespace-nowrap text-surface-0 tabular-nums">
                   {Math.round(value).toLocaleString()}
                   {unit}
                 </span>
@@ -94,7 +94,7 @@ export function TripBars({ trips, selectedId, onSelect }: Props) {
                 />
               </div>
               <span className={cn("h-2 w-2 rounded-full transition-colors", isSel ? "bg-brand" : "bg-surface-6")} />
-              <span className={cn("max-w-full truncate text-[10.5px] tabular-nums", isSel ? "font-semibold text-text-primary" : "text-text-muted")}>
+              <span className={cn("max-w-full truncate text-label tabular-nums", isSel ? "font-semibold text-text-primary" : "text-text-muted")}>
                 {tr.tripNumber.slice(-4)}
               </span>
             </button>

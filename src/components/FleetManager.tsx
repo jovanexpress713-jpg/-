@@ -328,10 +328,10 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
       <div className="shrink-0 border-b border-border-subtle p-4 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-[22px] font-bold text-text-primary tracking-tight">
+            <h1 className="text-hero-sm font-bold text-text-primary tracking-tight">
               {t("Fleet Command & Vehicle Control", "إدارة أسطول الشاحنات الثقيلة")}
             </h1>
-            <p className="text-[12px] text-text-secondary mt-0.5">
+            <p className="text-label-lg text-text-secondary mt-0.5">
               {t(
                 "Authorized EJAZ heavy fleet with 4 canonical types & 3D telemetry",
                 "أسطول إيجاز المعتمد المكون حصرياً من 4 فئات مع مجسمات تفاعلية ثلاثية الأبعاد"
@@ -348,14 +348,14 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("Search truck, plate...", "ابحث باللوحة أو الموديل...")}
-                className="w-full bg-transparent text-[12px] text-text-primary placeholder:text-text-muted outline-none"
+                className="w-full bg-transparent text-label-lg text-text-primary placeholder:text-text-muted outline-none"
               />
             </div>
 
             {/* Add Truck Button */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="btn-primary text-[12px] px-3.5 py-1.5 gap-1.5"
+              className="btn-primary text-label-lg px-3.5 py-1.5 gap-1.5"
             >
               <IconPlus size={15} />
               <span>{t("Add Vehicle", "إضافة شاحنة")}</span>
@@ -365,36 +365,36 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
 
         {/* Fleet KPI Metric Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4">
-          <div className="bg-surface-2 p-3 rounded-[10px] border border-white/5 flex items-center justify-between">
+          <div className="bg-surface-2 p-3 rounded-control border border-white/5 flex items-center justify-between">
             <div>
-              <div className="text-[10.5px] text-text-muted">{t("Total Fleet", "إجمالي الأسطول")}</div>
-              <div className="text-[20px] font-bold text-text-primary tabular-nums mt-0.5">{totalTrucks}</div>
+              <div className="text-label text-text-muted">{t("Total Fleet", "إجمالي الأسطول")}</div>
+              <div className="text-headline font-bold text-text-primary tabular-nums mt-0.5">{totalTrucks}</div>
             </div>
             <span className="p-2 rounded-full bg-brand/15 text-brand">
               <IconTruck size={20} />
             </span>
           </div>
 
-          <div className="bg-surface-2 p-3 rounded-[10px] border border-white/5 flex items-center justify-between">
+          <div className="bg-surface-2 p-3 rounded-control border border-white/5 flex items-center justify-between">
             <div>
-              <div className="text-[10.5px] text-text-muted">{t("On Highway Transit", "على الطريق")}</div>
-              <div className="text-[20px] font-bold text-status-active tabular-nums mt-0.5">{onRoadCount}</div>
+              <div className="text-label text-text-muted">{t("On Highway Transit", "على الطريق")}</div>
+              <div className="text-headline font-bold text-status-active tabular-nums mt-0.5">{onRoadCount}</div>
             </div>
             <span className="h-3 w-3 rounded-full bg-status-active animate-pulse" />
           </div>
 
-          <div className="bg-surface-2 p-3 rounded-[10px] border border-white/5 flex items-center justify-between">
+          <div className="bg-surface-2 p-3 rounded-control border border-white/5 flex items-center justify-between">
             <div>
-              <div className="text-[10.5px] text-text-muted">{t("Available / Idle", "جاهزة ومتاحة")}</div>
-              <div className="text-[20px] font-bold text-status-waiting tabular-nums mt-0.5">{idleCount}</div>
+              <div className="text-label text-text-muted">{t("Available / Idle", "جاهزة ومتاحة")}</div>
+              <div className="text-headline font-bold text-status-waiting tabular-nums mt-0.5">{idleCount}</div>
             </div>
             <span className="h-3 w-3 rounded-full bg-status-waiting" />
           </div>
 
-          <div className="bg-surface-2 p-3 rounded-[10px] border border-white/5 flex items-center justify-between">
+          <div className="bg-surface-2 p-3 rounded-control border border-white/5 flex items-center justify-between">
             <div>
-              <div className="text-[10.5px] text-text-muted">{t("Under Maintenance", "في الصيانة الدورية")}</div>
-              <div className="text-[20px] font-bold text-text-secondary tabular-nums mt-0.5">{maintCount}</div>
+              <div className="text-label text-text-muted">{t("Under Maintenance", "في الصيانة الدورية")}</div>
+              <div className="text-headline font-bold text-text-secondary tabular-nums mt-0.5">{maintCount}</div>
             </div>
             <span className="h-3 w-3 rounded-full bg-surface-5" />
           </div>
@@ -403,13 +403,13 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
         {/* Filter Bar: 4 Types Only */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border-subtle/60">
           <div className="flex items-center gap-1.5 overflow-x-auto">
-            <span className="text-[11px] font-semibold text-text-muted me-1">
+            <span className="text-label font-semibold text-text-muted me-1">
               {t("Type", "فئة الشاحنة")}:
             </span>
             <button
               onClick={() => setSelectedTypeFilter("ALL")}
               className={cn(
-                "px-3 py-1 rounded-full text-[11.5px] font-semibold transition-colors",
+                "px-3 py-1 rounded-full text-label-lg font-semibold transition-colors",
                 selectedTypeFilter === "ALL"
                   ? "bg-brand text-on-brand shadow-sm"
                   : "bg-surface-2 text-text-secondary hover:text-text-primary"
@@ -425,7 +425,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   key={tid}
                   onClick={() => setSelectedTypeFilter(tid)}
                   className={cn(
-                    "px-3 py-1 rounded-full text-[11.5px] font-semibold transition-colors flex items-center gap-1.5 border",
+                    "px-3 py-1 rounded-full text-label-lg font-semibold transition-colors flex items-center gap-1.5 border",
                     isSelected
                       ? "bg-brand text-on-brand border-brand font-bold shadow-sm"
                       : "bg-surface-2 text-text-secondary border-border-subtle hover:text-text-primary"
@@ -439,7 +439,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-text-muted me-1">
+            <span className="text-label font-semibold text-text-muted me-1">
               {t("Status", "الحالة")}:
             </span>
             {[
@@ -452,7 +452,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                 key={st}
                 onClick={() => setSelectedStatusFilter(st)}
                 className={cn(
-                  "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors",
+                  "px-2.5 py-1 rounded-full text-label font-medium transition-colors",
                   selectedStatusFilter === st
                     ? "bg-surface-4 text-text-primary border border-border-subtle"
                     : "text-text-muted hover:text-text-secondary"
@@ -476,7 +476,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
             return (
               <div
                 key={v.id}
-                className="bg-surface-1 rounded-[14px] border border-border-subtle hover:border-brand/40 transition-all duration-200 shadow-md flex flex-col justify-between overflow-hidden"
+                className="bg-surface-1 rounded-inner border border-border-subtle hover:border-brand/40 transition-all duration-200 shadow-md flex flex-col justify-between overflow-hidden"
               >
                 {/* 3D Viewport or Official Image Header — drop a photograph here to apply it instantly */}
                 <div
@@ -502,7 +502,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                       <TruckImage
                         vehicle={v}
                         alt={`${v.brand} ${v.model}`}
-                        className="max-h-full max-w-full object-contain rounded-[8px]"
+                        className="max-h-full max-w-full object-contain rounded-chip"
                       />
                     </div>
                   )}
@@ -510,7 +510,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   {/* Floating Category Badge */}
                   <div className="absolute top-2.5 start-2.5 z-10 max-w-[calc(100%-5rem)]">
                     <span
-                      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-bold shadow-md"
+                      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-label font-bold shadow-md"
                       style={{
                         backgroundColor: meta.badgeBg,
                         color: meta.accentColor,
@@ -523,7 +523,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   </div>
 
                   {/* 3D vs Image Toggle Switch on Card */}
-                  <div className="absolute top-2.5 end-2.5 z-10 flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full p-0.5 border border-white/10 text-[9.5px]">
+                  <div className="absolute top-2.5 end-2.5 z-10 flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full p-0.5 border border-white/10 text-micro">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -567,7 +567,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                     }}
                     disabled={isPhotoBusy}
                     title={t("Upload a photograph for this vehicle", "رفع صورة لهذه المركبة")}
-                    className="absolute bottom-2.5 end-2.5 z-10 inline-flex items-center gap-1 rounded-full border border-brand/40 bg-black/75 px-2.5 py-1 text-[10px] font-bold text-brand backdrop-blur-md transition-colors hover:bg-brand hover:text-on-brand disabled:opacity-50"
+                    className="absolute bottom-2.5 end-2.5 z-10 inline-flex items-center gap-1 rounded-full border border-brand/40 bg-black/75 px-2.5 py-1 text-micro font-bold text-brand backdrop-blur-md transition-colors hover:bg-brand hover:text-on-brand disabled:opacity-50"
                   >
                     <IconUpload size={12} />
                     {isPhotoBusy && photoTargetVehicleId === v.id
@@ -578,7 +578,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   {photoDropVehicleId === v.id && (
                     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-1 bg-black/70 text-center">
                       <IconUpload size={22} className="text-brand" />
-                      <span className="text-[11.5px] font-bold text-brand">
+                      <span className="text-label-lg font-bold text-brand">
                         {t("Drop to apply to this vehicle", "أفلت الصورة لتُطبَّق على هذه المركبة")}
                       </span>
                     </div>
@@ -587,7 +587,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   {/* Custom Image Indicator if present */}
                   {v.customImage && cardDisplayMode[v.id] === "image" && (
                     <div className="absolute bottom-2 start-2.5 z-10">
-                      <span className="px-2 py-0.5 rounded bg-black/80 text-brand text-[9.5px] font-mono border border-brand/30">
+                      <span className="px-2 py-0.5 rounded bg-black/80 text-brand text-micro font-mono border border-brand/30">
                         {t("Custom Image", "صورة خاصة")}
                       </span>
                     </div>
@@ -600,31 +600,31 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                     <TruckTypeAvatar truckType={normType} size={42} iconSize={22} showBadge />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-[14px] font-bold text-text-primary">
+                        <span className="font-mono text-card-title font-bold text-text-primary">
                           {v.plate}
                         </span>
-                        <span className="text-[11px] text-text-muted font-mono">{v.year}</span>
+                        <span className="text-label text-text-muted font-mono">{v.year}</span>
                       </div>
-                      <div className="text-[12.5px] font-semibold text-text-secondary mt-0.5 truncate">
+                      <div className="text-body font-semibold text-text-secondary mt-0.5 truncate">
                         {v.brand} {v.model}
                       </div>
                     </div>
                   </div>
 
                   {/* Telemetry Bar */}
-                  <div className="grid grid-cols-3 gap-2 bg-surface-2 p-2.5 rounded-[8px] border border-white/5 text-[11px]">
+                  <div className="grid grid-cols-3 gap-2 bg-surface-2 p-2.5 rounded-chip border border-white/5 text-label">
                     <div>
-                      <div className="text-text-muted text-[10px]">{t("Odometer", "العداد")}</div>
+                      <div className="text-text-muted text-micro">{t("Odometer", "العداد")}</div>
                       <div className="font-semibold text-text-primary tabular-nums mt-0.5">
                         {v.odometer?.toLocaleString() || "312,400"} كم
                       </div>
                     </div>
                     <div>
-                      <div className="text-text-muted text-[10px]">{t("Fuel", "الوقود")}</div>
+                      <div className="text-text-muted text-micro">{t("Fuel", "الوقود")}</div>
                       <div className="font-semibold text-brand tabular-nums mt-0.5">{v.fuel}%</div>
                     </div>
                     <div>
-                      <div className="text-text-muted text-[10px]">{t("Capacity", "الحمولة")}</div>
+                      <div className="text-text-muted text-micro">{t("Capacity", "الحمولة")}</div>
                       <div className="font-semibold text-text-primary tabular-nums mt-0.5">
                         {meta.maxPayloadTons} طن
                       </div>
@@ -632,9 +632,9 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   </div>
 
                   {/* Assigned Driver & Active Trip */}
-                  <div className="flex items-center justify-between text-[11.5px] pt-1">
+                  <div className="flex items-center justify-between text-label-lg pt-1">
                     <div className="flex items-center gap-2 truncate">
-                      <span className="grid h-6 w-6 place-items-center rounded-full bg-brand/20 text-brand text-[10px] font-bold">
+                      <span className="grid h-6 w-6 place-items-center rounded-full bg-brand/20 text-brand text-micro font-bold">
                         {v.driver.initials}
                       </span>
                       <span className="text-text-primary font-medium truncate">{v.driver.name}</span>
@@ -642,7 +642,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
 
                     <button
                       onClick={() => setShowAssignDriverModal(v)}
-                      className="text-[11px] text-brand hover:underline"
+                      className="text-label text-brand hover:underline"
                     >
                       {t("Change Driver", "تغيير السائق")}
                     </button>
@@ -654,18 +654,18 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   <button
                     type="button"
                     onClick={() => setShowVehicleDetailsModal(v)}
-                    className="text-[11.5px] font-bold text-brand hover:underline flex items-center gap-1"
+                    className="text-label-lg font-bold text-brand hover:underline flex items-center gap-1"
                   >
                     <span>{t("Details & 3D Viewer", "تفاصيل الشاحنة والمجسم")}</span>
                   </button>
 
                   <div className="flex items-center gap-2">
                     {activeTrip ? (
-                      <span className="font-mono text-status-active text-[11px] font-semibold">
+                      <span className="font-mono text-status-active text-label font-semibold">
                         {activeTrip.tripNumber}
                       </span>
                     ) : (
-                      <span className="text-[11px] text-text-muted">{t("Available", "متاحة")}</span>
+                      <span className="text-label text-text-muted">{t("Available", "متاحة")}</span>
                     )}
 
                     {activeTrip && onOpenLiveTracking && (
@@ -675,7 +675,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                           selectTruck(v.id);
                           onOpenLiveTracking(activeTrip.id);
                         }}
-                        className="text-[10.5px] font-bold px-2 py-0.5 rounded bg-surface-3 hover:bg-surface-4 text-text-primary transition-colors"
+                        className="text-label font-bold px-2 py-0.5 rounded bg-surface-3 hover:bg-surface-4 text-text-primary transition-colors"
                       >
                         {t("Track", "تتبع")}
                       </button>
@@ -691,9 +691,9 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
       {/* Add Vehicle Modal with Live 3D Preview (Strictly 4 Types) */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 lg:p-6 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-2xl bg-surface-1 rounded-[16px] border border-border-subtle shadow-2xl flex flex-col overflow-hidden text-text-primary max-h-[90vh]">
+          <div className="w-full max-w-2xl bg-surface-1 rounded-panel border border-border-subtle shadow-2xl flex flex-col overflow-hidden text-text-primary max-h-[90vh]">
             <div className="flex items-center justify-between p-4 border-b border-border-subtle">
-              <h3 className="font-bold text-[16px] text-text-primary">
+              <h3 className="font-bold text-page-title text-text-primary">
                 {t("Add Heavy Fleet Unit", "إضافة شاحنة جديدة للأسطول")}
               </h3>
               <button onClick={() => setShowAddModal(false)} className="btn-icon-sm">
@@ -703,8 +703,8 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
 
             <form onSubmit={handleCreateVehicle} className="flex-1 overflow-y-auto p-5 space-y-4">
               {/* Dynamic 3D Preview inside Form */}
-              <div className="bg-surface-2 rounded-[12px] border border-border-subtle overflow-hidden">
-                <div className="px-3.5 py-2 border-b border-white/5 flex items-center justify-between text-[11px] text-text-secondary">
+              <div className="bg-surface-2 rounded-inner border border-border-subtle overflow-hidden">
+                <div className="px-3.5 py-2 border-b border-white/5 flex items-center justify-between text-label text-text-secondary">
                   <span>{t("Live 3D Preview of Selected Type", "المعاينة الحية لنوع الشاحنة المختار")}</span>
                   <span className="font-bold text-brand">{APPROVED_VEHICLE_TYPES[formType].arabicName}</span>
                 </div>
@@ -721,7 +721,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
 
               {/* 4 Canonical Types Selector Buttons */}
               <div>
-                <label className="block text-[11.5px] font-bold text-text-secondary mb-1.5">
+                <label className="block text-label-lg font-bold text-text-secondary mb-1.5">
                   {t("Approved Vehicle Category (Strictly 4)", "فئة الشاحنة المعتمدة (٤ أنواع فقط)")} *
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -736,14 +736,14 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                           setFormMaxLoad(String(vt.maxPayloadTons));
                         }}
                         className={cn(
-                          "p-2.5 rounded-[10px] text-start border transition-all flex flex-col justify-between",
+                          "p-2.5 rounded-control text-start border transition-all flex flex-col justify-between",
                           isSelected
                             ? "bg-brand text-on-brand border-brand font-bold shadow-md"
                             : "bg-surface-2 text-text-secondary border-border-subtle hover:bg-surface-3"
                         )}
                       >
-                        <span className="text-[12.5px] font-bold">{vt.arabicName}</span>
-                        <span className="text-[10px] opacity-80 mt-1">{vt.englishName}</span>
+                        <span className="text-body font-bold">{vt.arabicName}</span>
+                        <span className="text-micro opacity-80 mt-1">{vt.englishName}</span>
                       </button>
                     );
                   })}
@@ -751,14 +751,14 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               </div>
 
               {/* Official Vehicle Asset for the selected category (Single Source of Truth) */}
-              <div className="rounded-[12px] border border-border-subtle bg-surface-2 p-3">
+              <div className="rounded-inner border border-border-subtle bg-surface-2 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11.5px] font-bold text-text-secondary">
+                  <span className="text-label-lg font-bold text-text-secondary">
                     {t("Official Asset for the selected category", "الأصل الرسمي للنوع المختار")}
                   </span>
                   <span
                     className={cn(
-                      "rounded-full px-2 py-[2px] text-[9.5px] font-bold",
+                      "rounded-full px-2 py-[2px] text-micro font-bold",
                       registry.types[formType].hasOfficialModel
                         ? "bg-status-active/15 text-status-active"
                         : "bg-status-waiting/15 text-status-waiting",
@@ -770,10 +770,10 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   </span>
                 </div>
                 <div className="flex items-stretch gap-3">
-                  <div className="h-[92px] w-[140px] shrink-0 overflow-hidden rounded-[10px] border border-border-subtle bg-surface-3">
+                  <div className="h-[92px] w-[140px] shrink-0 overflow-hidden rounded-control border border-border-subtle bg-surface-3">
                     <TruckImage body={formType} className="h-full w-full object-cover" />
                   </div>
-                  <div className="flex-1 text-[11px] leading-relaxed text-text-secondary">
+                  <div className="flex-1 text-label leading-relaxed text-text-secondary">
                     <div className="font-bold text-text-primary">
                       {APPROVED_VEHICLE_TYPES[formType].arabicName} · {APPROVED_VEHICLE_TYPES[formType].englishName}
                     </div>
@@ -783,19 +783,19 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                         "هذا الأصل نفسه مرتبط بهذا النوع في التطبيق ولوحة التحكم — رفع واحد يظهر في كل الشاشات.",
                       )}
                     </div>
-                    <div className="mt-1 font-mono text-[10px] text-text-muted">
+                    <div className="mt-1 font-mono text-micro text-text-muted">
                       {typeImage(formType)}
                       {typeModel(formType)?.url ? ` · ${typeModel(formType)?.url}` : ""}
                     </div>
                   </div>
                 </div>
-                {assetError && <div className="mt-2 text-[10.5px] text-status-danger">{assetError}</div>}
+                {assetError && <div className="mt-2 text-label text-status-danger">{assetError}</div>}
               </div>
 
               {/* Plate & Brand */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Plate Number", "رقم اللوحة")} *
                   </label>
                   <input
@@ -804,18 +804,18 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                     value={formPlate}
                     onChange={(e) => setFormPlate(e.target.value)}
                     placeholder={t("R J D 4821", "ر ج د ٤٨٢١")}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Manufacturer Brand", "الشركة المصنعة")}
                   </label>
                   <select
                     value={formBrand}
                     onChange={(e) => setFormBrand(e.target.value)}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   >
                     <option value="Mercedes-Benz">Mercedes-Benz</option>
                     <option value="Volvo">Volvo</option>
@@ -828,62 +828,62 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               </div>
 
               {/* Model & Year */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Model", "طراز الشاحنة")}
                   </label>
                   <input
                     type="text"
                     value={formModel}
                     onChange={(e) => setFormModel(e.target.value)}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Model Year", "سنة الصنع")}
                   </label>
                   <input
                     type="number"
                     value={formYear}
                     onChange={(e) => setFormYear(e.target.value)}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               {/* Max Payload & Cab */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Max Payload (Tons)", "الحمولة القصوى (طن)")}
                   </label>
                   <input
                     type="number"
                     value={formMaxLoad}
                     onChange={(e) => setFormMaxLoad(e.target.value)}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Cabin Type", "نوع الكابينة")}
                   </label>
                   <input
                     type="text"
                     value={formCab}
                     onChange={(e) => setFormCab(e.target.value)}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               {/* Optional Custom Vehicle Photo */}
               <div>
-                <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                <label className="block text-label font-semibold text-text-muted mb-1">
                   {t("Custom Vehicle Photo URL (Optional)", "رابط صورة المركبة الخاصة (اختياري)")}
                 </label>
                 <input
@@ -891,9 +891,9 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   value={formCustomImage}
                   onChange={(e) => setFormCustomImage(e.target.value)}
                   placeholder={t("https://… or leave empty to use the official type image", "https://... أو اترك فارغاً لاعتماد الصورة الرسمية للنوع")}
-                  className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary text-[12px] outline-none focus:border-brand"
+                  className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary text-label-lg outline-none focus:border-brand"
                 />
-                <p className="text-[10px] text-text-muted mt-1">
+                <p className="text-micro text-text-muted mt-1">
                   {t(
                     "If left empty, the official reference asset for this category will be used.",
                     "في حال ترك الحقل فارغاً، يتم استخدام الصورة الرسمية المعتمدة لنوع الشاحنة تلقائياً."
@@ -905,7 +905,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full btn-primary py-2.5 font-bold text-[13px]"
+                  className="w-full btn-primary py-2.5 font-bold text-body"
                 >
                   {isSubmitting ? t("Adding...", "جارٍ الحفظ والاعتماد...") : t("Confirm & Save Vehicle", "تأكيد وإضافة الشاحنة")}
                 </button>
@@ -918,9 +918,9 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
       {/* Driver Assignment Modal */}
       {showAssignDriverModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-surface-1 rounded-[14px] p-5 border border-border-subtle text-text-primary">
+          <div className="w-full max-w-md bg-surface-1 rounded-inner p-5 border border-border-subtle text-text-primary">
             <div className="flex items-center justify-between pb-3 border-b border-white/5">
-              <h3 className="font-bold text-[14px] text-text-primary">
+              <h3 className="font-bold text-card-title text-text-primary">
                 {t("Assign Driver to Vehicle", "تعيين كابتن أسطول للشاحنة")}
               </h3>
               <button onClick={() => setShowAssignDriverModal(null)} className="btn-icon-sm">
@@ -929,18 +929,18 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
             </div>
 
             <div className="py-3">
-              <div className="bg-surface-2 p-3 rounded-[8px] mb-3 flex items-center justify-between text-[12px]">
+              <div className="bg-surface-2 p-3 rounded-chip mb-3 flex items-center justify-between text-label-lg">
                 <span className="font-mono font-bold text-brand">{showAssignDriverModal.plate}</span>
                 <span className="text-text-secondary">{showAssignDriverModal.model}</span>
               </div>
 
-              <label className="block text-[11.5px] font-bold text-text-muted mb-1">
+              <label className="block text-label-lg font-bold text-text-muted mb-1">
                 {t("Select Fleet Driver", "اختر السائق المعتمد")}
               </label>
               <select
                 value={selectedDriverId}
                 onChange={(e) => setSelectedDriverId(e.target.value)}
-                className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2.5 text-text-primary text-[12.5px] outline-none"
+                className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2.5 text-text-primary text-body outline-none"
               >
                 <option value="">{t("Select driver...", "اختر سائقاً...")}</option>
                 {drivers.map((d) => (
@@ -955,14 +955,14 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               <button
                 type="button"
                 onClick={() => setShowAssignDriverModal(null)}
-                className="btn-ghost text-[12px]"
+                className="btn-ghost text-label-lg"
               >
                 {t("Cancel", "إلغاء")}
               </button>
               <button
                 onClick={handleAssignDriverSubmit}
                 disabled={!selectedDriverId}
-                className="btn-primary text-[12px]"
+                className="btn-primary text-label-lg"
               >
                 {t("Assign", "تأكيد التعيين")}
               </button>
@@ -974,18 +974,18 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
       {/* Vehicle 3D & Official Asset Details Modal */}
       {showVehicleDetailsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 lg:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-4xl bg-surface-1 rounded-[16px] border border-border-subtle shadow-2xl flex flex-col overflow-hidden text-text-primary max-h-[92vh]">
+          <div className="w-full max-w-4xl bg-surface-1 rounded-panel border border-border-subtle shadow-2xl flex flex-col overflow-hidden text-text-primary max-h-[92vh]">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 px-6 border-b border-border-subtle bg-surface-2">
               <div className="flex items-center gap-3">
-                <span className="font-mono font-bold text-[16px] text-brand">
+                <span className="font-mono font-bold text-page-title text-brand">
                   {showVehicleDetailsModal.plate}
                 </span>
                 <span className="text-text-muted">·</span>
-                <span className="text-[14px] font-semibold text-text-primary">
+                <span className="text-card-title font-semibold text-text-primary">
                   {showVehicleDetailsModal.brand} {showVehicleDetailsModal.model}
                 </span>
-                <span className="badge bg-brand/15 text-brand text-[11px] font-mono">
+                <span className="badge bg-brand/15 text-brand text-label font-mono">
                   {showVehicleDetailsModal.year}
                 </span>
               </div>
@@ -1003,7 +1003,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               {/* Top Section: 3D Model (Interactive 360°) + Official Reference Asset */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* 3D WebGL Canvas */}
-                <div className="lg:col-span-8 bg-surface-2 rounded-[12px] border border-border-subtle overflow-hidden h-[300px] lg:h-[340px] relative">
+                <div className="lg:col-span-8 bg-surface-2 rounded-inner border border-border-subtle overflow-hidden h-[300px] lg:h-[340px] relative">
                   <Vehicle3DViewer
                     vehicleType={showVehicleDetailsModal.body}
                     vehiclePlate={showVehicleDetailsModal.plate}
@@ -1014,7 +1014,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                     showControls={true}
                   />
                   <div className="absolute top-2.5 start-2.5 z-20 pointer-events-none">
-                    <span className="px-2.5 py-1 rounded bg-black/70 backdrop-blur-sm text-brand text-[11px] font-bold border border-brand/30">
+                    <span className="px-2.5 py-1 rounded bg-black/70 backdrop-blur-sm text-brand text-label font-bold border border-brand/30">
                       {t("Interactive 3D Engine · Drag 360°", "مجسم 3D تفاعلي · اسحب للدوران 360°")}
                     </span>
                   </div>
@@ -1022,17 +1022,17 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
 
                 {/* Official Reference Asset View */}
                 <div className="lg:col-span-4 flex flex-col gap-3">
-                  <div className="bg-surface-2 rounded-[12px] border border-border-subtle p-3 flex-1 flex flex-col justify-between">
+                  <div className="bg-surface-2 rounded-inner border border-border-subtle p-3 flex-1 flex flex-col justify-between">
                     <div>
-                      <div className="text-[11.5px] font-bold text-text-secondary mb-2 flex items-center justify-between">
+                      <div className="text-label-lg font-bold text-text-secondary mb-2 flex items-center justify-between">
                         <span>{t("Active Visual Asset", "الصورة المعتمدة الحالية")}</span>
                         {showVehicleDetailsModal.customImage ? (
-                          <span className="text-[10px] text-brand font-semibold">{t("Custom Vehicle Photo", "صورة خاصة بالمركبة")}</span>
+                          <span className="text-micro text-brand font-semibold">{t("Custom Vehicle Photo", "صورة خاصة بالمركبة")}</span>
                         ) : (
-                          <span className="text-[10px] text-text-muted">{t("Official Type Asset", "الصورة الرسمية للنوع")}</span>
+                          <span className="text-micro text-text-muted">{t("Official Type Asset", "الصورة الرسمية للنوع")}</span>
                         )}
                       </div>
-                      <div className="h-[150px] w-full rounded-[8px] bg-black/50 border border-white/5 overflow-hidden flex items-center justify-center p-2">
+                      <div className="h-[150px] w-full rounded-chip bg-black/50 border border-white/5 overflow-hidden flex items-center justify-center p-2">
                         <TruckImage
                           vehicle={showVehicleDetailsModal}
                           alt={showVehicleDetailsModal.plate}
@@ -1041,10 +1041,10 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                       </div>
                     </div>
 
-                    <div className="pt-2 text-[10.5px] text-text-muted">
+                    <div className="pt-2 text-label text-text-muted">
                       {showVehicleDetailsModal.customImage ? (
                         <div className="flex items-center justify-between">
-                          <span className="truncate max-w-[170px] font-mono text-[9.5px]">
+                          <span className="truncate max-w-[170px] font-mono text-micro">
                             {showVehicleDetailsModal.customImage}
                           </span>
                           <button
@@ -1060,7 +1060,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                               }
                               toast(t("Reverted to official type image", "تم الرجوع للصورة الرسمية للنوع"));
                             }}
-                            className="text-red-400 hover:underline text-[10px] font-semibold shrink-0"
+                            className="text-red-400 hover:underline text-micro font-semibold shrink-0"
                           >
                             {t("Use Official Image", "حذف واعتماد الرسمية")}
                           </button>
@@ -1077,7 +1077,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   </div>
 
                   {/* Publish a real vehicle photograph (stored in the central asset registry) */}
-                  <div className="bg-surface-2 rounded-[12px] border border-border-subtle p-3 text-[11.5px]">
+                  <div className="bg-surface-2 rounded-inner border border-border-subtle p-3 text-label-lg">
                     <button
                       type="button"
                       disabled={isPhotoBusy}
@@ -1086,24 +1086,24 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                         setAssetError(null);
                         vehiclePhotoInputRef.current?.click();
                       }}
-                      className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-brand/40 bg-brand/10 py-2 text-[12px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand disabled:opacity-60"
+                      className="flex w-full items-center justify-center gap-2 rounded-control border border-brand/40 bg-brand/10 py-2 text-label-lg font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand disabled:opacity-60"
                     >
                       <IconUpload size={14} />
                       {isPhotoBusy
                         ? t("Publishing…", "جارٍ النشر…")
                         : t("Publish a photograph for this vehicle", "نشر صورة فعلية لهذه المركبة")}
                     </button>
-                    <p className="mt-1.5 text-[10px] leading-relaxed text-text-muted">
+                    <p className="mt-1.5 text-micro leading-relaxed text-text-muted">
                       {t(
                         "The published photograph is used for this unit only; its category asset still governs the fleet type.",
                         "الصورة المنشورة تُستخدم لهذه المركبة فقط، مع بقاء الأصل الرسمي هو المرجع لنوعها.",
                       )}
                     </p>
-                    {assetError && <div className="mt-1.5 text-[10.5px] text-status-danger">{assetError}</div>}
+                    {assetError && <div className="mt-1.5 text-label text-status-danger">{assetError}</div>}
                   </div>
 
                   {/* Quick Custom Image URL Input */}
-                  <div className="bg-surface-2 rounded-[12px] border border-border-subtle p-3 text-[11.5px]">
+                  <div className="bg-surface-2 rounded-inner border border-border-subtle p-3 text-label-lg">
                     <label className="block font-semibold text-text-secondary mb-1">
                       {t("Override with Custom Photo URL", "تخصيص صورة خاصة لهذه المركبة")}
                     </label>
@@ -1113,7 +1113,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                         placeholder="https://..."
                         defaultValue={showVehicleDetailsModal.customImage || ""}
                         id="custom-img-input"
-                        className="flex-1 bg-surface-3 border border-border-subtle rounded px-2 py-1 text-[11px] text-text-primary outline-none"
+                        className="flex-1 bg-surface-3 border border-border-subtle rounded px-2 py-1 text-label text-text-primary outline-none"
                       />
                       <button
                         type="button"
@@ -1124,7 +1124,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                           setShowVehicleDetailsModal((prev) => prev ? { ...prev, customImage: val || undefined } : null);
                           toast(t("Vehicle image updated", "تم حفظ صورة المركبة بنجاح"));
                         }}
-                        className="btn-primary text-[10.5px] px-2.5 py-1"
+                        className="btn-primary text-label px-2.5 py-1"
                       >
                         {t("Save", "حفظ")}
                       </button>
@@ -1134,20 +1134,20 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               </div>
 
               {/* Immediate Body Type Switcher (Strictly 4 Approved Types) */}
-              <div className="bg-surface-2 rounded-[12px] p-4 border border-border-subtle">
+              <div className="bg-surface-2 rounded-inner p-4 border border-border-subtle">
                 <div className="flex items-center justify-between mb-2.5">
                   <div>
-                    <h4 className="text-[13px] font-bold text-text-primary">
+                    <h4 className="text-body font-bold text-text-primary">
                       {t("Change Vehicle Category (Strictly 4 Types)", "تغيير فئة الشاحنة (٤ فئات معتمدة فقط)")}
                     </h4>
-                    <p className="text-[11px] text-text-muted mt-0.5">
+                    <p className="text-label text-text-muted mt-0.5">
                       {t(
                         "Selecting a category instantly syncs both the official image and the 3D model across all screens.",
                         "تغيير الفئة يحدث تلقائياً كلاً من المجسم ثلاثي الأبعاد والصورة الرسمية في لوحة التحكم وتطبيق الجوال معاً."
                       )}
                     </p>
                   </div>
-                  <span className="text-[12px] font-mono font-bold text-brand">
+                  <span className="text-label-lg font-mono font-bold text-brand">
                     {getVehicleTypeMeta(showVehicleDetailsModal.body).arabicName}
                   </span>
                 </div>
@@ -1169,21 +1169,21 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                           );
                         }}
                         className={cn(
-                          "p-3 rounded-[10px] border text-start transition-all flex flex-col justify-between",
+                          "p-3 rounded-control border text-start transition-all flex flex-col justify-between",
                           isCurrent
                             ? "bg-brand text-on-brand border-brand font-bold shadow-md scale-[1.02]"
                             : "bg-surface-1 text-text-secondary border-border-subtle hover:bg-surface-3"
                         )}
                       >
                         <div className="flex items-center justify-between gap-1.5">
-                          <span className="inline-flex min-w-0 items-center gap-1.5 text-[13px] font-bold">
+                          <span className="inline-flex min-w-0 items-center gap-1.5 text-body font-bold">
                             <TruckTypeIcon truckType={vt.id} size={17} className="shrink-0" />
                             <span className="truncate">{vt.arabicName}</span>
                           </span>
                           {isCurrent && <span className="h-2 w-2 shrink-0 rounded-full bg-navy" />}
                         </div>
-                        <div className="text-[10.5px] opacity-80 mt-1">{vt.englishName}</div>
-                        <div className="text-[10px] opacity-70 mt-2 font-mono">
+                        <div className="text-label opacity-80 mt-1">{vt.englishName}</div>
+                        <div className="text-micro opacity-70 mt-2 font-mono">
                           {vt.maxPayloadTons} {t("tons", "طن")}
                         </div>
                       </button>
@@ -1193,7 +1193,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               </div>
 
               {/* Vehicle Technical Specifications — identical values, now glyphed */}
-              <div className="grid grid-cols-2 gap-3 text-[12px] sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 text-label-lg sm:grid-cols-4">
                 <SpecTile
                   icon={<IconDriver size={14} />}
                   label={t("Driver", "السائق المعتمد")}
@@ -1237,7 +1237,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   onClick={() => {
                     setEditingVehicle({ ...showVehicleDetailsModal });
                   }}
-                  className="btn-ghost text-[11.5px] py-1.5 px-3"
+                  className="btn-ghost text-label-lg py-1.5 px-3"
                 >
                   {t("Edit Specs", "تعديل بيانات الشاحنة")}
                 </button>
@@ -1246,7 +1246,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                   onClick={() => {
                     setDeletingVehicle(showVehicleDetailsModal);
                   }}
-                  className="btn-ghost text-[11.5px] py-1.5 px-3 text-status-danger hover:bg-status-danger/10"
+                  className="btn-ghost text-label-lg py-1.5 px-3 text-status-danger hover:bg-status-danger/10"
                 >
                   {t("Delete Vehicle", "إخراج من الأسطول")}
                 </button>
@@ -1254,7 +1254,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               <button
                 type="button"
                 onClick={() => setShowVehicleDetailsModal(null)}
-                className="btn-primary py-1.5 px-5 text-[12px] font-bold"
+                className="btn-primary py-1.5 px-5 text-label-lg font-bold"
               >
                 {t("Done", "إغلاق")}
               </button>
@@ -1266,9 +1266,9 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
       {/* ── EDIT VEHICLE MODAL ── */}
       {editingVehicle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-lg bg-surface-1 rounded-[14px] p-5 border border-border-subtle shadow-2xl">
+          <div className="w-full max-w-lg bg-surface-1 rounded-inner p-5 border border-border-subtle shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
-              <h3 className="font-bold text-[15px] text-text-primary">
+              <h3 className="font-bold text-page-title text-text-primary">
                 {t("Edit Vehicle Data", "تعديل مواصفات وبيانات الشاحنة")}
               </h3>
               <button onClick={() => setEditingVehicle(null)} className="btn-icon-sm">
@@ -1277,9 +1277,9 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
             </div>
 
             <form onSubmit={handleEditVehicleSubmit} className="mt-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Plate Number", "رقم اللوحة")} *
                   </label>
                   <input
@@ -1287,67 +1287,67 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                     required
                     value={editingVehicle.plate}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, plate: e.target.value })}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Model Year", "سنة الصنع")}
                   </label>
                   <input
                     type="number"
                     value={editingVehicle.year}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, year: Number(e.target.value) })}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Manufacturer", "الشركة المصنعة")}
                   </label>
                   <input
                     type="text"
                     value={editingVehicle.brand}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, brand: e.target.value as any })}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Model Name", "طراز الشاحنة")}
                   </label>
                   <input
                     type="text"
                     value={editingVehicle.model}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, model: e.target.value })}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Max Payload (Tons)", "الحمولة القصوى (طن)")}
                   </label>
                   <input
                     type="number"
                     value={editingVehicle.maxLoad}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, maxLoad: Number(e.target.value) })}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Operational Status", "الحالة التشغيلية")}
                   </label>
                   <select
                     value={editingVehicle.status}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, status: e.target.value as any })}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   >
                     <option value="active">{t("Active / On Road", "في رحلة نشطة")}</option>
                     <option value="waiting">{t("Available / Idle", "جاهزة ومتاحة")}</option>
@@ -1357,14 +1357,14 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                <label className="block text-label font-semibold text-text-muted mb-1">
                   {t("Cabin Type", "نوع الكابينة")}
                 </label>
                 <input
                   type="text"
                   value={editingVehicle.cab}
                   onChange={(e) => setEditingVehicle({ ...editingVehicle, cab: e.target.value })}
-                  className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                  className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                 />
               </div>
 
@@ -1372,14 +1372,14 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                 <button
                   type="button"
                   onClick={() => setEditingVehicle(null)}
-                  className="btn-ghost text-[12px]"
+                  className="btn-ghost text-label-lg"
                 >
                   {t("Cancel", "إلغاء")}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary text-[12px] px-4 py-2"
+                  className="btn-primary text-label-lg px-4 py-2"
                 >
                   {isSubmitting ? t("Saving…", "جارٍ الحفظ…") : t("Save Changes", "حفظ التعديلات")}
                 </button>
@@ -1392,17 +1392,17 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
       {/* ── DELETE VEHICLE CONFIRMATION MODAL ── */}
       {deletingVehicle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-surface-1 rounded-[14px] p-5 border border-status-danger/40 shadow-2xl">
-            <h3 className="font-bold text-[16px] text-status-danger">
+          <div className="w-full max-w-md bg-surface-1 rounded-inner p-5 border border-status-danger/40 shadow-2xl">
+            <h3 className="font-bold text-page-title text-status-danger">
               {t("Retire Vehicle from Fleet", "تأكيد إخراج الشاحنة من الأسطول")}
             </h3>
-            <p className="mt-2 text-[12.5px] text-text-secondary leading-relaxed">
+            <p className="mt-2 text-body text-text-secondary leading-relaxed">
               {t(
                 "Are you sure you want to delete this vehicle from active fleet registries? This will disassociate any assigned drivers.",
                 "هل أنت متأكد من رغبتك في حذف هذه الشاحنة من سجل الأسطول المعتمد؟ سيتم فك ارتباط أي كابتن مرتبط بها.",
               )}
             </p>
-            <div className="mt-3 rounded-[8px] bg-surface-2 p-2.5 text-[12px] font-mono font-bold text-text-primary flex items-center justify-between">
+            <div className="mt-3 rounded-chip bg-surface-2 p-2.5 text-label-lg font-mono font-bold text-text-primary flex items-center justify-between">
               <span>{deletingVehicle.plate}</span>
               <span className="font-sans text-text-muted">{deletingVehicle.brand} {deletingVehicle.model}</span>
             </div>
@@ -1411,7 +1411,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
               <button
                 type="button"
                 onClick={() => setDeletingVehicle(null)}
-                className="btn-ghost text-[12px]"
+                className="btn-ghost text-label-lg"
               >
                 {t("Cancel", "تراجع")}
               </button>
@@ -1419,7 +1419,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleDeleteVehicleSubmit}
-                className="rounded-[8px] bg-status-danger px-4 py-2 text-[12px] font-bold text-white transition-opacity hover:opacity-90"
+                className="rounded-chip bg-status-danger px-4 py-2 text-label-lg font-bold text-white transition-opacity hover:opacity-90"
               >
                 {isSubmitting ? t("Deleting…", "جارٍ الحذف…") : t("Confirm Delete", "تأكيد الحذف")}
               </button>

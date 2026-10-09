@@ -249,14 +249,14 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-[8px] bg-brand/12 text-brand">
+              <span className="grid h-8 w-8 place-items-center rounded-chip bg-brand/12 text-brand">
                 <IconDriver size={18} />
               </span>
-              <h1 className="text-[20px] font-bold text-text-primary lg:text-[22px]">
+              <h1 className="text-headline font-bold text-text-primary lg:text-hero-sm">
                 {t("Fleet Drivers & Crew Control", "سجل وإدارة كباتن الأسطول")}
               </h1>
             </div>
-            <p className="mt-1 text-[12px] text-text-secondary">
+            <p className="mt-1 text-label-lg text-text-secondary">
               {t(
                 "Driver allocation, regulatory certifications, and live road dispatch status",
                 "إدارة السائقين المعتمدين، الرخص المهنية، والجاهزية الميدانية للرحلات",
@@ -265,22 +265,22 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="flex flex-wrap items-center gap-2 text-[12px]">
-            <div className="flex items-center gap-1.5 rounded-[8px] border border-border-subtle bg-surface-2 px-3 py-1.5 font-mono tabular-nums">
+          <div className="flex flex-wrap items-center gap-2 text-label-lg">
+            <div className="flex items-center gap-1.5 rounded-chip border border-border-subtle bg-surface-2 px-3 py-1.5 font-mono tabular-nums">
               <span className="text-text-muted">{t("Total Drivers", "إجمالي الكباتن")}:</span>
               <span className="font-bold text-text-primary">{totalCount}</span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-[8px] border border-border-subtle bg-surface-2 px-3 py-1.5 font-mono tabular-nums">
+            <div className="flex items-center gap-1.5 rounded-chip border border-border-subtle bg-surface-2 px-3 py-1.5 font-mono tabular-nums">
               <span className="h-2 w-2 rounded-full bg-status-active" />
               <span className="text-text-muted">{t("On Highway", "على الطريق")}:</span>
               <span className="font-bold text-status-active">{onTripCount}</span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-[8px] border border-border-subtle bg-surface-2 px-3 py-1.5 font-mono tabular-nums">
+            <div className="flex items-center gap-1.5 rounded-chip border border-border-subtle bg-surface-2 px-3 py-1.5 font-mono tabular-nums">
               <span className="h-2 w-2 rounded-full bg-brand" />
               <span className="text-text-muted">{t("Available", "متاح")}:</span>
               <span className="font-bold text-brand">{availableCount}</span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-[8px] border border-border-subtle bg-surface-2 px-3 py-1.5 font-mono tabular-nums">
+            <div className="flex items-center gap-1.5 rounded-chip border border-border-subtle bg-surface-2 px-3 py-1.5 font-mono tabular-nums">
               <span className="h-2 w-2 rounded-full bg-status-waiting" />
               <span className="text-text-muted">{t("Rest / Leave", "راحة/إجازة")}:</span>
               <span className="font-bold text-status-waiting">{restCount}</span>
@@ -291,7 +291,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
         {/* Filter and Search Bar */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           {/* Segmented Filter */}
-          <div className="flex flex-wrap items-center gap-1 rounded-[10px] bg-surface-2 p-1 border border-border-subtle">
+          <div className="flex flex-wrap items-center gap-1 rounded-control bg-surface-2 p-1 border border-border-subtle">
             {(
               [
                 ["ALL", t("All Crew", "الكل")],
@@ -305,7 +305,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                 key={key}
                 onClick={() => setStatusFilter(key)}
                 className={cn(
-                  "rounded-[7px] px-3 py-1.5 text-[11.5px] font-semibold transition-all",
+                  "rounded-chip px-3 py-1.5 text-label-lg font-semibold transition-all",
                   statusFilter === key
                     ? "bg-surface-4 text-text-primary shadow-sm"
                     : "text-text-secondary hover:text-text-primary",
@@ -323,7 +323,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("Search by driver name, phone, license...", "ابحث بالاسم، الجوال، أو رقم الرخصة...")}
-              className="w-full rounded-[8px] border border-border-subtle bg-surface-2 px-3 py-1.5 ps-9 text-[12px] text-text-primary placeholder:text-text-muted outline-none focus:border-brand"
+              className="w-full rounded-chip border border-border-subtle bg-surface-2 px-3 py-1.5 ps-9 text-label-lg text-text-primary placeholder:text-text-muted outline-none focus:border-brand"
             />
             <span className="absolute start-3 top-1/2 -translate-y-1/2 text-text-muted">
               <IconSearch size={14} />
@@ -341,7 +341,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
           {/* Add Driver Button */}
           <button
             onClick={() => setShowAddDriverModal(true)}
-            className="btn-primary text-[12px] px-3.5 py-1.5 gap-1.5 shrink-0"
+            className="btn-primary text-label-lg px-3.5 py-1.5 gap-1.5 shrink-0"
           >
             <IconPlus size={15} />
             <span>{t("Add Driver", "إضافة كابتن جديد")}</span>
@@ -354,15 +354,15 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
         {/* Left Column: Driver Cards Grid */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 scroll-thin">
           {filteredDrivers.length === 0 ? (
-            <div className="grid h-64 place-items-center rounded-[12px] border border-dashed border-border-subtle p-8 text-center">
+            <div className="grid h-64 place-items-center rounded-inner border border-dashed border-border-subtle p-8 text-center">
               <div>
                 <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-surface-2 text-text-muted">
                   <IconDriver size={22} />
                 </span>
-                <p className="mt-3 text-[14px] font-semibold text-text-primary">
+                <p className="mt-3 text-card-title font-semibold text-text-primary">
                   {t("No drivers found matching your search", "لم يتم العثور على سائقين مطابقين للبحث")}
                 </p>
-                <p className="mt-1 text-[12px] text-text-muted">
+                <p className="mt-1 text-label-lg text-text-muted">
                   {t("Try clearing your search query or adjusting filters", "جرب إعادة ضبط الفلاتر أو تغيير نص البحث")}
                 </p>
                 <button
@@ -370,7 +370,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                     setSearch("");
                     setStatusFilter("ALL");
                   }}
-                  className="btn-ghost mt-3 text-[12px]"
+                  className="btn-ghost mt-3 text-label-lg"
                 >
                   {t("Reset filters", "إعادة ضبط الفلاتر")}
                 </button>
@@ -389,7 +389,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                     key={driver.id}
                     onClick={() => setSelectedDriverId(driver.id)}
                     className={cn(
-                      "cursor-pointer rounded-[12px] border p-4 transition-all duration-200 text-start flex flex-col justify-between",
+                      "cursor-pointer rounded-inner border p-4 transition-all duration-200 text-start flex flex-col justify-between",
                       isSelected
                         ? "border-brand bg-brand/5 shadow-md"
                         : "border-border-subtle bg-surface-1 hover:border-border-subtle hover:bg-surface-2",
@@ -399,14 +399,14 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                       {/* Driver Card Header */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-3">
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-3 font-mono text-[13px] font-bold text-text-primary border border-border-subtle">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-3 font-mono text-body font-bold text-text-primary border border-border-subtle">
                             {driver.initials}
                           </span>
                           <div>
-                            <div className="text-[14px] font-bold text-text-primary leading-tight">
+                            <div className="text-card-title font-bold text-text-primary leading-tight">
                               {driver.name}
                             </div>
-                            <div className="mt-0.5 font-mono text-[11px] text-text-muted tabular-nums">
+                            <div className="mt-0.5 font-mono text-label text-text-muted tabular-nums">
                               {driver.phone}
                             </div>
                           </div>
@@ -414,7 +414,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
 
                         {/* Status Label */}
                         <div
-                          className="rounded-[6px] px-2 py-0.5 text-[10.5px] font-bold"
+                          className="rounded-micro px-2 py-0.5 text-label font-bold"
                           style={{ color: statusCfg.color, backgroundColor: statusCfg.bg }}
                         >
                           {t(statusCfg.labelEn, statusCfg.labelAr)}
@@ -422,14 +422,14 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                       </div>
 
                       {/* Driver Info Rows */}
-                      <div className="mt-3 space-y-1.5 border-t border-border-subtle pt-2.5 text-[11.5px]">
+                      <div className="mt-3 space-y-1.5 border-t border-border-subtle pt-2.5 text-label-lg">
                         {/* Assigned Truck */}
                         <div className="flex items-center justify-between text-text-secondary">
                           <span className="text-text-muted">{t("Assigned Truck", "الشاحنة المخصصة")}:</span>
                           {truck ? (
                             <span className="flex items-center gap-1.5 font-semibold text-text-primary">
                               <TruckTypeIcon truckType={truck.body} size={14} />
-                              <span className="font-mono text-[11px]">{truck.plate}</span>
+                              <span className="font-mono text-label">{truck.plate}</span>
                             </span>
                           ) : (
                             <span className="text-text-muted italic">{t("Unassigned", "غير مخصص")}</span>
@@ -439,7 +439,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                         {/* Professional License */}
                         <div className="flex items-center justify-between text-text-secondary">
                           <span className="text-text-muted">{t("License Number", "رقم الرخصة المهنية")}:</span>
-                          <span className="font-mono text-[11px] text-text-primary tabular-nums">
+                          <span className="font-mono text-label text-text-primary tabular-nums">
                             {driver.license}
                           </span>
                         </div>
@@ -461,15 +461,15 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
 
                     {/* Active Trip Banner if currently on highway */}
                     {activeTr && (
-                      <div className="mt-3 rounded-[8px] bg-surface-3 p-2 border border-border-subtle">
-                        <div className="flex items-center justify-between text-[10.5px]">
+                      <div className="mt-3 rounded-chip bg-surface-3 p-2 border border-border-subtle">
+                        <div className="flex items-center justify-between text-label">
                           <span className="font-bold text-status-active flex items-center gap-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-status-active animate-pulse" />
                             <span>{t("In Transit", "على الطريق")}</span>
                           </span>
                           <span className="font-mono text-brand font-semibold">{activeTr.tripNumber}</span>
                         </div>
-                        <div className="mt-1 text-[11px] text-text-secondary truncate">
+                        <div className="mt-1 text-label text-text-secondary truncate">
                           {td(activeTr.originCity)} → {td(activeTr.destinationCity)}
                         </div>
                       </div>
@@ -482,7 +482,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                           e.stopPropagation();
                           setShowCallModal(driver);
                         }}
-                        className="btn-ghost flex-1 py-1 text-[11px]"
+                        className="btn-ghost flex-1 py-1 text-label"
                       >
                         {t("Contact Driver", "اتصال بالسائق")}
                       </button>
@@ -495,7 +495,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                               onOpenTrip(activeTr.id);
                             }
                           }}
-                          className="btn-primary py-1 px-2.5 text-[11px]"
+                          className="btn-primary py-1 px-2.5 text-label"
                           title={t("Open Trip Details", "فتح تفاصيل الرحلة")}
                         >
                           <IconArrowRight size={13} />
@@ -513,11 +513,11 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
         {selectedDriver && (
           <aside className="hidden w-[360px] shrink-0 border-s border-border-subtle bg-surface-1 overflow-y-auto p-5 xl:block scroll-thin">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              <span className="text-label font-bold uppercase tracking-wider text-text-muted">
                 {t("Driver Profile & Logistics Card", "بطاقة السائق الميدانية")}
               </span>
               <div
-                className="rounded-[6px] px-2 py-0.5 text-[10.5px] font-bold"
+                className="rounded-micro px-2 py-0.5 text-label font-bold"
                 style={{
                   color: STATUS_CONFIG[selectedDriver.status]?.color,
                   backgroundColor: STATUS_CONFIG[selectedDriver.status]?.bg,
@@ -529,16 +529,16 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
 
             {/* Profile Header */}
             <div className="mt-4 flex flex-col items-center text-center">
-              <span className="grid h-16 w-16 place-items-center rounded-full bg-surface-3 font-mono text-[18px] font-bold text-text-primary border-2 border-brand/30 shadow-md">
+              <span className="grid h-16 w-16 place-items-center rounded-full bg-surface-3 font-mono text-section-title font-bold text-text-primary border-2 border-brand/30 shadow-md">
                 {selectedDriver.initials}
               </span>
-              <h2 className="mt-2 text-[17px] font-bold text-text-primary">
+              <h2 className="mt-2 text-section-title font-bold text-text-primary">
                 {selectedDriver.name}
               </h2>
-              <div className="mt-0.5 font-mono text-[12px] text-text-muted tabular-nums">
+              <div className="mt-0.5 font-mono text-label-lg text-text-muted tabular-nums">
                 {selectedDriver.phone}
               </div>
-              <div className="mt-2 flex items-center gap-1 rounded-full bg-status-waiting/10 px-3 py-1 text-[11px] font-bold text-status-waiting">
+              <div className="mt-2 flex items-center gap-1 rounded-full bg-status-waiting/10 px-3 py-1 text-label font-bold text-status-waiting">
                 <IconStar size={12} />
                 <span>{selectedDriver.rating.toFixed(2)} / 5.00</span>
                 <span className="text-text-muted">·</span>
@@ -547,23 +547,23 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
             </div>
 
             {/* Regulatory & Safety Checklist */}
-            <div className="mt-5 rounded-[10px] bg-surface-2 p-3.5 border border-border-subtle space-y-2.5">
-              <div className="text-[11.5px] font-bold text-text-primary border-b border-border-subtle pb-1.5">
+            <div className="mt-5 rounded-control bg-surface-2 p-3.5 border border-border-subtle space-y-2.5">
+              <div className="text-label-lg font-bold text-text-primary border-b border-border-subtle pb-1.5">
                 {t("Regulatory & Transport Authority Compliance", "الامتثال والتراخيص النظامية")}
               </div>
-              <div className="flex items-center justify-between text-[11.5px]">
+              <div className="flex items-center justify-between text-label-lg">
                 <span className="text-text-muted">{t("National ID / Iqama", "الهوية الوطنية / الإقامة")}:</span>
                 <span className="font-mono text-text-primary tabular-nums">1082918273</span>
               </div>
-              <div className="flex items-center justify-between text-[11.5px]">
+              <div className="flex items-center justify-between text-label-lg">
                 <span className="text-text-muted">{t("Heavy Transport License", "رخصة نقل ثقيل عمومي")}:</span>
                 <span className="font-mono text-text-primary tabular-nums">{selectedDriver.license}</span>
               </div>
-              <div className="flex items-center justify-between text-[11.5px]">
+              <div className="flex items-center justify-between text-label-lg">
                 <span className="text-text-muted">{t("License Expiry Date", "تاريخ انتهاء الرخصة")}:</span>
                 <span className="font-mono text-status-active tabular-nums">2028-06-14 (سارية)</span>
               </div>
-              <div className="flex items-center justify-between text-[11.5px]">
+              <div className="flex items-center justify-between text-label-lg">
                 <span className="text-text-muted">{t("Medical Fitness", "الفحص الطبي المهني")}:</span>
                 <span className="text-status-active font-semibold flex items-center gap-1">
                   <IconCheck size={12} />
@@ -573,12 +573,12 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
             </div>
 
             {/* Assigned Vehicle Section */}
-            <div className="mt-4 rounded-[10px] bg-surface-2 p-3.5 border border-border-subtle">
-              <div className="text-[11.5px] font-bold text-text-primary border-b border-border-subtle pb-1.5">
+            <div className="mt-4 rounded-control bg-surface-2 p-3.5 border border-border-subtle">
+              <div className="text-label-lg font-bold text-text-primary border-b border-border-subtle pb-1.5">
                 {t("Assigned Heavy Vehicle", "الشاحنة المخصصة للسائق")}
               </div>
               {assignedTruck ? (
-                <div className="mt-2.5 space-y-2 text-[11.5px]">
+                <div className="mt-2.5 space-y-2 text-label-lg">
                   <div className="flex items-center justify-between">
                     <span className="text-text-muted">{t("Plate Number", "رقم اللوحة")}:</span>
                     <span className="font-mono font-bold text-brand">{assignedTruck.plate}</span>
@@ -600,14 +600,14 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                         selectTruck(assignedTruck.id);
                         onOpenTruck(assignedTruck.id);
                       }}
-                      className="btn-ghost w-full mt-2 py-1 text-[11px]"
+                      className="btn-ghost w-full mt-2 py-1 text-label"
                     >
                       {t("View Vehicle in Fleet Manager", "عرض الشاحنة في مدير الأسطول")}
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="mt-2 text-[11.5px] text-text-muted italic text-center py-2">
+                <div className="mt-2 text-label-lg text-text-muted italic text-center py-2">
                   {t("No truck currently assigned to this driver", "لا توجد شاحنة مخصصة لهذا السائق حالياً")}
                 </div>
               )}
@@ -615,18 +615,18 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
 
             {/* Current Active Trip if any */}
             {currentTrip && (
-              <div className="mt-4 rounded-[10px] bg-surface-2 p-3.5 border border-border-subtle">
+              <div className="mt-4 rounded-control bg-surface-2 p-3.5 border border-border-subtle">
                 <div className="flex items-center justify-between border-b border-border-subtle pb-1.5">
-                  <span className="text-[11.5px] font-bold text-text-primary">
+                  <span className="text-label-lg font-bold text-text-primary">
                     {t("Active Highway Trip", "الرحلة الجارية")}
                   </span>
-                  <span className="font-mono text-brand font-bold text-[11px]">{currentTrip.tripNumber}</span>
+                  <span className="font-mono text-brand font-bold text-label">{currentTrip.tripNumber}</span>
                 </div>
-                <div className="mt-2 space-y-1.5 text-[11.5px]">
+                <div className="mt-2 space-y-1.5 text-label-lg">
                   <div className="text-text-secondary">
                     {td(currentTrip.originCity)} → {td(currentTrip.destinationCity)}
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-text-muted tabular-nums">
+                  <div className="flex items-center justify-between text-label text-text-muted tabular-nums">
                     <span>{t("Progress", "الإنجاز")}: {currentTrip.progressPct}%</span>
                     <span>{currentTrip.speedKmH} {t("km/h", "كم/س")}</span>
                   </div>
@@ -636,7 +636,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                         selectTrip(currentTrip.id);
                         onOpenTrip(currentTrip.id);
                       }}
-                      className="btn-primary w-full mt-2 py-1.5 text-[11.5px]"
+                      className="btn-primary w-full mt-2 py-1.5 text-label-lg"
                     >
                       <span>{t("Track Live Trip", "تتبع مسار الرحلة مباشرة")}</span>
                       <IconArrowRight size={13} />
@@ -651,14 +651,14 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
               <button
                 type="button"
                 onClick={() => setEditingDriver({ ...selectedDriver })}
-                className="btn-ghost flex-1 py-1.5 text-[11.5px]"
+                className="btn-ghost flex-1 py-1.5 text-label-lg"
               >
                 {t("Edit Driver Profile", "تعديل بيانات السائق")}
               </button>
               <button
                 type="button"
                 onClick={() => setDeletingDriver(selectedDriver)}
-                className="btn-ghost py-1.5 px-3 text-[11.5px] text-status-danger hover:bg-status-danger/10"
+                className="btn-ghost py-1.5 px-3 text-label-lg text-status-danger hover:bg-status-danger/10"
               >
                 {t("Delete", "حذف السائق")}
               </button>
@@ -670,9 +670,9 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
       {/* Call / Contact Modal */}
       {showCallModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm rounded-[14px] bg-surface-1 p-5 border border-border-subtle shadow-2xl">
+          <div className="w-full max-w-sm rounded-inner bg-surface-1 p-5 border border-border-subtle shadow-2xl">
             <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-              <h3 className="text-[15px] font-bold text-text-primary">
+              <h3 className="text-page-title font-bold text-text-primary">
                 {t("Contact Driver", "الاتصال الميداني بالسائق")}
               </h3>
               <button
@@ -684,13 +684,13 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
             </div>
 
             <div className="mt-4 text-center">
-              <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand/15 font-mono text-[16px] font-bold text-brand">
+              <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand/15 font-mono text-page-title font-bold text-brand">
                 {showCallModal.initials}
               </span>
-              <div className="mt-2 text-[16px] font-bold text-text-primary">
+              <div className="mt-2 text-page-title font-bold text-text-primary">
                 {showCallModal.name}
               </div>
-              <div className="font-mono text-[13px] text-text-secondary mt-0.5 tabular-nums">
+              <div className="font-mono text-body text-text-secondary mt-0.5 tabular-nums">
                 {showCallModal.phone}
               </div>
             </div>
@@ -702,7 +702,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                   toast(t("Direct call initiated", "جاري الاتصال المباشر بالسائق"), showCallModal.phone);
                   setShowCallModal(null);
                 }}
-                className="btn-primary w-full py-2.5 text-center text-[12.5px]"
+                className="btn-primary w-full py-2.5 text-center text-body"
               >
                 {t("Call Cellular Phone", "اتصال هاتفي مباشر")}
               </a>
@@ -712,7 +712,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                   toast(t("Phone number copied to clipboard", "تم نسخ رقم الجوال بنجاح"), showCallModal.phone);
                   setShowCallModal(null);
                 }}
-                className="btn-ghost w-full py-2 text-[12px]"
+                className="btn-ghost w-full py-2 text-label-lg"
               >
                 {t("Copy Phone Number", "نسخ رقم الهاتف")}
               </button>
@@ -724,9 +724,9 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
       {/* ── ADD DRIVER MODAL ── */}
       {showAddDriverModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-lg bg-surface-1 rounded-[14px] p-5 border border-border-subtle shadow-2xl">
+          <div className="w-full max-w-lg bg-surface-1 rounded-inner p-5 border border-border-subtle shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
-              <h3 className="font-bold text-[15px] text-text-primary">
+              <h3 className="font-bold text-page-title text-text-primary">
                 {t("Add Fleet Captain / Driver", "إضافة كابتن أسطول جديد")}
               </h3>
               <button onClick={() => setShowAddDriverModal(false)} className="btn-icon-sm">
@@ -735,9 +735,9 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
             </div>
 
             <form onSubmit={handleAddDriverSubmit} className="mt-4 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Driver Full Name", "اسم السائق الرباعي")} *
                   </label>
                   <input
@@ -746,11 +746,11 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="مثال: فهد بن عبد الرحمن الشمري"
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Phone Number", "رقم الجوال")} *
                   </label>
                   <input
@@ -760,14 +760,14 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                     onChange={(e) => setFormPhone(e.target.value)}
                     placeholder="+966 5x xxx xxxx"
                     dir="ltr"
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("National ID / Iqama", "رقم الهوية الوطنية / الإقامة")} *
                   </label>
                   <input
@@ -776,11 +776,11 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                     value={formNationalId}
                     onChange={(e) => setFormNationalId(e.target.value)}
                     placeholder="10xxxxxxxx"
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Heavy Driving License No.", "رقم رخصة القيادة العمومي")} *
                   </label>
                   <input
@@ -789,31 +789,31 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                     value={formLicense}
                     onChange={(e) => setFormLicense(e.target.value)}
                     placeholder="DL-SA-xxxxx"
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("License Expiry Date", "تاريخ انتهاء الرخصة")}
                   </label>
                   <input
                     type="date"
                     value={formLicenseExpiry}
                     onChange={(e) => setFormLicenseExpiry(e.target.value)}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Initial Operational Status", "الحالة الميدانية")}
                   </label>
                   <select
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value as any)}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   >
                     <option value="available">{t("Available", "متاح للتكليف")}</option>
                     <option value="rest">{t("Mandatory Rest", "راحة نظامية")}</option>
@@ -822,15 +822,15 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Assign Heavy Truck (Optional)", "تخصيص شاحنة من الأسطول")}
                   </label>
                   <select
                     value={formAssignedTruck}
                     onChange={(e) => setFormAssignedTruck(e.target.value)}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   >
                     <option value="">{t("None / Unassigned", "بدون شاحنة حالياً")}</option>
                     {trucks.map((tr) => (
@@ -841,14 +841,14 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Mobile App Password", "كلمة مرور تطبيق السائق")}
                   </label>
                   <input
                     type="text"
                     value={formPassword}
                     onChange={(e) => setFormPassword(e.target.value)}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
               </div>
@@ -857,14 +857,14 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                 <button
                   type="button"
                   onClick={() => setShowAddDriverModal(false)}
-                  className="btn-ghost text-[12px]"
+                  className="btn-ghost text-label-lg"
                 >
                   {t("Cancel", "إلغاء")}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary text-[12px] px-4 py-2"
+                  className="btn-primary text-label-lg px-4 py-2"
                 >
                   {isSubmitting ? t("Adding…", "جارٍ الإضافة…") : t("Confirm & Save Driver", "تأكيد وإضافة السائق")}
                 </button>
@@ -877,9 +877,9 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
       {/* ── EDIT DRIVER MODAL ── */}
       {editingDriver && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-surface-1 rounded-[14px] p-5 border border-border-subtle shadow-2xl">
+          <div className="w-full max-w-md bg-surface-1 rounded-inner p-5 border border-border-subtle shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
-              <h3 className="font-bold text-[15px] text-text-primary">
+              <h3 className="font-bold text-page-title text-text-primary">
                 {t("Edit Driver Data", "تعديل بيانات وحالة السائق")}
               </h3>
               <button onClick={() => setEditingDriver(null)} className="btn-icon-sm">
@@ -889,7 +889,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
 
             <form onSubmit={handleEditDriverSubmit} className="mt-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                <label className="block text-label font-semibold text-text-muted mb-1">
                   {t("Driver Name", "اسم السائق")}
                 </label>
                 <input
@@ -897,30 +897,30 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                   required
                   value={editingDriver.name}
                   onChange={(e) => setEditingDriver({ ...editingDriver, name: e.target.value })}
-                  className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                  className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-[12px]">
+              <div className="grid grid-cols-2 gap-3 text-label-lg">
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Phone Number", "رقم الجوال")}
                   </label>
                   <input
                     type="text"
                     value={editingDriver.phone}
                     onChange={(e) => setEditingDriver({ ...editingDriver, phone: e.target.value })}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary font-mono outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary font-mono outline-none focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                  <label className="block text-label font-semibold text-text-muted mb-1">
                     {t("Status", "الحالة التشغيلية")}
                   </label>
                   <select
                     value={editingDriver.status}
                     onChange={(e) => setEditingDriver({ ...editingDriver, status: e.target.value as any })}
-                    className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-text-primary outline-none focus:border-brand"
+                    className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-text-primary outline-none focus:border-brand"
                   >
                     <option value="available">{t("Available", "متاح")}</option>
                     <option value="on_trip">{t("On Trip", "في رحلة")}</option>
@@ -931,25 +931,25 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                <label className="block text-label font-semibold text-text-muted mb-1">
                   {t("License Number", "رقم الرخصة")}
                 </label>
                 <input
                   type="text"
                   value={editingDriver.license}
                   onChange={(e) => setEditingDriver({ ...editingDriver, license: e.target.value })}
-                  className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-[12px] text-text-primary font-mono outline-none focus:border-brand"
+                  className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-label-lg text-text-primary font-mono outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-text-muted mb-1">
+                <label className="block text-label font-semibold text-text-muted mb-1">
                   {t("Assigned Vehicle", "الشاحنة المخصصة")}
                 </label>
                 <select
                   value={editingDriver.assignedTruckId || ""}
                   onChange={(e) => setEditingDriver({ ...editingDriver, assignedTruckId: e.target.value || undefined })}
-                  className="w-full bg-surface-2 border border-border-subtle rounded-[8px] p-2 text-[12px] text-text-primary outline-none focus:border-brand"
+                  className="w-full bg-surface-2 border border-border-subtle rounded-chip p-2 text-label-lg text-text-primary outline-none focus:border-brand"
                 >
                   <option value="">{t("None", "بدون شاحنة")}</option>
                   {trucks.map((tr) => (
@@ -964,14 +964,14 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                 <button
                   type="button"
                   onClick={() => setEditingDriver(null)}
-                  className="btn-ghost text-[12px]"
+                  className="btn-ghost text-label-lg"
                 >
                   {t("Cancel", "إلغاء")}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary text-[12px] px-4 py-2"
+                  className="btn-primary text-label-lg px-4 py-2"
                 >
                   {isSubmitting ? t("Saving…", "جارٍ الحفظ…") : t("Save Changes", "حفظ التعديلات")}
                 </button>
@@ -984,17 +984,17 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
       {/* ── DELETE DRIVER MODAL ── */}
       {deletingDriver && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-surface-1 rounded-[14px] p-5 border border-status-danger/40 shadow-2xl">
-            <h3 className="font-bold text-[16px] text-status-danger">
+          <div className="w-full max-w-md bg-surface-1 rounded-inner p-5 border border-status-danger/40 shadow-2xl">
+            <h3 className="font-bold text-page-title text-status-danger">
               {t("Delete Driver Account", "تأكيد حذف كابتن الأسطول")}
             </h3>
-            <p className="mt-2 text-[12.5px] text-text-secondary leading-relaxed">
+            <p className="mt-2 text-body text-text-secondary leading-relaxed">
               {t(
                 "Are you sure you want to remove this driver from the fleet? This will release any assigned vehicle.",
                 "هل أنت متأكد من رغبتك في حذف هذا السائق من سجل الأسطول المعتمد؟ سيتم فك ارتباط أي شاحنة مخصصة له.",
               )}
             </p>
-            <div className="mt-3 rounded-[8px] bg-surface-2 p-2.5 text-[12px] font-bold text-text-primary flex items-center justify-between">
+            <div className="mt-3 rounded-chip bg-surface-2 p-2.5 text-label-lg font-bold text-text-primary flex items-center justify-between">
               <span>{deletingDriver.name}</span>
               <span className="font-mono text-text-muted">{deletingDriver.phone}</span>
             </div>
@@ -1003,7 +1003,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
               <button
                 type="button"
                 onClick={() => setDeletingDriver(null)}
-                className="btn-ghost text-[12px]"
+                className="btn-ghost text-label-lg"
               >
                 {t("Cancel", "تراجع")}
               </button>
@@ -1011,7 +1011,7 @@ export function DriversManager({ onOpenTrip, onOpenTruck }: DriversManagerProps)
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleDeleteDriverSubmit}
-                className="rounded-[8px] bg-status-danger px-4 py-2 text-[12px] font-bold text-white transition-opacity hover:opacity-90"
+                className="rounded-chip bg-status-danger px-4 py-2 text-label-lg font-bold text-white transition-opacity hover:opacity-90"
               >
                 {isSubmitting ? t("Deleting…", "جارٍ الحذف…") : t("Confirm Delete", "تأكيد الحذف")}
               </button>

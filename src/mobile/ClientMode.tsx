@@ -253,33 +253,33 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
         {/* Greeting — the live identity (§32) */}
         <div className="px-5 pt-5 pb-4 bg-gradient-to-b from-navy to-surface-0 border-b border-border-subtle">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-2/20 text-[13px] font-bold text-accent-2 border border-accent-2/30">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-2/20 text-body font-bold text-accent-2 border border-accent-2/30">
               {(user?.fullName || "—").slice(0, 2)}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] uppercase tracking-wider text-text-muted">
+              <div className="text-micro uppercase tracking-wider text-text-muted">
                 {t("Client app", "تطبيق العميل")}
               </div>
-              <div className="text-[13.5px] font-bold text-white truncate max-w-[190px]">
+              <div className="text-card-title font-bold text-white truncate max-w-[190px]">
                 {user?.fullName || user?.email || "—"}
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="rounded-full bg-status-active/15 border border-status-active/30 px-2.5 py-0.5 text-[10px] font-bold text-status-active">
+              <span className="rounded-full bg-status-active/15 border border-status-active/30 px-2.5 py-0.5 text-micro font-bold text-status-active">
                 {clientTrips.length} {t("Active Trips", "شحنة")}
               </span>
             </div>
           </div>
 
           {/* Quick search */}
-          <div className="mt-4 flex items-center gap-2 rounded-[12px] bg-surface-2 px-3 py-2 border border-border-subtle focus-within:border-brand transition-colors">
+          <div className="mt-4 flex items-center gap-2 rounded-inner bg-surface-2 px-3 py-2 border border-border-subtle focus-within:border-brand transition-colors">
             <IconSearch size={15} className="text-text-muted shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("Search by trip number or city…", "ابحث برقم الرحلة أو المدينة…")}
-              className="w-full bg-transparent text-[11.5px] text-white outline-none"
+              className="w-full bg-transparent text-label-lg text-white outline-none"
             />
           </div>
         </div>
@@ -290,36 +290,36 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
             {/* طلب رحلة — the primary client action (§14) */}
             <button
               onClick={() => setActiveTab("request")}
-              className="w-full flex h-11 items-center justify-center gap-2 rounded-[12px] bg-brand text-on-brand text-[12px] font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
+              className="w-full flex h-11 items-center justify-center gap-2 rounded-inner bg-brand text-on-brand text-label-lg font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
             >
               <IconPlus size={15} />
               <span>{t("Request a trip", "طلب رحلة")}</span>
             </button>
 
             {activeTrip ? (
-              <div className="rounded-[18px] bg-gradient-to-br from-navy via-surface-1 to-surface-2 p-4 border border-border-subtle shadow-xl">
+              <div className="rounded-panel bg-gradient-to-br from-navy via-surface-1 to-surface-2 p-4 border border-border-subtle shadow-xl">
                 <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                  <span className="rounded-full bg-brand/20 border border-brand/40 px-2.5 py-0.5 text-[10.5px] font-bold text-brand">
+                  <span className="rounded-full bg-brand/20 border border-brand/40 px-2.5 py-0.5 text-label font-bold text-brand">
                     {activeTrip.tripNumber}
                   </span>
-                  <span className="text-[11px] font-semibold text-status-active">
+                  <span className="text-label font-semibold text-status-active">
                     {statusLabel(activeTrip.status)}
                   </span>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-2 text-[11.5px]">
+                <div className="mt-3 grid grid-cols-2 gap-2 text-label-lg">
                   <div>
-                    <div className="text-[10px] text-text-muted">{t("From (Loading)", "نقطة التحميل")}</div>
+                    <div className="text-micro text-text-muted">{t("From (Loading)", "نقطة التحميل")}</div>
                     <div className="font-semibold text-white truncate mt-0.5">{td(activeTrip.originCity)}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-text-muted">{t("To (Delivery)", "نقطة التفريغ")}</div>
+                    <div className="text-micro text-text-muted">{t("To (Delivery)", "نقطة التفريغ")}</div>
                     <div className="font-semibold text-white truncate mt-0.5">{td(activeTrip.destinationCity)}</div>
                   </div>
                 </div>
 
                 {activeTrip.cargoDescription && (
-                  <div className="mt-3 rounded-[10px] bg-surface-0/60 p-2.5 text-[11px] border border-white/5 flex items-center justify-between">
+                  <div className="mt-3 rounded-control bg-surface-0/60 p-2.5 text-label border border-white/5 flex items-center justify-between">
                     <div className="truncate max-w-[65%]">
                       <span className="text-text-muted">{t("Cargo:", "الشحنة:")}</span>
                       <span className="text-white font-medium">{activeTrip.cargoDescription}</span>
@@ -331,7 +331,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                 )}
 
                 {(activeTrip.driverName || activeTrip.vehiclePlate) && (
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-text-secondary">
+                  <div className="mt-3 flex items-center justify-between text-label text-text-secondary">
                     <div className="flex items-center gap-1.5 truncate">
                       <TruckTypeIconSafe truckType={activeTrip.cargoType} />
                       <span className="truncate">{activeTrip.driverName || t("Driver not assigned", "لم يتم إسناد سائق")}</span>
@@ -345,21 +345,21 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
 
                 <button
                   onClick={() => setActiveTab("track")}
-                  className="mt-4 w-full flex h-10 items-center justify-center gap-2 rounded-[12px] bg-brand text-on-brand text-[12px] font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
+                  className="mt-4 w-full flex h-10 items-center justify-center gap-2 rounded-inner bg-brand text-on-brand text-label-lg font-bold shadow-md hover:brightness-110 active:scale-95 transition-all"
                 >
                   <IconPin size={15} />
                   <span>{t("Track Live Location Now", "تتبع موقع الشحنة مباشرة")}</span>
                 </button>
               </div>
             ) : (
-              <div className="rounded-[16px] bg-surface-1 p-6 text-center text-text-muted border border-border-subtle">
+              <div className="rounded-panel bg-surface-1 p-6 text-center text-text-muted border border-border-subtle">
                 {t("No active shipments under your account", "لا توجد شحنات نشطة حالياً تحت حسابك")}
               </div>
             )}
 
             <div className="flex items-center justify-between pt-2">
-              <h2 className="text-[14px] font-bold text-white">{t("My Shipments", "شحناتي الأخيرة")}</h2>
-              <button onClick={() => setActiveTab("trips")} className="text-[11px] font-semibold text-brand hover:underline">
+              <h2 className="text-card-title font-bold text-white">{t("My Shipments", "شحناتي الأخيرة")}</h2>
+              <button onClick={() => setActiveTab("trips")} className="text-label font-semibold text-brand hover:underline">
                 {t("View All", "عرض الكل")} ({clientTrips.length})
               </button>
             </div>
@@ -372,18 +372,18 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                     setSelectedTrip(tr);
                     setActiveTab("track");
                   }}
-                  className="rounded-[14px] bg-surface-1 p-3.5 border border-border-subtle hover:border-brand/50 transition-all cursor-pointer"
+                  className="rounded-inner bg-surface-1 p-3.5 border border-border-subtle hover:border-brand/50 transition-all cursor-pointer"
                 >
-                  <div className="flex items-center justify-between text-[11.5px]">
+                  <div className="flex items-center justify-between text-label-lg">
                     <div className="flex items-center gap-2">
                       <TruckTypeAvatar truckType={tr.cargoType} size={28} iconSize={14} showBadge />
                       <span className="font-bold text-brand">{tr.tripNumber}</span>
                     </div>
-                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-text-secondary">
+                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-micro text-text-secondary">
                       {statusLabel(tr.status)}
                     </span>
                   </div>
-                  <div className="mt-1 text-[11.5px] text-white">
+                  <div className="mt-1 text-label-lg text-white">
                     {td(tr.originCity)} → {td(tr.destinationCity)}
                   </div>
                 </div>
@@ -395,12 +395,12 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
         {/* ── طلب رحلة ─────────────────────────────────────────────── */}
         {activeTab === "request" && (
           <div className="px-5 py-4 space-y-3 animate-fade-in">
-            <h2 className="text-[15px] font-bold text-white">{t("Request a trip", "طلب رحلة")}</h2>
+            <h2 className="text-page-title font-bold text-white">{t("Request a trip", "طلب رحلة")}</h2>
 
             {reqMsg && (
               <div
                 className={cn(
-                  "rounded-[12px] border p-2.5 text-[10.5px] font-semibold",
+                  "rounded-inner border p-2.5 text-label font-semibold",
                   reqMsg.ok
                     ? "border-status-active/40 bg-status-active/10 text-status-active"
                     : "border-status-danger/40 bg-status-danger/10 text-status-danger",
@@ -422,7 +422,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
               { key: "cargoWeightTons", label: t("Weight (tons)", "الوزن (طن)"), required: true },
             ].map((f) => (
               <div key={f.key}>
-                <label className="mb-1 block text-[10px] font-semibold text-text-muted">
+                <label className="mb-1 block text-micro font-semibold text-text-muted">
                   {f.label}
                   {f.required && <span className="text-status-danger"> *</span>}
                 </label>
@@ -430,20 +430,20 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                   type={f.key === "cargoWeightTons" ? "number" : "text"}
                   value={(reqForm as any)[f.key]}
                   onChange={(e) => setReqForm((v) => ({ ...v, [f.key]: e.target.value }))}
-                  className="w-full rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-2 text-[11px] text-white focus:border-brand focus:outline-none"
+                  className="w-full rounded-control border border-border-subtle bg-surface-2 px-3 py-2 text-label text-white focus:border-brand focus:outline-none"
                 />
               </div>
             ))}
 
             <div>
-              <label className="mb-1 block text-[10px] font-semibold text-text-muted">
+              <label className="mb-1 block text-micro font-semibold text-text-muted">
                 {t("Truck body type", "نوع الشاحنة")}
                 <span className="text-status-danger"> *</span>
               </label>
               <select
                 value={reqForm.cargoType}
                 onChange={(e) => setReqForm((v) => ({ ...v, cargoType: e.target.value }))}
-                className="w-full rounded-[10px] border border-border-subtle bg-surface-2 px-3 py-2 text-[11px] text-white focus:border-brand focus:outline-none"
+                className="w-full rounded-control border border-border-subtle bg-surface-2 px-3 py-2 text-label text-white focus:border-brand focus:outline-none"
               >
                 {["سطحة", "براد", "جاف", "ستارة"].map((opt) => (
                   <option key={opt} value={opt}>
@@ -456,23 +456,23 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
             {/* Live tariff quote — the price comes from the company's tariff
                 book, never typed by the client (§5–§7). */}
             {quoteLoading && (
-              <div className="rounded-[12px] border border-border-subtle bg-surface-2 p-3 text-[11px] text-text-muted">
+              <div className="rounded-inner border border-border-subtle bg-surface-2 p-3 text-label text-text-muted">
                 {t("Resolving the matching tariff…", "جارٍ مطابقة التعرفة المناسبة…")}
               </div>
             )}
 
             {!quoteLoading && quote?.available && (
-              <div className="rounded-[12px] border border-status-active/40 bg-status-active/10 p-3 space-y-1 animate-fade-in">
+              <div className="rounded-inner border border-status-active/40 bg-status-active/10 p-3 space-y-1 animate-fade-in">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10.5px] font-semibold text-text-muted uppercase">
+                  <span className="text-label font-semibold text-text-muted uppercase">
                     {t("Matched tariff price", "السعر المطابق من التعرفة")}
                   </span>
                   <IconCheck size={14} className="text-status-active" />
                 </div>
-                <div className="text-[18px] font-extrabold text-status-active tabular-nums">
+                <div className="text-section-title font-extrabold text-status-active tabular-nums">
                   {Number(quote.price).toLocaleString()} {quote.currency || "SAR"}
                 </div>
-                <div className="text-[10.5px] text-text-secondary tabular-nums">
+                <div className="text-label text-text-secondary tabular-nums">
                   {t("Route distance", "مسافة المسار")}: {quote.distanceKm} {t("km", "كم")} ·{" "}
                   {quote.matchedWeightTons} {t("tons", "طن")} · {reqForm.cargoType}
                 </div>
@@ -480,21 +480,21 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
             )}
 
             {!quoteLoading && quote && !quote.available && quote.distanceResolvable && (
-              <div className="rounded-[12px] border border-status-waiting/40 bg-status-waiting/10 p-3 space-y-2 animate-fade-in">
-                <div className="text-[11.5px] font-bold text-status-waiting">
+              <div className="rounded-inner border border-status-waiting/40 bg-status-waiting/10 p-3 space-y-2 animate-fade-in">
+                <div className="text-label-lg font-bold text-status-waiting">
                   {t("No tariff is available for this trip right now.", "لا توجد تعرفة متاحة لهذه الرحلة حاليًا.")}
                 </div>
-                <div className="text-[10.5px] text-text-secondary tabular-nums">
+                <div className="text-label text-text-secondary tabular-nums">
                   {t("Route distance", "مسافة المسار")}: {quote.distanceKm} {t("km", "كم")}
                 </div>
                 {quoteAskSent ? (
-                  <div className="text-[11px] font-semibold text-status-active">
+                  <div className="text-label font-semibold text-status-active">
                     ✓ {t("Quote request sent to the control room.", "تم إرسال طلب عرض السعر إلى غرفة التحكم.")}
                   </div>
                 ) : (
                   <button
                     onClick={submitQuoteAsk}
-                    className="w-full h-9 rounded-[10px] bg-status-waiting/20 border border-status-waiting/50 text-status-waiting text-[11px] font-bold hover:bg-status-waiting hover:text-navy transition-all"
+                    className="w-full h-9 rounded-control bg-status-waiting/20 border border-status-waiting/50 text-status-waiting text-label font-bold hover:bg-status-waiting hover:text-navy transition-all"
                   >
                     {t("Request a price quote", "طلب عرض سعر")}
                   </button>
@@ -503,21 +503,21 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
             )}
 
             {!quoteLoading && quote && !quote.available && !quote.distanceResolvable && (
-              <div className="rounded-[12px] border border-status-waiting/40 bg-status-waiting/10 p-3 space-y-2 animate-fade-in">
-                <div className="text-[11.5px] font-bold text-status-waiting">
+              <div className="rounded-inner border border-status-waiting/40 bg-status-waiting/10 p-3 space-y-2 animate-fade-in">
+                <div className="text-label-lg font-bold text-status-waiting">
                   {t("No tariff is available for this trip right now.", "لا توجد تعرفة متاحة لهذه الرحلة حاليًا.")}
                 </div>
-                <div className="text-[10.5px] text-text-secondary">
+                <div className="text-label text-text-secondary">
                   {quote.distanceReasonAr || t("The route distance could not be resolved.", "تعذّر تحديد مسافة المسار.")}
                 </div>
                 {quoteAskSent ? (
-                  <div className="text-[11px] font-semibold text-status-active">
+                  <div className="text-label font-semibold text-status-active">
                     ✓ {t("Quote request sent to the control room.", "تم إرسال طلب عرض السعر إلى غرفة التحكم.")}
                   </div>
                 ) : (
                   <button
                     onClick={submitQuoteAsk}
-                    className="w-full h-9 rounded-[10px] bg-status-waiting/20 border border-status-waiting/50 text-status-waiting text-[11px] font-bold hover:bg-status-waiting hover:text-navy transition-all"
+                    className="w-full h-9 rounded-control bg-status-waiting/20 border border-status-waiting/50 text-status-waiting text-label font-bold hover:bg-status-waiting hover:text-navy transition-all"
                   >
                     {t("Request a price quote", "طلب عرض سعر")}
                   </button>
@@ -528,7 +528,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
             <button
               onClick={submitTripRequest}
               disabled={reqSubmitting}
-              className="w-full h-11 rounded-[12px] bg-brand text-on-brand text-[12px] font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full h-11 rounded-inner bg-brand text-on-brand text-label-lg font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
             >
               {reqSubmitting ? t("Submitting…", "جاري الإرسال…") : t("Submit trip request", "إرسال طلب الرحلة")}
             </button>
@@ -539,40 +539,40 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
         {activeTab === "trips" && (
           <div className="px-5 py-4 space-y-3 animate-fade-in">
             <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
-              <h2 className="text-[15px] font-bold text-white">{t("My trips", "رحلاتي")}</h2>
-              <span className="text-[11px] text-text-muted">{filteredTrips.length} {t("Trips", "رحلة")}</span>
+              <h2 className="text-page-title font-bold text-white">{t("My trips", "رحلاتي")}</h2>
+              <span className="text-label text-text-muted">{filteredTrips.length} {t("Trips", "رحلة")}</span>
             </div>
 
             {filteredTrips.length === 0 && (
-              <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-6 text-center text-[11px] text-text-muted">
+              <div className="rounded-inner border border-border-subtle bg-surface-1 p-6 text-center text-label text-text-muted">
                 {t("No trips yet.", "لا توجد رحلات حتى الآن.")}
               </div>
             )}
 
             {filteredTrips.map((tr) => (
-              <div key={tr.id} className="rounded-[14px] bg-surface-1 p-3.5 border border-border-subtle hover:border-brand/40 transition-all">
+              <div key={tr.id} className="rounded-inner bg-surface-1 p-3.5 border border-border-subtle hover:border-brand/40 transition-all">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <TruckTypeAvatar truckType={tr.cargoType} size={30} iconSize={16} showBadge />
-                    <span className="font-bold text-[12px] text-brand tracking-wide">{tr.tripNumber}</span>
+                    <span className="font-bold text-label-lg text-brand tracking-wide">{tr.tripNumber}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <TruckTypeBadge truckType={tr.cargoType} size={11} />
-                    <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-[10px] font-bold text-brand">
+                    <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-micro font-bold text-brand">
                       {statusLabel(tr.status)}
                     </span>
                   </div>
                 </div>
 
-                <div className="mt-2 text-[12px] font-semibold text-white">
+                <div className="mt-2 text-label-lg font-semibold text-white">
                   {td(tr.originCity)} ➔ {td(tr.destinationCity)}
                 </div>
                 {tr.cargoDescription && (
-                  <div className="text-[11px] text-text-muted mt-0.5 truncate">{tr.cargoDescription}</div>
+                  <div className="text-label text-text-muted mt-0.5 truncate">{tr.cargoDescription}</div>
                 )}
 
                 {/* Real trip metrics from the database — incl. the tariff price (§5). */}
-                <div className="mt-2 grid grid-cols-3 gap-2 rounded-[10px] bg-surface-2/70 border border-white/5 p-2 text-center text-[10px] tabular-nums">
+                <div className="mt-2 grid grid-cols-3 gap-2 rounded-control bg-surface-2/70 border border-white/5 p-2 text-center text-micro tabular-nums">
                   <div>
                     <div className="text-text-muted">{t("Distance", "المسافة")}</div>
                     <div className="font-bold text-white">{tr.distanceKm ? `${tr.distanceKm} ${t("km", "كم")}` : "—"}</div>
@@ -593,7 +593,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                   </div>
                 </div>
 
-                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
+                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-label">
                   <span className="text-text-secondary">
                     {t("Driver:", "السائق:")}{" "}
                     <strong className="text-white">{tr.driverName || t("—", "—")}</strong>
@@ -604,7 +604,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                         setSelectedTrip(tr);
                         setActiveTab("docs");
                       }}
-                      className="rounded-[8px] bg-surface-2 px-2.5 py-1 text-white font-bold text-[10px] hover:bg-surface-3 transition-all"
+                      className="rounded-chip bg-surface-2 px-2.5 py-1 text-white font-bold text-micro hover:bg-surface-3 transition-all"
                     >
                       {t("Documents", "المستندات")}
                     </button>
@@ -613,7 +613,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                         setSelectedTrip(tr);
                         setActiveTab("track");
                       }}
-                      className="rounded-[8px] bg-surface-2 px-2.5 py-1 text-accent-2 hover:bg-brand hover:text-navy font-bold text-[10px] transition-all"
+                      className="rounded-chip bg-surface-2 px-2.5 py-1 text-accent-2 hover:bg-brand hover:text-navy font-bold text-micro transition-all"
                     >
                       {t("Open Tracking", "عرض التتبع")}
                     </button>
@@ -629,12 +629,12 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
           <div className="h-full flex flex-col p-4 animate-fade-in space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("Shipment Tracking", "تتبع الشحنة")}</span>
-                <div className="text-[14px] font-bold text-brand">{activeTrip?.tripNumber || "—"}</div>
+                <span className="text-micro text-text-muted uppercase tracking-wider">{t("Shipment Tracking", "تتبع الشحنة")}</span>
+                <div className="text-card-title font-bold text-brand">{activeTrip?.tripNumber || "—"}</div>
               </div>
               {activeTrip && (
                 <div className="text-end">
-                  <span className="rounded-full bg-status-active/15 border border-status-active/30 px-2.5 py-0.5 text-[10.5px] font-bold text-status-active">
+                  <span className="rounded-full bg-status-active/15 border border-status-active/30 px-2.5 py-0.5 text-label font-bold text-status-active">
                     {statusLabel(activeTrip.status)}
                   </span>
                 </div>
@@ -642,18 +642,18 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
             </div>
 
             {gpsProviderConfigured === false && (
-              <div className="rounded-[12px] border border-brand/40 bg-brand/10 p-2.5 text-[10.5px] font-semibold text-brand">
+              <div className="rounded-inner border border-brand/40 bg-brand/10 p-2.5 text-label font-semibold text-brand">
                 {t("GPS service is not configured on the platform. Live vehicle telemetry will appear here once the GPS provider is set up.", "خدمة GPS غير مهيأة. سيظهر موقع الشاحنة المباشر هنا فور إعداد مزود خدمة التتبع.")}
               </div>
             )}
 
             {mappedActiveTrip ? (
               <>
-                <div className="h-[320px] w-full rounded-[16px] overflow-hidden border border-border-subtle shadow-xl">
+                <div className="h-[320px] w-full rounded-panel overflow-hidden border border-border-subtle shadow-xl">
                   <InteractiveMap trip={mappedActiveTrip} compact showCardOverlay={false} />
                 </div>
 
-                <div className="rounded-[12px] bg-surface-1 p-3 border border-border-subtle text-[11.5px] space-y-1.5">
+                <div className="rounded-inner bg-surface-1 p-3 border border-border-subtle text-label-lg space-y-1.5">
                   {(activeTrip?.vehiclePlate || activeTrip?.cargoType) && (
                     <div className="flex items-center justify-between">
                       <span className="text-text-muted">{t("Vehicle & Plate:", "الشاحنة واللوحة:")}</span>
@@ -680,7 +680,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
                 </div>
               </>
             ) : (
-              <div className="rounded-[14px] border border-border-subtle bg-surface-1 p-6 text-center text-[11px] text-text-muted">
+              <div className="rounded-inner border border-border-subtle bg-surface-1 p-6 text-center text-label text-text-muted">
                 {t("Select a trip to track.", "اختر رحلة للتتبع.")}
               </div>
             )}
@@ -690,8 +690,8 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
         {/* ── المستندات وإثبات التسليم (من رحلاتي) ─────────────────── */}
         {activeTab === "docs" && (
           <div className="px-5 py-4 space-y-3.5 animate-fade-in">
-            <h2 className="text-[15px] font-bold text-white">{t("Shipment Documents & POD", "مستندات الشحنة وإثبات التسليم")}</h2>
-            <p className="text-[11.5px] text-text-muted">
+            <h2 className="text-page-title font-bold text-white">{t("Shipment Documents & POD", "مستندات الشحنة وإثبات التسليم")}</h2>
+            <p className="text-label-lg text-text-muted">
               {t("Official documentation for trip", "المستندات الرسمية للرحلة")}{" "}
               <strong className="text-brand">{activeTrip?.tripNumber || "—"}</strong>
             </p>
@@ -736,16 +736,16 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
         {/* ── حسابي ────────────────────────────────────────────────── */}
         {activeTab === "account" && (
           <div className="px-5 py-4 space-y-4 animate-fade-in">
-            <h2 className="text-[15px] font-bold text-white">{t("My account", "حسابي")}</h2>
+            <h2 className="text-page-title font-bold text-white">{t("My account", "حسابي")}</h2>
 
             <MobileSection title={t("Account data", "بيانات الحساب")}>
               <div className="flex items-center gap-3 px-3.5 py-3.5 border-b border-border-subtle">
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-2/20 text-[13px] font-bold text-accent-2">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-2/20 text-body font-bold text-accent-2">
                   {(user?.fullName || "—").slice(0, 2)}
                 </span>
                 <div className="min-w-0">
-                  <div className="text-[12.5px] font-bold text-white truncate">{user?.fullName || "—"}</div>
-                  <div className="text-[10px] text-text-muted truncate" dir="ltr">{user?.email || "—"}</div>
+                  <div className="text-body font-bold text-white truncate">{user?.fullName || "—"}</div>
+                  <div className="text-micro text-text-muted truncate" dir="ltr">{user?.email || "—"}</div>
                 </div>
               </div>
               <MobileRow label={t("Phone", "الهاتف")} value={user?.phone || "—"} />
@@ -780,7 +780,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
 
             <button
               onClick={onLogout}
-              className="w-full flex h-11 items-center justify-center gap-2 rounded-[12px] bg-status-danger/15 border border-status-danger/30 text-status-danger font-bold text-[12.5px] hover:bg-status-danger hover:text-white transition-all"
+              className="w-full flex h-11 items-center justify-center gap-2 rounded-inner bg-status-danger/15 border border-status-danger/30 text-status-danger font-bold text-body hover:bg-status-danger hover:text-white transition-all"
             >
               <span>{t("Sign out", "تسجيل الخروج")}</span>
             </button>
@@ -789,7 +789,7 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
       </div>
 
       {/* Bottom navigation: الرئيسية · رحلاتي · التتبع · الإشعارات · حسابي (§30) */}
-      <div className="absolute bottom-3 inset-x-4 z-40 flex items-center justify-around rounded-[18px] bg-navy/95 border border-white/10 px-2 py-2 shadow-2xl backdrop-blur-xl">
+      <div className="absolute bottom-3 inset-x-4 z-40 flex items-center justify-around rounded-panel bg-navy/95 border border-white/10 px-2 py-2 shadow-2xl backdrop-blur-xl">
         {[
           ["home", t("Home", "الرئيسية"), IconHome],
           ["trips", t("My Trips", "رحلاتي"), IconOrders],
@@ -803,12 +803,12 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
               key={id}
               onClick={() => setActiveTab(id)}
               className={cn(
-                "flex flex-col items-center gap-1 py-1 px-2 rounded-[10px] transition-all duration-200 active:scale-95",
+                "flex flex-col items-center gap-1 py-1 px-2 rounded-control transition-all duration-200 active:scale-95",
                 isActive ? "text-brand font-bold" : "text-white/50 hover:text-white"
               )}
             >
               <IconComponent size={18} />
-              <span className="text-[9px]">{label}</span>
+              <span className="text-micro">{label}</span>
             </button>
           );
         })}

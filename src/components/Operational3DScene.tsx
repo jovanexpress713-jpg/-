@@ -76,7 +76,7 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
   return (
     <div
       className={cn(
-        "relative h-full w-full overflow-hidden rounded-[14px] bg-[#060F1E] border border-border-subtle p-5 flex flex-col justify-between select-none text-white",
+        "relative h-full w-full overflow-hidden rounded-inner bg-[#060F1E] border border-border-subtle p-5 flex flex-col justify-between select-none text-white",
         className
       )}
     >
@@ -101,23 +101,23 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
           />
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-[14px] text-white tracking-wide">
+              <span className="font-bold text-card-title text-white tracking-wide">
                 {t(sceneState.titleEn, sceneState.titleAr)}
               </span>
               <span
-                className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase"
+                className="rounded-full px-2.5 py-0.5 text-micro font-bold uppercase"
                 style={{ backgroundColor: `${sceneState.badgeColor}22`, color: sceneState.badgeColor }}
               >
                 {sceneState.key}
               </span>
             </div>
-            <div className="text-[11.5px] text-white/60 mt-0.5">
+            <div className="text-label-lg text-white/60 mt-0.5">
               {t(sceneState.stageEn, sceneState.stageAr)}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 rounded-[8px] bg-navy px-3 py-1.5 border border-white/10 text-[11px] tabular-nums">
+        <div className="flex items-center gap-2 rounded-chip bg-navy px-3 py-1.5 border border-white/10 text-label tabular-nums">
           <span className="text-brand font-semibold">{trip.tripNumber}</span>
           <span className="text-white/40">·</span>
           <span>{trip.cargoType}</span>
@@ -169,7 +169,7 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
           </div>
 
           {/* Operational Floating Status Badge */}
-          <div className="mt-4 flex items-center gap-2 rounded-full bg-navy/90 px-4 py-1.5 border border-white/10 text-[12px] font-semibold text-white/90 backdrop-blur-md">
+          <div className="mt-4 flex items-center gap-2 rounded-full bg-navy/90 px-4 py-1.5 border border-white/10 text-label-lg font-semibold text-white/90 backdrop-blur-md">
             <IconPin size={14} className="text-brand" />
             <span>{trip.originCity}</span>
             <span className="text-brand">→</span>
@@ -181,21 +181,21 @@ export function Operational3DScene({ trip, className }: Operational3DSceneProps)
       </div>
 
       {/* Bottom Operational Telemetry Deck */}
-      <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-2.5 pt-3 border-t border-white/10 text-[11.5px]">
-        <div className="rounded-[8px] bg-surface-2 p-2.5 border border-white/5">
-          <div className="text-white/50 text-[10px]">{t("Corridor", "الممر اللوجستي")}</div>
+      <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-2.5 pt-3 border-t border-white/10 text-label-lg">
+        <div className="rounded-chip bg-surface-2 p-2.5 border border-white/5">
+          <div className="text-white/50 text-micro">{t("Corridor", "الممر اللوجستي")}</div>
           <div className="font-semibold text-white truncate mt-0.5">{trip.corridorKey}</div>
         </div>
-        <div className="rounded-[8px] bg-surface-2 p-2.5 border border-white/5">
-          <div className="text-white/50 text-[10px]">{t("Cargo Load", "حمولة البضاعة")}</div>
+        <div className="rounded-chip bg-surface-2 p-2.5 border border-white/5">
+          <div className="text-white/50 text-micro">{t("Cargo Load", "حمولة البضاعة")}</div>
           <div className="font-semibold text-brand tabular-nums mt-0.5">{trip.cargoWeightTons} / {trip.maxCapacityTons} طن</div>
         </div>
-        <div className="rounded-[8px] bg-surface-2 p-2.5 border border-white/5">
-          <div className="text-white/50 text-[10px]">{t("Est. Remaining", "المسافة المتبقية")}</div>
+        <div className="rounded-chip bg-surface-2 p-2.5 border border-white/5">
+          <div className="text-white/50 text-micro">{t("Est. Remaining", "المسافة المتبقية")}</div>
           <div className="font-semibold text-status-active tabular-nums mt-0.5">{trip.distanceRemainingKm} كم ({trip.etaMinutes} د)</div>
         </div>
-        <div className="rounded-[8px] bg-surface-2 p-2.5 border border-white/5">
-          <div className="text-white/50 text-[10px]">{t("Next Station", "المحطة التالية")}</div>
+        <div className="rounded-chip bg-surface-2 p-2.5 border border-white/5">
+          <div className="text-white/50 text-micro">{t("Next Station", "المحطة التالية")}</div>
           <div className="font-semibold text-white truncate mt-0.5">{tdp(trip.nextWaypointAr, trip.nextWaypointEn)}</div>
         </div>
       </div>

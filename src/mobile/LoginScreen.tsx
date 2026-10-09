@@ -258,12 +258,12 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
         </div>
 
         <div className="mt-3 space-y-1">
-          <h1 className="text-[20px] font-bold text-white tracking-tight leading-snug">
+          <h1 className="text-headline font-bold text-white tracking-tight leading-snug">
             <span>{lang === "ar" ? "مرحبًا بك في " : "Sign in to "}</span>
             <span className="text-brand font-extrabold">{t("EJAZ", "إيجاز")}</span>
             <span>{lang === "ar" ? " للنقليات" : " Transport"}</span>
           </h1>
-          <p className="text-[12.5px] font-medium text-amber-200/80 tracking-wide">
+          <p className="text-body font-medium text-amber-200/80 tracking-wide">
             {t("Your Cargo.. Our Responsibility", "نقلكم .. مسؤوليتنا")}
           </p>
         </div>
@@ -272,8 +272,8 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
       {/* 3. Main Form Container */}
       <div className="relative z-10 w-full max-w-[390px] mx-auto px-6 py-2 flex-1 flex flex-col justify-center">
         {/* Instant 1-Click Entry Strip (No Password Required) */}
-        <div className="mb-3.5 rounded-xl border border-brand/35 bg-[#0e1626]/90 p-2.5 shadow-lg">
-          <div className="mb-2 flex items-center justify-between text-[10.5px]">
+        <div className="mb-3.5 rounded-inner border border-brand/35 bg-[#0e1626]/90 p-2.5 shadow-lg">
+          <div className="mb-2 flex items-center justify-between text-label">
             <span className="font-bold text-amber-300">
               {t("Instant Preview (No Password):", "دخول فوري بدون كلمة مرور:")}
             </span>
@@ -288,12 +288,12 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                 type="button"
                 disabled={isLoading}
                 onClick={() => handleSelectDemo(acc)}
-                className="flex flex-col items-center justify-center gap-1 rounded-lg border border-slate-700/80 bg-[#131f35] px-2 py-2 text-center transition-all hover:border-brand hover:bg-brand/20 active:scale-95"
+                className="flex flex-col items-center justify-center gap-1 rounded-chip border border-slate-700/80 bg-[#131f35] px-2 py-2 text-center transition-all hover:border-brand hover:bg-brand/20 active:scale-95"
               >
                 {acc.role === "CLIENT" && <IconProfile size={14} className="text-accent-2" />}
                 {acc.role === "DRIVER" && <IconTruck size={14} className="text-brand" />}
                 {acc.role === "ADMIN" && <IconDashboard size={14} className="text-emerald-400" />}
-                <span className="text-[10.5px] font-bold text-white">
+                <span className="text-label font-bold text-white">
                   {acc.key === "client"
                     ? t("Client", "واجهة العميل")
                     : acc.key === "driver"
@@ -308,7 +308,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Authentication Error Feedback Banner */}
           {errorMsg && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-status-danger/15 border border-status-danger/35 p-3 text-[11.5px] text-red-200 animate-fade-in shadow-md">
+            <div className="flex items-start gap-2.5 rounded-inner bg-status-danger/15 border border-status-danger/35 p-3 text-label-lg text-red-200 animate-fade-in shadow-md">
               <IconAlertCircle size={17} className="text-status-danger shrink-0 mt-0.5" />
               <div className="leading-relaxed flex-1 text-start">{errorMsg}</div>
             </div>
@@ -316,7 +316,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
           {/* Active Demo Account Pill Indicator */}
           {activeDemoKey && isDemoEnabled && (
-            <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-brand/15 border border-brand/30 text-[11px] text-amber-300">
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-chip bg-brand/15 border border-brand/30 text-label text-amber-300">
               <span className="flex items-center gap-1.5 font-medium">
                 <IconKey size={13} className="text-brand shrink-0" />
                 <span>
@@ -328,7 +328,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               <button
                 type="button"
                 onClick={handleSwitchAccount}
-                className="text-[10px] text-text-muted hover:text-white underline underline-offset-2"
+                className="text-micro text-text-muted hover:text-white underline underline-offset-2"
               >
                 {t("Clear", "إلغاء")}
               </button>
@@ -337,10 +337,10 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
           {/* 5. Username / Email Field */}
           <div>
-            <label className="block text-[11.5px] font-semibold text-slate-300 mb-1 text-start">
+            <label className="block text-label-lg font-semibold text-slate-300 mb-1 text-start">
               {t("Username / Email", "اسم المستخدم")}
             </label>
-            <div className="group relative flex h-11 items-center rounded-xl bg-[#0e1626]/90 px-3.5 border border-slate-700/60 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20 transition-all shadow-sm">
+            <div className="group relative flex h-11 items-center rounded-inner bg-[#0e1626]/90 px-3.5 border border-slate-700/60 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20 transition-all shadow-sm">
               <IconProfile
                 size={17}
                 className="text-slate-400 group-focus-within:text-brand transition-colors shrink-0"
@@ -354,7 +354,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                 }}
                 placeholder={t("Username", "اسم المستخدم")}
                 dir="rtl"
-                className="w-full bg-transparent px-2.5 text-[13px] text-white placeholder-slate-500 outline-none text-start"
+                className="w-full bg-transparent px-2.5 text-body text-white placeholder-slate-500 outline-none text-start"
                 autoComplete="username"
               />
             </div>
@@ -362,10 +362,10 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
           {/* 6. Password Field */}
           <div>
-            <label className="block text-[11.5px] font-semibold text-slate-300 mb-1 text-start">
+            <label className="block text-label-lg font-semibold text-slate-300 mb-1 text-start">
               {t("Password", "كلمة المرور")}
             </label>
-            <div className="group relative flex h-11 items-center rounded-xl bg-[#0e1626]/90 px-3.5 border border-slate-700/60 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20 transition-all shadow-sm">
+            <div className="group relative flex h-11 items-center rounded-inner bg-[#0e1626]/90 px-3.5 border border-slate-700/60 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20 transition-all shadow-sm">
               <IconLock
                 size={17}
                 className="text-slate-400 group-focus-within:text-brand transition-colors shrink-0"
@@ -379,7 +379,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                 }}
                 placeholder={t("Password", "كلمة المرور")}
                 dir="rtl"
-                className="w-full bg-transparent px-2.5 text-[13px] text-white placeholder-slate-500 outline-none text-start font-mono"
+                className="w-full bg-transparent px-2.5 text-body text-white placeholder-slate-500 outline-none text-start font-mono"
                 autoComplete="current-password"
               />
               <button
@@ -394,7 +394,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
           </div>
 
           {/* 7 & 8. Remember Me & Forgot Password */}
-          <div className="flex items-center justify-between text-[11.5px] pt-0.5">
+          <div className="flex items-center justify-between text-label-lg pt-0.5">
             <label className="flex items-center gap-2 cursor-pointer select-none text-slate-300 hover:text-white transition-colors">
               <input
                 type="checkbox"
@@ -418,7 +418,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-brand text-on-brand font-bold text-[13.5px] shadow-lg shadow-brand/25 transition-all duration-200 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none mt-1"
+            className="w-full h-11 flex items-center justify-center gap-2 rounded-inner bg-brand text-on-brand font-bold text-card-title shadow-lg shadow-brand/25 transition-all duration-200 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none mt-1"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -432,11 +432,11 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
           {/* 9b. Registration request */}
           {onRegister && (
-            <div className="mt-2.5 rounded-xl border border-slate-700/60 bg-[#0e1626]/70 p-2.5">
-              <div className="text-[11px] font-bold text-slate-200">
+            <div className="mt-2.5 rounded-inner border border-slate-700/60 bg-[#0e1626]/70 p-2.5">
+              <div className="text-label font-bold text-slate-200">
                 {t("No account yet?", "لا تملك حسابًا؟")}
               </div>
-              <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">
+              <p className="mt-0.5 text-micro leading-relaxed text-slate-400">
                 {t(
                   "Submit a formal registration request — the administration reviews it, then your account is activated.",
                   "قدّم طلب تسجيل رسمي — تراجعه الإدارة ثم يتم اعتماد حسابك وتفعيله.",
@@ -446,7 +446,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                 <button
                   type="button"
                   onClick={() => onRegister("DRIVER")}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-brand/40 bg-brand/10 py-1.5 text-[11px] font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
+                  className="flex items-center justify-center gap-1.5 rounded-chip border border-brand/40 bg-brand/10 py-1.5 text-label font-bold text-brand transition-colors hover:bg-brand hover:text-on-brand"
                 >
                   <IconTruck size={14} />
                   {t("Driver request", "طلب تسجيل سائق")}
@@ -454,7 +454,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                 <button
                   type="button"
                   onClick={() => onRegister("CUSTOMER")}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-accent-2/40 bg-accent-2/10 py-1.5 text-[11px] font-bold text-accent-2 transition-colors hover:bg-accent-2 hover:text-white"
+                  className="flex items-center justify-center gap-1.5 rounded-chip border border-accent-2/40 bg-accent-2/10 py-1.5 text-label font-bold text-accent-2 transition-colors hover:bg-accent-2 hover:text-white"
                 >
                   <IconProfile size={14} />
                   {t("Customer request", "طلب تسجيل عميل")}
@@ -464,7 +464,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
           )}
 
           {/* 10 & 12. Switch Account & Demo Accounts Row */}
-          <div className="pt-2 flex items-center justify-between text-[11.5px] border-t border-slate-800/80">
+          <div className="pt-2 flex items-center justify-between text-label-lg border-t border-slate-800/80">
             <button
               type="button"
               onClick={handleSwitchAccount}
@@ -477,7 +477,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               <button
                 type="button"
                 onClick={() => setShowDemoModal(true)}
-                className="flex items-center gap-1.5 rounded-lg bg-surface-2/90 border border-slate-700/70 px-2.5 py-1 text-amber-400 hover:text-amber-300 hover:bg-surface-2 transition-all font-semibold active:scale-95"
+                className="flex items-center gap-1.5 rounded-chip bg-surface-2/90 border border-slate-700/70 px-2.5 py-1 text-amber-400 hover:text-amber-300 hover:bg-surface-2 transition-all font-semibold active:scale-95"
               >
                 <IconKey size={13} className="text-brand" />
                 <span>{t("Demo Accounts", "الحسابات التجريبية")}</span>
@@ -488,24 +488,24 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
       </div>
 
       {/* Footer System Line */}
-      <div className="relative z-10 py-2.5 text-center text-[10.5px] text-slate-500 border-t border-slate-900">
+      <div className="relative z-10 py-2.5 text-center text-label text-slate-500 border-t border-slate-900">
         <span>{t("EJAZ Enterprise Logistics Platform V1.0-PROD", "مؤسسة إيجاز للنقليات · منظومة إدارة الأسطول الموحدة")}</span>
       </div>
 
       {/* 12. Demo Accounts Modal / Panel */}
       {showDemoModal && isDemoEnabled && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-sm rounded-2xl bg-[#0c1424] border border-slate-700 p-5 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-sm rounded-panel bg-[#0c1424] border border-slate-700 p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/20 text-brand">
+                <div className="flex h-8 w-8 items-center justify-center rounded-chip bg-brand/20 text-brand">
                   <IconKey size={16} />
                 </div>
                 <div>
-                  <h3 className="text-[14px] font-bold text-white">
+                  <h3 className="text-card-title font-bold text-white">
                     {t("Demo Accounts", "الحسابات التجريبية")}
                   </h3>
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-micro text-slate-400">
                     {t("Click any account for instant sign-in", "اضغط على أي حساب للدخول الفوري المباشر")}
                   </p>
                 </div>
@@ -513,7 +513,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               <button
                 type="button"
                 onClick={() => setShowDemoModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-chip text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               >
                 <IconClose size={16} />
               </button>
@@ -528,7 +528,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                     type="button"
                     onClick={() => handleSelectDemo(acc)}
                     className={cn(
-                      "w-full rounded-xl border p-3 text-start transition-all relative",
+                      "w-full rounded-inner border p-3 text-start transition-all relative",
                       isSelected
                         ? "bg-brand/15 border-brand ring-1 ring-brand/30 shadow-md"
                         : "bg-[#111c30] border-slate-800 hover:border-brand hover:bg-[#15233c]"
@@ -539,20 +539,20 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
                         {acc.role === "CLIENT" && <IconProfile size={15} className="text-accent-2" />}
                         {acc.role === "DRIVER" && <IconTruck size={15} className="text-brand" />}
                         {acc.role === "ADMIN" && <IconDashboard size={15} className="text-emerald-400" />}
-                        <span className="text-[12.5px] font-bold text-white">
+                        <span className="text-body font-bold text-white">
                           {acc.titleAr}
                         </span>
                       </div>
-                      <span className="rounded px-2 py-0.5 text-[9.5px] font-bold tracking-wider uppercase bg-brand/20 text-brand">
+                      <span className="rounded px-2 py-0.5 text-micro font-bold tracking-wider uppercase bg-brand/20 text-brand">
                         دخول فوري ←
                       </span>
                     </div>
 
-                    <div className="mt-1 text-[11px] text-brand/90 font-mono" dir="ltr">
+                    <div className="mt-1 text-label text-brand/90 font-mono" dir="ltr">
                       {acc.email}
                     </div>
 
-                    <p className="mt-1 text-[10.5px] text-slate-400 leading-snug">
+                    <p className="mt-1 text-label text-slate-400 leading-snug">
                       {acc.descAr}
                     </p>
                   </button>
@@ -560,7 +560,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               })}
             </div>
 
-            <div className="text-[10px] text-slate-400 bg-slate-900/60 rounded-lg p-2.5 leading-relaxed text-start border border-slate-800">
+            <div className="text-micro text-slate-400 bg-slate-900/60 rounded-chip p-2.5 leading-relaxed text-start border border-slate-800">
               {t(
                 "Selecting an account signs you in immediately without requiring a password.",
                 "الضغط على أي حساب تجريبي يقوم بتسجيل دخولك فوراً وفتح الواجهة المخصصة بدون الحاجة لإدخال كلمة مرور."
@@ -573,17 +573,17 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
       {/* 8. Forgot Password Corporate Assistance Modal */}
       {showForgotModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-sm rounded-2xl bg-[#0c1424] border border-slate-700 p-5 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-sm rounded-panel bg-[#0c1424] border border-slate-700 p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/20 text-brand">
+                <div className="flex h-8 w-8 items-center justify-center rounded-chip bg-brand/20 text-brand">
                   <IconLock size={16} />
                 </div>
                 <div>
-                  <h3 className="text-[14px] font-bold text-white">
+                  <h3 className="text-card-title font-bold text-white">
                     {t("Reset Password", "استعادة كلمة المرور")}
                   </h3>
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-micro text-slate-400">
                     {t("EJAZ Enterprise Security", "منظومة إيجاز لأمن المعلومات")}
                   </p>
                 </div>
@@ -591,27 +591,27 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               <button
                 type="button"
                 onClick={() => setShowForgotModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-chip text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               >
                 <IconClose size={16} />
               </button>
             </div>
 
-            <div className="space-y-3 text-[12px] text-slate-300 leading-relaxed text-start">
+            <div className="space-y-3 text-label-lg text-slate-300 leading-relaxed text-start">
               <p>
                 {t(
                   "To protect enterprise freight and fleet operations data, password resets require verification by the system administrator or your fleet manager.",
                   "لحماية بيانات عمليات النقل والأسطول، تتطلب إعادة تعيين كلمة المرور التحقق من قبل مسؤول النظام أو إدارة الحركة والعمليات."
                 )}
               </p>
-              <div className="rounded-xl bg-[#111c30] p-3 border border-slate-800 space-y-1.5">
-                <div className="font-semibold text-white text-[12px]">
+              <div className="rounded-inner bg-[#111c30] p-3 border border-slate-800 space-y-1.5">
+                <div className="font-semibold text-white text-label-lg">
                   {t("Technical Support Desk:", "الدعم الفني لإيجاز للنقليات:")}
                 </div>
-                <div className="text-brand font-mono text-[12px]" dir="ltr">
+                <div className="text-brand font-mono text-label-lg" dir="ltr">
                   support@ejaz.sa
                 </div>
-                <div className="text-slate-400 text-[11px]" dir="ltr">
+                <div className="text-slate-400 text-label" dir="ltr">
                   +966 11 222 3344 (Ext. 102)
                 </div>
               </div>
@@ -620,7 +620,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
             <button
               type="button"
               onClick={() => setShowForgotModal(false)}
-              className="w-full h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-[12px] transition-colors"
+              className="w-full h-10 rounded-inner bg-slate-800 hover:bg-slate-700 text-white font-bold text-label-lg transition-colors"
             >
               {t("Close", "إغلاق")}
             </button>
