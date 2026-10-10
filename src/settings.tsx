@@ -108,13 +108,13 @@ function initialLang(): Lang {
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(initialLang);
   /**
-   * Appearance defaults to the light identity (white surfaces, navy ink,
-   * orange accents). «حسب النظام» follows the device colour-scheme live; an
-   * explicit choice (light/dark) always wins and survives reloads (§5).
+   * Appearance defaults to the official NOVA identity (Navy #050B18 surfaces,
+   * orange #FF6B1A accents). «حسب النظام» follows the device colour-scheme live;
+   * an explicit choice always wins and survives reloads (§5).
    */
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = read(THEME_KEY, "");
-    return saved === "light" || saved === "dark" || saved === "system" ? saved : "light";
+    return saved === "dark" || saved === "system" ? saved : "dark";
   });
   const [systemDark, setSystemDark] = useState<boolean>(() => {
     try {

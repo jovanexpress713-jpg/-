@@ -55,10 +55,10 @@ export function RoleSwitcher() {
   ];
 
   return (
-    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle bg-surface-1 px-3 py-2 text-label-lg">
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/[0.06] bg-[#060e1d]/85 backdrop-blur-xl px-3.5 py-1.5 text-label-lg shadow-sm transition-colors">
       {/* Role Selector Pills */}
       <div className="scroll-x flex min-w-0 items-center gap-1.5 py-0.5">
-        <span className="me-1.5 hidden shrink-0 text-label font-bold uppercase tracking-wider text-text-muted sm:inline">
+        <span className="me-2 hidden shrink-0 text-micro font-extrabold uppercase tracking-wider text-text-muted sm:inline">
           {t("Persona Mode:", "نمط التجربة:")}
         </span>
 
@@ -70,15 +70,18 @@ export function RoleSwitcher() {
               key={r.id}
               onClick={() => setRole(r.id)}
               className={cn(
-                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-label font-semibold transition-all active:scale-95",
+                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-label font-bold transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/80",
                 isActive
-                  ? "bg-brand text-on-brand shadow-sm font-bold"
-                  : "bg-surface-2 text-text-secondary hover:bg-surface-3 hover:text-text-primary"
+                  ? "bg-gradient-to-r from-brand to-orange-soft text-on-brand shadow-md shadow-brand/35 ring-1 ring-brand/60 scale-[1.02]"
+                  : "bg-surface-2/60 text-text-secondary hover:bg-white/[0.08] hover:text-text-primary border border-white/[0.06]"
               )}
               title={t(r.descEn, r.descAr)}
             >
-              <Icon size={13} />
+              <Icon size={14} className={isActive ? "text-on-brand" : "text-text-muted"} />
               <span>{t(r.labelEn, r.labelAr)}</span>
+              {isActive && (
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+              )}
             </button>
           );
         })}
@@ -86,7 +89,7 @@ export function RoleSwitcher() {
 
       {/* Live Simulation Controls & Indicator */}
       <div className="ms-auto flex shrink-0 items-center gap-2.5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-surface-2/60 backdrop-blur-md px-2.5 py-1">
           <span className="relative flex h-2 w-2">
             <span
               className={cn(
@@ -110,14 +113,14 @@ export function RoleSwitcher() {
 
         <button
           onClick={toggleSimulation}
-          className="btn-ghost text-label py-1 px-2.5 rounded-full border border-border-subtle hover:border-brand"
+          className="btn-ghost text-label py-1 px-3 rounded-full border border-white/[0.08] hover:border-brand hover:text-brand hover:bg-brand/10 transition-colors backdrop-blur-sm"
         >
           {isSimulating ? t("Pause demo", "إيقاف العرض") : t("Resume demo", "استئناف العرض")}
         </button>
 
         <span className="hidden text-text-muted lg:inline">|</span>
 
-        <span className="hidden text-label text-text-muted lg:inline">
+        <span className="hidden text-label text-text-muted tabular-nums lg:inline">
           {trips.length} {t("active trips synced", "رحلات متزامنة")}
         </span>
       </div>

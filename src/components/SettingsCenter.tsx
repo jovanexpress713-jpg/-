@@ -440,7 +440,7 @@ export function SettingsCenter({
                   <button
                     onClick={() => {
                       reset();
-                      setTheme("light");
+                      setTheme("dark");
                       toast(tk("settings.reset"), tk("settings.saved"));
                     }}
                     className="btn-ghost text-label py-1 px-3"

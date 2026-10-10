@@ -856,10 +856,12 @@
   /* Account / language / notification popovers share one shell so they can
      never drift apart visually or land off-screen on a phone. */
   .menu-pop {
-    background-color: var(--color-surface-1);
-    border: 1px solid var(--color-border-subtle);
+    background-color: color-mix(in oklab, var(--color-surface-1) 88%, transparent);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    box-shadow: var(--ds-shadow-xl);
+    box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     animation: fade-up 0.18s var(--ds-ease) both;
   }
   .menu-row {
@@ -920,6 +922,53 @@
   .capacity-water-wave { animation: none; }
   .fuel-bubble { animation: none; }
   .speedometer-pulse { animation: none; }
+  .highway-lane-flow { animation: none; }
+  .lidar-scan-beam { animation: none; }
+  .telemetry-live-glow { animation: none; }
+  .tachometer-bar-pulse { animation: none; }
+  .liquid-shimmer { animation: none; }
+}
+
+@keyframes highway-lane-flow {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(140px); }
+}
+.highway-lane-flow {
+  animation: highway-lane-flow 0.9s linear infinite;
+}
+
+@keyframes lidar-cargo-scan {
+  0% { transform: translateX(-15%); opacity: 0; }
+  15% { opacity: 0.85; }
+  85% { opacity: 0.85; }
+  100% { transform: translateX(115%); opacity: 0; }
+}
+.lidar-scan-beam {
+  animation: lidar-cargo-scan 3.6s ease-in-out infinite;
+}
+
+@keyframes live-telemetry-ping {
+  0%, 100% { opacity: 0.7; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.06); filter: drop-shadow(0 0 6px currentColor); }
+}
+.telemetry-live-glow {
+  animation: live-telemetry-ping 2.2s ease-in-out infinite;
+}
+
+@keyframes tachometer-pulse {
+  0%, 100% { opacity: 0.8; transform: scaleY(0.92); }
+  50% { opacity: 1; transform: scaleY(1.05); }
+}
+.tachometer-bar-pulse {
+  animation: tachometer-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes liquid-glow-shimmer {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.75; }
+}
+.liquid-shimmer {
+  animation: liquid-glow-shimmer 2.8s ease-in-out infinite;
 }
 
 @layer utilities {

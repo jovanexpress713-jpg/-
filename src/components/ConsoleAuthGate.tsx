@@ -237,12 +237,12 @@ export function ConsoleAuthGate({
         <div className="absolute -bottom-32 -end-16 h-96 w-96 rounded-full bg-brand/5 blur-3xl" />
       </div>
 
-      {/* Language — reachable before signing in, in all three languages. */}
-      <div className="absolute end-4 top-4 z-20">
+      {/* Language — reachable before signing in, in all three languages (hidden per user selection) */}
+      <div className="hidden absolute end-4 top-4 z-20">
         <button
           type="button"
           onClick={() => setShowLangMenu((v) => !v)}
-          className="flex h-9 items-center gap-2 rounded-full border border-border-subtle bg-surface-1/90 px-3 text-label-lg font-semibold text-text-secondary backdrop-blur transition-colors hover:border-brand/60 hover:text-text-primary"
+          className="hidden flex h-9 items-center gap-2 rounded-full border border-border-subtle bg-surface-1/90 px-3 text-label-lg font-semibold text-text-secondary backdrop-blur transition-colors hover:border-brand/60 hover:text-text-primary"
           aria-haspopup="listbox"
           aria-expanded={showLangMenu}
           title={tk("language.choose")}
@@ -337,30 +337,34 @@ export function ConsoleAuthGate({
               </span>
             </div>
             <div className="grid gap-2">
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.key}
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleQuickDemoLogin(acc)}
-                  className={cn(
-                    "rounded-inner border p-3 text-start transition-all hover:border-brand hover:bg-surface-2 active:scale-[0.99]",
-                    email === acc.email ? "border-brand/60 bg-surface-2" : "border-border-subtle",
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-body font-bold text-text-primary">
-                      {t(acc.titleEn, acc.titleAr)}
-                    </span>
-                    <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-micro font-bold text-brand">
-                      {t("Enter Now →", "دخول فوري ←")}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-label leading-relaxed text-text-muted">
-                    {acc.descEn ? t(acc.descEn, acc.descAr) : acc.descAr}
-                  </div>
-                </button>
-              ))}
+              {demoAccounts.map((acc) => {
+                const isHiddenAccount = acc.key === "driver" || acc.key === "client";
+                return (
+                  <button
+                    key={acc.key}
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleQuickDemoLogin(acc)}
+                    className={cn(
+                      "rounded-inner border p-3 text-start transition-all hover:border-brand hover:bg-surface-2 active:scale-[0.99]",
+                      email === acc.email ? "border-brand/60 bg-surface-2" : "border-border-subtle",
+                      isHiddenAccount && "hidden",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-body font-bold text-text-primary">
+                        {t(acc.titleEn, acc.titleAr)}
+                      </span>
+                      <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-micro font-bold text-brand">
+                        {t("Enter Now →", "دخول فوري ←")}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-label leading-relaxed text-text-muted">
+                      {acc.descEn ? t(acc.descEn, acc.descAr) : acc.descAr}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
           )}

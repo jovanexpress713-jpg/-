@@ -137,7 +137,7 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
   return (
     <div ref={containerRef} className={cn("relative w-full max-w-md", className)}>
       {/* Search Input Box */}
-      <div className="flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1.5 border border-border-subtle focus-within:border-brand/50 transition-colors">
+      <div className="flex items-center gap-2 rounded-full bg-surface-2/60 px-3 py-1.5 border border-white/[0.08] backdrop-blur-md focus-within:border-brand/60 focus-within:ring-2 focus-within:ring-brand/20 transition-all shadow-inner">
         <IconSearch size={15} className="text-text-muted shrink-0" />
         <input
           type="text"
@@ -168,7 +168,7 @@ export function GlobalSearch({ onNavigate, className }: GlobalSearchProps) {
 
       {/* Autocomplete Dropdown */}
       {isOpen && query.trim() && (
-        <div className="absolute top-full mt-2 inset-x-0 z-50 rounded-inner bg-surface-1/95 backdrop-blur-md p-2 shadow-2xl border border-border-subtle max-h-[380px] overflow-y-auto text-label-lg animate-fade-in">
+        <div className="absolute top-full mt-2 inset-x-0 z-50 rounded-inner bg-[#060e1d]/95 backdrop-blur-2xl p-2 shadow-2xl border border-white/[0.1] max-h-[380px] overflow-y-auto text-label-lg animate-fade-in">
           {totalResults === 0 ? (
             <div className="p-4 text-center text-text-muted text-label-lg">
               {t("No matching results found for", "لا توجد نتائج مطابقة لـ")} "{query}"

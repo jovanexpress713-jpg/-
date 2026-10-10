@@ -258,8 +258,8 @@ export function WebConsole({
         to open it — no screen is left without navigation on a small viewport.
       */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:flex">
+        {/* Desktop Floating Sidebar */}
+        <div className="hidden lg:flex shrink-0 my-3 ms-3">
           <Sidebar
             active={nav}
             onSelect={handleNavSelect}
@@ -272,10 +272,10 @@ export function WebConsole({
         {sidebarOpen && (
           <div className="animate-fade-in fixed inset-0 z-50 lg:hidden">
             <div
-              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              className="absolute inset-0 bg-[#050b18]/80 backdrop-blur-md"
               onClick={() => setSidebarOpen(false)}
             />
-            <div className="absolute inset-y-0 start-0 z-10 max-w-[85vw]">
+            <div className="absolute inset-y-0 start-0 z-10 my-2 ms-2 max-w-[85vw] flex">
               <Sidebar
                 active={nav}
                 onSelect={(k) => {

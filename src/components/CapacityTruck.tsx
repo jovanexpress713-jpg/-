@@ -433,7 +433,7 @@ export function CapacityTruck({ pct, className, label, countUp = false, truckTyp
           {p > 0 && <>
             <path d={typeWave} fill="#59a9ff" opacity=".38" className="capacity-water-wave" />
             <path d={typeWaveSecondary} fill="#b4dcff" opacity=".22" className="capacity-water-wave capacity-water-wave-highlight" />
-            <path d={typeWaveCrest} fill="none" stroke="#d9efff" strokeWidth="4" opacity=".76" className="capacity-water-wave capacity-water-wave-highlight" filter={arrivalGlow ? `url(#typed-water-glow-${uid})` : undefined} />
+            <path d={typeWaveCrest} fill="none" stroke="#e0f2fe" strokeWidth="4.5" opacity=".9" className="capacity-water-wave capacity-water-wave-highlight" filter={`url(#typed-water-glow-${uid})`} />
           </>}
         </g>
         <path d={shape.clip} fill="none" stroke="#d3e5f4" strokeWidth="2.5" opacity=".7" />
@@ -461,6 +461,10 @@ export function CapacityTruck({ pct, className, label, countUp = false, truckTyp
 
         <filter id={`shadow-${uid}`} x="-10%" y="-60%" width="120%" height="260%">
           <feGaussianBlur stdDeviation="10" />
+        </filter>
+
+        <filter id={`crest-glow-${uid}`} x="-10%" y="-60%" width="120%" height="220%">
+          <feDropShadow dx="0" dy="0" stdDeviation="4.5" floodColor="#93c5fd" floodOpacity="0.75" />
         </filter>
 
         {/* Rounded interior so the fill follows the trailer's own shape. */}
@@ -515,7 +519,7 @@ export function CapacityTruck({ pct, className, label, countUp = false, truckTyp
         {p > 0 && <>
           <path d={wavePath} fill="#77baff" opacity={0.5} className="capacity-water-wave" />
           <path d={secondWavePath} fill="#9ed4ff" opacity={0.24} className="capacity-water-wave capacity-water-wave-highlight" />
-          <path d={wavePath} fill="none" stroke="#d8efff" strokeWidth={7} opacity={0.68} className="capacity-water-wave capacity-water-wave-highlight" />
+          <path d={wavePath} fill="none" stroke="#e0f2fe" strokeWidth={7.5} opacity={0.88} className="capacity-water-wave capacity-water-wave-highlight" filter={`url(#crest-glow-${uid})`} />
         </>}
       </g>
       {/* Overlay frame. */}

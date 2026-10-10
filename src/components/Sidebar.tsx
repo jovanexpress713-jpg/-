@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { BrandEmblem } from "./Logo";
@@ -19,6 +19,7 @@ import {
   IconLayers,
   IconDoc,
   IconTag,
+  IconChevron,
 } from "./Icons";
 import type { RequestKind } from "../data/types";
 import { usePermissions } from "../state/permissionStore";
@@ -36,6 +37,8 @@ interface Props {
   onSelect: (key: string) => void;
   counts: NavCounts;
   onCreate: (kind: RequestKind) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 /**
@@ -55,10 +58,20 @@ const KEY_ALIAS: Record<string, string> = {
   dashboard: "operations",
 };
 
-export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
+export function Sidebar({
+  active,
+  onSelect,
+  counts,
+  onCreate,
+  collapsed: controlledCollapsed,
+  onToggleCollapse,
+}: Props) {
   const { t, tk } = useSettings();
   const { pageVisible, can } = usePermissions();
   const current = KEY_ALIAS[active] ?? active;
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+  const toggleCollapse = onToggleCollapse ?? (() => setInternalCollapsed((v) => !v));
 
   /**
    * Navigation gate. Tool entries (assistant, alerts, settings) are gated by
@@ -88,10 +101,14 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
     const visible = rows.filter(Boolean);
     if (!visible.length) return null;
     return (
-      <div className="mb-1">
-        {heading(tk(labelKey))}
-        <div className="space-y-0.5">{visible}</div>
-        <div className="my-3 border-t border-border-subtle" />
+      <div className="mb-2">
+        {isCollapsed ? (
+          <div className="my-1.5 border-t border-white/[0.06]" />
+        ) : (
+          heading(tk(labelKey))
+        )}
+        <div className="space-y-1">{visible}</div>
+        {!isCollapsed && <div className="my-2 border-t border-white/[0.06]" />}
       </div>
     );
   };
@@ -114,28 +131,60 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
         key={key}
         onClick={() => onSelect(key)}
         aria-current={isActive ? "page" : undefined}
-        className={cn("nav-item w-full", isActive && "nav-item-on")}
+        title={isCollapsed ? label : undefined}
+        className={cn(
+          "nav-item relative w-full rounded-inner transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/80",
+          isActive
+            ? "nav-item-on shadow-lg shadow-brand/25 font-bold border border-brand/50 ring-1 ring-brand/30"
+            : "hover:bg-white/[0.06] text-text-secondary hover:text-text-primary border border-transparent hover:border-white/[0.04]",
+          isCollapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
+        )}
       >
-        <Icon size={17} />
-        <span className="flex-1 text-start">{label}</span>
-        {opts.modal && !isActive && (
+        {/* Subtle glowing indicator on active item when expanded */}
+        {isActive && !isCollapsed && (
+          <span className="absolute start-1 top-2.5 bottom-2.5 w-1 rounded-full bg-white/80 shadow-sm" aria-hidden="true" />
+        )}
+        <span
+          className={cn(
+            "shrink-0 transition-transform duration-200 group-hover:scale-110",
+            isActive ? "text-on-orange" : "text-text-secondary group-hover:text-brand"
+          )}
+        >
+          <Icon size={18} />
+        </span>
+        <span className={cn("text-start transition-all duration-200", isCollapsed ? "sr-only" : "flex-1 truncate")}>
+          {label}
+        </span>
+        {opts.modal && !isActive && !isCollapsed && (
           <span
             aria-hidden="true"
             title={tk("nav.opensWindow")}
-            className="h-1.5 w-1.5 shrink-0 rounded-full bg-text-muted/60"
+            className="h-1.5 w-1.5 shrink-0 rounded-full bg-text-muted/50"
           />
         )}
         {typeof opts.count === "number" && (
-          <span className={cn("badge", isActive ? "bg-white/20 text-on-orange" : "badge-brand")}>
-            {opts.count}
-          </span>
+          isCollapsed ? (
+            <span
+              className={cn(
+                "absolute top-1.5 end-1.5 h-2 w-2 min-w-0 p-0 rounded-full",
+                isActive ? "bg-white" : "bg-brand animate-pulse"
+              )}
+              title={`${label}: ${opts.count}`}
+            />
+          ) : (
+            <span className={cn("badge", isActive ? "bg-white/20 text-on-orange" : "badge-brand")}>
+              {opts.count}
+            </span>
+          )
         )}
       </button>
     );
   };
 
   const heading = (label: string) => (
-    <div className="label-sm px-3 pt-4 pb-1.5 first:pt-0 uppercase">{label}</div>
+    <div className="label-sm px-2.5 pt-3 pb-1 first:pt-1 uppercase tracking-wider font-extrabold text-text-muted/80">
+      {label}
+    </div>
   );
 
   const QUICK: { kind: RequestKind; label: string; icon: typeof IconTruck }[] = [
@@ -157,19 +206,54 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
   const QUICK_VISIBLE = QUICK.filter((q) => can(QUICK_CREATE_PERM[q.kind]));
 
   return (
-    <aside className="flex h-full w-[264px] shrink-0 flex-col border-e border-border-subtle bg-surface-1 px-3 py-4">
-      {/* Compact identity block — the header carries the full brand lockup. */}
-      <div className="flex items-center gap-2.5 px-2">
-        <BrandEmblem size={28} />
-        <div className="min-w-0 leading-tight">
-          <div className="truncate text-body font-extrabold text-text-primary">
-            {tk("app.name")}
+    <aside
+      className={cn(
+        "relative flex h-full shrink-0 flex-col rounded-panel bg-[#071328]/92 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_40px_rgba(2,6,23,0.75),inset_0_1px_0_rgba(255,255,255,0.06)] px-2.5 py-3.5 transition-all duration-300 ease-in-out select-none",
+        isCollapsed ? "w-[72px]" : "w-[264px]"
+      )}
+    >
+      {/* Brand & Collapse Header */}
+      <div className="flex items-center justify-between gap-2 px-1 pb-3 border-b border-white/[0.06]">
+        <div className={cn("flex items-center gap-2.5 min-w-0 transition-all", isCollapsed && "justify-center w-full")}>
+          <div className="relative flex items-center justify-center p-1 rounded-inner bg-gradient-to-br from-brand/20 via-surface-2/80 to-brand/5 border border-brand/35 shadow-sm shadow-brand/15 backdrop-blur-md">
+            <BrandEmblem size={28} />
           </div>
-          <div className="tagline truncate">{tk("app.tagline")}</div>
+          {!isCollapsed && (
+            <div className="min-w-0 leading-tight">
+              <div className="truncate text-body font-extrabold text-text-primary">
+                {tk("app.name")}
+              </div>
+              <div className="tagline truncate text-label text-brand-soft font-semibold">{tk("app.tagline")}</div>
+            </div>
+          )}
         </div>
+
+        {!isCollapsed && (
+          <button
+            onClick={toggleCollapse}
+            className="btn-icon-sm rounded-inner text-text-muted hover:text-text-primary hover:bg-white/[0.08] border border-transparent hover:border-white/[0.06] transition-colors shrink-0"
+            title={t("Collapse menu", "طي القائمة")}
+            aria-label={t("Collapse menu", "طي القائمة")}
+          >
+            <IconChevron size={14} className="rtl:rotate-90 ltr:-rotate-90" />
+          </button>
+        )}
       </div>
 
-      <nav className="scroll-thin mt-5 flex-1 overflow-y-auto px-1 pb-2">
+      {isCollapsed && (
+        <div className="pt-2 pb-1 flex justify-center">
+          <button
+            onClick={toggleCollapse}
+            className="btn-icon-sm rounded-inner text-text-muted hover:text-brand hover:bg-brand/10 border border-transparent hover:border-brand/25 transition-colors"
+            title={t("Expand menu", "توسيع القائمة")}
+            aria-label={t("Expand menu", "توسيع القائمة")}
+          >
+            <IconChevron size={14} className="rtl:-rotate-90 ltr:rotate-90" />
+          </button>
+        </div>
+      )}
+
+      <nav className="scroll-thin mt-2 flex-1 overflow-y-auto overflow-x-hidden px-0.5 pb-2">
         {/* Operations */}
         {group("nav.operations", [
           row("overview", tk("nav.overview"), IconAnalysis),
@@ -211,32 +295,39 @@ export function Sidebar({ active, onSelect, counts, onCreate }: Props) {
 
       {/* Quick create — offers only what this role may actually create. */}
       {QUICK_VISIBLE.length > 0 && (
-      <div className="mt-3 shrink-0 space-y-2 border-t border-border-subtle pt-3">
-        <div className="flex items-center justify-between gap-1 px-1">
-          <span className="label-sm">{tk("nav.quickCreate")}</span>
-          <div className="flex items-center gap-1">
-            {QUICK_VISIBLE.map(({ kind, label, icon: Icon }) => (
-              <button
-                key={kind}
-                title={label}
-                aria-label={label}
-                onClick={() => onCreate(kind)}
-                className="btn-icon-sm"
-              >
-                <Icon size={15} />
-              </button>
-            ))}
+      <div className="mt-2 shrink-0 space-y-2 border-t border-white/[0.06] pt-2.5">
+        {!isCollapsed && (
+          <div className="flex items-center justify-between gap-1 px-1">
+            <span className="label-sm font-bold text-text-muted">{tk("nav.quickCreate")}</span>
+            <div className="flex items-center gap-1">
+              {QUICK_VISIBLE.map(({ kind, label, icon: Icon }) => (
+                <button
+                  key={kind}
+                  title={label}
+                  aria-label={label}
+                  onClick={() => onCreate(kind)}
+                  className="btn-icon-sm rounded-inner hover:bg-white/[0.08] text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  <Icon size={15} />
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <button
           onClick={() => onCreate(QUICK_VISIBLE[0].kind)}
-          className="group flex w-full items-center gap-3 rounded-panel border-[1.5px] border-dashed border-brand bg-brand/5 p-3 text-start transition-[background-color,border-color,transform] duration-200 hover:bg-brand/10 active:scale-[0.98]"
+          title={isCollapsed ? tk("nav.createRequest") : undefined}
+          aria-label={tk("nav.createRequest")}
+          className={cn(
+            "group flex items-center justify-center rounded-panel border-[1.5px] border-dashed border-brand bg-brand/5 backdrop-blur-sm transition-[background-color,border-color,transform,box-shadow] duration-200 hover:bg-brand/10 hover:shadow-md hover:shadow-brand/10 active:scale-[0.98]",
+            isCollapsed ? "h-11 w-11 mx-auto p-0" : "w-full gap-3 p-3 text-start"
+          )}
         >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand text-on-brand transition-transform duration-300 group-hover:rotate-90">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand text-on-brand transition-transform duration-300 group-hover:rotate-90 shadow-md shadow-brand/25">
             <IconPlus size={18} />
           </span>
-          <span className="min-w-0">
+          <span className={cn("min-w-0", isCollapsed ? "sr-only" : "block")}>
             <span className="block truncate text-body font-semibold text-brand">
               {tk("nav.createRequest")}
             </span>

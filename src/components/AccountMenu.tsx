@@ -11,6 +11,7 @@ import {
   IconDoc,
   IconLock,
   IconProfile,
+  IconSettings,
   IconTruck,
 } from "./Icons";
 
@@ -173,15 +174,15 @@ export function AccountMenu({
         aria-expanded={open}
         title={tk("header.account")}
         className={cn(
-          "flex h-9 items-center gap-2 rounded-full border border-border-subtle bg-surface-2 ps-1.5 pe-2 transition-colors hover:border-brand/60",
-          open && "border-brand/70",
+          "flex h-9 items-center gap-1.5 rounded-full border border-white/[0.08] bg-surface-2/70 px-2 backdrop-blur-md transition-all hover:border-brand/60 hover:bg-surface-2",
+          open && "border-brand/70 bg-brand/10 shadow-sm shadow-brand/20",
         )}
       >
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand/15 text-micro font-bold text-brand">
-          {initials}
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand/20 text-brand shadow-sm" title={user?.fullName || tk("settings.tabSystem")}>
+          <IconSettings size={14} className="text-brand transition-transform hover:rotate-45" />
         </span>
-        <span className="hidden max-w-[110px] truncate text-label-lg font-bold text-text-primary sm:block">
-          {user?.fullName || user?.email || tk("app.shortName")}
+        <span className="text-label-lg font-bold text-text-primary px-0.5">
+          {tk("settings.tabSystem")}
         </span>
         <IconChevronInline />
       </button>
@@ -194,7 +195,7 @@ export function AccountMenu({
           {panel === "root" && (
             <>
               {/* Identity block */}
-              <div className="mb-1.5 rounded-control bg-surface-2 p-2.5">
+              <div className="mb-1.5 rounded-control bg-surface-2/80 border border-white/[0.06] p-2.5 backdrop-blur-sm">
                 <div className="flex items-center gap-2.5">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/15 text-label-lg font-bold text-brand">
                     {initials}

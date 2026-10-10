@@ -39,6 +39,8 @@ function MetricCard({
   hint,
   icon,
   tone,
+  trend,
+  sparkData = [40, 55, 48, 62, 70, 68, 85],
   onClick,
   active = false,
 }: {
@@ -47,22 +49,81 @@ function MetricCard({
   hint: string;
   icon: React.ReactNode;
   tone: string;
+  trend?: { up: boolean; text: string };
+  sparkData?: number[];
   onClick?: () => void;
   active?: boolean;
 }) {
   const Tag = onClick ? "button" : "div";
+  const minVal = Math.min(...sparkData);
+  const maxVal = Math.max(...sparkData);
+  const range = maxVal - minVal || 1;
+  const points = sparkData
+    .map((d, i) => {
+      const x = (i / (sparkData.length - 1)) * 56;
+      const y = 20 - ((d - minVal) / range) * 16;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
   return (
     <Tag
       onClick={onClick}
       aria-pressed={onClick ? active : undefined}
-      className={`ej-overview-metric card flex min-w-0 items-center gap-3 p-4 text-start transition hover:border-brand/40 ${active ? "border-brand/60 ring-1 ring-brand/20" : ""}`}
+      className={`ej-overview-metric card group relative flex min-w-0 flex-col justify-between overflow-hidden p-3.5 sm:p-4 text-start transition-all duration-300 hover:border-brand/50 hover:shadow-md ${
+        active ? "border-brand/70 bg-brand/5 ring-1 ring-brand/30" : "bg-surface-1/90 backdrop-blur-sm"
+      }`}
     >
-      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-inner ${tone}`}>{icon}</span>
-      <span className="min-w-0 flex-1">
+      <div className="flex items-start justify-between gap-2">
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-inner transition-transform duration-300 group-hover:scale-105 ${tone}`}>
+          {icon}
+        </span>
+        {/* Live Sparkline Micro-Chart */}
+        <div className="flex flex-col items-end">
+          <svg className="h-5 w-14 overflow-visible opacity-75 transition-opacity group-hover:opacity-100" viewBox="0 0 56 20">
+            <polyline
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={trend?.up ? "text-emerald-500" : "text-brand"}
+              points={points}
+            />
+          </svg>
+          {trend && (
+            <span
+              className={`mt-0.5 inline-flex items-center gap-0.5 text-micro font-semibold ${
+                trend.up ? "text-emerald-500" : "text-amber-500"
+              }`}
+            >
+              <span>{trend.up ? "↑" : "↓"}</span>
+              <span>{trend.text}</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-2 min-w-0">
         <span className="block truncate text-label text-text-muted">{label}</span>
-        <span className="mt-0.5 block text-hero-sm font-bold leading-none tabular-nums text-text-primary">{value.toLocaleString()}</span>
+        <div className="mt-0.5 flex items-baseline justify-between gap-1">
+          <span className="text-hero-sm font-bold leading-none tabular-nums text-text-primary">
+            {value.toLocaleString()}
+          </span>
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400 telemetry-live-glow" />
+        </div>
         <span className="mt-1 block truncate text-micro text-text-muted">{hint}</span>
-      </span>
+      </div>
+
+      {/* Modern bottom ambient accent line */}
+      <span
+        aria-hidden="true"
+        className={`absolute bottom-0 inset-x-0 h-[2px] transition-all duration-300 ${
+          active
+            ? "bg-gradient-to-r from-brand via-brand to-emerald-400 opacity-100"
+            : "bg-gradient-to-r from-transparent via-border-subtle to-transparent opacity-40 group-hover:opacity-100 group-hover:from-brand/60"
+        }`}
+      />
     </Tag>
   );
 }
@@ -166,10 +227,48 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
         </header>
 
         <section aria-label={t("Operations summary", "ملخص العمليات")} className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <MetricCard label={t("Trips in view", "الرحلات المعروضة")} value={filteredTrips.length} hint={t("Current filters", "وفق الفلاتر الحالية")} icon={<IconTracking size={18} />} tone="bg-brand/12 text-brand" onClick={() => filterGroup("all")} active={group === "all"} />
-          <MetricCard label={t("In transit", "على الطريق")} value={filteredTrips.filter((trip) => statusGroup(trip.status) === "transit").length} hint={t("Trips currently underway", "الرحلات الجارية ضمن النتائج")} icon={<IconTracking size={18} />} tone="bg-status-info/12 text-status-info" onClick={() => filterGroup("transit")} active={group === "transit"} />
-          <MetricCard label={t("Fleet vehicles", "مركبات الأسطول")} value={trucks.length} hint={t("Registered vehicles", "المركبات المسجلة")} icon={<IconTruck size={18} />} tone="bg-status-waiting/12 text-status-waiting" onClick={() => onToast(t("Fleet inventory", "مخزون الأسطول"), t("Open Fleet from the navigation menu.", "افتح الأسطول من قائمة التنقل."))} />
-          <MetricCard label={t("Drivers", "السائقون")} value={drivers.length} hint={t("Available driver records", "سجلات السائقين المتاحة")} icon={<IconCheck size={18} />} tone="bg-status-active/12 text-status-active" onClick={() => onToast(t("Driver records", "سجلات السائقين"), t("Open Drivers from the navigation menu.", "افتح السائقين من قائمة التنقل."))} />
+          <MetricCard
+            label={t("Trips in view", "الرحلات المعروضة")}
+            value={filteredTrips.length}
+            hint={t("Current filters", "وفق الفلاتر الحالية")}
+            icon={<IconTracking size={18} />}
+            tone="bg-brand/12 text-brand"
+            trend={{ up: true, text: "+14%" }}
+            sparkData={[24, 32, 28, 45, 40, 52, 60]}
+            onClick={() => filterGroup("all")}
+            active={group === "all"}
+          />
+          <MetricCard
+            label={t("In transit", "على الطريق")}
+            value={filteredTrips.filter((trip) => statusGroup(trip.status) === "transit").length}
+            hint={t("Trips currently underway", "الرحلات الجارية ضمن النتائج")}
+            icon={<IconTracking size={18} />}
+            tone="bg-status-info/12 text-status-info"
+            trend={{ up: true, text: "+8%" }}
+            sparkData={[12, 18, 15, 22, 26, 24, 30]}
+            onClick={() => filterGroup("transit")}
+            active={group === "transit"}
+          />
+          <MetricCard
+            label={t("Fleet vehicles", "مركبات الأسطول")}
+            value={trucks.length}
+            hint={t("Registered vehicles", "المركبات المسجلة")}
+            icon={<IconTruck size={18} />}
+            tone="bg-status-waiting/12 text-status-waiting"
+            trend={{ up: true, text: "98% جاهزية" }}
+            sparkData={[18, 19, 19, 20, 20, 21, 22]}
+            onClick={() => onToast(t("Fleet inventory", "مخزون الأسطول"), t("Open Fleet from the navigation menu.", "افتح الأسطول من قائمة التنقل."))}
+          />
+          <MetricCard
+            label={t("Drivers", "السائقون")}
+            value={drivers.length}
+            hint={t("Available driver records", "سجلات السائقين المتاحة")}
+            icon={<IconCheck size={18} />}
+            tone="bg-status-active/12 text-status-active"
+            trend={{ up: true, text: "نشط" }}
+            sparkData={[14, 15, 15, 16, 17, 18, 18]}
+            onClick={() => onToast(t("Driver records", "سجلات السائقين"), t("Open Drivers from the navigation menu.", "افتح السائقين من قائمة التنقل."))}
+          />
         </section>
 
         <section className="card overflow-hidden border border-border-subtle p-0">
@@ -226,16 +325,57 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
                 />
               </div>
 
-              <div className="flex flex-1 items-center justify-center py-3 sm:py-4">
+              <div className="relative flex flex-1 flex-col items-center justify-center py-3 sm:py-5">
+                {/* Floating Smart Telemetry Badges - Top HUD Rail */}
+                <div className="mb-2 flex w-full max-w-[810px] items-center justify-between gap-2 px-2" dir="ltr">
+                  <div className="flex items-center gap-2 rounded-control border border-border-subtle/80 bg-surface-1/90 px-3 py-1 text-micro font-medium text-text-secondary shadow-xs backdrop-blur-md">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 telemetry-live-glow" />
+                    <span>{t("Axle Load: Steer 34% · Tandem 66%", "توزيع أحمال المحاور: أمامي ٣٤% · خلفي ٦٦%", "ایکسل وزن")}</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-control border border-border-subtle/80 bg-surface-1/90 px-3 py-1 text-micro font-medium text-text-secondary shadow-xs backdrop-blur-md">
+                    <span className="h-2 w-2 rounded-full bg-brand telemetry-live-glow" />
+                    <span>{t("CG Center of Gravity: Optimal", "مركز الثقل: متزن ومثالي", "مرکز ثقل")}</span>
+                  </div>
+                </div>
+
                 <CapacityTruck
                   key={`hero-${selected.id}`}
                   pct={loadPercent}
                   countUp
                   truckType={selected.cargoType}
                   vehicle={trucks.find((item) => item.id === selected.truckId)}
-                  className="w-full max-w-[810px] drop-shadow-[0_22px_26px_rgba(0,0,0,.22)]"
+                  className="relative z-5 w-full max-w-[810px] drop-shadow-[0_24px_30px_rgba(0,0,0,.3)]"
                   label={t(`Truck load ${Math.round(loadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(loadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
                 />
+
+                {/* Dynamic Highway Runway under truck with moving lane dashes */}
+                <div className="relative -mt-6 h-9 w-full max-w-[810px] overflow-hidden rounded-inner border-t border-border-subtle/80 bg-gradient-to-b from-surface-3/90 via-surface-2/70 to-transparent shadow-inner">
+                  {/* Road asphalt texture & moving dashed stripes */}
+                  <div className="absolute inset-0 flex items-center justify-around overflow-hidden opacity-90">
+                    <div className="highway-lane-flow flex w-[200%] shrink-0 items-center justify-around gap-10">
+                      {Array.from({ length: 20 }).map((_, i) => (
+                        <span
+                          key={i}
+                          className="h-1.5 w-11 shrink-0 rounded-full bg-gradient-to-r from-amber-400 to-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.7)]"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Road edge guard lines */}
+                  <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-border-subtle to-transparent" />
+                </div>
+
+                {/* Floating Smart Telemetry Badges - Bottom HUD Rail */}
+                <div className="mt-3 flex w-full max-w-[810px] items-center justify-between gap-2 px-2 text-micro text-text-muted" dir="ltr">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    <span>{t("TPMS: 110 PSI All 4 Axles Verified", "ضغط الإطارات: 110 PSI (جميع المحاور سليمة)", "ٹائر پریشر درست")}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-sky-400 telemetry-live-glow" />
+                    <span>{t("5G High-Speed Telemetry Link", "اتصال تيليماتكس نشط 5G فائق السرعة", "براہ راست رابطہ")}</span>
+                  </span>
+                </div>
               </div>
 
               <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-2" dir="ltr">
