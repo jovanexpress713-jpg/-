@@ -108,7 +108,7 @@ export interface TripFinancials {
   reviewApprovedByName?: string;
   reviewApprovedAt?: string;
   reviewNotes?: string;
-  priceStatus?: "TARIFF" | "PENDING_QUOTE" | "UNPRICED";
+  priceStatus?: "TARIFF" | "PENDING_QUOTE" | "PENDING_APPROVAL" | "APPROVED" | "UNPRICED";
   tariffId?: string;
   currency: string;
   /** Outstanding balance = freight price (VAT inclusive) − what has been paid. */

@@ -68,7 +68,7 @@ export function Sidebar({
   onToggleCollapse,
 }: Props) {
   const { t, tk } = useSettings();
-  const { pageVisible, can } = usePermissions();
+  const { pageVisible, can, role } = usePermissions();
   const current = KEY_ALIAS[active] ?? active;
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
@@ -91,7 +91,7 @@ export function Sidebar({
       case "permissions":
         return can("permissions.manage");
       case "representatives":
-        return pageVisible("representatives") || can("trips.create") || can("trips.edit") || can("trips.manage");
+        return role === "SUPER_ADMIN" || role === "GENERAL_MANAGER" || role === "OPERATIONS_MANAGER";
       case "finance":
         return pageVisible("finance") || can("finance.view") || can("invoices.view") || can("settlements.view");
       default:
@@ -264,6 +264,7 @@ export function Sidebar({
           row("trips", tk("nav.trips"), IconTruck),
           row("shipments", tk("nav.shipments"), IconCargo, { count: counts.cargos }),
           row("tariffs", tk("nav.tariffs"), IconTag),
+          row("representatives", tk("nav.representatives"), IconProfile),
           row("tracking", tk("nav.tracking"), IconTracking),
           row("chats", tk("nav.chats"), IconChat),
         ])}

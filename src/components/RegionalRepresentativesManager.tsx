@@ -4,15 +4,8 @@ import { useSettings } from "../settings";
 import { apiClient } from "../services/apiClient";
 import { useToast } from "./Toast";
 import {
-  IconDoc,
   IconClose,
-  IconCheck,
-  IconAlertCircle,
-  IconTruck,
-  IconCargo,
-  IconHistory,
   IconPlus,
-  IconTag,
   IconProfile,
 } from "./Icons";
 
@@ -344,7 +337,7 @@ export function RegionalRepresentativesManager() {
 
         <div className="rounded-card border border-border-subtle bg-surface-1 p-3.5 shadow-sm">
           <div className="text-micro font-bold uppercase text-text-muted">{t("Active Trips", "رحلات جارية")}</div>
-          <div className="mt-1 text-metric font-extrabold text-status-warning">{kpis.activeTrips}</div>
+          <div className="mt-1 text-metric font-extrabold text-warning">{kpis.activeTrips}</div>
           <div className="mt-0.5 text-micro text-text-muted">{t("On the road", "على المسار الآن")}</div>
         </div>
 
@@ -463,7 +456,7 @@ export function RegionalRepresentativesManager() {
                     </div>
                     <div>
                       <div className="text-micro text-text-muted">{t("Active", "جارية")}</div>
-                      <div className="text-body font-extrabold text-status-warning">{rep.metrics?.activeTrips || 0}</div>
+                      <div className="text-body font-extrabold text-warning">{rep.metrics?.activeTrips || 0}</div>
                     </div>
                     <div>
                       <div className="text-micro text-text-muted">{t("Pending Price", "سعر معلق")}</div>

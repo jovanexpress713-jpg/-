@@ -218,6 +218,11 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+    update: (id: string, payload: any) =>
+      request<any>(`/api/trips/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
   },
   representatives: {
     getAll: () => request<{ total: number; regions: string[]; representatives: any[] }>("/api/representatives"),

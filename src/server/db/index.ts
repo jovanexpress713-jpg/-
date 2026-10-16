@@ -115,11 +115,26 @@ export interface TripEntity {
   /** How the price was resolved: tariff match, awaiting quote, awaiting approval, or approved. */
   priceStatus?: "TARIFF" | "PENDING_QUOTE" | "PENDING_APPROVAL" | "APPROVED" | "UNPRICED";
   priceApprovalRequired?: boolean;
+  customPriceRequested?: number;
   priceApprovedBy?: string;
   priceApprovedByName?: string;
   priceApprovedAt?: string;
+  priceApprovalNotes?: string;
   priceRejectionReason?: string;
   priceNotes?: string;
+  priceHistory?: Array<{
+    id: string;
+    oldPrice: number;
+    newPrice: number;
+    currency: string;
+    reason: string;
+    actorId: string;
+    actorName: string;
+    actorRole: string;
+    status: "APPROVED" | "REJECTED" | "REQUESTED";
+    timestamp: string;
+  }>;
+  creatorRole?: string;
   /** Region associated with the trip or creator's operational scope. */
   region?: string;
   /** Tariff the price came from (Phase 1 pricing engine). */

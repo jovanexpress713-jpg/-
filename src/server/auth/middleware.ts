@@ -254,8 +254,11 @@ export function canAccessTrip(
     // Creator can always view what they created
     if (trip.createdBy && trip.createdBy === user.userId) return true;
 
+    if (uo?.allowedRegions && uo.allowedRegions.length > 0) {
+      return uo.allowedRegions.some((r) => isTripInRegion(trip, r));
+    }
     const userRecord = user.userId ? db.users.get(user.userId) : null;
-    const repRegion = userRecord?.region || user.region || (uo?.allowedRegions && uo.allowedRegions[0]);
+    const repRegion = userRecord?.region || user.region;
     if (repRegion) {
       return isTripInRegion(trip, repRegion);
     }
@@ -279,9 +282,6 @@ export function canAccessTrip(
   if (scope === "BRANCH" && uo?.allowedBranches && uo.allowedBranches.length > 0) {
     const cities = `${trip.originCity || ""} ${trip.destinationCity || ""}`;
     return uo.allowedBranches.some((b) => cities.includes(b));
-  }
-  if (scope === "REGION" && uo?.allowedRegions && uo.allowedRegions.length > 0) {
-    return uo.allowedRegions.some((r) => isTripInRegion(trip, r));
   }
 
   return true;

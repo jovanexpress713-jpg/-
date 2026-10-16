@@ -2,6 +2,7 @@ import { Router, type Response } from "express";
 import { db, type TripEntity, type TripEventEntity } from "../db";
 import {
   authenticate,
+  requireRole,
   requirePermission,
   canAccessTrip,
   type AuthenticatedRequest,
@@ -20,7 +21,7 @@ import { initTripFinancials, getTripFinancials, repriceTripFinancials, serialize
 import { logAuditEvent } from "../services/auditService";
 import { dispatchNotification } from "../services/notificationService";
 import { resolveQuote } from "../services/tariffService";
-import { computeRoadDistance, normalizeRegion, getCityRegion } from "../services/cityRegistry";
+import { computeRoadDistance, normalizeRegion, getCityRegion, isTripInRegion } from "../services/cityRegistry";
 
 const router = Router();
 
@@ -523,14 +524,33 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
   const customer = customerId ? db.customers.get(customerId) : undefined;
   const driver = driverId ? db.drivers.get(driverId) : undefined;
 
-  // ── Regional attribution ────────────────────────────────────────────────
+  // ── Regional attribution & Server-Side Regional Boundary Enforcement ──
   const userRecord = req.user?.userId ? db.users.get(req.user.userId) : null;
-  const resolvedRegion =
-    req.user?.region ||
-    userRecord?.region ||
-    normalizeRegion(requestedRegion) ||
-    getCityRegion(originCity) ||
-    "المنطقة الوسطى";
+  const isRep = req.user?.role === "REPRESENTATIVE";
+  const repRegion = userRecord?.region || req.user?.region;
+
+  let resolvedRegion: string;
+  if (isRep) {
+    if (!repRegion) {
+      return res.status(403).json({ error: "الممثل غير مسند إلى منطقة معتمدة", code: "UNASSIGNED_REPRESENTATIVE" });
+    }
+    // Strict boundary enforcement: trip must touch the representative's region
+    const inRegion = isTripInRegion({ originCity, destinationCity }, repRegion);
+    if (!inRegion) {
+      return res.status(403).json({
+        error: `لا يمكنك إنشاء رحلة خارج منطقتك المسندة (${repRegion}). يجب أن تبدأ الرحلة من منطقتك أو تتجه إليها.`,
+        code: "REGION_ACCESS_DENIED",
+      });
+    }
+    resolvedRegion = repRegion;
+  } else {
+    resolvedRegion =
+      normalizeRegion(requestedRegion) ||
+      getCityRegion(originCity) ||
+      userRecord?.region ||
+      req.user?.region ||
+      "المنطقة الوسطى";
+  }
 
   // ── Pricing resolution & approval workflow ──────────────────────────────
   const rawCustomPrice =
@@ -751,6 +771,73 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     trip: newTrip,
   });
 });
+
+/**
+ * PUT /api/trips/:id — Update operational trip fields with permission & regional isolation.
+ */
+router.put(
+  "/:id",
+  authenticate,
+  requirePermission("trips.edit"),
+  (req: AuthenticatedRequest, res: Response) => {
+    const trip = db.trips.get(String(req.params.id));
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+
+    if (!canAccessTrip(req.user, trip)) {
+      return res.status(403).json({ error: "You are not authorized to edit this trip", code: "TRIP_ACCESS_DENIED" });
+    }
+
+    const {
+      pickupAddress,
+      deliveryAddress,
+      cargoDescription,
+      cargoWeightTons,
+      temperatureRequired,
+      notes,
+      reason,
+    } = req.body || {};
+
+    const oldValues = {
+      pickupAddress: trip.pickupAddress,
+      deliveryAddress: trip.deliveryAddress,
+      cargoDescription: trip.cargoDescription,
+      cargoWeightTons: trip.cargoWeightTons,
+      temperatureRequired: trip.temperatureRequired,
+      notes: trip.notes,
+    };
+
+    if (pickupAddress !== undefined) trip.pickupAddress = String(pickupAddress);
+    if (deliveryAddress !== undefined) trip.deliveryAddress = String(deliveryAddress);
+    if (cargoDescription !== undefined) trip.cargoDescription = String(cargoDescription);
+    if (cargoWeightTons !== undefined) trip.cargoWeightTons = Number(cargoWeightTons);
+    if (temperatureRequired !== undefined) trip.temperatureRequired = Number(temperatureRequired);
+    if (notes !== undefined) trip.notes = String(notes);
+    trip.updatedAt = new Date().toISOString();
+    trip.updatedBy = req.user?.userId;
+    trip.updatedByName = req.user?.fullName;
+
+    logAuditEvent({
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      action: "TRIP_UPDATED",
+      entity: "trips",
+      entityId: trip.id,
+      tripId: trip.id,
+      oldValues,
+      newValues: {
+        pickupAddress: trip.pickupAddress,
+        deliveryAddress: trip.deliveryAddress,
+        cargoDescription: trip.cargoDescription,
+        cargoWeightTons: trip.cargoWeightTons,
+        notes: trip.notes,
+      },
+      reason,
+    });
+
+    return res.json({ message: "Trip updated successfully", trip });
+  }
+);
 
 // POST /api/trips/:id/transition - Authoritative State Machine Transition
 /**

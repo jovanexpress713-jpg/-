@@ -14,7 +14,6 @@ import { SAUDI_REGIONS, normalizeRegion, isTripInRegion } from "../services/city
 import {
   getUserOverride,
   setUserOverride,
-  hasPermission,
   getEffectivePermissionList,
 } from "../services/permissionService";
 import { logAuditEvent, getAuditLogs } from "../services/auditService";
