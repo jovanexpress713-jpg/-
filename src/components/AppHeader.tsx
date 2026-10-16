@@ -7,6 +7,7 @@ import { AccountMenu } from "./AccountMenu";
 import type { SettingsTab } from "./SettingsCenter";
 import type { SessionUser } from "../utils/permissions";
 import { IconSparkles, IconBell, IconMenu } from "./Icons";
+import { PageExportMenu, type PageExportProgress } from "./PageExportMenu";
 
 /**
  * The operational application bar (§2).
@@ -31,6 +32,7 @@ export function AppHeader({
   onLogout,
   onNavigate,
   onOpenMobileApp,
+  pageExport,
   showMenuButton = false,
 }: {
   user: SessionUser | null;
@@ -46,6 +48,15 @@ export function AppHeader({
   onNavigate: (targetView: string, entityId?: string) => void;
   /** Open one mobile app in its own interface (§12). */
   onOpenMobileApp?: (kind: "driver" | "client") => void;
+  pageExport?: {
+    surface: "page" | "screen";
+    busy: boolean;
+    progress: PageExportProgress | null;
+    eligiblePageCount: number;
+    onExportCurrent: () => void;
+    onPrint: () => void;
+    onExportAll: () => void;
+  };
   showMenuButton?: boolean;
 }) {
   const { tk, lang } = useSettings();
@@ -82,6 +93,18 @@ export function AppHeader({
 
         {/* Spacer to push actions to the end */}
         <div className="min-w-0 flex-1" />
+
+        {pageExport && (
+          <PageExportMenu
+            surface={pageExport.surface}
+            busy={pageExport.busy}
+            progress={pageExport.progress}
+            eligiblePageCount={pageExport.eligiblePageCount}
+            onExportCurrent={pageExport.onExportCurrent}
+            onPrint={pageExport.onPrint}
+            onExportAll={pageExport.onExportAll}
+          />
+        )}
 
         {/* Assistant */}
         <button
@@ -125,20 +148,22 @@ export function AppHeader({
         </button>
 
         {/* Account — everything secondary lives inside. */}
-        <AccountMenu
-          className="shrink-0"
-          user={user}
-          onOpenSettings={onOpenSettings}
-          onOpenAssistant={onOpenAssistant}
-          onOpenMobileApp={onOpenMobileApp ?? (() => {})}
-          onPreviewLogin={onPreviewLogin}
-          onLogout={onLogout}
-        />
+        <div className="shrink-0" data-export-exclude="true">
+          <AccountMenu
+            className="shrink-0"
+            user={user}
+            onOpenSettings={onOpenSettings}
+            onOpenAssistant={onOpenAssistant}
+            onOpenMobileApp={onOpenMobileApp ?? (() => {})}
+            onPreviewLogin={onPreviewLogin}
+            onLogout={onLogout}
+          />
+        </div>
       </div>
 
       {/* Search overlay popup — keeps the bar itself uncluttered and clean */}
       {searchOpen && (
-        <div className="animate-fade-in absolute inset-x-0 top-full border-b border-white/[0.08] bg-[#060e1d]/95 backdrop-blur-2xl p-2.5 shadow-2xl">
+        <div className="animate-fade-in absolute inset-x-0 top-full border-b border-white/[0.08] bg-[#060e1d]/95 backdrop-blur-2xl p-2.5 shadow-2xl" data-export-exclude="true">
           <div className="max-w-2xl mx-auto">
             <GlobalSearch
               onNavigate={(view, id) => {

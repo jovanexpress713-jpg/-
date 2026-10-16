@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
-import { useFleetStore, type Trip } from "../state/fleetStore";
+import type { Trip } from "../state/fleetStore";
 import { apiClient } from "../services/apiClient";
 import { InteractiveMap } from "../components/InteractiveMap";
 import { normalizeVehicleType, getVehicleTypeMeta } from "../data/vehicleTypes";
@@ -19,6 +19,8 @@ import {
   IconBell,
   IconDoc,
 } from "../components/Icons";
+import { DRIVER_EXPORT_SCREENS } from "./exportScreens";
+import { useMobileScreenExport, type MobileExportStatus } from "./useMobileScreenExport";
 
 /**
  * تطبيق السائق (§13) — independent driver interface over the shared backend.
@@ -35,14 +37,32 @@ interface DriverModeProps {
   onOpenSettings?: () => void;
   /** Bumped by the header bell — switches to the notifications tab. */
   notificationsSignal?: number;
+  exportAllSignal?: number;
+  exportBusy?: boolean;
+  onBulkExportStatus?: (status: MobileExportStatus) => void;
 }
 
-type DriverTab = "home" | "trips" | "trip" | "pod" | "track" | "notifications" | "account";
+type DriverTab = (typeof DRIVER_EXPORT_SCREENS)[number];
 
-export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal = 0 }: DriverModeProps) {
+export function DriverMode({
+  user,
+  onLogout,
+  onOpenSettings,
+  notificationsSignal = 0,
+  exportAllSignal = 0,
+  exportBusy = false,
+  onBulkExportStatus,
+}: DriverModeProps) {
   const { t, td } = useSettings();
-  const { updateTripStatus } = useFleetStore();
   const [activeTab, setActiveTab] = useState<DriverTab>("home");
+  useMobileScreenExport({
+    signal: exportAllSignal,
+    screens: DRIVER_EXPORT_SCREENS,
+    activeScreen: activeTab,
+    setActiveScreen: setActiveTab,
+    filename: "ejaz-driver-screens",
+    onStatus: onBulkExportStatus,
+  });
   const [tripsSubTab, setTripsSubTab] = useState<"all" | "available" | "confirmed" | "active" | "completed">("all");
   const [driverTrips, setDriverTrips] = useState<any[]>([]);
   const [currentTrip, setCurrentTrip] = useState<any | null>(null);
@@ -68,7 +88,10 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
-  const [signatureDone, setSignatureDone] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+  const [isSigning, setIsSigning] = useState(false);
+  const signatureCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const signatureInkRef = useRef(false);
 
   const notifications = useMobileNotifications();
 
@@ -255,20 +278,56 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
     };
   }, []);
 
-  const handleTransitionAction = async (targetStatus: string, actionLabelAr: string) => {
-    if (!active?.id) return;
+  const beginSignature = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = signatureCanvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
+    const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineWidth = 3;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--color-brand").trim() || "#ff6b1a";
+    signatureInkRef.current = false;
+    setIsSigning(true);
+    canvas.setPointerCapture(event.pointerId);
+  };
+
+  const drawSignature = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isSigning) return;
+    const canvas = signatureCanvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
+    const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
+    context.lineTo(x, y);
+    context.stroke();
+    signatureInkRef.current = true;
+  };
+
+  const finishSignature = () => {
+    setIsSigning(false);
+    const canvas = signatureCanvasRef.current;
+    if (canvas && signatureInkRef.current) setSignatureDataUrl(canvas.toDataURL("image/png"));
+  };
+
+  const clearSignature = () => {
+    const canvas = signatureCanvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (canvas && context) context.clearRect(0, 0, canvas.width, canvas.height);
+    signatureInkRef.current = false;
+    setSignatureDataUrl(null);
+  };
+
+  const handleTransitionAction = async (targetStatus: string, actionLabelAr: string): Promise<boolean> => {
+    if (!active?.id) return false;
     setIsSubmitting(true);
     setActionSuccessMsg(null);
     setActionErrorMsg(null);
-
-    const mappedUiStatus =
-      targetStatus === "IN_TRANSIT"
-        ? "on_road"
-        : targetStatus === "DELIVERED"
-          ? "delivered"
-          : targetStatus === "ARRIVED_DESTINATION"
-            ? "arrived"
-            : "ready";
 
     try {
       const res = await apiClient.trips.transition(active.id, {
@@ -279,13 +338,12 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
         longitude: gpsTelemetry?.longitude,
       });
 
-      if (res?.trip) {
-        setCurrentTrip(res.trip);
-      }
-      updateTripStatus(active.id, mappedUiStatus, actionLabelAr);
-      setActionSuccessMsg(`تم تحديث حالة الرحلة بنجاح إلى: ${actionLabelAr}`);
-    } catch {
-      setActionErrorMsg(t("Unable to update the trip status.", "تعذّر تحديث حالة الرحلة."));
+      if (res?.trip) setCurrentTrip(res.trip);
+      setActionSuccessMsg(t("Trip status updated successfully.", `تم تحديث حالة الرحلة بنجاح إلى: ${actionLabelAr}`));
+      return true;
+    } catch (error: any) {
+      setActionErrorMsg(String(error?.message || t("Unable to update the trip status.", "تعذّر تحديث حالة الرحلة.")));
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -298,8 +356,8 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
       setActionErrorMsg(t("Enter the recipient name and confirm the signature.", "يرجى إدخال اسم المستلم وتأكيد التوقيع"));
       return;
     }
-    if (!signatureDone) {
-      setActionErrorMsg(t("Confirm the recipient's digital signature first.", "يرجى تأكيد التوقيع الإلكتروني من المستلم أولًا."));
+    if (!signatureDataUrl) {
+      setActionErrorMsg(t("Capture the recipient's signature in the signature box first.", "يرجى التقاط توقيع المستلم داخل مربع التوقيع أولًا."));
       return;
     }
 
@@ -310,28 +368,45 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
         recipientName,
         recipientPhone,
         notes: deliveryNotes,
-        signatureUrl: "SIGNED_DIGITALLY_ON_DRIVER_GLASS",
+        signatureUrl: signatureDataUrl,
         latitude: gpsTelemetry?.latitude,
         longitude: gpsTelemetry?.longitude,
       });
-    } catch {
-      /* the transition below still records the delivery event */
-    }
-    try {
-      await handleTransitionAction("DELIVERED", "تم إثبات التسليم وتوقيع المستلم");
-      setActionSuccessMsg(t("Proof of delivery recorded and the trip is closed.", "تم توثيق إثبات التسليم (POD) وإغلاق الرحلة بنجاح!"));
-      setRecipientName("");
-      setRecipientPhone("");
-      setDeliveryNotes("");
-      setSignatureDone(false);
-      setActiveTab("home");
-    } finally {
+    } catch (error: any) {
+      setActionErrorMsg(String(error?.message || t("POD was not saved. The trip was not closed.", "لم يتم حفظ إثبات التسليم، لذلك لم تُغلق الرحلة.")));
       setIsSubmitting(false);
+      return;
     }
+
+    // POST /api/pod records the POD and transitions the trip to DELIVERED
+    // atomically; do not issue a second trip transition request.
+    setCurrentTrip((trip: any) => trip?.id === active.id ? { ...trip, status: "DELIVERED" } : trip);
+    setDriverTrips((previous) => previous.map((trip) => trip.id === active.id ? { ...trip, status: "DELIVERED" } : trip));
+    try {
+      const refreshed = await apiClient.trips.getDriverTrips(tripsSubTab);
+      if (refreshed?.trips) {
+        setDriverTrips(refreshed.trips);
+        const updatedTrip = refreshed.trips.find((trip: any) => trip.id === active.id);
+        if (updatedTrip) setCurrentTrip(updatedTrip);
+      }
+    } catch {
+      // The successful POD response remains authoritative; keep the confirmed local status.
+    }
+
+    setActionSuccessMsg(t("Proof of delivery recorded and the trip is closed.", "تم توثيق إثبات التسليم (POD) وإغلاق الرحلة بنجاح!"));
+    setRecipientName("");
+    setRecipientPhone("");
+    setDeliveryNotes("");
+    clearSignature();
+    setActiveTab("home");
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-surface-0 text-white flex flex-col justify-between select-none">
+    <div
+      className="relative h-full w-full overflow-hidden bg-surface-0 text-white flex flex-col justify-between select-none"
+      data-export-screen={activeTab}
+    >
       <div className="scroll-thin flex-1 overflow-y-auto pb-24">
         {/* Greeting — the live identity, no hardcoded names or ratings (§32) */}
         <div className="px-5 pt-5 pb-4 bg-gradient-to-b from-navy via-navy to-surface-0 border-b border-border-subtle">
@@ -634,28 +709,30 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
               />
             </div>
 
-            <button
-              type="button"
-              onClick={() => setSignatureDone((v) => !v)}
-              className={cn(
-                "flex w-full items-center gap-2.5 rounded-inner border p-3 text-start transition-colors",
-                signatureDone
-                  ? "border-status-active/50 bg-status-active/10"
-                  : "border-border-subtle bg-surface-2",
-              )}
-            >
-              <span
-                className={cn(
-                  "grid h-5 w-5 shrink-0 place-items-center rounded-micro border",
-                  signatureDone ? "border-status-active bg-status-active text-navy" : "border-border-subtle",
-                )}
-              >
-                {signatureDone && <IconCheck size={12} />}
-              </span>
-              <span className="text-label font-semibold text-white">
-                {t("The recipient signed digitally", "تم التوقيع الإلكتروني من المستلم")}
-              </span>
-            </button>
+            <div className="rounded-inner border border-border-subtle bg-surface-2 p-3">
+              <label className="mb-2 block text-label font-semibold text-white">
+                {t("Recipient signature", "توقيع المستلم")}
+              </label>
+              <canvas
+                ref={signatureCanvasRef}
+                width={600}
+                height={180}
+                onPointerDown={beginSignature}
+                onPointerMove={drawSignature}
+                onPointerUp={finishSignature}
+                onPointerCancel={finishSignature}
+                className="h-32 w-full touch-none rounded-control border border-dashed border-border-subtle bg-surface-1"
+                aria-label={t("Draw the recipient signature", "ارسم توقيع المستلم")}
+              />
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <span className="text-micro text-text-muted">
+                  {signatureDataUrl ? t("Signature captured", "تم التقاط التوقيع") : t("Draw with a finger or stylus", "ارسم بإصبعك أو بقلم الشاشة")}
+                </span>
+                <button type="button" onClick={clearSignature} className="btn-ghost px-2 py-1 text-label" disabled={!signatureDataUrl && !signatureInkRef.current}>
+                  {t("Clear", "مسح")}
+                </button>
+              </div>
+            </div>
 
             <button
               type="submit"
@@ -809,6 +886,13 @@ export function DriverMode({ user, onLogout, onOpenSettings, notificationsSignal
           );
         })}
       </div>
+      {exportBusy && (
+        <div
+          className="absolute inset-0 z-[80] cursor-wait"
+          aria-hidden="true"
+          data-export-exclude="true"
+        />
+      )}
     </div>
   );
 }

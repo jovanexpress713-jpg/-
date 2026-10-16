@@ -2,7 +2,14 @@ import type { Request, Response, NextFunction } from "express";
 import { verifyToken, type TokenPayload } from "./jwt";
 import { statusForUser } from "../services/registrationService";
 import { db } from "../db";
-import { isTripInRegion } from "../services/cityRegistry";
+import {
+  getCityRegionId,
+  isTripInRegion,
+  isTripInRegionId,
+  normalizeRegionId,
+  regionLabelForId,
+} from "../services/cityRegistry";
+import { logAuditEvent } from "../services/auditService";
 import {
   DEFAULT_ROLE_PERMISSIONS,
   hasPermission as registryHasPermission,
@@ -21,6 +28,239 @@ export interface AuthenticatedRequest extends Request {
  * Factory defaults, re-exported for compatibility.
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = DEFAULT_ROLE_PERMISSIONS;
+
+export type RegionalResource = "trips" | "customers" | "drivers";
+
+type RegionalEntity = {
+  id?: string;
+  regionId?: string;
+  region?: string;
+  city?: string;
+  originCity?: string;
+  destinationCity?: string;
+  customerId?: string;
+  driverId?: string;
+  additionalDriverId?: string;
+};
+
+/**
+ * The representative's scope is resolved from the live database record only.
+ * A region claim in an old/stale JWT must never restore or widen access.
+ */
+export function getRepresentativeRegionId(user: TokenPayload | undefined): string | null {
+  if (!user?.userId || user.role !== "REPRESENTATIVE") return null;
+  const account = db.users.get(user.userId);
+  if (!account || !account.isActive || account.role !== "REPRESENTATIVE") return null;
+  return normalizeRegionId(account.regionId);
+}
+
+function hasStoredRegion(entity: RegionalEntity): boolean {
+  const raw = entity.regionId ?? entity.region;
+  return raw !== undefined && raw !== null && String(raw).trim() !== "";
+}
+
+function storedRegionId(entity: RegionalEntity): string | null {
+  if (!hasStoredRegion(entity)) return null;
+  return normalizeRegionId(String(entity.regionId ?? entity.region));
+}
+
+function inferredResourceRegionIds(resource: RegionalResource, entity: RegionalEntity): Set<string> {
+  const stored = storedRegionId(entity);
+  if (hasStoredRegion(entity)) return stored ? new Set([stored]) : new Set();
+
+  if (resource === "trips") {
+    const inferred = new Set<string>();
+    const origin = getCityRegionId(entity.originCity);
+    const destination = getCityRegionId(entity.destinationCity);
+    if (origin) inferred.add(origin);
+    if (destination) inferred.add(destination);
+    return inferred;
+  }
+
+  // Legacy customer/driver rows can be mapped by their registered city while
+  // the region_id migration is rolled out. If neither region_id nor a known
+  // home city exists, fail closed instead of inferring access from trips.
+  const cityRegion = getCityRegionId(entity.city);
+  return cityRegion ? new Set([cityRegion]) : new Set();
+}
+
+/** True only when a representative can access this region-owned entity. */
+export function canAccessRegionalEntity(
+  user: TokenPayload | undefined,
+  resource: RegionalResource,
+  entity: RegionalEntity
+): boolean {
+  if (user?.role !== "REPRESENTATIVE") return true;
+  const assignedRegionId = getRepresentativeRegionId(user);
+  if (!assignedRegionId) return false;
+  return inferredResourceRegionIds(resource, entity).has(assignedRegionId);
+}
+
+/** Scope a collection without emitting a denial for every row hidden from a list. */
+export function filterRegionalEntities<T extends RegionalEntity>(
+  user: TokenPayload | undefined,
+  resource: RegionalResource,
+  entities: T[]
+): T[] {
+  if (user?.role !== "REPRESENTATIVE") return entities;
+  return entities.filter((entity) => canAccessRegionalEntity(user, resource, entity));
+}
+
+function attemptedOperation(req: AuthenticatedRequest): string {
+  if (req.method === "GET" || req.method === "HEAD") return "READ";
+  if (req.method === "POST") return req.params?.id ? "UPDATE_OR_OPERATION" : "CREATE";
+  if (req.method === "PUT" || req.method === "PATCH") return "UPDATE";
+  if (req.method === "DELETE") return "DELETE";
+  return req.method;
+}
+
+/** Log a blocked cross-region attempt and return a consistent 403 response. */
+export function denyRegionalAccess(
+  req: AuthenticatedRequest,
+  res: Response,
+  details: {
+    resource: RegionalResource;
+    entityId?: string;
+    targetRegionId?: string | null;
+    reason?: string;
+  }
+) {
+  const assignedRegionId = getRepresentativeRegionId(req.user);
+  const entityId = String(details.entityId || req.params?.id || "collection");
+  logAuditEvent({
+    actorId: req.user?.userId,
+    actorName: req.user?.fullName,
+    actorRole: req.user?.role,
+    action: "REGION_ACCESS_DENIED",
+    entity: details.resource,
+    entityId,
+    ipAddress: req.ip,
+    oldValues: {
+      assignedRegionId,
+      targetRegionId: details.targetRegionId || undefined,
+      method: req.method,
+      path: req.originalUrl,
+      operation: attemptedOperation(req),
+    },
+    reason: details.reason || "Representative attempted to access data outside the assigned region",
+  });
+
+  return res.status(403).json({
+    error: "لا تملك صلاحية الوصول إلى بيانات خارج منطقتك المسندة",
+    code: "REGION_ACCESS_DENIED",
+  });
+}
+
+/** Reject representative access when their DB assignment is absent or invalid. */
+function regionalResourceForRequest(req: AuthenticatedRequest): RegionalResource | null {
+  const path = String(req.originalUrl || req.path || "").split("?")[0];
+  if (/^\/api\/(?:client\/|driver\/)?trips(?:\/|$)/.test(path)) return "trips";
+  if (/^\/api\/customers(?:\/|$)/.test(path)) return "customers";
+  if (/^\/api\/drivers(?:\/|$)/.test(path)) return "drivers";
+  return null;
+}
+
+function logRepresentativeAuthorizationDenial(req: AuthenticatedRequest, reason: string, context: Record<string, unknown> = {}) {
+  if (req.user?.role !== "REPRESENTATIVE") return;
+  const resource = regionalResourceForRequest(req);
+  if (!resource) return;
+  logAuditEvent({
+    actorId: req.user.userId,
+    actorName: req.user.fullName,
+    actorRole: req.user.role,
+    action: "AUTHORIZATION_DENIED",
+    entity: resource,
+    entityId: String(req.params?.id || "collection"),
+    ipAddress: req.ip,
+    oldValues: {
+      assignedRegionId: getRepresentativeRegionId(req.user),
+      method: req.method,
+      path: req.originalUrl,
+      ...context,
+    },
+    reason,
+  });
+}
+
+export function requireRepresentativeRegionAssignment(resource: RegionalResource) {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (req.user?.role !== "REPRESENTATIVE") return next();
+
+    const assignedRegionId = getRepresentativeRegionId(req.user);
+    if (!assignedRegionId) {
+      return denyRegionalAccess(req, res, {
+        resource,
+        reason: "Representative account has no valid region assignment in the database",
+      });
+    }
+
+    // Region selectors are untrusted input. A representative may only query or
+    // submit the region assigned to their account; create handlers set it
+    // server-side when no selector is supplied.
+    const requestedRegions = [
+      req.query?.regionId,
+      req.query?.region,
+      (req.body as any)?.regionId,
+      (req.body as any)?.region,
+    ].filter((value) => value !== undefined && value !== null && String(value).trim() !== "");
+    const mismatchedRegion = requestedRegions.find((value) => normalizeRegionId(String(value)) !== assignedRegionId);
+    if (mismatchedRegion !== undefined) {
+      return denyRegionalAccess(req, res, {
+        resource,
+        targetRegionId: normalizeRegionId(String(mismatchedRegion)),
+        reason: "Representative supplied a region selector that does not match the database assignment",
+      });
+    }
+
+    const body = req.body as any;
+    if (resource === "customers" || resource === "drivers") {
+      const requestedCity = body?.city ?? body?.fields?.city;
+      if (requestedCity !== undefined && String(requestedCity).trim()) {
+        const cityRegionId = getCityRegionId(String(requestedCity));
+        if (cityRegionId !== assignedRegionId) {
+          return denyRegionalAccess(req, res, {
+            resource,
+            entityId: String(req.params?.id || "new"),
+            targetRegionId: cityRegionId,
+            reason: `Representative attempted a ${resource} operation with a city outside the assigned region`,
+          });
+        }
+      }
+    }
+    if (resource === "trips" && body?.originCity && body?.destinationCity) {
+      const originCity = String(body.originCity);
+      const destinationCity = String(body.destinationCity);
+      if (!isTripInRegionId({ originCity, destinationCity }, assignedRegionId)) {
+        return denyRegionalAccess(req, res, {
+          resource,
+          entityId: String(req.params?.id || "new"),
+          targetRegionId: getCityRegionId(originCity) || getCityRegionId(destinationCity),
+          reason: "Representative attempted a trip operation whose route is outside the assigned region",
+        });
+      }
+    }
+
+    req.user.regionId = assignedRegionId;
+    req.user.region = regionLabelForId(assignedRegionId) || undefined;
+    return next();
+  };
+}
+
+function syncLiveUserMetadata(payload: TokenPayload, userRecord: NonNullable<ReturnType<typeof db.users.get>>) {
+  payload.role = userRecord.role;
+  payload.fullName = userRecord.fullName || payload.fullName;
+
+  const databaseRegionId = normalizeRegionId(
+    userRecord.role === "REPRESENTATIVE" ? userRecord.regionId : userRecord.regionId ?? userRecord.region
+  );
+  payload.regionId = databaseRegionId || undefined;
+  payload.region =
+    userRecord.role === "REPRESENTATIVE"
+      ? databaseRegionId
+        ? regionLabelForId(databaseRegionId) || undefined
+        : undefined
+      : userRecord.region || (databaseRegionId ? regionLabelForId(databaseRegionId) || undefined : undefined);
+}
 
 function extractToken(req: AuthenticatedRequest): string | null {
   const authHeader = req.headers.authorization;
@@ -52,12 +292,10 @@ export function authenticate(req: AuthenticatedRequest, res: Response, next: Nex
     return res.status(403).json({ error: "Account is disabled. Contact system administrator.", code: "ACCOUNT_DISABLED" });
   }
 
-  // Keep live metadata (region, role) synced so changes take effect immediately on subsequent requests
-  if (userRecord) {
-    payload.role = userRecord.role;
-    payload.region = userRecord.region || payload.region;
-    payload.fullName = userRecord.fullName || payload.fullName;
-  }
+  // Keep role and region claims synced from the database on every request.
+  // For representatives, a missing DB assignment deliberately clears the JWT
+  // claim rather than falling back to potentially stale token data.
+  if (userRecord) syncLiveUserMetadata(payload, userRecord);
 
   req.user = payload;
   next();
@@ -72,11 +310,7 @@ export function optionalAuthenticate(req: AuthenticatedRequest, _res: Response, 
       if (userRecord && !userRecord.isActive) {
         return next();
       }
-      if (userRecord) {
-        payload.role = userRecord.role;
-        payload.region = userRecord.region || payload.region;
-        payload.fullName = userRecord.fullName || payload.fullName;
-      }
+      if (userRecord) syncLiveUserMetadata(payload, userRecord);
       req.user = payload;
     }
   }
@@ -100,6 +334,7 @@ export function requireRole(...roles: string[]) {
       return next();
     }
 
+    logRepresentativeAuthorizationDenial(req, "Representative is missing the required role", { requiredRoles: roles });
     return res.status(403).json({
       error: `Access denied. Required role: ${roles.join(", ")}`,
       code: "FORBIDDEN",
@@ -163,6 +398,7 @@ export function requirePermission(...permissions: string[]) {
     const granted = permissions.some((permission) => effectiveHasPermission(req.user!, permission));
     if (granted) return next();
 
+    logRepresentativeAuthorizationDenial(req, "Representative is missing the required permission", { requiredPermissions: permissions });
     return res.status(403).json({
       error: `Access denied. Missing permission: ${permissions.join(" | ")}`,
       code: "INSUFFICIENT_PERMISSIONS",
@@ -217,10 +453,33 @@ export function canAccessTrip(
     originCity?: string;
     destinationCity?: string;
     region?: string;
+    regionId?: string;
   }
 ): boolean {
   if (!user || !accountIsApproved(user)) return false;
   if (user.role === "SUPER_ADMIN" || user.role === "GENERAL_MANAGER" || user.role === "OPERATIONS_MANAGER") return true;
+
+  // Representatives are always restricted to the one current region on their
+  // database account. Creator status, token claims, user overrides and wider
+  // REGION grants must never widen this boundary.
+  if (user.role === "REPRESENTATIVE") {
+    const assignedRegionId = getRepresentativeRegionId(user);
+    if (!assignedRegionId || !isTripInRegionId(trip, assignedRegionId)) return false;
+
+    // A regional trip response also contains its linked customer/driver. Keep
+    // those references inside the same boundary instead of leaking out-of-region
+    // profiles through a trip payload.
+    if (trip.customerId) {
+      const customer = db.customers.get(trip.customerId);
+      if (!customer || !canAccessRegionalEntity(user, "customers", customer)) return false;
+    }
+    for (const driverId of [trip.driverId, trip.additionalDriverId]) {
+      if (!driverId || driverId === "unassigned") continue;
+      const driver = db.drivers.get(driverId);
+      if (!driver || !canAccessRegionalEntity(user, "drivers", driver)) return false;
+    }
+    return true;
+  }
 
   // Check explicit user-level customer/vehicle scope restrictions if configured
   const uo = user.userId ? getUserOverride(user.userId) : undefined;
@@ -249,8 +508,8 @@ export function canAccessTrip(
 
   const scope: DataScope = getEffectiveDataScope({ userId: user.userId, role: user.role });
 
-  // Regional representative or REGION data scope: strict isolation to their region
-  if (user.role === "REPRESENTATIVE" || scope === "REGION") {
+  // Other REGION data scopes retain their configured region behavior.
+  if (scope === "REGION") {
     // Creator can always view what they created
     if (trip.createdBy && trip.createdBy === user.userId) return true;
 

@@ -51,6 +51,14 @@ router.post("/", authenticate, requirePermission("pod.create"), (req: Authentica
     return res.status(409).json({ error: "A proof of delivery is already recorded for this trip", code: "POD_ALREADY_EXISTS" });
   }
 
+  const signatureData = typeof signatureUrl === "string" ? signatureUrl.trim() : "";
+  if (!/^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(signatureData)) {
+    return res.status(400).json({ error: "A captured recipient signature image is required", code: "POD_SIGNATURE_REQUIRED" });
+  }
+  if (signatureData.length > 700_000) {
+    return res.status(413).json({ error: "The signature image is too large", code: "POD_SIGNATURE_TOO_LARGE" });
+  }
+
   const confirmationCode = `POD-${Math.floor(100000 + Math.random() * 900000)}`;
   const record: PODRecordEntity = {
     id: `pod-${Date.now()}`,
@@ -58,12 +66,12 @@ router.post("/", authenticate, requirePermission("pod.create"), (req: Authentica
     recipientName,
     recipientPhone: recipientPhone || "",
     recipientNationalId: recipientNationalId || "",
-    signatureUrl: signatureUrl || "SIGNED_DIGITALLY",
-    photoUrls: photoUrls || [],
-    latitude: Number(latitude || trip.currentLat),
-    longitude: Number(longitude || trip.currentLng),
+    signatureUrl: signatureData,
+    photoUrls: Array.isArray(photoUrls) ? photoUrls : [],
+    latitude: latitude !== undefined ? Number(latitude) : trip.currentLat,
+    longitude: longitude !== undefined ? Number(longitude) : trip.currentLng,
     confirmationCode,
-    notes: notes || "تم استلام الشحنة بحالة جيدة ومطابقة للشروط",
+    notes: typeof notes === "string" ? notes.trim() : "",
     receivedAt: new Date().toISOString(),
   };
 

@@ -1,13 +1,40 @@
 import { Router, type Response } from "express";
 import { db } from "../db";
-import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
+import {
+  authenticate,
+  canAccessRegionalEntity,
+  canAccessTrip,
+  denyRegionalAccess,
+  filterRegionalEntities,
+  getRepresentativeRegionId,
+  requirePermission,
+  requireRepresentativeRegionAssignment,
+  type AuthenticatedRequest,
+} from "../auth/middleware";
+import { getCityRegionId, normalizeRegionId } from "../services/cityRegistry";
 import { REGISTRATION_STATUS_AR, submitRegistration } from "../services/registrationService";
 
 const router = Router();
 
+router.use(authenticate, requireRepresentativeRegionAssignment("customers"));
+router.param("id", (req: AuthenticatedRequest, res: Response, next, rawId) => {
+  if (req.user?.role !== "REPRESENTATIVE") return next();
+  const customer = db.customers.get(String(rawId));
+  if (!customer) return next();
+  if (!canAccessRegionalEntity(req.user, "customers", customer)) {
+    return denyRegionalAccess(req, res, {
+      resource: "customers",
+      entityId: customer.id,
+      targetRegionId: customer.regionId,
+      reason: "Representative attempted to read or mutate a customer outside the database-assigned region",
+    });
+  }
+  return next();
+});
+
 // GET /api/customers
-router.get("/", authenticate, requirePermission("customers.view"), (_req: AuthenticatedRequest, res: Response) => {
-  const list = Array.from(db.customers.values());
+router.get("/", authenticate, requirePermission("customers.view"), (req: AuthenticatedRequest, res: Response) => {
+  const list = filterRegionalEntities(req.user, "customers", Array.from(db.customers.values()));
   return res.json({ total: list.length, customers: list });
 });
 
@@ -26,6 +53,31 @@ router.post("/", authenticate, requirePermission("customers.create", "customers.
       name, contactPerson, fullName, companyName, phone, email,
       commercialReg, vatNumber, city, address, password, fields: extraFields, documents,
     } = req.body || {};
+    const requestedCity = String(city || (extraFields as any)?.city || "").trim();
+    const isRepresentative = req.user?.role === "REPRESENTATIVE";
+    const representativeRegionId = isRepresentative ? getRepresentativeRegionId(req.user) : null;
+    if (isRepresentative && !representativeRegionId) {
+      return denyRegionalAccess(req, res, {
+        resource: "customers",
+        entityId: "new",
+        reason: "Representative attempted customer creation without a valid database region assignment",
+      });
+    }
+    const assignedRegionId =
+      representativeRegionId ||
+      normalizeRegionId(req.body?.regionId ?? req.body?.region) ||
+      getCityRegionId(requestedCity || "الرياض");
+    if (isRepresentative && requestedCity) {
+      const cityRegionId = getCityRegionId(requestedCity);
+      if (!cityRegionId || cityRegionId !== representativeRegionId) {
+        return denyRegionalAccess(req, res, {
+          resource: "customers",
+          entityId: "new",
+          targetRegionId: cityRegionId,
+          reason: "Representative attempted to create a customer record outside the assigned region",
+        });
+      }
+    }
     const contact = fullName || contactPerson || "";
     const company = companyName || name || "";
     if (!company || !phone) {
@@ -41,16 +93,17 @@ router.post("/", authenticate, requirePermission("customers.create", "customers.
 
     const result = submitRegistration({
       type: "CUSTOMER",
+      assignedRegionId: assignedRegionId || undefined,
       fields: {
+        ...(extraFields && typeof extraFields === "object" ? extraFields : {}),
         fullName: contact,
         companyName: company,
         phone,
         email: email || "",
         commercialReg: commercialReg || "",
         vatNumber: vatNumber || "",
-        city: city || "",
+        city: requestedCity,
         address: address || "",
-        ...(extraFields && typeof extraFields === "object" ? extraFields : {}),
       },
       password: accountPassword,
       documents: Array.isArray(documents) ? documents : [],
@@ -84,8 +137,9 @@ router.post("/", authenticate, requirePermission("customers.create", "customers.
         email: email || "",
         commercialReg: commercialReg || "",
         vatNumber: vatNumber || "",
-        city: city || "الرياض",
+        city: requestedCity || "الرياض",
         address: address || "",
+        regionId: assignedRegionId || undefined,
       };
       db.customers.set(custId, directCustomer);
     }
@@ -111,7 +165,11 @@ router.get("/:id", authenticate, requirePermission("customers.view"), (req: Auth
   if (!customer) {
     return res.status(404).json({ error: "Customer not found", errorAr: "العميل غير موجود" });
   }
-  const customerTrips = Array.from(db.trips.values()).filter((t) => t.customerId === customer.id);
+  const customerTrips = Array.from(db.trips.values()).filter(
+    (trip) =>
+      trip.customerId === customer.id &&
+      (req.user?.role !== "REPRESENTATIVE" || canAccessTrip(req.user, trip))
+  );
   return res.json({
     customer,
     totalTrips: customerTrips.length,
@@ -129,6 +187,17 @@ router.patch("/:id", authenticate, requirePermission("customers.edit", "customer
   }
 
   const { name, companyName, contactPerson, fullName, phone, email, commercialReg, vatNumber, city, address } = req.body || {};
+  if (req.user?.role === "REPRESENTATIVE" && city !== undefined) {
+    const cityRegionId = getCityRegionId(String(city));
+    if (!cityRegionId || cityRegionId !== getRepresentativeRegionId(req.user)) {
+      return denyRegionalAccess(req, res, {
+        resource: "customers",
+        entityId: customer.id,
+        targetRegionId: cityRegionId,
+        reason: "Representative attempted to move a customer profile outside the assigned region",
+      });
+    }
+  }
   if (name !== undefined || companyName !== undefined) customer.name = companyName || name || customer.name;
   if (contactPerson !== undefined || fullName !== undefined) customer.contactPerson = fullName || contactPerson || customer.contactPerson;
   if (phone !== undefined) customer.phone = phone;

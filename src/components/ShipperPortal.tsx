@@ -1,39 +1,57 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import { useFleetStore } from "../state/fleetStore";
 import { InteractiveMap } from "./InteractiveMap";
 import { EjazEmblem } from "./Logo";
-import {
-  IconClose,
-  IconDoc,
-  IconThermo,
-  IconMessage,
-  IconLayers,
-} from "./Icons";
+import { useToast } from "./Toast";
+import { IconDoc, IconThermo, IconMessage } from "./Icons";
 
 export function ShipperPortal() {
   const { t, td } = useSettings();
-  const { trips, selectedTripId, selectTrip, sendChatMessage } = useFleetStore();
+  const { trips, selectedTripId, selectTrip, sendChatMessage, chatMessages } = useFleetStore();
+  const toast = useToast();
 
   const [activeTripId, setActiveTripId] = useState(selectedTripId || trips[0]?.id);
-  const [showQrModal, setShowQrModal] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedReference, setCopiedReference] = useState(false);
   const [chatText, setChatText] = useState("");
 
   const activeTrip = trips.find((tr) => tr.id === activeTripId) || trips[0];
+  const activeMessages = chatMessages.filter((message) => message.tripId === activeTrip?.id);
 
-  const handleCopyLink = () => {
-    navigator.clipboard?.writeText?.(`${window.location.origin}/?track=${activeTrip.tripNumber}`);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2200);
+  useEffect(() => {
+    if (selectedTripId && trips.some((trip) => trip.id === selectedTripId)) {
+      setActiveTripId(selectedTripId);
+    } else if (!trips.some((trip) => trip.id === activeTripId)) {
+      setActiveTripId(trips[0]?.id);
+    }
+  }, [activeTripId, selectedTripId, trips]);
+
+  const handleCopyReference = async () => {
+    if (!activeTrip) return;
+    try {
+      await navigator.clipboard.writeText(activeTrip.tripNumber);
+      setCopiedReference(true);
+      setTimeout(() => setCopiedReference(false), 2200);
+    } catch {
+      toast(t("Could not copy the trip reference", "تعذّر نسخ رقم الرحلة"), activeTrip.tripNumber);
+    }
   };
 
   const handleSendSupportChat = () => {
-    if (!chatText.trim()) return;
+    if (!activeTrip || !chatText.trim()) return;
     sendChatMessage(activeTrip.id, chatText.trim());
     setChatText("");
   };
+
+  if (!activeTrip) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-surface-0 p-6 text-center">
+        <h2 className="text-page-title font-bold text-text-primary">{t("No shipment data", "لا توجد بيانات شحنات")}</h2>
+        <p className="max-w-lg text-body text-text-muted">{t("This persona preview has no trip records to show.", "لا تحتوي معاينة دور العميل على رحلات لعرضها حالياً.")}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-surface-0 p-4 lg:p-6 space-y-6">
@@ -48,13 +66,13 @@ export function ShipperPortal() {
                   {t("Client Consignment Tracking Portal", "بوابة تتبع الشحنات للعملاء والشركاء")}
                 </h2>
                 <span className="badge bg-brand/20 text-brand text-label">
-                  {t("Verified Shipper", "شريك معتمد")}
+                  {t("Persona preview · sample records", "معاينة شخصية · سجلات عرض") }
                 </span>
               </div>
               <p className="text-label-lg text-text-muted mt-0.5">
                 {t(
-                  "Real-time GPS tracking, electronic proof of delivery, and cargo condition telemetry",
-                  "مراقبة لحظية للشاحنات على الطرق، وثائق التسليم الإلكترونية، وسلامة الحمولات"
+                  "Preview of trip records — GPS and cargo sensors are not live in this persona screen",
+                  "معاينة لسجلات الرحلات — لا يوجد بث GPS أو حساسات حية في شاشة الدور التجريبي"
                 )}
               </p>
             </div>
@@ -62,18 +80,11 @@ export function ShipperPortal() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowQrModal(true)}
+              onClick={handleCopyReference}
               className="btn-ghost text-label-lg py-2 px-3.5 border border-border-subtle"
             >
               <IconDoc size={15} />
-              {t("View Consignment QR", "رمز البوليصة QR")}
-            </button>
-            <button
-              onClick={handleCopyLink}
-              className="btn-primary text-label-lg py-2 px-4 shadow-md font-bold"
-            >
-              <IconLayers size={15} />
-              {copiedLink ? t("Link Copied!", "تم نسخ الرابط!") : t("Share Live Link", "مشاركة رابط التتبع")}
+              {copiedReference ? t("Reference copied", "تم نسخ رقم الرحلة") : t("Copy trip reference", "نسخ رقم الرحلة")}
             </button>
           </div>
         </div>
@@ -92,7 +103,7 @@ export function ShipperPortal() {
                     {activeTrip.tripNumber}
                   </span>
                   <span className="badge bg-status-active/20 text-status-active font-bold text-label">
-                    {activeTrip.status === "on_road" ? t("On Road Live", "على الطريق مباشرة") : activeTrip.status}
+                    {activeTrip.status === "on_road" ? t("On road · preview data", "على الطريق · بيانات معاينة") : activeTrip.status}
                   </span>
                   <span className="badge bg-surface-5 text-text-muted text-label">
                     {activeTrip.cargoType}
@@ -106,7 +117,7 @@ export function ShipperPortal() {
 
               <div className="text-end">
                 <span className="text-label text-text-muted uppercase block">
-                  {t("Estimated Arrival (ETA)", "الوقت التقديري للوصول")}
+                      {t("Estimated Arrival · preview", "وقت الوصول التقديري · معاينة")}
                 </span>
                 <span className="text-headline font-extrabold text-brand tabular-nums block mt-0.5">
                   {Math.floor(activeTrip.etaMinutes / 60)} {t("hrs", "ساعة")} {activeTrip.etaMinutes % 60} {t("min", "دقيقة")}
@@ -190,46 +201,51 @@ export function ShipperPortal() {
                   </span>
                   <div>
                     <span className="text-label text-text-muted block">
-                      {t("Live Cold Chain Sensor", "مستشعر التبريد المباشر")}
+                      {t("Cold-chain reading · preview", "قراءة سلسلة التبريد · معاينة")}
                     </span>
                     <span className="text-page-title font-bold text-text-primary tabular-nums">
-                      -18.5 °C ({t("Target: -18.0°C", "المستهدف: -18°C")})
+                      {activeTrip.reeferTempC != null
+                        ? `${activeTrip.reeferTempC} °C`
+                        : t("No sensor reading", "لا توجد قراءة حساس")}
+                      {activeTrip.targetTempC != null ? ` (${t("Target", "المستهدف")}: ${activeTrip.targetTempC}°C)` : ""}
                     </span>
                   </div>
                 </div>
-                <span className="badge bg-status-active/20 text-status-active font-semibold text-label">
-                  ✓ {t("Optimal", "سليم")}
+                <span className="badge bg-surface-5 text-text-muted font-semibold text-label">
+                  {t("Not live", "غير مباشر")}
                 </span>
               </div>
             </div>
           )}
 
-          {/* Direct Support & Operational Chat */}
+          {/* Local-only chat preview — no message is sent to Operations. */}
           <div className="card p-5 border border-border-subtle flex flex-col h-[290px]">
             <div className="flex items-center justify-between border-b border-border-subtle pb-2.5">
               <div className="flex items-center gap-2">
                 <IconMessage size={16} className="text-brand" />
                 <h4 className="text-body font-bold text-text-primary">
-                  {t("Ejaz Operations Live Support", "دعم عمليات إيجاز المباشر")}
+                  {t("Message preview", "معاينة الرسائل")}
                 </h4>
               </div>
-              <span className="badge bg-status-active/20 text-status-active text-micro">
-                {t("Online", "متواجد")}
+              <span className="badge bg-surface-5 text-text-muted text-micro">
+                {t("Local only", "محلي فقط")}
               </span>
             </div>
+            <p className="mt-2 text-micro text-text-muted">
+              {t("Messages are stored in this browser preview only; they are not delivered to support.", "تُحفظ الرسائل في معاينة هذا المتصفح فقط ولا تُرسل إلى فريق الدعم.")}
+            </p>
 
             <div className="scroll-thin flex-1 overflow-y-auto py-2.5 space-y-2 text-label-lg">
-              <div className="rounded-inner bg-surface-3 p-2.5 text-text-secondary border border-border-subtle">
-                <span className="text-micro text-brand font-bold block mb-0.5">
-                  {t("Ejaz Support", "دعم إيجاز")}
-                </span>
-                <p>
-                  {t(
-                    "Welcome! Your consignment is currently on schedule and temperature monitored.",
-                    "أهلاً بك! شحنتكم تسير وفق الموعد المعتمد مع استمرار فحص التبريد والوزن."
-                  )}
-                </p>
-              </div>
+              {activeMessages.length ? activeMessages.map((message) => (
+                <div key={message.id} className="rounded-inner bg-surface-3 p-2.5 text-text-secondary border border-border-subtle">
+                  <span className="text-micro text-brand font-bold block mb-0.5">{message.senderName} · {message.timestamp}</span>
+                  <p>{t(message.textAr, message.textEn)}</p>
+                </div>
+              )) : (
+                <div className="grid h-full place-items-center text-center text-label text-text-muted">
+                  {t("No preview messages yet.", "لا توجد رسائل معاينة بعد.")}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2 pt-2 border-t border-border-subtle">
@@ -237,71 +253,18 @@ export function ShipperPortal() {
                 value={chatText}
                 onChange={(e) => setChatText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendSupportChat()}
-                placeholder={t("Inquire about delivery...", "استفسر عن موعد التسليم...")}
+                placeholder={t("Write a local preview message…", "اكتب رسالة للمعاينة…")}
                 className="field text-label-lg py-1.5 px-3"
               />
-              <button onClick={handleSendSupportChat} className="btn-primary text-label-lg py-1.5 px-3.5">
-                {t("Send", "إرسال")}
+              <button onClick={handleSendSupportChat} disabled={!chatText.trim()} className="btn-primary text-label-lg py-1.5 px-3.5 disabled:opacity-50">
+                {t("Add", "إضافة")}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* QR Code Modal for Waybill */}
-      {showQrModal && (
-        <div
-          className="animate-fade-in fixed inset-0 z-[95] grid place-items-center bg-black/85 p-4 backdrop-blur-md"
-          onClick={() => setShowQrModal(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="animate-fade-up relative w-full max-w-[420px] rounded-panel bg-white text-navy p-6 shadow-2xl text-center"
-          >
-            <div className="flex justify-end">
-              <button onClick={() => setShowQrModal(false)} className="btn-icon bg-navy/10 text-navy">
-                <IconClose size={15} />
-              </button>
-            </div>
 
-            <EjazEmblem size={44} color="var(--color-brand)" className="mx-auto" />
-            <h3 className="text-section-title font-extrabold mt-3">
-              {t("Electronic Consignment Waybill QR", "رمز بوليصة الشحن الإلكترونية")}
-            </h3>
-            <p className="text-label-lg text-navy/60 mt-1">
-              {t("Scan using camera to access public live tracking link", "امسح الرمز بكاميرا الجوال للوصول للتتبع المباشر")}
-            </p>
-
-            {/* QR Visual */}
-            <div className="my-5 mx-auto grid h-48 w-48 place-items-center rounded-panel bg-navy/5 p-4 border border-navy/15">
-              <svg viewBox="0 0 40 40" className="h-full w-full" fill="var(--color-on-brand)">
-                <rect x="2" y="2" width="14" height="14" rx="2" fill="none" stroke="var(--color-on-brand)" strokeWidth="3" />
-                <rect x="6" y="6" width="6" height="6" />
-                <rect x="24" y="2" width="14" height="14" rx="2" fill="none" stroke="var(--color-on-brand)" strokeWidth="3" />
-                <rect x="28" y="6" width="6" height="6" />
-                <rect x="2" y="24" width="14" height="14" rx="2" fill="none" stroke="var(--color-on-brand)" strokeWidth="3" />
-                <rect x="6" y="28" width="6" height="6" />
-                <rect x="22" y="22" width="4" height="4" />
-                <rect x="28" y="26" width="6" height="4" />
-                <rect x="24" y="32" width="6" height="4" />
-                <rect x="18" y="8" width="4" height="6" />
-                <rect x="8" y="18" width="6" height="4" />
-              </svg>
-            </div>
-
-            <span className="font-mono font-bold text-navy text-body block">
-              {activeTrip.qrCodeToken}
-            </span>
-
-            <button
-              onClick={() => setShowQrModal(false)}
-              className="btn-primary w-full mt-5 py-2.5 bg-brand text-on-brand font-bold text-body"
-            >
-              {t("Done", "تم")}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

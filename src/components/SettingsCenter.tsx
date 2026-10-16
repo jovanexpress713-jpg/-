@@ -82,6 +82,12 @@ export function SettingsCenter({
   const toast = useToast();
   const [tab, setTab] = useState<SettingsTab>(initialTab);
   const [gpsStatus, setGpsStatus] = useState<{ configured?: boolean; provider?: string; message?: string } | null>(null);
+  const [systemHealth, setSystemHealth] = useState<{
+    version?: string;
+    environment?: string;
+    status?: string;
+    database?: { durable?: boolean; mode?: string };
+  } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -121,6 +127,22 @@ export function SettingsCenter({
       cancelled = true;
     };
   }, [isOpen, tab]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    apiClient.system
+      .health()
+      .then((health) => {
+        if (!cancelled && health) setSystemHealth(health);
+      })
+      .catch(() => {
+        if (!cancelled) setSystemHealth(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   const permissionSummary = useMemo(() => {
     const checks: { capability: Parameters<typeof can>[1]; labelKey: Parameters<typeof tk>[0] }[] = [
@@ -430,9 +452,14 @@ export function SettingsCenter({
                 <PanelHeading title={t("App information", "معلومات التطبيق")} hint={t("Platform, establishment and system", "المنصة والمؤسسة والنظام")} />
                 <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                   <InfoCard label={t("Platform", "المنصة")} value={tk("app.name")} icon={IconStar} />
-                  <InfoCard label={tk("settings.helpVersion")} value="V1.0-PROD" icon={IconInfo} />
+                  <InfoCard label={tk("settings.helpVersion")} value={systemHealth?.version || "—"} icon={IconInfo} />
                   <InfoCard label={t("EJAZ Transport Establishment", "مؤسسة إيجاز للنقليات")} value={tk("app.tagline")} icon={IconTruck} />
-                  <InfoCard label={t("System environment", "بيئة النظام")} value={t("Production", "الإنتاج")} icon={IconBolt} />
+                  <InfoCard label={t("System environment", "بيئة النظام")} value={systemHealth?.environment || "—"} icon={IconBolt} />
+                  <InfoCard
+                    label={t("Database persistence", "استمرارية قاعدة البيانات")}
+                    value={systemHealth ? (systemHealth.database?.durable ? t("Persistent storage", "تخزين دائم") : t("In-memory only", "ذاكرة مؤقتة فقط")) : t("Unavailable", "غير متاح")}
+                    icon={IconLayers}
+                  />
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-inner bg-surface-2 px-3 py-2.5">
@@ -641,9 +668,9 @@ export function SettingsCenter({
               <section className="space-y-4">
                 <PanelHeading title={tk("settings.helpTitle")} hint={tk("settings.subtitle")} />
                 <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  <InfoCard label={tk("settings.helpOps")} value="+966 12 000 0000" icon={IconGlobe} />
-                  <InfoCard label={tk("settings.helpEmail")} value="ops@ejaz.sa" icon={IconDoc} />
-                  <InfoCard label={tk("settings.helpVersion")} value="V1.0-PROD" icon={IconInfo} />
+                  <InfoCard label={tk("settings.helpOps")} value={t("Not configured", "غير مهيأ")} icon={IconGlobe} />
+                  <InfoCard label={tk("settings.helpEmail")} value={t("Not configured", "غير مهيأ")} icon={IconDoc} />
+                  <InfoCard label={tk("settings.helpVersion")} value={systemHealth?.version || "—"} icon={IconInfo} />
                   <InfoCard
                     label={tk("account.permissions")}
                     value={canSwitchAccounts(user) ? tk("account.fullPermissions") : tk("account.notAllowed")}

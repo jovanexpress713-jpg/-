@@ -10,7 +10,12 @@ import { Router, type Response } from "express";
 import { db, type UserEntity } from "../db";
 import { authenticate, requireRole, type AuthenticatedRequest } from "../auth/middleware";
 import { hashPassword } from "../auth/jwt";
-import { SAUDI_REGIONS, normalizeRegion, isTripInRegion } from "../services/cityRegistry";
+import {
+  SAUDI_REGIONS,
+  isTripInRegion,
+  normalizeRegionId,
+  regionLabelForId,
+} from "../services/cityRegistry";
 import {
   getUserOverride,
   setUserOverride,
@@ -289,6 +294,7 @@ router.get("/", authenticate, requireOpsOrAdmin, (_req: AuthenticatedRequest, re
     email: rep.email,
     phone: rep.phone,
     role: rep.role,
+    regionId: normalizeRegionId(rep.regionId ?? rep.region),
     region: rep.region || "المنطقة الوسطى",
     isActive: rep.isActive,
     createdAt: rep.createdAt,
@@ -320,6 +326,7 @@ router.get("/:id", authenticate, requireOpsOrAdmin, (req: AuthenticatedRequest, 
       email: rep.email,
       phone: rep.phone,
       role: rep.role,
+      regionId: normalizeRegionId(rep.regionId ?? rep.region),
       region: rep.region || "المنطقة الوسطى",
       isActive: rep.isActive,
       createdAt: rep.createdAt,
@@ -346,8 +353,9 @@ router.post("/", authenticate, requireOpsOrAdminMutate, async (req: Authenticate
     return res.status(409).json({ error: "البريد الإلكتروني مسجل مسبقاً في النظام", code: "EMAIL_EXISTS" });
   }
 
-  const targetRegion = normalizeRegion(region);
-  if (!targetRegion) {
+  const targetRegionId = normalizeRegionId(region);
+  const targetRegion = targetRegionId ? regionLabelForId(targetRegionId) : null;
+  if (!targetRegionId || !targetRegion) {
     return res.status(400).json({
       error: `المنطقة غير صحيحة. المناطق الرسمية الخمس المعتمدة هي: ${SAUDI_REGIONS.join("، ")}`,
       code: "INVALID_REGION",
@@ -364,6 +372,7 @@ router.post("/", authenticate, requireOpsOrAdminMutate, async (req: Authenticate
     fullName: String(fullName).trim(),
     phone: String(phone).trim(),
     role: "REPRESENTATIVE",
+    regionId: targetRegionId,
     region: targetRegion,
     passwordHash,
     isActive: true,
@@ -406,6 +415,7 @@ router.post("/", authenticate, requireOpsOrAdminMutate, async (req: Authenticate
       id: newId,
       fullName: newRep.fullName,
       email: newRep.email,
+      regionId: targetRegionId,
       region: targetRegion,
       permissions: deriveRepresentativePermissions(newId, "REPRESENTATIVE"),
     },
@@ -419,6 +429,7 @@ router.post("/", authenticate, requireOpsOrAdminMutate, async (req: Authenticate
       email: newRep.email,
       phone: newRep.phone,
       role: newRep.role,
+      regionId: targetRegionId,
       region: targetRegion,
       isActive: true,
       permissions: deriveRepresentativePermissions(newId, "REPRESENTATIVE"),
@@ -440,6 +451,7 @@ router.put("/:id", authenticate, requireOpsOrAdminMutate, async (req: Authentica
   const oldSnapshot = {
     fullName: rep.fullName,
     phone: rep.phone,
+    regionId: rep.regionId,
     region: rep.region,
     isActive: rep.isActive,
     permissions: deriveRepresentativePermissions(repId, rep.role),
@@ -452,13 +464,15 @@ router.put("/:id", authenticate, requireOpsOrAdminMutate, async (req: Authentica
   }
 
   if (region) {
-    const validRegion = normalizeRegion(region);
-    if (!validRegion) {
+    const validRegionId = normalizeRegionId(region);
+    const validRegion = validRegionId ? regionLabelForId(validRegionId) : null;
+    if (!validRegionId || !validRegion) {
       return res.status(400).json({
         error: `المنطقة غير صحيحة. المناطق الرسمية الخمس المعتمدة هي: ${SAUDI_REGIONS.join("، ")}`,
         code: "INVALID_REGION",
       });
     }
+    rep.regionId = validRegionId;
     rep.region = validRegion;
   }
 
@@ -498,6 +512,7 @@ router.put("/:id", authenticate, requireOpsOrAdminMutate, async (req: Authentica
     newValues: {
       fullName: rep.fullName,
       phone: rep.phone,
+      regionId: rep.regionId,
       region: rep.region,
       isActive: rep.isActive,
       permissions: updatedPermissions,
@@ -513,6 +528,7 @@ router.put("/:id", authenticate, requireOpsOrAdminMutate, async (req: Authentica
       email: rep.email,
       phone: rep.phone,
       role: rep.role,
+      regionId: rep.regionId,
       region: rep.region,
       isActive: rep.isActive,
       permissions: updatedPermissions,

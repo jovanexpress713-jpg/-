@@ -158,4 +158,15 @@ export const UR_MOBILE: Record<string, string> = {
   "Connecting call…": "کال منسلک ہو رہی ہے…",
   "Direct call initiated": "کال شروع کر دی گئی",
   "Message operations": "آپریشنز کو پیغام",
+
+  /* Delivery proof and server action results */
+  "A recipient name and captured signature are required.": "وصول کنندہ کا نام اور محفوظ کیا گیا دستخط درکار ہے۔",
+  "The action was not saved to the server.": "یہ کارروائی سرور پر محفوظ نہیں ہوئی۔",
+  "Trip status updated successfully.": "ٹرپ کی حالت کامیابی سے اپ ڈیٹ ہو گئی۔",
+  "Capture the recipient's signature in the signature box first.": "پہلے دستخط والے خانے میں وصول کنندہ کے دستخط محفوظ کریں۔",
+  "POD was not saved. The trip was not closed.": "POD محفوظ نہیں ہوا، اس لیے ٹرپ بند نہیں ہوئی۔",
+  "Recipient signature": "وصول کنندہ کے دستخط",
+  "Draw the recipient signature": "وصول کنندہ کے دستخط بنائیں",
+  "Signature captured": "دستخط محفوظ ہو گئے",
+  "Draw with a finger or stylus": "انگلی یا اسٹائلس سے دستخط بنائیں",
 };

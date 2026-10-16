@@ -5,6 +5,10 @@ import {
   requireRole,
   requirePermission,
   canAccessTrip,
+  canAccessRegionalEntity,
+  denyRegionalAccess,
+  getRepresentativeRegionId,
+  requireRepresentativeRegionAssignment,
   type AuthenticatedRequest,
 } from "../auth/middleware";
 import { generateTripNumber } from "../services/tripNumberGenerator";
@@ -21,9 +25,50 @@ import { initTripFinancials, getTripFinancials, repriceTripFinancials, serialize
 import { logAuditEvent } from "../services/auditService";
 import { dispatchNotification } from "../services/notificationService";
 import { resolveQuote } from "../services/tariffService";
-import { computeRoadDistance, normalizeRegion, getCityRegion, isTripInRegion } from "../services/cityRegistry";
+import {
+  computeRoadDistance,
+  getCityRegionId,
+  isTripInRegionId,
+  normalizeRegionId,
+  regionLabelForId,
+} from "../services/cityRegistry";
 
 const router = Router();
+
+// Authenticate at the router boundary so parameter-level regional checks run
+// before any individual trip handler can read or mutate the record.
+router.use(authenticate, requireRepresentativeRegionAssignment("trips"));
+router.param("id", (req: AuthenticatedRequest, res: Response, next, rawId) => {
+  if (req.user?.role !== "REPRESENTATIVE") return next();
+
+  const id = String(rawId);
+  const trip = db.trips.get(id) || Array.from(db.trips.values()).find((item) => item.tripNumber === id);
+  if (!trip) return next(); // The normal route handler returns the 404.
+  if (!canAccessTrip(req.user, trip)) {
+    return denyRegionalAccess(req, res, {
+      resource: "trips",
+      entityId: trip.id,
+      targetRegionId: normalizeRegionId(trip.regionId ?? trip.region) || getCityRegionId(trip.originCity),
+      reason: "Representative attempted to read or mutate a trip outside the database-assigned region",
+    });
+  }
+  return next();
+});
+
+function ensureRepresentativeDriverRegion(
+  req: AuthenticatedRequest,
+  res: Response,
+  driver: { id: string; regionId?: string; city?: string }
+): boolean {
+  if (req.user?.role !== "REPRESENTATIVE" || canAccessRegionalEntity(req.user, "drivers", driver)) return true;
+  denyRegionalAccess(req, res, {
+    resource: "drivers",
+    entityId: driver.id,
+    targetRegionId: driver.regionId,
+    reason: "Representative attempted to assign or use a driver outside the assigned region",
+  });
+  return false;
+}
 
 /** Trip fields that are financial data, not operational data. */
 const FINANCIAL_TRIP_FIELDS = ["tripPrice", "currency", "priceStatus", "tariffId"] as const;
@@ -49,6 +94,28 @@ function scrubFinancial<T extends Record<string, any>>(trip: T, canViewFinance: 
 // GET /api/trips
 router.get("/", authenticate, requirePermission("trips.view"), (req: AuthenticatedRequest, res: Response) => {
   const { status, vehicleId, driverId, customerId } = req.query;
+
+  if (req.user?.role === "REPRESENTATIVE") {
+    const requestedCustomer = typeof customerId === "string" ? db.customers.get(customerId) : undefined;
+    if (requestedCustomer && !canAccessRegionalEntity(req.user, "customers", requestedCustomer)) {
+      return denyRegionalAccess(req, res, {
+        resource: "trips",
+        entityId: requestedCustomer.id,
+        targetRegionId: requestedCustomer.regionId,
+        reason: "Representative filtered trips by a customer outside the assigned region",
+      });
+    }
+    const requestedDriver = typeof driverId === "string" ? db.drivers.get(driverId) : undefined;
+    if (requestedDriver && !canAccessRegionalEntity(req.user, "drivers", requestedDriver)) {
+      return denyRegionalAccess(req, res, {
+        resource: "trips",
+        entityId: requestedDriver.id,
+        targetRegionId: requestedDriver.regionId,
+        reason: "Representative filtered trips by a driver outside the assigned region",
+      });
+    }
+  }
+
   let list = Array.from(db.trips.values());
 
   // Object-level scoping: clients and drivers only ever see trips they are entitled to.
@@ -95,6 +162,8 @@ router.get("/client/trips", authenticate, requirePermission("trips.view"), (req:
   // If customer role, strictly scope by customerId
   if (userRole === "CUSTOMER" && customerId) {
     list = list.filter((t) => t.customerId === customerId);
+  } else if (userRole === "REPRESENTATIVE") {
+    list = list.filter((trip) => canAccessTrip(req.user, trip));
   }
 
   list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -112,6 +181,9 @@ router.get("/driver/trips", authenticate, requirePermission("trips.view"), (req:
   const userRole = req.user?.role;
   const tab = (req.query.tab as string) || "all";
   let allTrips = Array.from(db.trips.values());
+  if (userRole === "REPRESENTATIVE") {
+    allTrips = allTrips.filter((trip) => canAccessTrip(req.user, trip));
+  }
 
   let filtered = allTrips;
 
@@ -329,6 +401,7 @@ router.post("/:id/approve-request", authenticate, requirePermission("trips.appro
     fullName: trip.requestedByDriverName || "السائق المعتمد",
     phone: "+966551234567",
   };
+  if (!ensureRepresentativeDriverRegion(req, res, assignedDriver)) return;
 
   trip.driverId = assignedDriver.id;
   trip.driverName = assignedDriver.fullName;
@@ -521,35 +594,100 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
   const tripNumber = generateTripNumber(new Date().getFullYear());
   const tripId = `trip-${Date.now()}`;
 
-  const customer = customerId ? db.customers.get(customerId) : undefined;
-  const driver = driverId ? db.drivers.get(driverId) : undefined;
+  const sessionCustomerId = req.user?.role === "CUSTOMER" ? req.user.customerId : undefined;
+  if (req.user?.role === "CUSTOMER" && !sessionCustomerId) {
+    return res.status(403).json({ error: "Customer account is not linked to a registered customer", code: "CUSTOMER_SCOPE_DENIED" });
+  }
+  if (
+    req.user?.role === "CUSTOMER" &&
+    customerId &&
+    String(customerId) !== String(sessionCustomerId)
+  ) {
+    return res.status(403).json({ error: "Customers may create trips only for their own account", code: "CUSTOMER_SCOPE_DENIED" });
+  }
+  const resolvedCustomerId = sessionCustomerId || (customerId ? String(customerId) : undefined);
+  let customer = resolvedCustomerId ? db.customers.get(resolvedCustomerId) : undefined;
+  const driver = driverId && String(driverId) !== "unassigned" ? db.drivers.get(String(driverId)) : undefined;
+  const vehicle = vehicleId && String(vehicleId) !== "unassigned" ? db.vehicles.get(String(vehicleId)) : undefined;
+
+  if (resolvedCustomerId && !customer) {
+    return res.status(404).json({ error: "Customer not found", code: "CUSTOMER_NOT_FOUND" });
+  }
+  if (!customer && req.user?.role !== "REPRESENTATIVE") {
+    return res.status(422).json({ error: "Select a registered customer before creating a trip", code: "CUSTOMER_REQUIRED" });
+  }
+  if (driverId && String(driverId) !== "unassigned" && !driver) {
+    return res.status(404).json({ error: "Driver not found", code: "DRIVER_NOT_FOUND" });
+  }
+  if (vehicleId && String(vehicleId) !== "unassigned" && !vehicle) {
+    return res.status(404).json({ error: "Vehicle not found", code: "VEHICLE_NOT_FOUND" });
+  }
 
   // ── Regional attribution & Server-Side Regional Boundary Enforcement ──
   const userRecord = req.user?.userId ? db.users.get(req.user.userId) : null;
   const isRep = req.user?.role === "REPRESENTATIVE";
-  const repRegion = userRecord?.region || req.user?.region;
+  const repRegionId = isRep ? getRepresentativeRegionId(req.user) : null;
 
+  let resolvedRegionId: string;
   let resolvedRegion: string;
   if (isRep) {
-    if (!repRegion) {
-      return res.status(403).json({ error: "الممثل غير مسند إلى منطقة معتمدة", code: "UNASSIGNED_REPRESENTATIVE" });
-    }
-    // Strict boundary enforcement: trip must touch the representative's region
-    const inRegion = isTripInRegion({ originCity, destinationCity }, repRegion);
-    if (!inRegion) {
-      return res.status(403).json({
-        error: `لا يمكنك إنشاء رحلة خارج منطقتك المسندة (${repRegion}). يجب أن تبدأ الرحلة من منطقتك أو تتجه إليها.`,
-        code: "REGION_ACCESS_DENIED",
+    if (!repRegionId) {
+      return denyRegionalAccess(req, res, {
+        resource: "trips",
+        entityId: "new",
+        reason: "Representative attempted trip creation without a valid database region assignment",
       });
     }
-    resolvedRegion = repRegion;
+    // The route itself must be attributable to the representative's region.
+    if (!isTripInRegionId({ originCity, destinationCity }, repRegionId)) {
+      return denyRegionalAccess(req, res, {
+        resource: "trips",
+        entityId: "new",
+        targetRegionId: getCityRegionId(originCity) || getCityRegionId(destinationCity),
+        reason: "Representative attempted to create a trip outside the database-assigned region",
+      });
+    }
+
+    if (customerId && !customer) {
+      return res.status(404).json({ error: "Customer not found", code: "CUSTOMER_NOT_FOUND" });
+    }
+    if (customer && !canAccessRegionalEntity(req.user, "customers", customer)) {
+      return denyRegionalAccess(req, res, {
+        resource: "trips",
+        entityId: customer.id,
+        targetRegionId: customer.regionId,
+        reason: "Representative attempted to create a trip using a customer outside the assigned region",
+      });
+    }
+    if (!customer) {
+      return res.status(422).json({
+        error: "اختر عميلاً مسجلاً ضمن منطقتك قبل إنشاء الرحلة",
+        code: "CUSTOMER_REQUIRED_IN_REGION",
+      });
+    }
+
+    if (driverId && !driver) {
+      return res.status(404).json({ error: "Driver not found", code: "DRIVER_NOT_FOUND" });
+    }
+    if (driver && !canAccessRegionalEntity(req.user, "drivers", driver)) {
+      return denyRegionalAccess(req, res, {
+        resource: "trips",
+        entityId: driver.id,
+        targetRegionId: driver.regionId,
+        reason: "Representative attempted to create a trip using a driver outside the assigned region",
+      });
+    }
+
+    resolvedRegionId = repRegionId;
+    resolvedRegion = regionLabelForId(repRegionId) || "";
   } else {
-    resolvedRegion =
-      normalizeRegion(requestedRegion) ||
-      getCityRegion(originCity) ||
-      userRecord?.region ||
-      req.user?.region ||
-      "المنطقة الوسطى";
+    resolvedRegionId =
+      normalizeRegionId(requestedRegion) ||
+      getCityRegionId(originCity) ||
+      normalizeRegionId(userRecord?.regionId ?? userRecord?.region) ||
+      normalizeRegionId(req.user?.regionId ?? req.user?.region) ||
+      "central";
+    resolvedRegion = regionLabelForId(resolvedRegionId) || "المنطقة الوسطى";
   }
 
   // ── Pricing resolution & approval workflow ──────────────────────────────
@@ -640,12 +778,13 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     id: tripId,
     tripNumber,
     status: "DRAFT_CREATED",
-    customerId: customerId || "cust-1",
-    customerName: customer?.name || "شركة سدافكو للأغذية والمشروبات",
-    vehicleId: vehicleId || "v1",
-    driverId: driverId || "d1",
-    driverName: driver?.fullName || "فهد الشمري",
-    driverPhone: driver?.phone || "+966551234567",
+    regionId: resolvedRegionId,
+    customerId: customer!.id,
+    customerName: customer!.name,
+    vehicleId: vehicle?.id || "unassigned",
+    driverId: driver?.id || "unassigned",
+    driverName: driver?.fullName || "غير معيّن",
+    driverPhone: driver?.phone || "",
     originCity,
     destinationCity,
     pickupAddress: pickupAddress || originCity,
@@ -653,7 +792,7 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     cargoDescription,
     cargoType,
     cargoWeightTons: Number(cargoWeightTons),
-    maxCapacityTons: Number(maxCapacityTons || 25),
+    maxCapacityTons: Number(maxCapacityTons || vehicle?.maxLoadTons || 0),
     temperatureRequired: cargoType === "براد" ? Number(temperatureRequired || -18) : undefined,
     corridorKey: corridorKey || "riyadh-jeddah",
     currentLat: 24.7136,
@@ -710,6 +849,7 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
       priceStatus,
       priceApprovalRequired,
       tariffId: resolvedTariffId,
+      regionId: resolvedRegionId,
       region: resolvedRegion,
       distanceKm: newTrip.distanceKm,
     },
@@ -733,6 +873,7 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
       cargoWeightTons,
       tripPrice: resolvedPrice,
       priceStatus,
+      regionId: resolvedRegionId,
       region: resolvedRegion,
       createdBy: req.user?.userId,
     },
@@ -1244,6 +1385,7 @@ router.post(
     if (driverId) {
       const d = db.drivers.get(driverId);
       if (!d) return res.status(404).json({ error: "السائق غير موجود في النظام" });
+      if (!ensureRepresentativeDriverRegion(req, res, d)) return;
       trip.driverId = d.id;
       trip.driverName = d.fullName;
       trip.driverPhone = d.phone;
@@ -1589,6 +1731,13 @@ router.post("/:id/assign-driver", authenticate, requirePermission("trips.assign"
   if (!driver) {
     return res.status(404).json({ error: "Driver not found" });
   }
+  if (!ensureRepresentativeDriverRegion(req, res, driver)) return;
+
+  const addDriver = additionalDriverId ? db.drivers.get(String(additionalDriverId)) : undefined;
+  if (additionalDriverId && !addDriver) {
+    return res.status(404).json({ error: "Additional driver not found" });
+  }
+  if (addDriver && !ensureRepresentativeDriverRegion(req, res, addDriver)) return;
 
   // Check driver license expiration
   const isLicenseExpired = new Date(driver.licenseExpiry).getTime() < Date.now();
@@ -1601,12 +1750,9 @@ router.post("/:id/assign-driver", authenticate, requirePermission("trips.assign"
   trip.driverName = driver.fullName;
   trip.driverPhone = driver.phone;
 
-  if (additionalDriverId) {
-    const addDriver = db.drivers.get(additionalDriverId);
-    if (addDriver) {
-      trip.additionalDriverId = addDriver.id;
-      trip.additionalDriverName = addDriver.fullName;
-    }
+  if (addDriver) {
+    trip.additionalDriverId = addDriver.id;
+    trip.additionalDriverName = addDriver.fullName;
   }
 
   trip.updatedAt = new Date().toISOString();
@@ -1677,6 +1823,7 @@ router.post("/:id/replace-driver", authenticate, requirePermission("trips.assign
   if (!newDriver) {
     return res.status(404).json({ error: "New driver not found" });
   }
+  if (!ensureRepresentativeDriverRegion(req, res, newDriver)) return;
 
   const oldDriverId = trip.driverId;
   const oldDriverName = trip.driverName;
@@ -1900,6 +2047,7 @@ router.post("/:id/replace-assignment", authenticate, requirePermission("trips.as
 
   const newDriver = db.drivers.get(newDriverId);
   if (!newDriver) return res.status(404).json({ error: "New driver not found" });
+  if (!ensureRepresentativeDriverRegion(req, res, newDriver)) return;
   const newVehicle = db.vehicles.get(newVehicleId);
   if (!newVehicle) return res.status(404).json({ error: "New vehicle not found" });
 

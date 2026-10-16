@@ -21,6 +21,8 @@ import {
   IconPhone,
   IconCheck,
 } from "../components/Icons";
+import { CLIENT_EXPORT_SCREENS } from "./exportScreens";
+import { useMobileScreenExport, type MobileExportStatus } from "./useMobileScreenExport";
 
 /**
  * تطبيق العميل (§14) — independent client interface over the shared backend.
@@ -36,13 +38,32 @@ interface ClientModeProps {
   onOpenSettings?: () => void;
   /** Bumped by the header bell — switches to the notifications tab. */
   notificationsSignal?: number;
+  exportAllSignal?: number;
+  exportBusy?: boolean;
+  onBulkExportStatus?: (status: MobileExportStatus) => void;
 }
 
-type ClientTab = "home" | "trips" | "track" | "notifications" | "account" | "request" | "docs";
+type ClientTab = (typeof CLIENT_EXPORT_SCREENS)[number];
 
-export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal = 0 }: ClientModeProps) {
+export function ClientMode({
+  user,
+  onLogout,
+  onOpenSettings,
+  notificationsSignal = 0,
+  exportAllSignal = 0,
+  exportBusy = false,
+  onBulkExportStatus,
+}: ClientModeProps) {
   const { t, td } = useSettings();
   const [activeTab, setActiveTab] = useState<ClientTab>("home");
+  useMobileScreenExport({
+    signal: exportAllSignal,
+    screens: CLIENT_EXPORT_SCREENS,
+    activeScreen: activeTab,
+    setActiveScreen: setActiveTab,
+    filename: "ejaz-client-screens",
+    onStatus: onBulkExportStatus,
+  });
   const [clientTrips, setClientTrips] = useState<any[]>([]);
   const [selectedTrip, setSelectedTrip] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -248,7 +269,10 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
   };
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-surface-0 text-white flex flex-col justify-between select-none">
+    <div
+      className="relative h-full w-full overflow-hidden bg-surface-0 text-white flex flex-col justify-between select-none"
+      data-export-screen={activeTab}
+    >
       <div className="scroll-thin flex-1 overflow-y-auto pb-24">
         {/* Greeting — the live identity (§32) */}
         <div className="px-5 pt-5 pb-4 bg-gradient-to-b from-navy to-surface-0 border-b border-border-subtle">
@@ -813,6 +837,13 @@ export function ClientMode({ user, onLogout, onOpenSettings, notificationsSignal
           );
         })}
       </div>
+      {exportBusy && (
+        <div
+          className="absolute inset-0 z-[80] cursor-wait"
+          aria-hidden="true"
+          data-export-exclude="true"
+        />
+      )}
     </div>
   );
 }

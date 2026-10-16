@@ -1,8 +1,8 @@
 /**
  * EJAZ Transport — Central Database Access Layer
- * Supports PostgreSQL connection pooling via pg.Pool.
- * In AI Studio preview / local environments, provides a robust in-memory ACID store
- * seeded with authentic enterprise logistics data.
+ * Current API entity CRUD uses process-local in-memory Maps seeded for development.
+ * A PostgreSQL pool may perform a connectivity probe, but that probe does not make
+ * the Map-backed CRUD persistent or production-ready.
  */
 
 import pg from "pg";
@@ -20,7 +20,9 @@ export interface UserEntity {
   role: string;
   driverId?: string;
   customerId?: string;
-  /** Regional assignment for regional representatives (one of the 5 Saudi regions). */
+  /** Stable regional assignment ID for regional representatives and scoped accounts. */
+  regionId?: string;
+  /** Legacy/display region label retained for older clients and records. */
   region?: string;
   isActive: boolean;
   createdAt: string;
@@ -63,6 +65,8 @@ export interface DriverEntity {
   nationalId: string;
   licenseNumber: string;
   licenseExpiry: string;
+  city?: string;
+  regionId?: string;
   assignedVehicleId?: string;
   status: "available" | "on_trip" | "rest" | "leave" | "suspended";
   rating: number;
@@ -80,6 +84,7 @@ export interface CustomerEntity {
   vatNumber: string;
   city: string;
   address: string;
+  regionId?: string;
 }
 
 export interface TripEntity {
@@ -135,7 +140,9 @@ export interface TripEntity {
     timestamp: string;
   }>;
   creatorRole?: string;
-  /** Region associated with the trip or creator's operational scope. */
+  /** Region assigned to the trip for regional data isolation. */
+  regionId?: string;
+  /** Legacy/display region label. */
   region?: string;
   /** Tariff the price came from (Phase 1 pricing engine). */
   tariffId?: string;
@@ -282,20 +289,24 @@ class InMemoryDatabase {
       { id: "u-client", email: "client@ejaz.sa", fullName: "شركة سدافكو للأغذية والمشروبات (عميل)", phone: "+966112223344", role: "CUSTOMER", customerId: "cust-1", passwordHash: clientHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
       { id: "u-client-sadafco", email: "logistics@sadafco.com", fullName: "سدافكو اللوجستية (عميل)", phone: "+966112223344", role: "CUSTOMER", customerId: "cust-1", passwordHash: clientHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
       // 5 Official Regional Representatives
-      { id: "u-rep-north", email: "rep.north@ejaz.sa", fullName: "ممثّل المنطقة الشمالية (تبوك والجوف)", phone: "+966551001122", role: "REPRESENTATIVE", region: "المنطقة الشمالية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
-      { id: "u-rep-east", email: "rep.east@ejaz.sa", fullName: "ممثّل المنطقة الشرقية (الدمام والجبيل)", phone: "+966552002233", role: "REPRESENTATIVE", region: "المنطقة الشرقية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
-      { id: "u-rep-west", email: "rep.west@ejaz.sa", fullName: "ممثّل المنطقة الغربية (جدة ومكة والمدينة)", phone: "+966553003344", role: "REPRESENTATIVE", region: "المنطقة الغربية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
-      { id: "u-rep-south", email: "rep.south@ejaz.sa", fullName: "ممثّل المنطقة الجنوبية (أبها وجازان)", phone: "+966554004455", role: "REPRESENTATIVE", region: "المنطقة الجنوبية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
-      { id: "u-rep-central", email: "rep.central@ejaz.sa", fullName: "ممثّل المنطقة الوسطى (الرياض والقصيم)", phone: "+966555005566", role: "REPRESENTATIVE", region: "المنطقة الوسطى", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      { id: "u-rep-north", email: "rep.north@ejaz.sa", fullName: "ممثّل المنطقة الشمالية (تبوك والجوف)", phone: "+966551001122", role: "REPRESENTATIVE", regionId: "north", region: "المنطقة الشمالية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      { id: "u-rep-east", email: "rep.east@ejaz.sa", fullName: "ممثّل المنطقة الشرقية (الدمام والجبيل)", phone: "+966552002233", role: "REPRESENTATIVE", regionId: "east", region: "المنطقة الشرقية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      { id: "u-rep-west", email: "rep.west@ejaz.sa", fullName: "ممثّل المنطقة الغربية (جدة ومكة والمدينة)", phone: "+966553003344", role: "REPRESENTATIVE", regionId: "west", region: "المنطقة الغربية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      { id: "u-rep-south", email: "rep.south@ejaz.sa", fullName: "ممثّل المنطقة الجنوبية (أبها وجازان)", phone: "+966554004455", role: "REPRESENTATIVE", regionId: "south", region: "المنطقة الجنوبية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      { id: "u-rep-central", email: "rep.central@ejaz.sa", fullName: "ممثّل المنطقة الوسطى (الرياض والقصيم)", phone: "+966555005566", role: "REPRESENTATIVE", regionId: "central", region: "المنطقة الوسطى", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
     ];
+    // All source-coded identities, business records, telemetry and tariffs below
+    // are a single demonstration dataset. Never expose it unless the operator
+    // explicitly opts in on a non-production server.
+    if (!config.enableDemoAccounts || config.nodeEnv === "production") return;
     seedUsers.forEach((u) => this.users.set(u.id, u));
 
     // 2. Customers
     const seedCustomers: CustomerEntity[] = [
-      { id: "cust-1", name: "شركة سدافكو للأغذية والمشروبات", contactPerson: "طارق منصور", phone: "+966112223344", email: "logistics@sadafco.com", commercialReg: "1010198421", vatNumber: "300184920100003", city: "جدة", address: "المنطقة الصناعية الأولى" },
-      { id: "cust-2", name: "شركة المراعي المحدودة", contactPerson: "عبدالله الراجحي", phone: "+966114445566", email: "fleet@almarai.com", commercialReg: "1010023419", vatNumber: "300028491000003", city: "الخرج", address: "مجمع المعالجة المركزي" },
-      { id: "cust-3", name: "شركة سابك للمغذيات الزراعية", contactPerson: "م. حسام العلي", phone: "+966133334455", email: "supply@sabic.com", commercialReg: "2050123984", vatNumber: "300059281000003", city: "الجبيل", address: "مدينة الجبيل الصناعية" },
-      { id: "cust-4", name: "شركة أسواق عبدالله العثيم", contactPerson: "سليمان النشمي", phone: "+966114778899", email: "dc@othaimmarkets.com", commercialReg: "1010082736", vatNumber: "300129482000003", city: "الرياض", address: "مستودعات السلي الكبرى" },
+      { id: "cust-1", name: "شركة سدافكو للأغذية والمشروبات", contactPerson: "طارق منصور", phone: "+966112223344", email: "logistics@sadafco.com", commercialReg: "1010198421", vatNumber: "300184920100003", city: "جدة", address: "المنطقة الصناعية الأولى", regionId: "west" },
+      { id: "cust-2", name: "شركة المراعي المحدودة", contactPerson: "عبدالله الراجحي", phone: "+966114445566", email: "fleet@almarai.com", commercialReg: "1010023419", vatNumber: "300028491000003", city: "الخرج", address: "مجمع المعالجة المركزي", regionId: "central" },
+      { id: "cust-3", name: "شركة سابك للمغذيات الزراعية", contactPerson: "م. حسام العلي", phone: "+966133334455", email: "supply@sabic.com", commercialReg: "2050123984", vatNumber: "300059281000003", city: "الجبيل", address: "مدينة الجبيل الصناعية", regionId: "east" },
+      { id: "cust-4", name: "شركة أسواق عبدالله العثيم", contactPerson: "سليمان النشمي", phone: "+966114778899", email: "dc@othaimmarkets.com", commercialReg: "1010082736", vatNumber: "300129482000003", city: "الرياض", address: "مستودعات السلي الكبرى", regionId: "central" },
     ];
     seedCustomers.forEach((c) => this.customers.set(c.id, c));
 
@@ -431,11 +442,11 @@ class InMemoryDatabase {
 
     // 4. Drivers
     const seedDrivers: DriverEntity[] = [
-      { id: "d1", fullName: "فهد الشمري", phone: "+966551234567", nationalId: "1082918273", licenseNumber: "DL-SA-91823", licenseExpiry: "2028-06-14", assignedVehicleId: "v1", status: "on_trip", rating: 4.95, totalTrips: 184 },
-      { id: "d2", fullName: "سالم المري", phone: "+966552345678", nationalId: "1093847291", licenseNumber: "DL-SA-84920", licenseExpiry: "2027-11-20", assignedVehicleId: "v2", status: "on_trip", rating: 4.98, totalTrips: 215 },
-      { id: "d3", fullName: "ماجد البلوي", phone: "+966553456789", nationalId: "1074829103", licenseNumber: "DL-SA-73918", licenseExpiry: "2028-01-10", assignedVehicleId: "v3", status: "on_trip", rating: 4.88, totalTrips: 142 },
-      { id: "d4", fullName: "عبدالله الدوسري", phone: "+966554567890", nationalId: "1062948192", licenseNumber: "DL-SA-62819", licenseExpiry: "2029-04-05", assignedVehicleId: "v4", status: "on_trip", rating: 4.92, totalTrips: 198 },
-      { id: "d5", fullName: "يوسف العتيبي", phone: "+966555678901", nationalId: "1059281734", licenseNumber: "DL-SA-51928", licenseExpiry: "2027-09-18", assignedVehicleId: "v5", status: "available", rating: 4.91, totalTrips: 167 },
+      { id: "d1", fullName: "فهد الشمري", phone: "+966551234567", nationalId: "1082918273", licenseNumber: "DL-SA-91823", licenseExpiry: "2028-06-14", city: "جدة", regionId: "west", assignedVehicleId: "v1", status: "on_trip", rating: 4.95, totalTrips: 184 },
+      { id: "d2", fullName: "سالم المري", phone: "+966552345678", nationalId: "1093847291", licenseNumber: "DL-SA-84920", licenseExpiry: "2027-11-20", city: "الخرج", regionId: "central", assignedVehicleId: "v2", status: "on_trip", rating: 4.98, totalTrips: 215 },
+      { id: "d3", fullName: "ماجد البلوي", phone: "+966553456789", nationalId: "1074829103", licenseNumber: "DL-SA-73918", licenseExpiry: "2028-01-10", city: "الجبيل", regionId: "east", assignedVehicleId: "v3", status: "on_trip", rating: 4.88, totalTrips: 142 },
+      { id: "d4", fullName: "عبدالله الدوسري", phone: "+966554567890", nationalId: "1062948192", licenseNumber: "DL-SA-62819", licenseExpiry: "2029-04-05", city: "جدة", regionId: "west", assignedVehicleId: "v4", status: "on_trip", rating: 4.92, totalTrips: 198 },
+      { id: "d5", fullName: "يوسف العتيبي", phone: "+966555678901", nationalId: "1059281734", licenseNumber: "DL-SA-51928", licenseExpiry: "2027-09-18", city: "الرياض", regionId: "central", assignedVehicleId: "v5", status: "available", rating: 4.91, totalTrips: 167 },
     ];
     seedDrivers.forEach((d) => this.drivers.set(d.id, d));
 
@@ -446,6 +457,7 @@ class InMemoryDatabase {
       id: trip1Id,
       tripNumber: trip1Num,
       status: "IN_TRANSIT",
+      regionId: "west",
       customerId: "cust-1",
       customerName: "شركة سدافكو للأغذية والمشروبات",
       vehicleId: "v1",
@@ -481,6 +493,7 @@ class InMemoryDatabase {
       id: trip2Id,
       tripNumber: trip2Num,
       status: "IN_TRANSIT",
+      regionId: "central",
       customerId: "cust-2",
       customerName: "شركة المراعي المحدودة",
       vehicleId: "v2",
@@ -517,6 +530,7 @@ class InMemoryDatabase {
       id: trip3Id,
       tripNumber: trip3Num,
       status: "CONFIRMED",
+      regionId: "east",
       customerId: "cust-3",
       customerName: "شركة سابك للمغذيات الزراعية",
       vehicleId: "v3",
@@ -663,7 +677,7 @@ class InMemoryDatabase {
 }
 
 export class DevelopmentDatabaseAdapter extends InMemoryDatabase {
-  public isDevelopment = true;
+  public isDevelopment = config.nodeEnv !== "production";
   public targetDatabaseUrl = config.databaseUrl || "";
   private isPostgresConnected = false;
 
@@ -693,16 +707,16 @@ export class DevelopmentDatabaseAdapter extends InMemoryDatabase {
         .connect()
         .then((client) => {
           this.isPostgresConnected = true;
-          this.isDevelopment = false;
           client.release();
-          console.log("[DB] Connected to PostgreSQL at", config.databaseUrl.replace(/:[^:@]+@/, ":***@"));
+          console.log(
+            "[DB] PostgreSQL connectivity probe succeeded; application entity CRUD still uses process-local in-memory maps.",
+          );
         })
         .catch((_err) => {
           this.isPostgresConnected = false;
-          this.isDevelopment = true;
-          console.log(
-            `[DB Development Adapter] External PostgreSQL at ${config.databaseUrl.replace(/:[^:@]+@/, ":***@")} is offline. ` +
-            `Operating with ACID Development Database Adapter (in-memory persistent state).`
+          console.warn(
+            `[DB Development Adapter] PostgreSQL connectivity probe failed for ${config.databaseUrl.replace(/:[^:@]+@/, ":***@")}. ` +
+            `Application records remain in process-local memory and are not durable.`
           );
         });
     } catch (err) {
@@ -743,15 +757,20 @@ export class DevelopmentDatabaseAdapter extends InMemoryDatabase {
 
   getStatus() {
     return {
-      mode: this.isPostgresConnected ? "PRODUCTION_POSTGRESQL" : "DEVELOPMENT_DATABASE_ADAPTER",
-      isDevelopment: !this.isPostgresConnected,
+      mode: "IN_MEMORY_MAP_ADAPTER",
+      isDevelopment: this.isDevelopment,
       connected: true,
-      targetDatabaseUrl: this.targetDatabaseUrl ? this.targetDatabaseUrl.replace(/:[^:@]+@/, ":***@") : "NONE",
-      schemaVersion: "2026.1-DEV",
-      tablesCount: 9,
-      notice: !this.isPostgresConnected
-        ? "Development Database Adapter active with transactional isolation. Fully swappable to PostgreSQL via DATABASE_URL."
-        : "Connected to live PostgreSQL database.",
+      ready: true,
+      durable: false,
+      productionSafe: false,
+      storage: "PROCESS_LOCAL_MAPS",
+      targetDatabaseConfigured: Boolean(this.targetDatabaseUrl),
+      postgresProbeConnected: this.isPostgresConnected,
+      postgresUsedForEntityCrud: false,
+      schemaVersion: null,
+      tablesCount: null,
+      notice:
+        "This adapter stores application records in process-local in-memory maps. Writes are lost on restart. DATABASE_URL is only connectivity-probed and does not back entity CRUD; this adapter is not production-safe."
     };
   }
 }

@@ -171,8 +171,15 @@ export function WebConsole({
     if (window.innerWidth < 1280) setDetailsOpen(true);
   };
 
-  const handleAddVehicle = (v: Vehicle, requestKind?: RequestKind) => {
-    selectTruck(v.id);
+  const handleAddVehicle = (v: Vehicle | null, requestKind?: RequestKind) => {
+    if (v?.id) selectTruck(v.id);
+    if (requestKind === "cargo") {
+      setNav("shipments");
+      setResetKey((k) => k + 1);
+      setModalKind(null);
+      return;
+    }
+    if (!v) return;
     if (requestKind === "repair") {
       setNav("repair");
       toast("تم تسجيل طلب الصيانة", `${v.plate} · أمر الورشة`);
@@ -182,9 +189,6 @@ export function WebConsole({
     } else if (requestKind === "report") {
       setNav("reports");
       toast("تم استخراج التقرير الرسمي", "جاهز للمعاينة والتحميل");
-    } else if (requestKind === "cargo") {
-      setNav("shipments");
-      toast("تم إنشاء طلب الشحنة", `${v.shipment} · ${v.partner}`);
     } else {
       setNav("fleet");
       toast("تم تسجيل الشاحنة في الأسطول", `${v.plate} · ${v.model}`);

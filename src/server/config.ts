@@ -11,5 +11,9 @@ export const config = {
   gpsProviderApiKey: process.env.GPS_PROVIDER_API_KEY || "",
   gpsProviderEndpoint: process.env.GPS_PROVIDER_ENDPOINT || "",
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
-  enableDemoAccounts: process.env.ENABLE_DEMO_ACCOUNTS !== "false",
+  // Demo accounts/data are enabled by default in development for local preview,
+  // can be explicitly disabled with ENABLE_DEMO_ACCOUNTS=false, and are always
+  // disabled in production.
+  enableDemoAccounts:
+    process.env.NODE_ENV !== "production" && process.env.ENABLE_DEMO_ACCOUNTS !== "false",
 };

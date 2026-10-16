@@ -1,9 +1,37 @@
 import { Router, type Response } from "express";
 import { db } from "../db";
-import { authenticate, requirePermission, hasPermission, type AuthenticatedRequest } from "../auth/middleware";
+import {
+  authenticate,
+  canAccessRegionalEntity,
+  canAccessTrip,
+  denyRegionalAccess,
+  filterRegionalEntities,
+  getRepresentativeRegionId,
+  hasPermission,
+  requirePermission,
+  requireRepresentativeRegionAssignment,
+  type AuthenticatedRequest,
+} from "../auth/middleware";
+import { getCityRegionId, normalizeRegionId } from "../services/cityRegistry";
 import { REGISTRATION_STATUS_AR, submitRegistration } from "../services/registrationService";
 
 const router = Router();
+
+router.use(authenticate, requireRepresentativeRegionAssignment("drivers"));
+router.param("id", (req: AuthenticatedRequest, res: Response, next, rawId) => {
+  if (req.user?.role !== "REPRESENTATIVE") return next();
+  const driver = db.drivers.get(String(rawId));
+  if (!driver) return next();
+  if (!canAccessRegionalEntity(req.user, "drivers", driver)) {
+    return denyRegionalAccess(req, res, {
+      resource: "drivers",
+      entityId: driver.id,
+      targetRegionId: driver.regionId,
+      reason: "Representative attempted to read or mutate a driver outside the database-assigned region",
+    });
+  }
+  return next();
+});
 
 function checkLicenseExpiry(dateStr: string) {
   const target = new Date(dateStr).getTime();
@@ -15,8 +43,8 @@ function checkLicenseExpiry(dateStr: string) {
 }
 
 // GET /api/drivers
-router.get("/", authenticate, requirePermission("drivers.view"), (_req: AuthenticatedRequest, res: Response) => {
-  const list = Array.from(db.drivers.values()).map((d) => {
+router.get("/", authenticate, requirePermission("drivers.view"), (req: AuthenticatedRequest, res: Response) => {
+  const list = filterRegionalEntities(req.user, "drivers", Array.from(db.drivers.values())).map((d) => {
     const licCheck = checkLicenseExpiry(d.licenseExpiry);
     const vehicle = d.assignedVehicleId ? db.vehicles.get(d.assignedVehicleId) : undefined;
     return {
@@ -43,7 +71,11 @@ router.get("/:id", authenticate, requirePermission("drivers.view"), (req: Authen
 
   const licCheck = checkLicenseExpiry(driver.licenseExpiry);
   const vehicle = driver.assignedVehicleId ? db.vehicles.get(driver.assignedVehicleId) : undefined;
-  const recentTrips = Array.from(db.trips.values()).filter((t) => t.driverId === driver.id);
+  const recentTrips = Array.from(db.trips.values()).filter(
+    (trip) =>
+      trip.driverId === driver.id &&
+      (req.user?.role !== "REPRESENTATIVE" || canAccessTrip(req.user, trip))
+  );
 
   return res.json({
     driver,
@@ -69,7 +101,33 @@ router.get("/:id", authenticate, requirePermission("drivers.view"), (req: Authen
  */
 router.post("/", authenticate, requirePermission("drivers.create"), (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { fullName, phone, email, nationalId, licenseNumber, licenseExpiry, password, fields: extraFields, documents } = req.body || {};
+    const { fullName, phone, email, nationalId, licenseNumber, licenseExpiry, city, password, fields: extraFields, documents } = req.body || {};
+    const requestedCity = String(city || (extraFields as any)?.city || "").trim();
+    const isRepresentative = req.user?.role === "REPRESENTATIVE";
+    const representativeRegionId = isRepresentative ? getRepresentativeRegionId(req.user) : null;
+    if (isRepresentative && !representativeRegionId) {
+      return denyRegionalAccess(req, res, {
+        resource: "drivers",
+        entityId: "new",
+        reason: "Representative attempted driver creation without a valid database region assignment",
+      });
+    }
+    const assignedRegionId =
+      representativeRegionId ||
+      normalizeRegionId(req.body?.regionId ?? req.body?.region) ||
+      getCityRegionId(requestedCity);
+    if (isRepresentative && requestedCity) {
+      const cityRegionId = getCityRegionId(requestedCity);
+      if (!cityRegionId || cityRegionId !== representativeRegionId) {
+        return denyRegionalAccess(req, res, {
+          resource: "drivers",
+          entityId: "new",
+          targetRegionId: cityRegionId,
+          reason: "Representative attempted to create a driver profile outside the assigned region",
+        });
+      }
+    }
+
     if (!fullName || !phone || !nationalId || !licenseNumber || !licenseExpiry) {
       return res.status(400).json({ error: "Missing required driver profile fields", code: "MISSING_FIELDS" });
     }
@@ -83,14 +141,16 @@ router.post("/", authenticate, requirePermission("drivers.create"), (req: Authen
 
     const result = submitRegistration({
       type: "DRIVER",
+      assignedRegionId: assignedRegionId || undefined,
       fields: {
+        ...(extraFields && typeof extraFields === "object" ? extraFields : {}),
         fullName,
         phone,
         email: email || "",
+        city: requestedCity,
         nationalId,
         licenseNumber,
         licenseExpiry,
-        ...(extraFields && typeof extraFields === "object" ? extraFields : {}),
       },
       password: accountPassword,
       documents: Array.isArray(documents) ? documents : [],
@@ -123,6 +183,8 @@ router.post("/", authenticate, requirePermission("drivers.create"), (req: Authen
         nationalId,
         licenseNumber,
         licenseExpiry,
+        city: requestedCity || undefined,
+        regionId: assignedRegionId || undefined,
         assignedVehicleId: req.body?.assignedVehicleId || undefined,
         status: (req.body?.status as any) || "available",
         rating: 5.0,
@@ -158,13 +220,26 @@ router.patch("/:id", authenticate, requirePermission("drivers.edit", "drivers.ma
     return res.status(404).json({ error: "Driver not found", errorAr: "السائق غير موجود" });
   }
 
-  const { fullName, phone, nationalId, licenseNumber, licenseExpiry, status, assignedVehicleId } = req.body || {};
+  const { fullName, phone, nationalId, licenseNumber, licenseExpiry, city, status, assignedVehicleId } = req.body || {};
+
+  if (req.user?.role === "REPRESENTATIVE" && city !== undefined) {
+    const cityRegionId = getCityRegionId(String(city));
+    if (!cityRegionId || cityRegionId !== getRepresentativeRegionId(req.user)) {
+      return denyRegionalAccess(req, res, {
+        resource: "drivers",
+        entityId: driver.id,
+        targetRegionId: cityRegionId,
+        reason: "Representative attempted to move a driver profile outside the assigned region",
+      });
+    }
+  }
 
   if (fullName !== undefined) driver.fullName = fullName;
   if (phone !== undefined) driver.phone = phone;
   if (nationalId !== undefined) driver.nationalId = nationalId;
   if (licenseNumber !== undefined) driver.licenseNumber = licenseNumber;
   if (licenseExpiry !== undefined) driver.licenseExpiry = licenseExpiry;
+  if (city !== undefined) driver.city = String(city);
 
   if (status !== undefined) {
     const canToggle =

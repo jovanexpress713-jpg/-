@@ -3,7 +3,7 @@ import { SettingsProvider, useSettings } from "./settings";
 import { FleetStoreProvider, useFleetStore } from "./state/fleetStore";
 import { VehicleAssetProvider, useVehicleAssets } from "./state/vehicleAssetStore";
 import { BrandingProvider } from "./state/brandingStore";
-import { ToastProvider } from "./components/Toast";
+import { ToastProvider, useToast } from "./components/Toast";
 import { WebConsole, SECTION_KEYS } from "./components/WebConsole";
 import { ConsoleAuthGate } from "./components/ConsoleAuthGate";
 import { MobileApp } from "./mobile/MobileApp";
@@ -14,10 +14,22 @@ import { AIAssistant } from "./components/AIAssistant";
 import { AlertsCenter } from "./components/AlertsCenter";
 import { toRoutedAlert, visibleAlertsFor } from "./services/smartAlerts";
 import { IconArrowRight } from "./components/Icons";
-import { PermissionProvider } from "./state/permissionStore";
-import { NAV_ALIASES } from "./utils/permissions";
+import { PermissionProvider, usePermissions } from "./state/permissionStore";
+import { NAV_ALIASES, NAV_PAGES } from "./utils/permissions";
+import { capturePageJpeg, downloadJpeg, downloadJpegArchive, getExportRoot, printPage, waitForPaint, type JpegPage } from "./services/pageExport";
+import type { PageExportProgress } from "./components/PageExportMenu";
+import type { MobileExportStatus } from "./mobile/useMobileScreenExport";
+import { CLIENT_EXPORT_SCREENS, DRIVER_EXPORT_SCREENS } from "./mobile/exportScreens";
 
 type Project = "web" | "mobile";
+
+function ExportPermissionsBridge({ onPagesChange }: { onPagesChange: (pageIds: string[]) => void }) {
+  const { pageVisible } = usePermissions();
+  useEffect(() => {
+    onPagesChange(NAV_PAGES.filter(({ id }) => pageVisible(id)).map(({ id }) => id));
+  }, [onPagesChange, pageVisible]);
+  return null;
+}
 
 /**
  * Application shell.
@@ -45,13 +57,57 @@ function Shell() {
   const [showAI, setShowAI] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab | null>(null);
+  const [visibleConsolePages, setVisibleConsolePages] = useState<string[]>([]);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportProgress, setExportProgress] = useState<PageExportProgress | null>(null);
+  const [mobileExportSignal, setMobileExportSignal] = useState(0);
+  const [systemHealth, setSystemHealth] = useState<{
+    status?: string;
+    database?: { durable?: boolean; notice?: string };
+    demoAccounts?: { enabled?: boolean };
+  } | null>(null);
+  const [healthCheckFailed, setHealthCheckFailed] = useState(false);
   const { refresh: refreshVehicleAssets } = useVehicleAssets();
   const { alerts, currentRole } = useFleetStore();
-  const { tk } = useSettings();
+  const { tk, lang } = useSettings();
+  const toast = useToast();
 
   useEffect(() => {
     if (session) refreshVehicleAssets();
   }, [session, refreshVehicleAssets]);
+
+  useEffect(() => {
+    if (!session) {
+      setSystemHealth(null);
+      setHealthCheckFailed(false);
+      return;
+    }
+    let active = true;
+    const checkHealth = async () => {
+      try {
+        const health = await apiClient.system.health();
+        if (active) {
+          setSystemHealth(health);
+          setHealthCheckFailed(false);
+        }
+      } catch {
+        if (active) {
+          setSystemHealth(null);
+          setHealthCheckFailed(true);
+        }
+      }
+    };
+    void checkHealth();
+    const timer = window.setInterval(checkHealth, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [session]);
+
+  useEffect(() => {
+    if (project !== "mobile" && mobileExportSignal !== 0) setMobileExportSignal(0);
+  }, [mobileExportSignal, project]);
 
   /**
    * Restore a real stored session silently (§33 «تسجيل الدخول» is the entry
@@ -166,6 +222,106 @@ function Shell() {
     };
   }, [page, project, mobileInterface, tk]);
 
+  const handleExportCurrent = useCallback(async () => {
+    if (exportBusy) return;
+    setExportBusy(true);
+    setExportProgress({ completed: 0, total: 1 });
+    try {
+      const root = getExportRoot();
+      const dataUrl = await capturePageJpeg(root);
+      const activeScreen = root?.querySelector<HTMLElement>("[data-export-screen]")?.dataset.exportScreen || mobileInterface;
+      const filename = project === "mobile"
+        ? `ejaz-${mobileInterface}-${activeScreen}`
+        : `ejaz-console-${page}`;
+      downloadJpeg(dataUrl, filename);
+      toast(lang === "ar" ? "تم حفظ الصفحة كصورة JPG" : "Page saved as a JPG image", filename);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "تعذّر تصدير الصفحة.";
+      toast(lang === "ar" ? "تعذّر تصدير الصفحة" : "Page export failed", message);
+    } finally {
+      setExportBusy(false);
+      setExportProgress(null);
+    }
+  }, [exportBusy, lang, mobileInterface, page, project, toast]);
+
+  const handlePrintCurrent = useCallback(() => {
+    const root = getExportRoot();
+    const screen = root?.querySelector<HTMLElement>("[data-export-screen]")?.dataset.exportScreen;
+    const title = project === "mobile" && screen
+      ? `${pageMeta.title} - ${screen}`
+      : pageMeta.title;
+    printPage(`EJAZ - ${title}`);
+  }, [pageMeta.title, project]);
+
+  const handleMobileExportStatus = useCallback((status: MobileExportStatus) => {
+    setExportBusy(status.busy);
+    setExportProgress(status.progress ?? null);
+    if (status.done) {
+      toast(lang === "ar" ? "اكتمل تصدير شاشات التطبيق" : "Mobile screens exported", status.done);
+    }
+    if (status.error) {
+      toast(lang === "ar" ? "تعذّر تصدير شاشات التطبيق" : "Mobile screen export failed", status.error);
+    }
+  }, [lang, toast]);
+
+  const handleExportAll = useCallback(async () => {
+    if (exportBusy) return;
+    if (project === "mobile") {
+      setExportBusy(true);
+      setExportProgress(null);
+      setMobileExportSignal((signal) => signal + 1);
+      return;
+    }
+
+    const pages = NAV_PAGES.filter(({ id }) => visibleConsolePages.includes(id));
+    if (!pages.length) {
+      toast(lang === "ar" ? "لا توجد صفحات متاحة للتصدير" : "No permitted pages are available to export");
+      return;
+    }
+
+    const previous = { page, project, settingsTab, showAI, showAlerts };
+    const files: JpegPage[] = [];
+    const date = new Date().toISOString().slice(0, 10);
+    setExportBusy(true);
+    setExportProgress({ completed: 0, total: pages.length });
+    setShowAI(false);
+    setShowAlerts(false);
+    setSettingsTab(null);
+    setProject("web");
+
+    try {
+      for (const [index, item] of pages.entries()) {
+        setPage(item.id);
+        await waitForPaint(700);
+        const root = getExportRoot();
+        if (!root || root.dataset.exportPage !== item.id) {
+          await waitForPaint(250);
+        }
+        const settledRoot = getExportRoot();
+        if (!settledRoot || settledRoot.dataset.exportPage !== item.id) {
+          throw new Error(`تعذّر فتح صفحة ${item.id} للتصوير.`);
+        }
+        const dataUrl = await capturePageJpeg(settledRoot);
+        files.push({ name: `console-${item.id}`, dataUrl });
+        setExportProgress({ completed: index + 1, total: pages.length });
+      }
+
+      const archiveName = await downloadJpegArchive(files, `ejaz-console-pages-${date}`);
+      toast(lang === "ar" ? `تم تصدير ${files.length} صفحة مسموح بها` : `Exported ${files.length} permitted pages`, archiveName);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "تعذّر تصدير صفحات غرفة التحكم.";
+      toast(lang === "ar" ? "توقف التصدير" : "Export stopped", message);
+    } finally {
+      setPage(previous.page);
+      setProject(previous.project);
+      setSettingsTab(previous.settingsTab);
+      setShowAI(previous.showAI);
+      setShowAlerts(previous.showAlerts);
+      setExportBusy(false);
+      setExportProgress(null);
+    }
+  }, [exportBusy, lang, page, project, settingsTab, showAI, showAlerts, toast, visibleConsolePages]);
+
   const body = (() => {
   /* ── Sign-in screen PREVIEW (§11): preview only, with a clear exit. ── */
   if (previewLogin && session) {
@@ -211,7 +367,11 @@ function Shell() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-surface-0">
+    <div
+      className="relative flex h-full flex-col bg-surface-0"
+      data-export-root="true"
+      data-export-page={project === "web" ? page : "mobile"}
+    >
       <AppHeader
         user={session}
         pageTitle={pageMeta.title}
@@ -226,7 +386,37 @@ function Shell() {
         onLogout={handleLogout}
         onNavigate={handleNavigate}
         onOpenMobileApp={handleOpenMobileApp}
+        pageExport={{
+          surface: project === "mobile" ? "screen" : "page",
+          busy: exportBusy,
+          progress: exportProgress,
+          eligiblePageCount: project === "mobile"
+            ? (mobileInterface === "driver" ? DRIVER_EXPORT_SCREENS.length : CLIENT_EXPORT_SCREENS.length)
+            : visibleConsolePages.length,
+          onExportCurrent: handleExportCurrent,
+          onPrint: handlePrintCurrent,
+          onExportAll: handleExportAll,
+        }}
       />
+
+      {(healthCheckFailed || (systemHealth && (
+        systemHealth.status !== "HEALTHY" ||
+        systemHealth.database?.durable === false ||
+        systemHealth.demoAccounts?.enabled === true
+      ))) && (
+        <div
+          role="status"
+          className="shrink-0 border-b border-amber-400/20 bg-amber-400/10 px-4 py-2 text-center text-micro font-semibold text-amber-100"
+        >
+          {healthCheckFailed
+            ? (lang === "ar" ? "تعذّر التحقق من حالة الخادم والتخزين. لا تعتمد على ظهور البيانات دون تحقق." : "Server and storage status could not be verified; verify data before relying on it.")
+            : systemHealth?.demoAccounts?.enabled
+              ? (lang === "ar" ? "وضع المعاينة التجريبية مفعّل: الحسابات والبيانات قد تكون سجلات اختبار، والتخزين الحالي غير دائم." : "Demo preview is enabled: accounts/data may be fixtures, and current storage is non-durable.")
+              : systemHealth?.database?.durable === false
+                ? (lang === "ar" ? "تنبيه التخزين: الخادم يستخدم ذاكرة عملية غير دائمة؛ قد تُفقد التغييرات عند إعادة التشغيل." : "Storage notice: the server uses non-durable process memory; changes may be lost on restart.")
+                : (lang === "ar" ? "حالة الخادم متدهورة؛ تحقّق من الخدمات قبل الاعتماد على البيانات." : "Server health is degraded; verify services before relying on data.")}
+        </div>
+      )}
 
       <main className="min-h-0 flex-1 overflow-hidden">
         {project === "web" ? (
@@ -241,6 +431,8 @@ function Shell() {
             bypassAuthUser={session}
             forcedInterface={mobileInterface}
             onLogout={handleLogout}
+            exportAllSignal={mobileExportSignal}
+            onBulkExportStatus={handleMobileExportStatus}
             onStaffLogin={(staffUser: any) => {
               if (staffUser) handleAuthenticated(staffUser);
             }}
@@ -250,44 +442,58 @@ function Shell() {
 
       {/* Global surfaces */}
       {showAI && (
-        <AIAssistant
-          isOpen={showAI}
-          onClose={() => setShowAI(false)}
-          user={session}
-          page={project === "mobile" ? "mobile" : page}
-          persona={currentRole}
-        />
+        <div data-export-exclude="true">
+          <AIAssistant
+            isOpen={showAI}
+            onClose={() => setShowAI(false)}
+            user={session}
+            page={project === "mobile" ? "mobile" : page}
+            persona={currentRole}
+          />
+        </div>
       )}
 
       {showAlerts && (
-        <AlertsCenter
-          isOpen={showAlerts}
-          onClose={() => setShowAlerts(false)}
-          user={session}
-          onSelectTrip={(tripId) => {
-            setProject("web");
-            setPage("tracking");
-            void tripId;
-          }}
-        />
+        <div data-export-exclude="true">
+          <AlertsCenter
+            isOpen={showAlerts}
+            onClose={() => setShowAlerts(false)}
+            user={session}
+            onSelectTrip={(tripId) => {
+              setProject("web");
+              setPage("tracking");
+              void tripId;
+            }}
+          />
+        </div>
       )}
 
-      <SettingsCenter
-        isOpen={settingsTab !== null}
-        initialTab={settingsTab ?? "account"}
-        onClose={() => setSettingsTab(null)}
-        user={session}
-        onOpenAssistant={() => setShowAI(true)}
-        onOpenMobileApp={handleOpenMobileApp}
-        onPreviewLogin={() => setPreviewLogin(true)}
-        onNavigate={handleSystemNavigate}
-      />
+      <div data-export-exclude="true">
+        <SettingsCenter
+          isOpen={settingsTab !== null}
+          initialTab={settingsTab ?? "account"}
+          onClose={() => setSettingsTab(null)}
+          user={session}
+          onOpenAssistant={() => setShowAI(true)}
+          onOpenMobileApp={handleOpenMobileApp}
+          onPreviewLogin={() => setPreviewLogin(true)}
+          onNavigate={handleSystemNavigate}
+        />
+      </div>
+      {exportBusy && (
+        <div
+          className="absolute inset-0 z-[75] cursor-wait"
+          aria-hidden="true"
+          data-export-exclude="true"
+        />
+      )}
     </div>
   );
   })();
 
   return (
     <PermissionProvider role={session?.role} tokenPermissions={session?.permissions}>
+      <ExportPermissionsBridge onPagesChange={setVisibleConsolePages} />
       {body}
     </PermissionProvider>
   );

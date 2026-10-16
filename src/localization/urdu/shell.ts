@@ -472,4 +472,17 @@ export const UR_SHELL: Record<string, string> = {
   "Top Active Trip:": "بہترین فعال ٹرپ:",
   "Fleet Average:": "بیڑے کی اوسط:",
   "Active Visible:": "دستیاب ٹرپس:",
+
+  /* Authentication & demo-account messaging */
+  "Demo sign-in is unavailable.": "ڈیمو سائن اِن دستیاب نہیں۔",
+  "Authentication failed. Check your credentials and server connectivity.": "توثیق ناکام ہوئی۔ اپنی اسناد اور سرور کنکشن چیک کریں۔",
+  "Enter your authorized work email and password.": "اپنی مجاز دفتری ای میل اور پاس ورڈ درج کریں۔",
+  "Server-enabled demo accounts are available below.": "سرور پر فعال ڈیمو اکاؤنٹس نیچے دستیاب ہیں۔",
+  "Sign in with your authorized work credentials.": "اپنی مجاز دفتری اسناد کے ساتھ سائن اِن کریں۔",
+  "Choose a server-enabled demo account": "سرور پر فعال ڈیمو اکاؤنٹ منتخب کریں",
+  "Backend sign-in": "بیک اینڈ سائن اِن",
+  "Please enter your work email and password.": "اپنی دفتری ای میل اور پاس ورڈ درج کریں۔",
+  "Server-enabled demo accounts:": "سرور پر فعال ڈیمو اکاؤنٹس:",
+  "EJAZ Transport Logistics Platform": "ایجاز ٹرانسپورٹ لاجسٹکس پلیٹ فارم",
+  "API status": "API کی حالت",
 };
