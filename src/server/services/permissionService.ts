@@ -383,6 +383,9 @@ export const PERMISSION_CATALOG_PAGES: CatalogPage[] = [
     functions: [
       fn("tariffs", "view", "عرض دفتر التعرفة", "View the tariff book", { code: "VIEW_TARIFFS" }),
       fn("tariffs", "manage", "إدارة وتعديل التعرفة", "Manage tariffs", { code: "MANAGE_TARIFFS", sensitive: true }),
+      fn("tariffs", "create", "إدخال سعر مخصص للرحلة", "Enter custom trip price", { code: "ENTER_CUSTOM_PRICE" }),
+      fn("tariffs", "request", "طلب اعتماد سعر رحلة", "Request price approval", { code: "REQUEST_PRICE_APPROVAL" }),
+      fn("tariffs", "approve", "اعتماد الأسعار الاستثنائية", "Approve custom prices", { code: "APPROVE_PRICE", sensitive: true }),
     ],
   },
 
@@ -782,7 +785,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "overview.view",
     "trips.view", "trips.create", "trips.edit", "trips.assign", "trips.transition",
     "trips.cancel", "trips.approve", "trips.reject", "trips.track", "trips.request", "trips.export", "trips.print",
-    "tariffs.view", "tariffs.manage",
+    "tariffs.view", "tariffs.manage", "tariffs.create", "tariffs.request", "tariffs.approve",
     "claims.view", "claims.manage",
     "customers.view", "customers.create", "customers.edit", "customers.manage",
     "notifications.view", "pod.view", "pod.create", "pod.verify",

@@ -20,7 +20,7 @@ import { initTripFinancials, getTripFinancials, repriceTripFinancials, serialize
 import { logAuditEvent } from "../services/auditService";
 import { dispatchNotification } from "../services/notificationService";
 import { resolveQuote } from "../services/tariffService";
-import { computeRoadDistance } from "../services/cityRegistry";
+import { computeRoadDistance, normalizeRegion, getCityRegion } from "../services/cityRegistry";
 
 const router = Router();
 
@@ -497,6 +497,11 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     customerId,
     vehicleId,
     driverId,
+    customPrice,
+    agreedPrice,
+    manualPrice,
+    notes,
+    region: requestedRegion,
   } = req.body;
 
   if (!originCity || !destinationCity || !cargoDescription || !cargoType || !cargoWeightTons) {
@@ -518,10 +523,26 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
   const customer = customerId ? db.customers.get(customerId) : undefined;
   const driver = driverId ? db.drivers.get(driverId) : undefined;
 
-  // ── Dynamic pricing (Phase 1 tariff engine) ─────────────────────────────
-  // The price is NEVER hardcoded. It is resolved from the company's tariff
-  // book by (truck type + route + system distance + weight). If no tariff
-  // matches, the trip is created awaiting a company quote — no invented price.
+  // ── Regional attribution ────────────────────────────────────────────────
+  const userRecord = req.user?.userId ? db.users.get(req.user.userId) : null;
+  const resolvedRegion =
+    req.user?.region ||
+    userRecord?.region ||
+    normalizeRegion(requestedRegion) ||
+    getCityRegion(originCity) ||
+    "المنطقة الوسطى";
+
+  // ── Pricing resolution & approval workflow ──────────────────────────────
+  const rawCustomPrice =
+    customPrice !== undefined ? customPrice : agreedPrice !== undefined ? agreedPrice : manualPrice;
+
+  let resolvedPrice: number = 0;
+  let resolvedTariffId: string | undefined;
+  let resolvedCurrency = "SAR";
+  let priceStatus: TripEntity["priceStatus"] = "UNPRICED";
+  let priceApprovalRequired = false;
+  let customPriceRequested: number | undefined;
+
   const distance = computeRoadDistance(originCity, destinationCity);
   const quote = resolveQuote(Array.from(db.tariffs.values()), {
     truckType: cargoType,
@@ -530,18 +551,41 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     weightTons: Number(cargoWeightTons),
   });
 
-  let resolvedPrice: number;
-  let resolvedTariffId: string | undefined;
-  let resolvedCurrency = "SAR";
-  let priceStatus: TripEntity["priceStatus"];
+  if (rawCustomPrice !== undefined && rawCustomPrice !== null && rawCustomPrice !== "") {
+    const numPrice = Number(rawCustomPrice);
+    if (!Number.isFinite(numPrice) || numPrice < 0) {
+      return res.status(400).json({ error: "السعر المدخل غير صالح", code: "INVALID_PRICE" });
+    }
 
-  if (quote.available && quote.tariff) {
+    const hasPricingPerm =
+      hasPermission(req.user?.role, "tariffs.create", req.user?.permissions, req.user?.userId) ||
+      ["SUPER_ADMIN", "OPERATIONS_MANAGER", "GENERAL_MANAGER"].includes(req.user?.role || "");
+
+    if (!hasPricingPerm) {
+      return res.status(403).json({
+        error: "ليس لديك صلاحية إدخال الأسعار يدويًا. يرجى استخدام التعرفة المعتمدة أو طلب تفويض من مدير العمليات.",
+        code: "PRICING_PERMISSION_DENIED",
+      });
+    }
+
+    resolvedPrice = numPrice;
+    const isManager = ["SUPER_ADMIN", "OPERATIONS_MANAGER", "GENERAL_MANAGER"].includes(req.user?.role || "");
+
+    if (isManager) {
+      priceStatus = "APPROVED";
+      priceApprovalRequired = false;
+    } else {
+      // Regional representative entering custom price requires Operations Manager approval
+      priceStatus = "PENDING_APPROVAL";
+      priceApprovalRequired = true;
+      customPriceRequested = numPrice;
+    }
+  } else if (quote.available && quote.tariff) {
     resolvedPrice = quote.price!;
     resolvedTariffId = quote.tariff.id;
     resolvedCurrency = quote.tariff.currency;
     priceStatus = "TARIFF";
   } else {
-    // Explicit price only accepted when it is backed by a real tariff record.
     const explicitTariff = tariffId ? db.tariffs.get(String(tariffId)) : undefined;
     if (explicitTariff && explicitTariff.status === "ACTIVE") {
       resolvedPrice = explicitTariff.price;
@@ -553,6 +597,24 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
       priceStatus = distance.resolvable ? "PENDING_QUOTE" : "UNPRICED";
     }
   }
+
+  const nowIso = new Date().toISOString();
+  const initialPriceHistory = (priceStatus === "PENDING_APPROVAL" || priceStatus === "APPROVED")
+    ? [
+        {
+          id: `ph-${Date.now()}`,
+          oldPrice: 0,
+          newPrice: resolvedPrice,
+          currency: resolvedCurrency,
+          reason: notes || (priceStatus === "APPROVED" ? "سعر معتمد من الإدارة" : "طلب اعتماد سعر مخصص مدخل من الممثل"),
+          actorId: req.user?.userId || "system",
+          actorName: req.user?.fullName || "المستخدم",
+          actorRole: req.user?.role || "REPRESENTATIVE",
+          status: (priceStatus === "APPROVED" ? "APPROVED" : "REQUESTED") as "APPROVED" | "REQUESTED",
+          timestamp: nowIso,
+        },
+      ]
+    : [];
 
   const newTrip: TripEntity = {
     id: tripId,
@@ -578,16 +640,25 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     currentLng: 46.6753,
     currentSpeed: 0,
     currentHeading: 0,
-    departureTime: new Date().toISOString(),
+    departureTime: nowIso,
     estimatedArrival: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
     tripPrice: resolvedPrice,
     currency: resolvedCurrency,
     priceStatus,
+    priceApprovalRequired,
+    customPriceRequested,
+    priceApprovedBy: priceStatus === "APPROVED" ? req.user?.userId : undefined,
+    priceApprovedByName: priceStatus === "APPROVED" ? req.user?.fullName : undefined,
+    priceApprovedAt: priceStatus === "APPROVED" ? nowIso : undefined,
+    priceHistory: initialPriceHistory,
     tariffId: resolvedTariffId,
     distanceKm: quote.distanceKm ?? distance.distanceKm,
     createdBy: req.user?.userId || "system",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdByName: req.user?.fullName || "مستخدم النظام",
+    creatorRole: req.user?.role || "REPRESENTATIVE",
+    region: resolvedRegion,
+    createdAt: nowIso,
+    updatedAt: nowIso,
   };
 
   db.trips.set(tripId, newTrip);
@@ -608,11 +679,21 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     actorName: req.user?.fullName,
     actorRole: req.user?.role,
     notes:
-      priceStatus === "TARIFF"
-        ? `تم إنشاء الشحنة وحجز الرقم الموحد ${tripNumber} — السعر ${resolvedPrice} ${resolvedCurrency} من التعرفة المعتمدة (${resolvedTariffId})`
-        : `تم إنشاء الشحنة وحجز الرقم الموحد ${tripNumber} — لا توجد تعرفة مطابقة حاليًا والرحلة بانتظار عرض سعر من الشركة`,
-    metadata: { tripPrice: resolvedPrice, currency: resolvedCurrency, priceStatus, tariffId: resolvedTariffId, distanceKm: newTrip.distanceKm },
-    timestamp: new Date().toISOString(),
+      priceStatus === "PENDING_APPROVAL"
+        ? `تم إنشاء الشحنة وحجز الرقم ${tripNumber} بانتظار اعتماد السعر ${resolvedPrice} ${resolvedCurrency} من مدير العمليات (${resolvedRegion})`
+        : priceStatus === "TARIFF"
+          ? `تم إنشاء الشحنة وحجز الرقم الموحد ${tripNumber} — السعر ${resolvedPrice} ${resolvedCurrency} من التعرفة المعتمدة (${resolvedTariffId})`
+          : `تم إنشاء الشحنة وحجز الرقم الموحد ${tripNumber} — لا توجد تعرفة مطابقة والرحلة بانتظار عرض سعر من الشركة`,
+    metadata: {
+      tripPrice: resolvedPrice,
+      currency: resolvedCurrency,
+      priceStatus,
+      priceApprovalRequired,
+      tariffId: resolvedTariffId,
+      region: resolvedRegion,
+      distanceKm: newTrip.distanceKm,
+    },
+    timestamp: nowIso,
   };
   db.tripEvents.push(createEvent);
 
@@ -624,26 +705,49 @@ router.post("/", authenticate, requirePermission("trips.create"), (req: Authenti
     entity: "trips",
     entityId: tripId,
     tripId,
-    newValues: { tripNumber, originCity, destinationCity, cargoType, cargoWeightTons },
+    newValues: {
+      tripNumber,
+      originCity,
+      destinationCity,
+      cargoType,
+      cargoWeightTons,
+      tripPrice: resolvedPrice,
+      priceStatus,
+      region: resolvedRegion,
+      createdBy: req.user?.userId,
+    },
   });
 
-  dispatchNotification({
-    targetRole: "OPERATIONS_MANAGER",
-    titleAr: "شحنة جديدة بانتظار الاعتماد",
-    titleEn: "New Shipment Awaiting Approval",
-    messageAr:
-      priceStatus === "TARIFF"
-        ? `طلب نقل جديد ${tripNumber}: ${originCity} ← ${destinationCity} · السعر المعتمد ${resolvedPrice} ${resolvedCurrency} من التعرفة`
-        : `طلب نقل جديد ${tripNumber}: ${originCity} ← ${destinationCity} · لا توجد تعرفة مطابقة — يتطلب عرض سعر`,
-    messageEn: `New trip order ${tripNumber} created from ${originCity} to ${destinationCity}`,
-    type: "INFO",
-    entityType: "trip",
-    entityId: tripId,
-    tripId,
-  });
+  if (priceStatus === "PENDING_APPROVAL") {
+    dispatchNotification({
+      targetRole: "OPERATIONS_MANAGER",
+      titleAr: `طلب اعتماد سعر جديد للرحلة ${tripNumber}`,
+      titleEn: `Price Approval Request for Trip ${tripNumber}`,
+      messageAr: `قام الممثل ${req.user?.fullName || ""} (${resolvedRegion}) بإدخال سعر مقترح ${resolvedPrice} ${resolvedCurrency} للرحلة ${tripNumber} بانتظار اعتمادكم.`,
+      messageEn: `Representative ${req.user?.fullName || ""} requested custom price ${resolvedPrice} ${resolvedCurrency} for trip ${tripNumber}`,
+      type: "WARNING",
+      entityType: "trip",
+      entityId: tripId,
+      tripId,
+    });
+  } else {
+    dispatchNotification({
+      targetRole: "OPERATIONS_MANAGER",
+      titleAr: "شحنة جديدة في النظام",
+      titleEn: "New Shipment Registered",
+      messageAr: `طلب نقل جديد ${tripNumber}: ${originCity} ← ${destinationCity} (${resolvedRegion})`,
+      messageEn: `New trip order ${tripNumber} created from ${originCity} to ${destinationCity}`,
+      type: "INFO",
+      entityType: "trip",
+      entityId: tripId,
+      tripId,
+    });
+  }
 
   return res.status(201).json({
-    message: "Trip created successfully",
+    message: priceStatus === "PENDING_APPROVAL"
+      ? "تم إنشاء الرحلة بنجاح وإرسال السعر لمدير العمليات للاعتماد"
+      : "تم إنشاء الرحلة بنجاح",
     trip: newTrip,
   });
 });
@@ -759,6 +863,261 @@ router.post("/:id/price", authenticate, requirePermission("tariffs.manage", "fin
     financial: financial ? serializeFinancials(financial) : null,
   });
 });
+
+/**
+ * POST /api/trips/:id/approve-price — Operations Manager approves custom trip price.
+ */
+router.post(
+  "/:id/approve-price",
+  authenticate,
+  requireRole("OPERATIONS_MANAGER", "SUPER_ADMIN", "GENERAL_MANAGER"),
+  (req: AuthenticatedRequest, res: Response) => {
+    const trip = db.trips.get(String(req.params.id));
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+
+    const { approvedPrice, notes } = req.body || {};
+    const previousPrice = trip.tripPrice;
+    const finalPrice =
+      approvedPrice !== undefined && Number.isFinite(Number(approvedPrice))
+        ? Number(approvedPrice)
+        : trip.customPriceRequested || trip.tripPrice;
+
+    trip.tripPrice = finalPrice;
+    trip.priceStatus = "APPROVED";
+    trip.priceApprovalRequired = false;
+    trip.priceApprovedBy = req.user?.userId;
+    trip.priceApprovedByName = req.user?.fullName;
+    trip.priceApprovedAt = new Date().toISOString();
+    trip.priceApprovalNotes = notes || "تم اعتماد السعر من قبل مدير العمليات";
+    trip.updatedAt = new Date().toISOString();
+
+    const historyRecord = {
+      id: `ph-${Date.now()}`,
+      oldPrice: previousPrice,
+      newPrice: finalPrice,
+      currency: trip.currency || "SAR",
+      reason: notes || "تم اعتماد السعر رسمياً من قبل مدير العمليات",
+      actorId: req.user?.userId || "system",
+      actorName: req.user?.fullName || "مدير العمليات",
+      actorRole: req.user?.role || "OPERATIONS_MANAGER",
+      status: "APPROVED" as const,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (!trip.priceHistory) trip.priceHistory = [];
+    trip.priceHistory.push(historyRecord);
+
+    const financial = repriceTripFinancials(trip.id, finalPrice, {
+      currency: trip.currency || "SAR",
+      priceStatus: "APPROVED",
+    });
+
+    db.tripEvents.push({
+      id: `ev-${Date.now()}-price-approved`,
+      tripId: trip.id,
+      eventType: "TRIP_PRICE_APPROVED",
+      fromStatus: trip.status,
+      toStatus: trip.status,
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      notes: `تم اعتماد سعر الرحلة: ${finalPrice} ${trip.currency || "SAR"}. ملاحظات: ${notes || "لا توجد"}`,
+      metadata: { previousPrice, approvedPrice: finalPrice },
+      timestamp: new Date().toISOString(),
+    });
+
+    logAuditEvent({
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      action: "TRIP_PRICE_APPROVED",
+      entity: "trips",
+      entityId: trip.id,
+      tripId: trip.id,
+      oldValues: { tripPrice: previousPrice, priceStatus: "PENDING_APPROVAL" },
+      newValues: { tripPrice: finalPrice, priceStatus: "APPROVED", approvedBy: req.user?.fullName },
+      reason: notes,
+    });
+
+    if (trip.createdBy) {
+      dispatchNotification({
+        userId: trip.createdBy,
+        titleAr: `تم اعتماد سعر الرحلة ${trip.tripNumber}`,
+        titleEn: `Price Approved for Trip ${trip.tripNumber}`,
+        messageAr: `اعتمد مدير العمليات (${req.user?.fullName}) سعر الرحلة ${trip.tripNumber} بقيمة ${finalPrice} ${trip.currency || "SAR"}.`,
+        messageEn: `Trip price ${finalPrice} SAR approved by operations manager for trip ${trip.tripNumber}`,
+        type: "SUCCESS",
+        entityType: "trip",
+        entityId: trip.id,
+        tripId: trip.id,
+      });
+    }
+
+    return res.json({
+      message: `تم اعتماد سعر الرحلة ${trip.tripNumber} بنجاح`,
+      trip,
+      financial: financial ? serializeFinancials(financial) : null,
+    });
+  }
+);
+
+/**
+ * POST /api/trips/:id/reject-price — Operations Manager rejects requested custom price.
+ */
+router.post(
+  "/:id/reject-price",
+  authenticate,
+  requireRole("OPERATIONS_MANAGER", "SUPER_ADMIN", "GENERAL_MANAGER"),
+  (req: AuthenticatedRequest, res: Response) => {
+    const trip = db.trips.get(String(req.params.id));
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+
+    const { reason } = req.body || {};
+    if (!reason || String(reason).trim().length < 3) {
+      return res.status(400).json({ error: "يجب تحديد سبب رفض السعر (على الأقل 3 أحرف)" });
+    }
+
+    const previousPrice = trip.tripPrice;
+    trip.priceStatus = "PENDING_QUOTE";
+    trip.priceApprovalRequired = false;
+    trip.priceApprovalNotes = `تم رفض السعر: ${reason}`;
+    trip.updatedAt = new Date().toISOString();
+
+    const historyRecord = {
+      id: `ph-${Date.now()}`,
+      oldPrice: previousPrice,
+      newPrice: trip.tripPrice,
+      currency: trip.currency || "SAR",
+      reason: `تم رفض السعر المقترح: ${reason}`,
+      actorId: req.user?.userId || "system",
+      actorName: req.user?.fullName || "مدير العمليات",
+      actorRole: req.user?.role || "OPERATIONS_MANAGER",
+      status: "REJECTED" as const,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (!trip.priceHistory) trip.priceHistory = [];
+    trip.priceHistory.push(historyRecord);
+
+    db.tripEvents.push({
+      id: `ev-${Date.now()}-price-rejected`,
+      tripId: trip.id,
+      eventType: "TRIP_PRICE_REJECTED",
+      fromStatus: trip.status,
+      toStatus: trip.status,
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      notes: `تم رفض السعر المقترح للرحلة من قبل الإدارة. السبب: ${reason}`,
+      metadata: { previousPrice, reason },
+      timestamp: new Date().toISOString(),
+    });
+
+    logAuditEvent({
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      action: "TRIP_PRICE_REJECTED",
+      entity: "trips",
+      entityId: trip.id,
+      tripId: trip.id,
+      oldValues: { tripPrice: previousPrice, priceStatus: "PENDING_APPROVAL" },
+      newValues: { priceStatus: "PENDING_QUOTE", reason },
+      reason,
+    });
+
+    if (trip.createdBy) {
+      dispatchNotification({
+        userId: trip.createdBy,
+        titleAr: `تم رفض السعر المقترح للرحلة ${trip.tripNumber}`,
+        titleEn: `Price Rejected for Trip ${trip.tripNumber}`,
+        messageAr: `تم رفض السعر المقترح للرحلة ${trip.tripNumber}. السبب: ${reason}`,
+        messageEn: `Custom price proposal for trip ${trip.tripNumber} was rejected: ${reason}`,
+        type: "WARNING",
+        entityType: "trip",
+        entityId: trip.id,
+        tripId: trip.id,
+      });
+    }
+
+    return res.json({
+      message: `تم رفض السعر المقترح وإعادة الرحلة لحالة بانتظار عرض سعر`,
+      trip,
+    });
+  }
+);
+
+/**
+ * POST /api/trips/:id/reassign — Reassign driver and/or vehicle with operational audit.
+ */
+router.post(
+  "/:id/reassign",
+  authenticate,
+  requirePermission("trips.assign"),
+  (req: AuthenticatedRequest, res: Response) => {
+    const trip = db.trips.get(String(req.params.id));
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+
+    const { driverId, vehicleId, reason } = req.body || {};
+    if (!driverId && !vehicleId) {
+      return res.status(400).json({ error: "الرجاء تحديد السائق أو الشاحنة المطلوب إعادة تعيينهما" });
+    }
+
+    const oldValues = {
+      driverId: trip.driverId,
+      driverName: trip.driverName,
+      vehicleId: trip.vehicleId,
+    };
+
+    if (driverId) {
+      const d = db.drivers.get(driverId);
+      if (!d) return res.status(404).json({ error: "السائق غير موجود في النظام" });
+      trip.driverId = d.id;
+      trip.driverName = d.fullName;
+      trip.driverPhone = d.phone;
+    }
+
+    if (vehicleId) {
+      const v = db.vehicles.get(vehicleId);
+      if (!v) return res.status(404).json({ error: "الشاحنة غير موجودة في النظام" });
+      trip.vehicleId = v.id;
+    }
+
+    trip.updatedAt = new Date().toISOString();
+
+    db.tripEvents.push({
+      id: `ev-${Date.now()}-reassigned`,
+      tripId: trip.id,
+      eventType: "TRIP_REASSIGNED",
+      fromStatus: trip.status,
+      toStatus: trip.status,
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      notes: `تمت إعادة تعيين ${driverId ? `السائق (${trip.driverName}) ` : ""}${vehicleId ? `والشاحنة (${trip.vehicleId})` : ""}. المبرر: ${reason || "تعديل تشغيلي"}`,
+      metadata: { oldValues, newValues: { driverId: trip.driverId, vehicleId: trip.vehicleId }, reason },
+      timestamp: new Date().toISOString(),
+    });
+
+    logAuditEvent({
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      action: "TRIP_REASSIGNED",
+      entity: "trips",
+      entityId: trip.id,
+      tripId: trip.id,
+      oldValues,
+      newValues: { driverId: trip.driverId, driverName: trip.driverName, vehicleId: trip.vehicleId },
+      reason,
+    });
+
+    return res.json({
+      message: "تمت إعادة تعيين الرحلة وتوثيق التغيير بنجاح",
+      trip,
+    });
+  }
+);
 
 router.post("/:id/transition", authenticate, requirePermission("trips.transition"), (req: AuthenticatedRequest, res: Response) => {
   const trip = db.trips.get(String(req.params.id));
@@ -924,9 +1283,10 @@ router.post("/:id/reopen", authenticate, requirePermission("trips.reopen"), (req
     return res.status(400).json({ error: "Reopening requires a clear operational justification" });
   }
 
-  const allowedRoles = ["SUPER_ADMIN", "GENERAL_MANAGER"];
-  if (!allowedRoles.includes(req.user?.role || "")) {
-    return res.status(403).json({ error: "Access denied. Only Super Admin or General Manager can reopen cancelled trips." });
+  const allowedRoles = ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"];
+  const hasReopenPerm = hasPermission(req.user?.role, "trips.reopen", req.user?.permissions, req.user?.userId);
+  if (!allowedRoles.includes(req.user?.role || "") && !hasReopenPerm) {
+    return res.status(403).json({ error: "Access denied. Only Operations Manager or authorized users can reopen cancelled trips." });
   }
 
   trip.status = "REOPENED";

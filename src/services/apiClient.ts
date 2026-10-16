@@ -203,6 +203,42 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+    approvePrice: (tripId: string, payload?: { approvedPrice?: number; notes?: string }) =>
+      request<any>(`/api/trips/${tripId}/approve-price`, {
+        method: "POST",
+        body: JSON.stringify(payload || {}),
+      }),
+    rejectPrice: (tripId: string, reason: string) =>
+      request<any>(`/api/trips/${tripId}/reject-price`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    reassign: (tripId: string, payload: { driverId?: string; vehicleId?: string; reason?: string }) =>
+      request<any>(`/api/trips/${tripId}/reassign`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  },
+  representatives: {
+    getAll: () => request<{ total: number; regions: string[]; representatives: any[] }>("/api/representatives"),
+    getById: (id: string) => request<any>(`/api/representatives/${id}`),
+    create: (data: any) =>
+      request<any>("/api/representatives", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: any) =>
+      request<any>(`/api/representatives/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    setStatus: (id: string, enabled: boolean, reason?: string) =>
+      request<any>(`/api/representatives/${id}/status`, {
+        method: "POST",
+        body: JSON.stringify({ enabled, reason }),
+      }),
+    getTrips: (id: string) => request<{ total: number; representativeId: string; representativeName: string; region: string; trips: any[] }>(`/api/representatives/${id}/trips`),
+    getAudit: (id: string) => request<{ total: number; representativeId: string; audit: any[] }>(`/api/representatives/${id}/audit`),
   },
   vehicles: {
     getAll: (params?: Record<string, string>) => {

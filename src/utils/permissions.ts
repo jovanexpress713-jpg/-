@@ -81,6 +81,9 @@ export type Capability =
   | "customers.manage"
   | "tariffs.view"
   | "tariffs.manage"
+  | "tariffs.create"
+  | "tariffs.request"
+  | "tariffs.approve"
   | "registrations.view"
   | "registrations.review"
   | "finance.view"
@@ -284,7 +287,7 @@ export const DEFAULT_CLIENT_PERMISSIONS: Record<string, string[]> = {
     "overview.view",
     "trips.view", "trips.create", "trips.edit", "trips.assign", "trips.transition",
     "trips.cancel", "trips.approve", "trips.reject", "trips.track", "trips.request", "trips.export", "trips.print",
-    "tariffs.view", "tariffs.manage",
+    "tariffs.view", "tariffs.manage", "tariffs.create", "tariffs.request", "tariffs.approve",
     "claims.view", "claims.manage",
     "customers.view", "customers.create", "customers.edit", "customers.manage",
     "notifications.view", "pod.view", "pod.create", "pod.verify",

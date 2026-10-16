@@ -20,6 +20,8 @@ export interface UserEntity {
   role: string;
   driverId?: string;
   customerId?: string;
+  /** Regional assignment for regional representatives (one of the 5 Saudi regions). */
+  region?: string;
   isActive: boolean;
   createdAt: string;
   /** Registration request this account came from (driver/customer onboarding). */
@@ -110,8 +112,16 @@ export interface TripEntity {
   tripPrice: number;
   /** Currency of the trip price (defaults to SAR). */
   currency?: string;
-  /** How the price was resolved: tariff match, awaiting a company quote, or unpriced. */
-  priceStatus?: "TARIFF" | "PENDING_QUOTE" | "UNPRICED";
+  /** How the price was resolved: tariff match, awaiting quote, awaiting approval, or approved. */
+  priceStatus?: "TARIFF" | "PENDING_QUOTE" | "PENDING_APPROVAL" | "APPROVED" | "UNPRICED";
+  priceApprovalRequired?: boolean;
+  priceApprovedBy?: string;
+  priceApprovedByName?: string;
+  priceApprovedAt?: string;
+  priceRejectionReason?: string;
+  priceNotes?: string;
+  /** Region associated with the trip or creator's operational scope. */
+  region?: string;
   /** Tariff the price came from (Phase 1 pricing engine). */
   tariffId?: string;
   /** System-computed road distance for the corridor (km). */
@@ -145,6 +155,12 @@ export interface TripEntity {
   cancellationReason?: string;
   reopeningReason?: string;
   createdBy: string;
+  createdByName?: string;
+  createdByRole?: string;
+  createdByRegion?: string;
+  updatedBy?: string;
+  updatedByName?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -250,6 +266,12 @@ class InMemoryDatabase {
       { id: "u-driver2", email: "salem.driver@ejaz.sa", fullName: "سالم المري (سائق)", phone: "+966552345678", role: "DRIVER", driverId: "d2", passwordHash: driverHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
       { id: "u-client", email: "client@ejaz.sa", fullName: "شركة سدافكو للأغذية والمشروبات (عميل)", phone: "+966112223344", role: "CUSTOMER", customerId: "cust-1", passwordHash: clientHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
       { id: "u-client-sadafco", email: "logistics@sadafco.com", fullName: "سدافكو اللوجستية (عميل)", phone: "+966112223344", role: "CUSTOMER", customerId: "cust-1", passwordHash: clientHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      // 5 Official Regional Representatives
+      { id: "u-rep-north", email: "rep.north@ejaz.sa", fullName: "ممثّل المنطقة الشمالية (تبوك والجوف)", phone: "+966551001122", role: "REPRESENTATIVE", region: "المنطقة الشمالية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      { id: "u-rep-east", email: "rep.east@ejaz.sa", fullName: "ممثّل المنطقة الشرقية (الدمام والجبيل)", phone: "+966552002233", role: "REPRESENTATIVE", region: "المنطقة الشرقية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      { id: "u-rep-west", email: "rep.west@ejaz.sa", fullName: "ممثّل المنطقة الغربية (جدة ومكة والمدينة)", phone: "+966553003344", role: "REPRESENTATIVE", region: "المنطقة الغربية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      { id: "u-rep-south", email: "rep.south@ejaz.sa", fullName: "ممثّل المنطقة الجنوبية (أبها وجازان)", phone: "+966554004455", role: "REPRESENTATIVE", region: "المنطقة الجنوبية", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
+      { id: "u-rep-central", email: "rep.central@ejaz.sa", fullName: "ممثّل المنطقة الوسطى (الرياض والقصيم)", phone: "+966555005566", role: "REPRESENTATIVE", region: "المنطقة الوسطى", passwordHash: adminHash, isActive: true, createdAt: "2026-01-01T00:00:00Z" },
     ];
     seedUsers.forEach((u) => this.users.set(u.id, u));
 

@@ -29,6 +29,7 @@ import { AlertsCenter } from "./AlertsCenter";
 import { BrandingSettings } from "./BrandingSettings";
 import { FinanceCenter } from "./FinanceCenter";
 import { RolePermissionsManager } from "./RolePermissionsManager";
+import { RegionalRepresentativesManager } from "./RegionalRepresentativesManager";
 import { useToast } from "./Toast";
 import { usePermissions } from "../state/permissionStore";
 import { NAV_PAGES, NAV_ALIASES } from "../utils/permissions";
@@ -43,6 +44,7 @@ export const SECTION_KEYS: Record<string, { title: I18nKey; hint?: I18nKey }> = 
   trips: { title: "nav.trips", hint: "nav.operations" },
   shipments: { title: "nav.shipments", hint: "nav.operations" },
   tariffs: { title: "nav.tariffs", hint: "nav.tariffsHint" },
+  representatives: { title: "nav.representatives", hint: "nav.representativesHint" },
   fleet: { title: "nav.fleet", hint: "nav.fleetGroup" },
   "vehicle-assets": { title: "nav.vehicleAssets", hint: "nav.fleetGroup" },
   drivers: { title: "nav.drivers", hint: "nav.fleetGroup" },
@@ -339,6 +341,8 @@ export function WebConsole({
             />
           ) : nav === "tariffs" ? (
             <TariffsManager />
+          ) : nav === "representatives" ? (
+            <RegionalRepresentativesManager />
           ) : nav === "fleet" || nav === "trucks" || nav === "repair" ? (
             <FleetManager
               onOpenLiveTracking={(tripId) => {

@@ -49,6 +49,8 @@ export const MESSAGES = {
   "nav.registrations": { ar: "طلبات التسجيل", en: "Registration Requests", ur: "رجسٹریشن درخواستیں" },
   "nav.tariffs": { ar: "قائمة الأسعار والتعرفة", en: "Pricing & Tariffs", ur: "قیمتوں کی فہرست" },
   "nav.tariffsHint": { ar: "إدارة تعرفة النقل ديناميكيًا", en: "Manage dynamic freight tariffs", ur: "متحرک کرایہ فہرست کا انتظام" },
+  "nav.representatives": { ar: "ممثلو المناطق", en: "Regional Representatives", ur: "علاقائی نمائندے" },
+  "nav.representativesHint": { ar: "إدارة حسابات وصلاحيات ممثلي المناطق الخمس", en: "Manage 5 regional representatives and permissions", ur: "پانچوں خطوں کے نمائندوں کا انتظام" },
   "nav.insights": { ar: "التحليلات", en: "Insights", ur: "تجزیات" },
   "nav.reports": { ar: "التقارير والتدقيق", en: "Reports & Audit", ur: "رپورٹس اور آڈٹ" },
   "nav.analysis": { ar: "التحليلات التشغيلية", en: "Fleet Analytics", ur: "فلیٹ تجزیات" },

@@ -20,6 +20,7 @@ import {
   IconDoc,
   IconTag,
   IconChevron,
+  IconProfile,
 } from "./Icons";
 import type { RequestKind } from "../data/types";
 import { usePermissions } from "../state/permissionStore";
@@ -89,6 +90,8 @@ export function Sidebar({
         return can("branding.manage");
       case "permissions":
         return can("permissions.manage");
+      case "representatives":
+        return pageVisible("representatives") || can("trips.create") || can("trips.edit") || can("trips.manage");
       case "finance":
         return pageVisible("finance") || can("finance.view") || can("invoices.view") || can("settlements.view");
       default:

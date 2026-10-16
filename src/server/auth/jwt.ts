@@ -9,6 +9,7 @@ export interface TokenPayload {
   role: string;
   driverId?: string;
   customerId?: string;
+  region?: string;
   permissions?: string[];
   registrationId?: string;
   registrationStatus?: string;

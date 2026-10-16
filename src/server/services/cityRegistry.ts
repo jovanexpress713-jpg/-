@@ -18,35 +18,46 @@ export interface CityRecord {
   aliases: string[];
   lat: number;
   lng: number;
+  region?: string;
 }
+
+export const SAUDI_REGIONS = [
+  "المنطقة الشمالية",
+  "المنطقة الشرقية",
+  "المنطقة الغربية",
+  "المنطقة الجنوبية",
+  "المنطقة الوسطى",
+] as const;
+
+export type SaudiRegion = (typeof SAUDI_REGIONS)[number];
 
 export const ROAD_FACTOR = 1.12;
 
 export const KSA_CITIES: CityRecord[] = [
-  { id: "riyadh", ar: "الرياض", en: "Riyadh", aliases: ["الرياض", "رياض"], lat: 24.7136, lng: 46.6753 },
-  { id: "jeddah", ar: "جدة", en: "Jeddah", aliases: ["جده", "جدة"], lat: 21.4858, lng: 39.1925 },
-  { id: "makkah", ar: "مكة المكرمة", en: "Makkah", aliases: ["مكة", "مكه المكرمة", "مكه", "mecca"], lat: 21.3891, lng: 39.8579 },
-  { id: "madinah", ar: "المدينة المنورة", en: "Madinah", aliases: ["المدينة", "المدينه المنورة", "المدينه", "مدينة رسول الله", "medina"], lat: 24.5247, lng: 39.6125 },
-  { id: "dammam", ar: "الدمام", en: "Dammam", aliases: ["دمام"], lat: 26.4207, lng: 50.0888 },
-  { id: "khobar", ar: "الخبر", en: "Khobar", aliases: ["خبر", "العزيزية"], lat: 26.2172, lng: 50.1971 },
-  { id: "dhahran", ar: "الظهران", en: "Dhahran", aliases: ["ظهران"], lat: 26.2361, lng: 50.0393 },
-  { id: "jubail", ar: "الجبيل", en: "Jubail", aliases: ["الجبيل الصناعية", "الجبيل الصناعيه", "جبيل"], lat: 27.0046, lng: 50.1029 },
-  { id: "khobar-ahsa", ar: "الهفوف", en: "Hofuf", aliases: ["هفوف", "الأحساء", "الاحساء", "المبرز"], lat: 25.3833, lng: 49.5833 },
-  { id: "taif", ar: "الطائف", en: "Taif", aliases: ["طايف", "طائف"], lat: 21.2667, lng: 40.4167 },
-  { id: "buraydah", ar: "بريدة", en: "Buraydah", aliases: ["بريده", "القصيم", "قصيم"], lat: 26.3283, lng: 43.9667 },
-  { id: "hail", ar: "حائل", en: "Hail", aliases: ["هايل"], lat: 27.5167, lng: 41.7 },
-  { id: "tabuk", ar: "تبوك", en: "Tabuk", aliases: [], lat: 28.3835, lng: 36.5667 },
-  { id: "abha", ar: "أبها", en: "Abha", aliases: ["ابها", "أبها"], lat: 18.2167, lng: 42.5 },
-  { id: "khamis", ar: "خميس مشيط", en: "Khamis Mushait", aliases: ["خميس مشيط", "خميس"], lat: 18.3, lng: 42.7333 },
-  { id: "yanbu", ar: "ينبع", en: "Yanbu", aliases: ["ينبع الصناعية", "ينبع البحر"], lat: 24.0943, lng: 38.0636 },
-  { id: "jazan", ar: "جازان", en: "Jazan", aliases: ["جيزان", "جازان"], lat: 16.8892, lng: 42.5611 },
-  { id: "najran", ar: "نجران", en: "Najran", aliases: [], lat: 17.5713, lng: 44.2214 },
-  { id: "neom", ar: "نيوم", en: "NEOM", aliases: ["نيوم"], lat: 28.0, lng: 35.4 },
-  { id: "kharj", ar: "الخرج", en: "Kharj", aliases: ["خرج", "السيح"], lat: 24.1511, lng: 47.3076 },
-  { id: "qaisumah", ar: "القيصومة", en: "Qaisumah", aliases: ["قيصومة", "حفر الباطن", "حفر الباطن"], lat: 28.6753, lng: 48.2578 },
-  { id: "arar", ar: "عرعر", en: "Arar", aliases: ["عرعر"], lat: 30.9833, lng: 41.0167 },
-  { id: "sakaka", ar: "سكاكا", en: "Sakaka", aliases: ["سكاكا", "الجوف"], lat: 29.9697, lng: 40.2064 },
-  { id: "baha", ar: "الباحة", en: "Al Baha", aliases: ["باحة", "الباحة"], lat: 20.0128, lng: 41.4677 },
+  { id: "riyadh", ar: "الرياض", en: "Riyadh", aliases: ["الرياض", "رياض"], lat: 24.7136, lng: 46.6753, region: "المنطقة الوسطى" },
+  { id: "jeddah", ar: "جدة", en: "Jeddah", aliases: ["جده", "جدة"], lat: 21.4858, lng: 39.1925, region: "المنطقة الغربية" },
+  { id: "makkah", ar: "مكة المكرمة", en: "Makkah", aliases: ["مكة", "مكه المكرمة", "مكه", "mecca"], lat: 21.3891, lng: 39.8579, region: "المنطقة الغربية" },
+  { id: "madinah", ar: "المدينة المنورة", en: "Madinah", aliases: ["المدينة", "المدينه المنورة", "المدينه", "مدينة رسول الله", "medina"], lat: 24.5247, lng: 39.6125, region: "المنطقة الغربية" },
+  { id: "dammam", ar: "الدمام", en: "Dammam", aliases: ["دمام"], lat: 26.4207, lng: 50.0888, region: "المنطقة الشرقية" },
+  { id: "khobar", ar: "الخبر", en: "Khobar", aliases: ["خبر", "العزيزية"], lat: 26.2172, lng: 50.1971, region: "المنطقة الشرقية" },
+  { id: "dhahran", ar: "الظهران", en: "Dhahran", aliases: ["ظهران"], lat: 26.2361, lng: 50.0393, region: "المنطقة الشرقية" },
+  { id: "jubail", ar: "الجبيل", en: "Jubail", aliases: ["الجبيل الصناعية", "الجبيل الصناعيه", "جبيل"], lat: 27.0046, lng: 50.1029, region: "المنطقة الشرقية" },
+  { id: "khobar-ahsa", ar: "الهفوف", en: "Hofuf", aliases: ["هفوف", "الأحساء", "الاحساء", "المبرز"], lat: 25.3833, lng: 49.5833, region: "المنطقة الشرقية" },
+  { id: "taif", ar: "الطائف", en: "Taif", aliases: ["طايف", "طائف"], lat: 21.2667, lng: 40.4167, region: "المنطقة الغربية" },
+  { id: "buraydah", ar: "بريدة", en: "Buraydah", aliases: ["بريده", "القصيم", "قصيم"], lat: 26.3283, lng: 43.9667, region: "المنطقة الوسطى" },
+  { id: "hail", ar: "حائل", en: "Hail", aliases: ["هايل"], lat: 27.5167, lng: 41.7, region: "المنطقة الشمالية" },
+  { id: "tabuk", ar: "تبوك", en: "Tabuk", aliases: [], lat: 28.3835, lng: 36.5667, region: "المنطقة الشمالية" },
+  { id: "abha", ar: "أبها", en: "Abha", aliases: ["ابها", "أبها"], lat: 18.2167, lng: 42.5, region: "المنطقة الجنوبية" },
+  { id: "khamis", ar: "خميس مشيط", en: "Khamis Mushait", aliases: ["خميس مشيط", "خميس"], lat: 18.3, lng: 42.7333, region: "المنطقة الجنوبية" },
+  { id: "yanbu", ar: "ينبع", en: "Yanbu", aliases: ["ينبع الصناعية", "ينبع البحر"], lat: 24.0943, lng: 38.0636, region: "المنطقة الغربية" },
+  { id: "jazan", ar: "جازان", en: "Jazan", aliases: ["جيزان", "جازان"], lat: 16.8892, lng: 42.5611, region: "المنطقة الجنوبية" },
+  { id: "najran", ar: "نجران", en: "Najran", aliases: [], lat: 17.5713, lng: 44.2214, region: "المنطقة الجنوبية" },
+  { id: "neom", ar: "نيوم", en: "NEOM", aliases: ["نيوم"], lat: 28.0, lng: 35.4, region: "المنطقة الشمالية" },
+  { id: "kharj", ar: "الخرج", en: "Kharj", aliases: ["خرج", "السيح"], lat: 24.1511, lng: 47.3076, region: "المنطقة الوسطى" },
+  { id: "qaisumah", ar: "القيصومة", en: "Qaisumah", aliases: ["قيصومة", "حفر الباطن", "حفر الباطن"], lat: 28.6753, lng: 48.2578, region: "المنطقة الشرقية" },
+  { id: "arar", ar: "عرعر", en: "Arar", aliases: ["عرعر"], lat: 30.9833, lng: 41.0167, region: "المنطقة الشمالية" },
+  { id: "sakaka", ar: "سكاكا", en: "Sakaka", aliases: ["سكاكا", "الجوف"], lat: 29.9697, lng: 40.2064, region: "المنطقة الشمالية" },
+  { id: "baha", ar: "الباحة", en: "Al Baha", aliases: ["باحة", "الباحة"], lat: 20.0128, lng: 41.4677, region: "المنطقة الجنوبية" },
 ];
 
 /** Normalizes Arabic/Latin city text for lossless matching. */
@@ -129,5 +140,48 @@ export function computeRoadDistance(origin: string, destination: string): Distan
 
 /** Cities exposed to the UI dropdowns (Arabic canonical + English twin). */
 export function listCities() {
-  return KSA_CITIES.map((c) => ({ id: c.id, ar: c.ar, en: c.en }));
+  return KSA_CITIES.map((c) => ({ id: c.id, ar: c.ar, en: c.en, region: c.region }));
 }
+
+/**
+ * Normalizes region strings to one of the 5 canonical Saudi regions.
+ */
+export function normalizeRegion(raw: string | null | undefined): SaudiRegion | null {
+  if (!raw) return null;
+  const cleaned = String(raw).trim();
+  if (SAUDI_REGIONS.includes(cleaned as SaudiRegion)) return cleaned as SaudiRegion;
+
+  const lower = cleaned.toLowerCase();
+  if (lower.includes("شمال") || lower.includes("north")) return "المنطقة الشمالية";
+  if (lower.includes("شرق") || lower.includes("east")) return "المنطقة الشرقية";
+  if (lower.includes("غرب") || lower.includes("west")) return "المنطقة الغربية";
+  if (lower.includes("جنوب") || lower.includes("south")) return "المنطقة الجنوبية";
+  if (lower.includes("وسط") || lower.includes("central")) return "المنطقة الوسطى";
+
+  return null;
+}
+
+export function getCityRegion(cityName: string | null | undefined): SaudiRegion | null {
+  const city = resolveCity(cityName);
+  if (city?.region) return city.region as SaudiRegion;
+  return null;
+}
+
+export function isTripInRegion(
+  trip: { originCity?: string; destinationCity?: string; region?: string },
+  targetRegion: string | null | undefined
+): boolean {
+  const canonical = normalizeRegion(targetRegion);
+  if (!canonical) return false;
+
+  if (trip.region && normalizeRegion(trip.region) === canonical) return true;
+
+  const originRegion = getCityRegion(trip.originCity);
+  if (originRegion === canonical) return true;
+
+  const destRegion = getCityRegion(trip.destinationCity);
+  if (destRegion === canonical) return true;
+
+  return false;
+}
+

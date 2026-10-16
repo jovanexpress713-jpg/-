@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyToken, type TokenPayload } from "./jwt";
 import { statusForUser } from "../services/registrationService";
+import { db } from "../db";
+import { isTripInRegion } from "../services/cityRegistry";
 import {
   DEFAULT_ROLE_PERMISSIONS,
   hasPermission as registryHasPermission,
@@ -44,6 +46,19 @@ export function authenticate(req: AuthenticatedRequest, res: Response, next: Nex
     return res.status(401).json({ error: "Invalid or expired session token", code: "TOKEN_EXPIRED" });
   }
 
+  // Authoritative database check: block deactivated accounts immediately
+  const userRecord = db.users.get(payload.userId);
+  if (userRecord && !userRecord.isActive) {
+    return res.status(403).json({ error: "Account is disabled. Contact system administrator.", code: "ACCOUNT_DISABLED" });
+  }
+
+  // Keep live metadata (region, role) synced so changes take effect immediately on subsequent requests
+  if (userRecord) {
+    payload.role = userRecord.role;
+    payload.region = userRecord.region || payload.region;
+    payload.fullName = userRecord.fullName || payload.fullName;
+  }
+
   req.user = payload;
   next();
 }
@@ -53,6 +68,15 @@ export function optionalAuthenticate(req: AuthenticatedRequest, _res: Response, 
   if (token) {
     const payload = verifyToken(token);
     if (payload) {
+      const userRecord = db.users.get(payload.userId);
+      if (userRecord && !userRecord.isActive) {
+        return next();
+      }
+      if (userRecord) {
+        payload.role = userRecord.role;
+        payload.region = userRecord.region || payload.region;
+        payload.fullName = userRecord.fullName || payload.fullName;
+      }
       req.user = payload;
     }
   }
@@ -192,10 +216,11 @@ export function canAccessTrip(
     createdBy?: string;
     originCity?: string;
     destinationCity?: string;
+    region?: string;
   }
 ): boolean {
   if (!user || !accountIsApproved(user)) return false;
-  if (user.role === "SUPER_ADMIN") return true;
+  if (user.role === "SUPER_ADMIN" || user.role === "GENERAL_MANAGER" || user.role === "OPERATIONS_MANAGER") return true;
 
   // Check explicit user-level customer/vehicle scope restrictions if configured
   const uo = user.userId ? getUserOverride(user.userId) : undefined;
@@ -223,10 +248,23 @@ export function canAccessTrip(
   }
 
   const scope: DataScope = getEffectiveDataScope({ userId: user.userId, role: user.role });
+
+  // Regional representative or REGION data scope: strict isolation to their region
+  if (user.role === "REPRESENTATIVE" || scope === "REGION") {
+    // Creator can always view what they created
+    if (trip.createdBy && trip.createdBy === user.userId) return true;
+
+    const userRecord = user.userId ? db.users.get(user.userId) : null;
+    const repRegion = userRecord?.region || user.region || (uo?.allowedRegions && uo.allowedRegions[0]);
+    if (repRegion) {
+      return isTripInRegion(trip, repRegion);
+    }
+    return !trip.createdBy || trip.createdBy === user.userId;
+  }
+
   if (scope === "OWN") {
     if (user.customerId && trip.customerId === user.customerId) return true;
     if (trip.createdBy && trip.createdBy === user.userId) return true;
-    // Broker / staff who haven't created any specific trip yet see trips if no createdBy restriction
     if (user.role === "BROKER") return true;
     return !trip.createdBy || trip.createdBy === user.userId;
   }
@@ -243,8 +281,7 @@ export function canAccessTrip(
     return uo.allowedBranches.some((b) => cities.includes(b));
   }
   if (scope === "REGION" && uo?.allowedRegions && uo.allowedRegions.length > 0) {
-    const cities = `${trip.originCity || ""} ${trip.destinationCity || ""}`;
-    return uo.allowedRegions.some((r) => cities.includes(r));
+    return uo.allowedRegions.some((r) => isTripInRegion(trip, r));
   }
 
   return true;

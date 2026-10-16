@@ -49,7 +49,7 @@ export const TRANSITION_MATRIX: TransitionRule[] = [
   { from: "PAID", to: "COMPLETED", allowedRoles: ["SUPER_ADMIN", "ACCOUNTANT", "GENERAL_MANAGER"] },
   { from: "COMPLETED", to: "ARCHIVED", allowedRoles: ["SUPER_ADMIN", "GENERAL_MANAGER"] },
   // Reopening
-  { from: "CANCELLED", to: "REOPENED", allowedRoles: ["SUPER_ADMIN", "GENERAL_MANAGER"], requiresReason: true },
+  { from: "CANCELLED", to: "REOPENED", allowedRoles: ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"], requiresReason: true },
   { from: "REOPENED", to: "PENDING_APPROVAL", allowedRoles: ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"] },
   { from: "REOPENED", to: "CONFIRMED", allowedRoles: ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"] },
 ];
@@ -78,9 +78,9 @@ export function validateTransition(
     if (!CANCELLABLE_STATES.includes(currentStatus)) {
       return { isValid: false, error: `Cannot cancel trip in status '${currentStatus}'. Trips already delivered or in settlement cannot be cancelled.` };
     }
-    const canCancel = ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"].includes(userRole);
+    const canCancel = ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER", "REPRESENTATIVE"].includes(userRole);
     if (!canCancel) {
-      return { isValid: false, error: "Only managers can cancel a trip." };
+      return { isValid: false, error: "Only managers or authorized representatives can cancel a trip." };
     }
     if (!reason || reason.trim().length < 5) {
       return { isValid: false, error: "Cancellation requires a valid reason (minimum 5 characters)." };
@@ -234,8 +234,8 @@ export function canCancelTrip(
   if (!CANCELLABLE_STATES.includes(currentStatus)) {
     return { allowed: false, reason: `Trips in '${currentStatus}' are already delivered or in settlement and cannot be cancelled.` };
   }
-  if (!["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"].includes(userRole)) {
-    return { allowed: false, reason: "Only managers can cancel a trip." };
+  if (!["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER", "REPRESENTATIVE"].includes(userRole)) {
+    return { allowed: false, reason: "Only managers or authorized representatives can cancel a trip." };
   }
   return { allowed: true };
 }

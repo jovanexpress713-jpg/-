@@ -91,6 +91,7 @@ router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
     role: user.role,
     driverId: user.driverId,
     customerId: user.customerId,
+    region: user.region,
     permissions,
     registrationId: access.registration?.request.id ?? user.registrationId,
     registrationStatus: access.registration?.status ?? user.registrationStatus,
@@ -115,6 +116,7 @@ router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
       fullName: user.fullName,
       phone: user.phone,
       role: user.role,
+      region: user.region,
       driverId: user.driverId,
       customerId: user.customerId,
       permissions,
@@ -135,8 +137,8 @@ router.get("/me", authenticate, (req: AuthenticatedRequest, res: Response) => {
   }
 
   const user = db.users.get(req.user.userId);
-  if (!user) {
-    return res.status(404).json({ error: "User record not found" });
+  if (!user || !user.isActive) {
+    return res.status(401).json({ error: "User record not found or account inactive", code: "ACCOUNT_INACTIVE" });
   }
 
   const access = resolveAccountAccess(user);
@@ -146,6 +148,7 @@ router.get("/me", authenticate, (req: AuthenticatedRequest, res: Response) => {
     fullName: user.fullName,
     phone: user.phone,
     role: user.role,
+    region: user.region,
     driverId: user.driverId,
     customerId: user.customerId,
     permissions: access.permissions,
