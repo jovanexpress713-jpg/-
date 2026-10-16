@@ -131,7 +131,7 @@ export function TripBars({ trips, selectedId, onSelect }: Props) {
               <div className="flex items-center gap-1.5 font-semibold text-text-primary">
                 <span>#{activeHoverTarget.tr.tripNumber}</span>
                 <span className="text-text-muted">·</span>
-                <span className="truncate text-text-secondary">{activeHoverTarget.tr.shipper} ➔ {activeHoverTarget.tr.destination}</span>
+                <span className="truncate text-text-secondary">{activeHoverTarget.tr.shipper} ➔ {activeHoverTarget.tr.destinationCity}</span>
               </div>
               <div className="text-text-muted">
                 {t("Status:", "الحالة:", "حالت:")}{" "}
@@ -257,7 +257,7 @@ export function TripBars({ trips, selectedId, onSelect }: Props) {
                   />
                   <span
                     className={cn(
-                      "truncate font-mono text-[11px] tabular-nums transition-colors",
+                      "truncate font-mono text-label tabular-nums transition-colors",
                       isSel ? "font-bold text-brand" : isHover ? "font-semibold text-text-primary" : "text-text-muted",
                     )}
                   >
