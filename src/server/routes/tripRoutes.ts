@@ -952,6 +952,76 @@ router.post("/:id/price", authenticate, requirePermission("tariffs.manage", "fin
 });
 
 /**
+ * POST /api/trips/:id/request-price — Representative requests custom trip price adjustment.
+ */
+router.post(
+  "/:id/request-price",
+  authenticate,
+  requirePermission("pricing.edit", "tariffs.request", "tariffs.create"),
+  (req: AuthenticatedRequest, res: Response) => {
+    const trip = db.trips.get(String(req.params.id));
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+    if (!canAccessTrip(req.user, trip)) {
+      return res.status(403).json({ error: "لا تملك صلاحية الوصول إلى هذه الرحلة", code: "TRIP_ACCESS_DENIED" });
+    }
+    const { price, reason } = req.body || {};
+    const newPrice = Number(price);
+    if (!Number.isFinite(newPrice) || newPrice <= 0) {
+      return res.status(400).json({ error: "الرجاء إدخال سعر صالح للرحلة" });
+    }
+    const oldPrice = trip.tripPrice;
+    trip.customPriceRequested = newPrice;
+    trip.priceStatus = "PENDING_APPROVAL";
+    trip.priceApprovalRequired = true;
+    (trip as any).priceRequestedBy = req.user?.userId;
+    (trip as any).priceRequestedByName = req.user?.fullName;
+    trip.updatedAt = new Date().toISOString();
+
+    const historyRecord = {
+      id: `ph-${Date.now()}`,
+      oldPrice,
+      newPrice,
+      currency: trip.currency || "SAR",
+      reason: reason || "طلب اعتماد تعديل السعر من الممثل الميداني",
+      actorId: req.user?.userId || "system",
+      actorName: req.user?.fullName || "الممثل",
+      actorRole: req.user?.role || "REPRESENTATIVE",
+      status: "REQUESTED" as const,
+      timestamp: new Date().toISOString(),
+    };
+    if (!trip.priceHistory) trip.priceHistory = [];
+    trip.priceHistory.push(historyRecord);
+
+    logAuditEvent({
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      action: "TRIP_PRICE_REQUESTED",
+      entity: "trips",
+      entityId: trip.id,
+      tripId: trip.id,
+      oldValues: { tripPrice: oldPrice },
+      newValues: { customPriceRequested: newPrice, reason },
+      reason,
+    });
+
+    dispatchNotification({
+      targetRole: "OPERATIONS_MANAGER",
+      titleAr: `طلب اعتماد سعر للرحلة ${trip.tripNumber}`,
+      titleEn: `Price Approval Request for Trip ${trip.tripNumber}`,
+      messageAr: `طلب ${req.user?.fullName} تعديل سعر الرحلة ${trip.tripNumber} إلى ${newPrice} ${trip.currency || "SAR"}. المبرر: ${reason || "تعديل ميداني"}`,
+      messageEn: `Price modification request for trip ${trip.tripNumber} to ${newPrice} SAR`,
+      type: "WARNING",
+      entityType: "trip",
+      entityId: trip.id,
+      tripId: trip.id,
+    });
+
+    return res.json({ message: "تم إرسال طلب اعتماد السعر بنجاح لمدير العمليات", trip });
+  }
+);
+
+/**
  * POST /api/trips/:id/approve-price — Operations Manager approves custom trip price.
  */
 router.post(
@@ -961,6 +1031,14 @@ router.post(
   (req: AuthenticatedRequest, res: Response) => {
     const trip = db.trips.get(String(req.params.id));
     if (!trip) return res.status(404).json({ error: "Trip not found" });
+
+    // Strict prohibition of self-approval (§1, §4, §5): cannot approve price entered or requested by oneself
+    if (req.user?.userId && (trip.createdBy === req.user.userId || (trip as any).priceRequestedBy === req.user.userId)) {
+      return res.status(403).json({
+        error: "يُمنع المندوب أو المستخدم منعاً باتاً من اعتماد السعر الذي قام بإدخاله أو طلبه بنفسه",
+        code: "SELF_APPROVAL_FORBIDDEN",
+      });
+    }
 
     const { approvedPrice, notes } = req.body || {};
     const previousPrice = trip.tripPrice;
@@ -1140,14 +1218,21 @@ router.post(
 router.post(
   "/:id/reassign",
   authenticate,
-  requirePermission("trips.assign"),
+  requirePermission("trips.reassign", "trips.assign"),
   (req: AuthenticatedRequest, res: Response) => {
     const trip = db.trips.get(String(req.params.id));
     if (!trip) return res.status(404).json({ error: "Trip not found" });
 
+    if (!canAccessTrip(req.user, trip)) {
+      return res.status(403).json({ error: "لا تملك صلاحية الوصول إلى هذه الرحلة", code: "TRIP_ACCESS_DENIED" });
+    }
+
     const { driverId, vehicleId, reason } = req.body || {};
     if (!driverId && !vehicleId) {
       return res.status(400).json({ error: "الرجاء تحديد السائق أو الشاحنة المطلوب إعادة تعيينهما" });
+    }
+    if (!reason || String(reason).trim().length < 3) {
+      return res.status(400).json({ error: "إعادة تعيين السائق أو الشاحنة تتطلب تسجيل السبب التشغيلي" });
     }
 
     const oldValues = {
@@ -1298,6 +1383,10 @@ router.post("/:id/cancel", authenticate, requirePermission("trips.cancel"), (req
     return res.status(404).json({ error: "Trip not found" });
   }
 
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "You are not authorized to cancel this trip", code: "TRIP_ACCESS_DENIED" });
+  }
+
   const { reason } = req.body;
   if (!reason || reason.trim().length < 5) {
     return res.status(400).json({ error: "Cancellation requires a detailed reason (minimum 5 characters)" });
@@ -1359,6 +1448,10 @@ router.post("/:id/reopen", authenticate, requirePermission("trips.reopen"), (req
   const trip = db.trips.get(tripId);
   if (!trip) {
     return res.status(404).json({ error: "Trip not found" });
+  }
+
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "You are not authorized to reopen this trip", code: "TRIP_ACCESS_DENIED" });
   }
 
   if (trip.status !== "CANCELLED") {
@@ -1483,6 +1576,10 @@ router.post("/:id/assign-driver", authenticate, requirePermission("trips.assign"
     return res.status(404).json({ error: "Trip not found" });
   }
 
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "لا تملك صلاحية الوصول إلى هذه الرحلة", code: "TRIP_ACCESS_DENIED" });
+  }
+
   const { driverId, additionalDriverId } = req.body;
   if (!driverId) {
     return res.status(400).json({ error: "driverId is required" });
@@ -1567,6 +1664,10 @@ router.post("/:id/replace-driver", authenticate, requirePermission("trips.assign
     return res.status(404).json({ error: "Trip not found" });
   }
 
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "لا تملك صلاحية الوصول إلى هذه الرحلة", code: "TRIP_ACCESS_DENIED" });
+  }
+
   const { newDriverId, reason } = req.body;
   if (!newDriverId || !reason || reason.trim().length < 4) {
     return res.status(400).json({ error: "newDriverId and a clear reason are required to replace driver" });
@@ -1647,6 +1748,10 @@ router.post("/:id/assign-vehicle", authenticate, requirePermission("trips.assign
     return res.status(404).json({ error: "Trip not found" });
   }
 
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "لا تملك صلاحية الوصول إلى هذه الرحلة", code: "TRIP_ACCESS_DENIED" });
+  }
+
   const { vehicleId } = req.body;
   if (!vehicleId) {
     return res.status(400).json({ error: "vehicleId is required" });
@@ -1699,6 +1804,10 @@ router.post("/:id/replace-vehicle", authenticate, requirePermission("trips.assig
   const trip = db.trips.get(tripId);
   if (!trip) {
     return res.status(404).json({ error: "Trip not found" });
+  }
+
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "لا تملك صلاحية الوصول إلى هذه الرحلة", code: "TRIP_ACCESS_DENIED" });
   }
 
   const { newVehicleId, reason } = req.body;
@@ -1778,6 +1887,10 @@ router.post("/:id/replace-assignment", authenticate, requirePermission("trips.as
   const trip = db.trips.get(tripId);
   if (!trip) {
     return res.status(404).json({ error: "Trip not found" });
+  }
+
+  if (!canAccessTrip(req.user, trip)) {
+    return res.status(403).json({ error: "لا تملك صلاحية الوصول إلى هذه الرحلة", code: "TRIP_ACCESS_DENIED" });
   }
 
   const { newDriverId, newVehicleId, reason, latitude, longitude } = req.body || {};
@@ -1881,5 +1994,107 @@ router.post("/:id/replace-assignment", authenticate, requirePermission("trips.as
     vehicleHistory: trip.vehicleHistory,
   });
 });
+
+/**
+ * POST /api/trips/:id/notes — Add operational notes to a trip without modifying historical records.
+ */
+router.post(
+  "/:id/notes",
+  authenticate,
+  requirePermission("trips.notes", "trips.edit"),
+  (req: AuthenticatedRequest, res: Response) => {
+    const trip = db.trips.get(String(req.params.id));
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+    if (!canAccessTrip(req.user, trip)) {
+      return res.status(403).json({ error: "لا تملك صلاحية الوصول إلى هذه الرحلة", code: "TRIP_ACCESS_DENIED" });
+    }
+    const { note } = req.body || {};
+    if (!note || !String(note).trim()) {
+      return res.status(400).json({ error: "الرجاء إدخال نص الملاحظة التشغيلية" });
+    }
+    const cleanNote = String(note).trim();
+    const nowIso = new Date().toISOString();
+
+    const formattedNote = `[${nowIso.slice(0, 16)} - ${req.user?.fullName || "مستخدم"}]: ${cleanNote}`;
+    trip.notes = trip.notes ? `${trip.notes}\n${formattedNote}` : formattedNote;
+    trip.updatedAt = nowIso;
+
+    db.tripEvents.push({
+      id: `ev-${Date.now()}-note`,
+      tripId: trip.id,
+      eventType: "OPERATIONAL_NOTE_ADDED",
+      fromStatus: trip.status,
+      toStatus: trip.status,
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      notes: formattedNote,
+      timestamp: nowIso,
+    });
+
+    logAuditEvent({
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      action: "TRIP_NOTE_ADDED",
+      entity: "trips",
+      entityId: trip.id,
+      tripId: trip.id,
+      newValues: { note: cleanNote },
+    });
+
+    return res.json({ message: "تمت إضافة الملاحظة التشغيلية بنجاح", trip });
+  }
+);
+
+/**
+ * DELETE /api/trips/:id — Permanently delete a trip (restricted, forbidden for reps by default).
+ */
+router.delete(
+  "/:id",
+  authenticate,
+  requirePermission("trips.delete"),
+  (req: AuthenticatedRequest, res: Response) => {
+    const trip = db.trips.get(String(req.params.id));
+    if (!trip) return res.status(404).json({ error: "Trip not found" });
+    if (!canAccessTrip(req.user, trip)) {
+      return res.status(403).json({ error: "لا تملك صلاحية الوصول إلى هذه الرحلة", code: "TRIP_ACCESS_DENIED" });
+    }
+
+    const { reason } = req.body || {};
+    db.trips.delete(trip.id);
+
+    logAuditEvent({
+      actorId: req.user?.userId,
+      actorName: req.user?.fullName,
+      actorRole: req.user?.role,
+      action: "TRIP_DELETED",
+      entity: "trips",
+      entityId: trip.id,
+      tripId: trip.id,
+      oldValues: { tripNumber: trip.tripNumber, originCity: trip.originCity, destinationCity: trip.destinationCity },
+      reason: reason || "حذف نهائي للرحلة من قبل الإدارة",
+    });
+
+    return res.json({ message: "تم حذف الرحلة نهائياً من النظام", tripId: trip.id });
+  }
+);
+
+/**
+ * GET /api/trips/export — Export regional trips (gated by trips.export / data.export).
+ */
+router.get(
+  "/export",
+  authenticate,
+  requirePermission("trips.export"),
+  (req: AuthenticatedRequest, res: Response) => {
+    const allTrips = Array.from(db.trips.values()).filter((t) => canAccessTrip(req.user, t));
+    return res.json({
+      total: allTrips.length,
+      exportedAt: new Date().toISOString(),
+      trips: allTrips,
+    });
+  }
+);
 
 export default router;

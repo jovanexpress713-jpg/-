@@ -67,9 +67,14 @@ router.post("/", authenticate, requirePermission("customers.create", "customers.
       });
     }
 
-    // Direct active customer creation for administrative staff
+    // Direct active customer creation for administrative staff and authorized representatives
     let directCustomer = null;
-    if (req.body?.direct || ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"].includes(req.user?.role || "")) {
+    if (
+      req.body?.direct !== false &&
+      (req.body?.direct ||
+        req.user?.role === "REPRESENTATIVE" ||
+        ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"].includes(req.user?.role || ""))
+    ) {
       const custId = `cust-${Date.now()}`;
       directCustomer = {
         id: custId,
@@ -116,7 +121,7 @@ router.get("/:id", authenticate, requirePermission("customers.view"), (req: Auth
 });
 
 // PATCH /api/customers/:id — update customer details
-router.patch("/:id", authenticate, requirePermission("customers.create", "customers.manage"), (req: AuthenticatedRequest, res: Response) => {
+router.patch("/:id", authenticate, requirePermission("customers.edit", "customers.create", "customers.manage"), (req: AuthenticatedRequest, res: Response) => {
   const id = String(req.params.id);
   const customer = db.customers.get(id);
   if (!customer) {
@@ -141,7 +146,7 @@ router.patch("/:id", authenticate, requirePermission("customers.create", "custom
 });
 
 // DELETE /api/customers/:id — delete customer
-router.delete("/:id", authenticate, requirePermission("customers.manage"), (req: AuthenticatedRequest, res: Response) => {
+router.delete("/:id", authenticate, requirePermission("customers.delete", "customers.manage"), (req: AuthenticatedRequest, res: Response) => {
   const id = String(req.params.id);
   const customer = db.customers.get(id);
   if (!customer) {

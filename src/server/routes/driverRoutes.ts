@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
 import { db } from "../db";
-import { authenticate, requirePermission, type AuthenticatedRequest } from "../auth/middleware";
+import { authenticate, requirePermission, hasPermission, type AuthenticatedRequest } from "../auth/middleware";
 import { REGISTRATION_STATUS_AR, submitRegistration } from "../services/registrationService";
 
 const router = Router();
@@ -107,9 +107,14 @@ router.post("/", authenticate, requirePermission("drivers.create"), (req: Authen
       });
     }
 
-    // If direct instant creation requested by staff, ensure driver is populated in active database
+    // If direct instant creation requested by staff or authorized representative, ensure driver is populated in active database
     let directDriver = null;
-    if (req.body?.direct || ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"].includes(req.user?.role || "")) {
+    if (
+      req.body?.direct !== false &&
+      (req.body?.direct ||
+        req.user?.role === "REPRESENTATIVE" ||
+        ["SUPER_ADMIN", "GENERAL_MANAGER", "OPERATIONS_MANAGER"].includes(req.user?.role || ""))
+    ) {
       const driverId = `d-${Date.now()}`;
       directDriver = {
         id: driverId,
@@ -160,7 +165,20 @@ router.patch("/:id", authenticate, requirePermission("drivers.edit", "drivers.ma
   if (nationalId !== undefined) driver.nationalId = nationalId;
   if (licenseNumber !== undefined) driver.licenseNumber = licenseNumber;
   if (licenseExpiry !== undefined) driver.licenseExpiry = licenseExpiry;
-  if (status !== undefined) driver.status = status;
+
+  if (status !== undefined) {
+    const canToggle =
+      ["OPERATIONS_MANAGER", "SUPER_ADMIN", "GENERAL_MANAGER"].includes(req.user?.role || "") ||
+      hasPermission(req.user?.role, "drivers.toggle_status", req.user?.permissions, req.user?.userId) ||
+      hasPermission(req.user?.role, "drivers.manage", req.user?.permissions, req.user?.userId);
+    if (!canToggle) {
+      return res.status(403).json({
+        error: "لا تملك صلاحية تغيير حالة السائق التشغيلية (تفعيل / إيقاف / حظر). مخصصة لمدير العمليات.",
+        code: "INSUFFICIENT_PERMISSIONS",
+      });
+    }
+    driver.status = status;
+  }
 
   if (assignedVehicleId !== undefined) {
     const nextVehId = assignedVehicleId ? String(assignedVehicleId) : undefined;
