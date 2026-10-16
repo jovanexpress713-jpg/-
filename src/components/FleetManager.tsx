@@ -192,56 +192,51 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
     setIsSubmitting(true);
     try {
       const arabicType = APPROVED_VEHICLE_TYPES[formType].arabicName;
-      const newTruck: Vehicle = {
-        id: `v${Date.now()}`,
-        shipment: `EJ-${Math.floor(100000000 + Math.random() * 900000000)}`,
-        brand: formBrand as any,
+      const response = await apiClient.vehicles.create({
+        plate: formPlate.trim(),
+        type: arabicType,
+        brand: formBrand,
         model: formModel,
+        year: Number(formYear),
+        maxLoadTons: Number(formMaxLoad),
         cab: formCab,
-        body: formType,
         customImage: formCustomImage.trim() || undefined,
-        status: "waiting",
-        hp: 530,
-        odometer: 12000,
-        year: Number(formYear) || 2024,
-        plate: formPlate,
-        fuel: 95,
-        engineTemp: 82,
-        load: 0,
-        maxLoad: Number(formMaxLoad) || 25,
+      });
+      const record = response?.vehicle;
+      if (!record?.id) throw new Error(t("The server did not return the created vehicle.", "لم يُعِد الخادم بيانات الشاحنة المنشأة."));
+
+      const newTruck: Vehicle = {
+        id: String(record.id),
+        shipment: String(record.id),
+        brand: (record.brand || formBrand) as any,
+        model: String(record.model || formModel),
+        cab: String(record.cab || formCab),
+        body: normalizeVehicleType(record.type || arabicType),
+        customImage: record.customImage || undefined,
+        status: record.status === "maintenance" ? "inactive" : record.status === "in_trip" ? "active" : "waiting",
+        hp: Number(record.hp || 0),
+        odometer: Number(record.odometerKm || 0),
+        year: Number(record.year || formYear),
+        plate: String(record.plate || formPlate.trim()),
+        fuel: Number(record.fuelLevel || 0),
+        engineTemp: Number(record.engineTemp || 0),
+        load: Number(record.currentLoadTons || 0),
+        maxLoad: Number(record.maxLoadTons || formMaxLoad),
         speed: 0,
         etaMinutes: 0,
         milesLeft: 0,
         progress: 0,
-        driver: drivers[0] || { name: "سائق معتمد", phone: "+966500000000", initials: "EJ", rating: 5.0, trips: 0 },
-        partner: "مؤسسة إيجاز للنقليات",
-        from: "الرياض",
-        to: "جدة",
+        driver: { name: t("Unassigned", "غير معيّن"), phone: "", initials: "—", rating: 0, trips: 0 },
+        partner: "",
+        from: "",
+        to: "",
         stops: [],
-        route: "riyadh-jeddah",
-        photos: [0, 1],
+        route: "",
+        photos: [],
         comments: [],
-        docs: [
-          { name: "Vehicle Registration (استمارة الشاحنة)", meta: "PDF · سارية المفعول", state: "done" },
-          { name: "Insurance Certificate (وثيقة التأمين)", meta: "PDF · سارية المفعول", state: "done" },
-          { name: "Operating Card (بطاقة التشغيل)", meta: "PDF · معتمدة", state: "done" },
-        ],
+        docs: [],
       };
-
       addVehicle(newTruck);
-
-      try {
-        await apiClient.vehicles.create({
-          plate: formPlate,
-          type: arabicType,
-          model: `${formBrand} ${formModel}`,
-          year: Number(formYear),
-          maxLoadTons: Number(formMaxLoad),
-          cab: formCab,
-        });
-      } catch (apiErr) {
-        console.warn("API sync fallback:", apiErr);
-      }
 
       toast(
         t("Vehicle added successfully", "تمت إضافة الشاحنة للأسطول بنجاح"),
@@ -616,7 +611,7 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                     <div>
                       <div className="text-text-muted text-micro">{t("Odometer", "العداد")}</div>
                       <div className="font-semibold text-text-primary tabular-nums mt-0.5">
-                        {v.odometer?.toLocaleString() || "312,400"} كم
+                        {v.odometer != null ? v.odometer.toLocaleString() : "—"} كم
                       </div>
                     </div>
                     <div>
@@ -1050,15 +1045,22 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                           <button
                             type="button"
                             onClick={async () => {
-                              updateVehicle(showVehicleDetailsModal.id, { customImage: undefined });
-                              setShowVehicleDetailsModal((prev) => (prev ? { ...prev, customImage: undefined } : null));
+                              if (isPhotoBusy) return;
+                              setIsPhotoBusy(true);
+                              setAssetError(null);
                               try {
                                 await apiClient.vehicleAssets.removeVehicleImage(showVehicleDetailsModal.id);
+                                updateVehicle(showVehicleDetailsModal.id, { customImage: undefined });
+                                setShowVehicleDetailsModal((prev) => (prev ? { ...prev, customImage: undefined } : null));
                                 await refreshVehicleAssets();
-                              } catch {
-                                /* the local override is already cleared */
+                                toast(t("Reverted to official type image", "تم الرجوع للصورة الرسمية للنوع"));
+                              } catch (error: any) {
+                                const message = error?.message || t("Could not remove the vehicle image", "تعذّر حذف صورة المركبة");
+                                setAssetError(message);
+                                toast(t("Image was not changed", "لم يتم تغيير الصورة"), message);
+                              } finally {
+                                setIsPhotoBusy(false);
                               }
-                              toast(t("Reverted to official type image", "تم الرجوع للصورة الرسمية للنوع"));
                             }}
                             className="text-red-400 hover:underline text-micro font-semibold shrink-0"
                           >
@@ -1117,12 +1119,17 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                       />
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           const el = document.getElementById("custom-img-input") as HTMLInputElement;
-                          const val = el?.value?.trim();
-                          updateVehicle(showVehicleDetailsModal.id, { customImage: val || undefined });
-                          setShowVehicleDetailsModal((prev) => prev ? { ...prev, customImage: val || undefined } : null);
-                          toast(t("Vehicle image updated", "تم حفظ صورة المركبة بنجاح"));
+                          const val = el?.value?.trim() || "";
+                          try {
+                            await apiClient.vehicles.update(showVehicleDetailsModal.id, { customImage: val || null });
+                            updateVehicle(showVehicleDetailsModal.id, { customImage: val || undefined });
+                            setShowVehicleDetailsModal((prev) => prev ? { ...prev, customImage: val || undefined } : null);
+                            toast(t("Vehicle image updated", "تم حفظ صورة المركبة بنجاح"));
+                          } catch (error: any) {
+                            toast(t("Vehicle image was not saved", "لم يتم حفظ صورة المركبة"), error?.message || "Error");
+                          }
                         }}
                         className="btn-primary text-label px-2.5 py-1"
                       >
@@ -1159,14 +1166,24 @@ export function FleetManager({ onOpenLiveTracking }: FleetManagerProps) {
                       <button
                         type="button"
                         key={vt.id}
-                        onClick={() => {
-                          const updated = { ...showVehicleDetailsModal, body: vt.id };
-                          updateVehicle(showVehicleDetailsModal.id, { body: vt.id });
-                          setShowVehicleDetailsModal(updated);
-                          toast(
-                            t("Category updated", "تم تحديث نوع الشاحنة والمجسم والصورة بنجاح"),
-                            `${showVehicleDetailsModal.plate} · ${vt.arabicName}`
-                          );
+                        onClick={async () => {
+                          if (isSubmitting || isPhotoBusy || isCurrent) return;
+                          try {
+                            setIsSubmitting(true);
+                            await apiClient.vehicles.update(showVehicleDetailsModal.id, { type: APPROVED_VEHICLE_TYPES[vt.id].arabicName });
+                            const updated = { ...showVehicleDetailsModal, body: vt.id };
+                            updateVehicle(showVehicleDetailsModal.id, { body: vt.id });
+                            setShowVehicleDetailsModal(updated);
+                            await refreshVehicleAssets();
+                            toast(
+                              t("Category updated", "تم تحديث نوع الشاحنة والمجسم والصورة بنجاح"),
+                              `${showVehicleDetailsModal.plate} · ${vt.arabicName}`
+                            );
+                          } catch (error: any) {
+                            toast(t("Category was not changed", "لم يتم تغيير فئة الشاحنة"), error?.message || "Error");
+                          } finally {
+                            setIsSubmitting(false);
+                          }
                         }}
                         className={cn(
                           "p-3 rounded-control border text-start transition-all flex flex-col justify-between",

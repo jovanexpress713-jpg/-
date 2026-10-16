@@ -22,6 +22,7 @@ import path from "path";
 import { randomUUID } from "node:crypto";
 import { db } from "../db";
 import type { UserEntity } from "../db";
+import { getCityRegionId, normalizeRegionId, regionLabelForId } from "./cityRegistry";
 import bcrypt from "bcryptjs";
 import { logAuditEvent } from "./auditService";
 import { dispatchNotification } from "./notificationService";
@@ -162,6 +163,8 @@ export interface RegistrationHistoryEntry {
 export interface RegistrationRequest {
   id: string;
   type: RegistrationType;
+  /** Server-assigned region for staff-created driver/customer registrations. */
+  regionId?: string;
   status: RegistrationStatus;
   userId?: string;
   fullName: string;
@@ -519,6 +522,8 @@ function assertNoDuplicateIdentifiers(input: {
 
 export interface SubmitInput {
   type: RegistrationType;
+  /** Trusted server-side scope assignment; never populated directly from public form fields. */
+  assignedRegionId?: string;
   fields: Record<string, string>;
   password?: string;
   documents?: { kind: string; fileName?: string; data: string }[];
@@ -543,6 +548,11 @@ export function submitRegistration(input: SubmitInput): SubmitResult {
     ? (input.type as RegistrationType)
     : null;
   if (!type) throw registrationError("نوع الطلب غير مدعوم", 400, "INVALID_TYPE");
+
+  const assignedRegionId = input.assignedRegionId ? normalizeRegionId(input.assignedRegionId) || undefined : undefined;
+  if (input.assignedRegionId && !assignedRegionId) {
+    throw registrationError("معرّف المنطقة غير صالح", 400, "INVALID_REGION");
+  }
 
   const fields: Record<string, string> = {};
   for (const spec of REGISTRATION_FIELDS[type]) {
@@ -595,6 +605,7 @@ export function submitRegistration(input: SubmitInput): SubmitResult {
     request = {
       id: nextRequestNumber(store),
       type,
+      regionId: assignedRegionId,
       status: "DRAFT",
       fullName,
       email,
@@ -611,6 +622,7 @@ export function submitRegistration(input: SubmitInput): SubmitResult {
     store.requests.push(request);
   }
 
+  if (assignedRegionId) request.regionId = assignedRegionId;
   request.fullName = fullName || request.fullName;
   request.phone = phone || request.phone;
   request.fields = { ...request.fields, ...fields };
@@ -648,6 +660,8 @@ export function submitRegistration(input: SubmitInput): SubmitResult {
       fullName: request.fullName || request.email,
       phone: request.phone,
       role: type,
+      regionId: request.regionId,
+      region: regionLabelForId(request.regionId) || undefined,
       passwordHash: bcrypt.hashSync(password, 10),
       isActive: true,
       createdAt: new Date().toISOString(),
@@ -867,6 +881,11 @@ function activateAccount(request: RegistrationRequest) {
   if (!user.passwordHash) user.passwordHash = "";
 
   const f = request.fields;
+  const accountRegionId = request.regionId || getCityRegionId(f.city);
+  if (accountRegionId) {
+    user.regionId = accountRegionId;
+    user.region = regionLabelForId(accountRegionId) || user.region;
+  }
   if (request.type === "DRIVER" && !user.driverId) {
     const driverId = `d-reg-${request.id.slice(-6)}`;
     db.drivers.set(driverId, {
@@ -876,6 +895,8 @@ function activateAccount(request: RegistrationRequest) {
       nationalId: f.nationalId || "",
       licenseNumber: f.licenseNumber || "",
       licenseExpiry: f.licenseExpiry || "",
+      city: f.city || undefined,
+      regionId: request.regionId || getCityRegionId(f.city) || undefined,
       status: "available",
       rating: 5,
       totalTrips: 0,
@@ -895,6 +916,7 @@ function activateAccount(request: RegistrationRequest) {
       vatNumber: f.vatNumber || "",
       city: f.city || "",
       address: f.address || "",
+      regionId: request.regionId || getCityRegionId(f.city) || undefined,
     });
     user.customerId = customerId;
   }

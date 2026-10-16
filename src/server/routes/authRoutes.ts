@@ -91,6 +91,7 @@ router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
     role: user.role,
     driverId: user.driverId,
     customerId: user.customerId,
+    regionId: user.regionId,
     region: user.region,
     permissions,
     registrationId: access.registration?.request.id ?? user.registrationId,
@@ -116,6 +117,7 @@ router.post("/login", async (req: AuthenticatedRequest, res: Response) => {
       fullName: user.fullName,
       phone: user.phone,
       role: user.role,
+      regionId: user.regionId,
       region: user.region,
       driverId: user.driverId,
       customerId: user.customerId,
@@ -148,6 +150,7 @@ router.get("/me", authenticate, (req: AuthenticatedRequest, res: Response) => {
     fullName: user.fullName,
     phone: user.phone,
     role: user.role,
+    regionId: user.regionId,
     region: user.region,
     driverId: user.driverId,
     customerId: user.customerId,
@@ -176,7 +179,7 @@ router.post("/logout", authenticate, (req: AuthenticatedRequest, res: Response) 
 
 // GET /api/auth/demo-accounts - Controlled by ENABLE_DEMO_ACCOUNTS
 router.get("/demo-accounts", (_req, res: Response) => {
-  const isEnabled = process.env.ENABLE_DEMO_ACCOUNTS !== "false";
+  const isEnabled = config.enableDemoAccounts;
   if (!isEnabled) {
     return res.json({ enabled: false, accounts: [] });
   }
@@ -210,6 +213,69 @@ router.get("/demo-accounts", (_req, res: Response) => {
         email: "admin@ejaz.sa",
         password: "Ejaz@2026Admin",
         descAr: "لوحة التحكم المركزية، إدارة الأسطول والشاحنات، واعتماد طلبات السائقين",
+      },
+      {
+        key: "ops",
+        role: "OPERATIONS_MANAGER",
+        titleAr: "تجربة حساب مدير العمليات",
+        titleEn: "Demo Operations Manager",
+        email: "ops@ejaz.sa",
+        password: "Ejaz@2026Admin",
+        descAr: "إدارة الرحلات والسائقين والأسطول وطلبات النقل",
+      },
+      {
+        key: "accountant",
+        role: "ACCOUNTANT",
+        titleAr: "تجربة حساب المحاسب المالي",
+        titleEn: "Demo Accountant",
+        email: "finance@ejaz.sa",
+        password: "Ejaz@2026Admin",
+        descAr: "مراجعة القيود والفواتير والتسويات المالية",
+      },
+      {
+        key: "rep-central",
+        role: "REPRESENTATIVE",
+        titleAr: "ممثّل المنطقة الوسطى",
+        titleEn: "Central Region Representative",
+        email: "rep.central@ejaz.sa",
+        password: "Ejaz@2026Admin",
+        descAr: "حساب تجريبي بصلاحيات النطاق الإقليمي للمنطقة الوسطى",
+      },
+      {
+        key: "rep-west",
+        role: "REPRESENTATIVE",
+        titleAr: "ممثّل المنطقة الغربية",
+        titleEn: "Western Region Representative",
+        email: "rep.west@ejaz.sa",
+        password: "Ejaz@2026Admin",
+        descAr: "حساب تجريبي بصلاحيات النطاق الإقليمي للمنطقة الغربية",
+      },
+      {
+        key: "rep-east",
+        role: "REPRESENTATIVE",
+        titleAr: "ممثّل المنطقة الشرقية",
+        titleEn: "Eastern Region Representative",
+        email: "rep.east@ejaz.sa",
+        password: "Ejaz@2026Admin",
+        descAr: "حساب تجريبي بصلاحيات النطاق الإقليمي للمنطقة الشرقية",
+      },
+      {
+        key: "rep-south",
+        role: "REPRESENTATIVE",
+        titleAr: "ممثّل المنطقة الجنوبية",
+        titleEn: "Southern Region Representative",
+        email: "rep.south@ejaz.sa",
+        password: "Ejaz@2026Admin",
+        descAr: "حساب تجريبي بصلاحيات النطاق الإقليمي للمنطقة الجنوبية",
+      },
+      {
+        key: "rep-north",
+        role: "REPRESENTATIVE",
+        titleAr: "ممثّل المنطقة الشمالية",
+        titleEn: "Northern Region Representative",
+        email: "rep.north@ejaz.sa",
+        password: "Ejaz@2026Admin",
+        descAr: "حساب تجريبي بصلاحيات النطاق الإقليمي للمنطقة الشمالية",
       },
     ],
   });

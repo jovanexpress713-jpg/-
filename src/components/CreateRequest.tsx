@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
-import { BODY_TYPES, BRANDS, PARTNERS, docsFor } from "../data/catalog";
+import { BODY_TYPES, BRANDS, PARTNERS } from "../data/catalog";
 import type { BodyType, Brand, RequestKind, Vehicle } from "../data/types";
 import {
   IconClose,
@@ -13,12 +13,12 @@ import {
   IconCheck,
   IconPin,
   IconBolt,
-  IconDownload,
 } from "./Icons";
 import { TruckTypeIcon, TruckTypeAvatar } from "./TruckTypeIcon";
 import { getVehicleTypeMeta } from "../data/vehicleTypes";
 import { useFleetStore } from "../state/fleetStore";
 import { useToast } from "./Toast";
+import { apiClient } from "../services/apiClient";
 
 export const DRIVER_POOL = [
   { id: "dp-1", name: "فهد الشمري (كابتن أسطول)", phone: "+966 55 123 4567", initials: "فش", rating: 4.95, trips: 212 },
@@ -56,14 +56,20 @@ const SAUDI_CITIES = [
 interface Props {
   initialKind: RequestKind;
   onClose: () => void;
-  onCreate: (v: Vehicle, kind: RequestKind) => void;
+  onCreate: (v: Vehicle | null, kind: RequestKind) => void;
 }
 
 export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
   const { t } = useSettings();
   const toast = useToast();
-  const { trucks, addVehicle, updateVehicle } = useFleetStore();
+  const { trucks, addVehicle } = useFleetStore();
   const [kind, setKind] = useState<RequestKind>(initialKind);
+  const [customers, setCustomers] = useState<Array<{ id: string; name: string; city?: string }>>([]);
+  const [cargoCustomerId, setCargoCustomerId] = useState("");
+  const [customerLoadError, setCustomerLoadError] = useState<string | null>(null);
+  const [cargoQuote, setCargoQuote] = useState<any | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // =========================================================================
   // 1. STATE FOR: TRUCK REQUEST (طلب شاحنة للأسطول)
@@ -73,18 +79,8 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
   const [truckYear, setTruckYear] = useState(2024);
   const [truckBody, setTruckBody] = useState<BodyType>("curtain");
   const [truckCab, setTruckCab] = useState("GigaSpace Cab");
-  const [truckPurpose, setTruckPurpose] = useState<"fleet_expansion" | "route_replacement" | "seasonal_lease">("fleet_expansion");
   const [truckMaxLoad, setTruckMaxLoad] = useState(26);
   const [truckPlate, setTruckPlate] = useState(`أ ب ج ${Math.floor(1000 + Math.random() * 8999)}`);
-  const [truckYard, setTruckYard] = useState("ساحة إيجاز المركزية — الرياض (السلي)");
-  const [truckDriverId, setTruckDriverId] = useState<string>("dp-1");
-  const [truckFeatures, setTruckFeatures] = useState<{ [key: string]: boolean }>({
-    gpsGsm: true,
-    axleWeighing: true,
-    tempSensors: false,
-    longHaulTires: true,
-    fireSafety: true,
-  });
 
   // =========================================================================
   // 2. STATE FOR: CARGO REQUEST (طلب شحن بضائع)
@@ -92,7 +88,6 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
   const [cargoCategory, setCargoCategory] = useState<string>("food_cold");
   const [cargoBody, setCargoBody] = useState<BodyType>("reefer");
   const [cargoTargetTemp, setCargoTargetTemp] = useState<number>(-18);
-  const [cargoPartner, setCargoPartner] = useState(PARTNERS[1] || "SADAFCO Cold Chain");
   const [cargoOriginCity, setCargoOriginCity] = useState("الرياض");
   const [cargoPickupAddress, setCargoPickupAddress] = useState("مستودع السلي بوابة ٤");
   const [cargoPickupContact, setCargoPickupContact] = useState("م. ناصر الشهري · ٠٥٠١١٢٢٣٣٤");
@@ -173,8 +168,8 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
       id: "repair",
       en: "Maintenance",
       ar: "صيانة وورشة",
-      descEn: "Open a repair order or report road breakdown",
-      descAr: "فتح تذكرة صيانة أو بلاغ عطل فني على المسار",
+      descEn: "Draft preview — maintenance requests are not connected to a server workflow yet",
+      descAr: "مسودة معاينة — طلبات الصيانة غير متصلة بإجراء محفوظ في الخادم بعد",
       icon: IconRepair,
       color: "#ffb020",
     },
@@ -182,8 +177,8 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
       id: "driver",
       en: "Driver Staffing",
       ar: "تكليف سائق",
-      descEn: "Assign primary, relief or long-haul co-driver",
-      descAr: "تعيين كابتن رئيسي أو بديل أو طاقم قيادة مزدوج",
+      descEn: "Draft preview — driver staffing is not connected to a saved workflow yet",
+      descAr: "مسودة معاينة — تكليف السائق غير متصل بإجراء محفوظ في الخادم بعد",
       icon: IconDriver,
       color: "#a855f7",
     },
@@ -191,8 +186,8 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
       id: "report",
       en: "Official Report",
       ar: "تقرير رسمي",
-      descEn: "Generate authenticated audit, billing or cold-chain docs",
-      descAr: "استخراج تقارير معتمدة وسجلات حرارة وكشوفات",
+      descEn: "Draft preview — report generation is not connected to a document service yet",
+      descAr: "مسودة معاينة — إصدار التقارير غير متصل بخدمة مستندات بعد",
       icon: IconReport,
       color: "#38bdf8",
     },
@@ -200,170 +195,155 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
 
   const activeKindMeta = useMemo(() => KINDS.find((k) => k.id === kind) || KINDS[0], [kind]);
 
-  // Selected truck for repair details
-  const currentRepairTruck = useMemo(() => {
-    return trucks.find((v) => v.id === repairTruckId) || trucks[0];
-  }, [trucks, repairTruckId]);
+  useEffect(() => {
+    let active = true;
+    apiClient.customers.getAll()
+      .then((response) => {
+        if (!active) return;
+        const available = Array.isArray(response?.customers) ? response.customers : [];
+        setCustomers(available);
+        setCargoCustomerId((current) => current || available[0]?.id || "");
+        setCustomerLoadError(null);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setCustomers([]);
+        setCustomerLoadError(error instanceof Error ? error.message : t("Unable to load registered customers.", "تعذّر تحميل العملاء المسجلين."));
+      });
+    return () => { active = false; };
+  }, [t]);
 
-  // Dynamic estimated price calculation for cargo
-  const cargoEstimatedPrice = useMemo(() => {
-    const baseRate = cargoBody === "reefer" ? 5600 : cargoBody === "flatbed" ? 4200 : cargoBody === "dry" ? 4500 : 4350;
-    const weightFactor = Math.max(0.8, cargoWeightTons / 22);
-    const expressMultiplier = cargoPriority === "super_urgent" ? 1.25 : cargoPriority === "express" ? 1.1 : 1.0;
-    return Math.round(baseRate * weightFactor * expressMultiplier);
-  }, [cargoBody, cargoWeightTons, cargoPriority]);
+  useEffect(() => {
+    const ready = cargoOriginCity.trim() && cargoDestCity.trim() && Number(cargoWeightTons) > 0;
+    if (!ready) {
+      setCargoQuote(null);
+      setQuoteLoading(false);
+      return;
+    }
+    let active = true;
+    setQuoteLoading(true);
+    const timer = window.setTimeout(() => {
+      apiClient.tariffs.getQuote({
+        truckType: getVehicleTypeMeta(cargoBody).arabicName,
+        origin: cargoOriginCity,
+        destination: cargoDestCity,
+        weightTons: String(Number(cargoWeightTons)),
+      })
+        .then((result) => active && setCargoQuote(result))
+        .catch(() => active && setCargoQuote(null))
+        .finally(() => active && setQuoteLoading(false));
+    }, 350);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [cargoBody, cargoDestCity, cargoOriginCity, cargoWeightTons]);
+
+  const selectedCargoCustomer = customers.find((customer) => customer.id === cargoCustomerId);
 
   // =========================================================================
   // SUBMISSION LOGIC PER KIND
   // =========================================================================
-  const handleSubmit = () => {
-    if (kind === "truck") {
-      const prefix = BRANDS.find((b) => b.id === truckBrand)?.prefix || "TR";
-      const assignedDriver = DRIVER_POOL.find((d) => d.id === truckDriverId) || DRIVER_POOL[0];
-      const newVehicle: Vehicle = {
-        id: `v-new-${Date.now()}`,
-        shipment: `${prefix}-${Math.floor(100000000 + Math.random() * 899999999)}`,
-        brand: truckBrand,
-        model: truckModel,
-        cab: truckCab,
-        body: truckBody,
-        status: "active",
-        hp: HP[truckBrand] || 500,
-        odometer: 15400,
-        year: truckYear,
-        plate: truckPlate,
-        fuel: 100,
-        engineTemp: 88,
-        boxTemp: truckBody === "reefer" ? -18 : undefined,
-        load: 0,
-        maxLoad: truckMaxLoad,
-        speed: 0,
-        etaMinutes: 0,
-        milesLeft: 0,
-        progress: 0,
-        driver: assignedDriver,
-        partner: "مؤسسة إيجاز للنقليات (أسطول الشركة)",
-        from: truckYard.split("—")[0].trim(),
-        to: "جاهزة للتشغيل",
-        stops: [
-          { name: truckYard, place: t("Base Depot", "المقر الرئيسي"), done: true },
-          { name: t("Ready for dispatch", "جاهزة للحركة"), place: t("Available", "متاحة"), done: false },
-        ],
-        route: "r-local",
-        photos: [0, 1],
-        comments: [
-          {
-            from: "me",
-            text: t(`Truck ${truckPlate} commissioned into fleet.`, `تم ضم الشاحنة ${truckPlate} رسمياً إلى الأسطول.`),
-            time: "الآن",
-          },
-        ],
-        docs: docsFor(truckBody).map((name) => ({
-          name,
-          meta: t("Verified · TGA Approved", "معتمد · هيئة النقل"),
-          state: "done" as const,
-        })),
-      };
-      addVehicle(newVehicle);
-      onCreate(newVehicle, "truck");
-      return;
-    }
+  const handleSubmit = async () => {
+    if (isSubmitting || (kind !== "truck" && kind !== "cargo")) return;
+    setIsSubmitting(true);
 
-    if (kind === "cargo") {
-      const assignedDriver = DRIVER_POOL[Math.floor(Math.random() * DRIVER_POOL.length)];
-      const cargoTruck = trucks.find((v) => v.body === cargoBody && v.status === "active") || trucks[0];
-      const newShipmentVehicle: Vehicle = {
-        id: `v-cargo-${Date.now()}`,
-        shipment: `EJ-${Math.floor(20260000 + Math.random() * 8999)}`,
-        brand: cargoTruck?.brand || "Mercedes-Benz",
-        model: cargoTruck?.model || "Actros L 1863",
-        cab: t("Freight Dispatch", "إرسالية شحن تجاري"),
-        body: cargoBody,
-        status: "active",
-        hp: cargoTruck?.hp || 510,
-        odometer: 240000 + Math.floor(Math.random() * 50000),
-        year: 2024,
-        plate: cargoTruck?.plate || `س ف ر ${Math.floor(1000 + Math.random() * 8999)}`,
-        fuel: 95,
-        engineTemp: 89,
-        boxTemp: cargoBody === "reefer" ? cargoTargetTemp : undefined,
-        load: cargoWeightTons,
-        maxLoad: Math.max(25, cargoWeightTons),
-        speed: 84,
-        etaMinutes: 380,
-        milesLeft: 890,
-        progress: 5,
-        driver: assignedDriver,
-        partner: cargoPartner,
-        from: `${cargoOriginCity} · ${cargoPickupAddress}`,
-        to: `${cargoDestCity} · ${cargoDeliveryAddress}`,
-        stops: [
-          { name: cargoOriginCity, place: t("Loading Hub", "موقع التحميل والتجهيز"), done: true },
-          { name: t("Corridor Waypoint", "محطة العبور السريعة"), place: t("In transit", "في الطريق السريع"), done: false },
-          { name: cargoDestCity, place: t("Consignee Delivery", "مستودع التسليم والتفريغ"), done: false },
-        ],
-        route: "r-corridor",
-        photos: [0, 1, 2],
-        comments: [
-          {
-            from: "me",
-            text: `تم إنشاء أمر الشحن: ${cargoNotes}`,
-            time: "الآن",
-          },
-        ],
-        docs: [
-          { name: "بوليصة الشحن الإلكترونية (بيان)", meta: "معتمدة إلكترونياً", state: "done" },
-          { name: cargoBody === "reefer" ? "سجل درجات حرارة التبريد" : "كشف الأوزان والموازين", meta: "حساسات نشطة", state: "done" },
-        ],
-      };
-      addVehicle(newShipmentVehicle);
-      onCreate(newShipmentVehicle, "cargo");
-      return;
-    }
-
-    if (kind === "repair") {
-      const targetTruck = currentRepairTruck;
-      if (targetTruck) {
-        updateVehicle(targetTruck.id, {
-          status: "inactive",
-          odometer: repairOdometer,
+    try {
+      if (kind === "truck") {
+        const response = await apiClient.vehicles.create({
+          plate: truckPlate.trim(),
+          type: getVehicleTypeMeta(truckBody).arabicName,
+          brand: truckBrand,
+          model: truckModel,
+          year: truckYear,
+          maxLoadTons: truckMaxLoad,
+          cab: truckCab,
         });
-      }
-      const dummyVehicle: Vehicle = {
-        ...(targetTruck || trucks[0]),
-        status: "inactive",
-        odometer: repairOdometer,
-      };
-      onCreate(dummyVehicle, "repair");
-      return;
-    }
+        const record = response?.vehicle;
+        if (!record?.id) throw new Error(t("The server did not return the created vehicle.", "لم يُعِد الخادم بيانات الشاحنة المنشأة."));
 
-    if (kind === "driver") {
-      const targetTruck = trucks.find((v) => v.id === driverTruckId) || trucks[0];
-      const selectedD = driverCandidateMode === "pool"
-        ? (DRIVER_POOL.find((d) => d.id === driverSelectedPoolId) || DRIVER_POOL[0])
-        : {
-            id: `d-custom-${Date.now()}`,
-            name: driverManualName,
-            phone: driverManualPhone,
-            initials: driverManualName.slice(0, 2),
-            rating: 5.0,
-            trips: 1,
-          };
-      if (targetTruck) {
-        updateVehicle(targetTruck.id, {
-          driver: selectedD,
-        });
+        const createdVehicle: Vehicle = {
+          id: String(record.id),
+          shipment: String(record.id),
+          brand: (record.brand || truckBrand) as Brand,
+          model: String(record.model || truckModel),
+          cab: String(record.cab || truckCab),
+          body: getVehicleTypeMeta(record.type || truckBody).id,
+          status: record.status === "maintenance" ? "inactive" : record.status === "in_trip" ? "active" : "waiting",
+          hp: Number(record.hp || HP[truckBrand] || 0),
+          odometer: Number(record.odometerKm || 0),
+          year: Number(record.year || truckYear),
+          plate: String(record.plate || truckPlate),
+          fuel: Number(record.fuelLevel || 0),
+          engineTemp: Number(record.engineTemp || 0),
+          boxTemp: undefined,
+          load: Number(record.currentLoadTons || 0),
+          maxLoad: Number(record.maxLoadTons || truckMaxLoad),
+          speed: 0,
+          etaMinutes: 0,
+          milesLeft: 0,
+          progress: 0,
+          driver: { id: record.assignedDriverId, name: t("Unassigned", "غير معيّن"), phone: "", initials: "—", rating: 0, trips: 0 },
+          partner: t("Fleet", "الأسطول"),
+          from: "",
+          to: "",
+          stops: [],
+          route: "",
+          photos: [],
+          comments: [],
+          docs: [],
+        };
+        addVehicle(createdVehicle);
+        toast(t("Vehicle registered", "تم تسجيل الشاحنة"), `${createdVehicle.plate} · ${getVehicleTypeMeta(createdVehicle.body).arabicName}`);
+        onCreate(createdVehicle, "truck");
+        return;
       }
-      onCreate(targetTruck || trucks[0], "driver");
-      return;
-    }
 
-    if (kind === "report") {
-      toast(t("Report Generated", "تم استخراج التقرير الرسمي"), `${reportType.toUpperCase()} · ${reportFormat.toUpperCase()}`);
-      onCreate(trucks[0], "report");
+      if (!selectedCargoCustomer) {
+        toast(
+          t("A registered customer is required", "يلزم اختيار عميل مسجل"),
+          customerLoadError || t("Load the customer list and choose a customer before submitting.", "حمّل قائمة العملاء واختر عميلاً قبل الإرسال."),
+        );
+        return;
+      }
+
+      const notes = [
+        cargoNotes.trim(),
+        `${t("Pickup contact", "جهة اتصال التحميل")}: ${cargoPickupContact.trim()}`,
+        `${t("Delivery contact", "جهة اتصال التسليم")}: ${cargoDeliveryContact.trim()}`,
+        `${t("Pallets", "عدد الطبالي")}: ${cargoPallets}`,
+        `${t("Requested loading window", "نافذة التحميل المطلوبة")}: ${cargoReadyDate.trim()}`,
+        `${t("Priority", "الأولوية")}: ${cargoPriority}`,
+        cargoForklift ? t("Forklift handling requested", "مطلوب تحميل برافعة شوكية") : "",
+        cargoHazmat ? t("Hazardous material; verify permits", "مواد خطرة؛ يلزم التحقق من التصاريح") : "",
+      ].filter(Boolean).join(" · ");
+
+      const response = await apiClient.trips.create({
+        originCity: cargoOriginCity,
+        destinationCity: cargoDestCity,
+        pickupAddress: cargoPickupAddress,
+        deliveryAddress: cargoDeliveryAddress,
+        cargoDescription: notes || cargoCategory,
+        cargoType: getVehicleTypeMeta(cargoBody).arabicName,
+        cargoWeightTons,
+        temperatureRequired: cargoBody === "reefer" ? cargoTargetTemp : undefined,
+        customerId: selectedCargoCustomer.id,
+        tariffId: cargoQuote?.available ? cargoQuote?.tariff?.id : undefined,
+        notes,
+      });
+      const tripNumber = response?.trip?.tripNumber;
+      if (!tripNumber) throw new Error(t("The server did not return the created trip number.", "لم يُعِد الخادم رقم الرحلة المنشأة."));
+      toast(t("Trip request created", "تم إنشاء طلب الرحلة"), `${tripNumber} · ${t("awaiting operations review", "بانتظار مراجعة العمليات")}`);
+      onCreate(null, "cargo");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("Request failed.", "تعذّر إنشاء الطلب.");
+      toast(t("The request was not saved", "لم يتم حفظ الطلب"), message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  const connectedRequestType = kind === "truck" || kind === "cargo";
 
   return (
     <div
@@ -460,38 +440,19 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
         {/* DYNAMIC SCROLLABLE BODY BASED ON KIND                             */}
         {/* ================================================================= */}
         <div className="scroll-thin flex-1 overflow-y-auto p-4 md:p-6 space-y-5">
+          {kind !== "truck" && kind !== "cargo" && (
+            <div role="status" className="rounded-inner border border-status-waiting/40 bg-status-waiting/10 p-3 text-label-lg text-text-primary">
+              {t(
+                "Preview form only: this request type is not connected to a server workflow. Nothing below will be saved.",
+                "نموذج معاينة فقط: هذا النوع غير متصل بإجراء محفوظ في الخادم، ولن تُحفظ البيانات المدخلة أدناه.",
+              )}
+            </div>
+          )}
           {/* --------------------------------------------------------------- */}
           {/* KIND 1: TRUCK (طلب إضافة أو تخصيص شاحنة)                         */}
           {/* --------------------------------------------------------------- */}
           {kind === "truck" && (
             <div className="space-y-4 animate-fade-in">
-              {/* Purpose banner */}
-              <div className="rounded-inner bg-surface-2 p-3 border border-border-subtle/80 flex items-center justify-between gap-3">
-                <span className="text-label text-text-secondary font-medium">
-                  {t("Allocation Purpose:", "الغرض من تخصيص الشاحنة:")}
-                </span>
-                <div className="flex gap-1.5">
-                  {[
-                    ["fleet_expansion", "إضافة للأسطول", "New Addition"],
-                    ["route_replacement", "شاحنة بديلة لمسار", "Replacement"],
-                    ["seasonal_lease", "تأجير تشغيلي", "Lease Unit"],
-                  ].map(([val, ar, en]) => (
-                    <button
-                      key={val}
-                      onClick={() => setTruckPurpose(val as any)}
-                      className={cn(
-                        "rounded-chip px-2.5 py-1 text-label font-bold transition-all",
-                        truckPurpose === val
-                          ? "bg-brand text-on-brand shadow-sm"
-                          : "bg-surface-4 text-text-muted hover:text-text-primary"
-                      )}
-                    >
-                      {t(en, ar)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Body Type Selection */}
               <div>
                 <Label>{t("Body Category & Specs", "فئة الهيكل والمواصفة الفنية")}</Label>
@@ -602,37 +563,6 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
                 </div>
               </div>
 
-              {/* Depot Yard & Driver Assignment */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <Label>{t("Home Yard / Depot", "ساحة التمركز والتسليم")}</Label>
-                  <select
-                    value={truckYard}
-                    onChange={(e) => setTruckYard(e.target.value)}
-                    className="field mt-1.5 w-full text-label-lg"
-                  >
-                    <option value="ساحة إيجاز المركزية — الرياض (السلي)">ساحة إيجاز المركزية — الرياض (السلي)</option>
-                    <option value="محطة ميناء جدة الإسلامي (رصيف ٧)">محطة ميناء جدة الإسلامي (رصيف ٧)</option>
-                    <option value="ساحة الميناء اللوجستية — الدمام">ساحة الميناء اللوجستية — الدمام</option>
-                    <option value="مستودعات القصيم المركزية — بريدة">مستودعات القصيم المركزية — بريدة</option>
-                  </select>
-                </div>
-                <div>
-                  <Label>{t("Assigned Fleet Driver", "السائق المخصص للشاحنة")}</Label>
-                  <select
-                    value={truckDriverId}
-                    onChange={(e) => setTruckDriverId(e.target.value)}
-                    className="field mt-1.5 w-full text-label-lg"
-                  >
-                    {DRIVER_POOL.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name} ({d.trips} رحلة · ⭐{d.rating})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               {/* Capacity Slider */}
               <div className="rounded-inner bg-surface-2 p-3.5 border border-border-subtle">
                 <div className="flex items-center justify-between">
@@ -654,43 +584,7 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
                 />
               </div>
 
-              {/* Technical equipment checkboxes */}
-              <div>
-                <Label>{t("Mandatory Technical Systems", "التجهيزات الفنية الإلزامية")}</Label>
-                <div className="mt-1.5 grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {[
-                    ["gpsGsm", "تتبع GPS وصل / TGA", "TGA Tracking AVL"],
-                    ["axleWeighing", "حساسات أوزان المحاور", "Axle Sensors"],
-                    ["tempSensors", "حساسات حرارة ورطوبة", "Temp Sensors"],
-                    ["longHaulTires", "إطارات خطوط معتمدة", "Heavy Tires"],
-                    ["fireSafety", "أنظمة الإطفاء والسلامة", "Safety Gear"],
-                  ].map(([key, ar, en]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() =>
-                        setTruckFeatures((prev) => ({ ...prev, [key]: !prev[key] }))
-                      }
-                      className={cn(
-                        "flex items-center gap-2 rounded-chip p-2 text-start text-label border transition-colors",
-                        truckFeatures[key]
-                          ? "bg-surface-4 border-brand/50 text-text-primary"
-                          : "bg-surface-2 border-border-subtle/50 text-text-muted"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "grid h-4 w-4 shrink-0 place-items-center rounded-micro text-micro",
-                          truckFeatures[key] ? "bg-brand text-on-brand" : "border border-border-subtle"
-                        )}
-                      >
-                        {truckFeatures[key] && <IconCheck size={11} />}
-                      </span>
-                      <span className="truncate">{t(en, ar)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+
             </div>
           )}
 
@@ -775,20 +669,23 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
                 </div>
               )}
 
-              {/* Shipper Partner */}
+              {/* A shipment must be linked to a customer record from the API. */}
               <div>
-                <Label>{t("Shipper Commercial Partner", "الجهة الشاحنة (العميل أو الشريك)")}</Label>
+                <Label>{t("Registered Customer", "العميل المسجل")}</Label>
                 <select
-                  value={cargoPartner}
-                  onChange={(e) => setCargoPartner(e.target.value)}
-                  className="field mt-1.5 w-full font-medium"
+                  value={cargoCustomerId}
+                  onChange={(e) => setCargoCustomerId(e.target.value)}
+                  disabled={!customers.length}
+                  className="field mt-1.5 w-full font-medium disabled:opacity-60"
                 >
-                  {PARTNERS.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
+                  <option value="">{t("Choose a registered customer…", "اختر عميلاً مسجلاً…")}</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}{customer.city ? ` · ${customer.city}` : ""}
                     </option>
                   ))}
                 </select>
+                {customerLoadError && <p className="mt-1 text-label text-status-danger">{customerLoadError}</p>}
               </div>
 
               {/* Origin and Destination Corridor */}
@@ -997,9 +894,17 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
                 </div>
                 <div className="text-end">
                   <div className="font-mono text-hero-sm font-bold text-brand tabular-nums">
-                    {cargoEstimatedPrice.toLocaleString()} {t("SAR", "ر.س")}
+                    {quoteLoading
+                      ? t("Checking tariff…", "جارٍ التحقق من التعرفة…")
+                      : cargoQuote?.available && Number.isFinite(Number(cargoQuote.price))
+                        ? `${Number(cargoQuote.price).toLocaleString()} ${cargoQuote.currency || t("SAR", "ر.س")}`
+                        : t("No matching tariff", "لا توجد تعرفة مطابقة")}
                   </div>
-                  <div className="text-micro text-text-muted">شامل التتبع والتأمين</div>
+                  <div className="text-micro text-text-muted">
+                    {cargoQuote?.available
+                      ? `${t("Tariff", "التعرفة")}: ${cargoQuote.tariff?.id || "—"}`
+                      : t("The server will keep the request unpriced until a tariff is approved.", "سيبقى الطلب بلا سعر حتى اعتماد تعرفة من الخادم.")}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1627,41 +1532,27 @@ export function CreateRequest({ initialKind, onClose, onCreate }: Props) {
           <button
             type="button"
             onClick={handleSubmit}
-            className="btn-primary px-6 flex items-center gap-2 text-label-lg font-bold"
+            disabled={isSubmitting || !connectedRequestType || (kind === "truck" && !truckPlate.trim()) || (kind === "cargo" && !selectedCargoCustomer)}
+            className="btn-primary px-6 flex items-center gap-2 text-label-lg font-bold disabled:cursor-not-allowed disabled:opacity-50"
             style={{
-              backgroundColor: activeKindMeta.color,
-              color: kind === "report" ? "#050B18" : "#ffffff",
+              backgroundColor: connectedRequestType ? activeKindMeta.color : "var(--color-surface-5)",
+              color: connectedRequestType ? "#ffffff" : "var(--color-text-muted)",
             }}
           >
             {kind === "truck" && (
               <>
                 <IconTruck size={17} />
-                <span>{t("Commission Truck to Fleet", "تسجيل الشاحنة في الأسطول")}</span>
+                <span>{isSubmitting ? t("Saving vehicle…", "جارٍ حفظ الشاحنة…") : t("Register vehicle", "تسجيل الشاحنة")}</span>
               </>
             )}
             {kind === "cargo" && (
               <>
                 <IconCargo size={17} />
-                <span>{t("Confirm Shipment & Generate Waybill", "تأكيد طلب الشحنة وتوليد البوليصة")}</span>
+                <span>{isSubmitting ? t("Submitting trip…", "جارٍ إرسال الرحلة…") : t("Create trip request", "إنشاء طلب رحلة")}</span>
               </>
             )}
-            {kind === "repair" && (
-              <>
-                <IconRepair size={17} />
-                <span>{t("Issue Workshop Maintenance Order", "إصدار أمر الصيانة وتحويل للورشة")}</span>
-              </>
-            )}
-            {kind === "driver" && (
-              <>
-                <IconDriver size={17} />
-                <span>{t("Approve Driver Assignment Mission", "اعتماد تكليف السائق بالمهمة")}</span>
-              </>
-            )}
-            {kind === "report" && (
-              <>
-                <IconDownload size={17} />
-                <span>{t("Generate & Export Official Report", "توليد وتحميل التقرير فوراً")}</span>
-              </>
+            {!connectedRequestType && (
+              <span>{t("Not connected — preview only", "غير متصل — معاينة فقط")}</span>
             )}
           </button>
         </div>

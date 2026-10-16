@@ -9,11 +9,11 @@ import { IconLock, IconProfile, IconEye, IconEyeOff, IconAlertCircle, IconTruck 
 
 /**
  * EJAZ Transport — Control Room Authentication Gate
- * Supports both real backend JWT authentication and 1-click password-free
- * presentation/demo access so clients can preview all roles seamlessly.
+ * Authenticates only through the backend. Optional one-click demo credentials
+ * are listed only when the server explicitly enables demo accounts.
  */
 
-export interface DemoAccount {
+interface DemoAccount {
   key: string;
   role: string;
   titleAr: string;
@@ -22,144 +22,6 @@ export interface DemoAccount {
   password: string;
   descAr: string;
   descEn?: string;
-  fullName?: string;
-  driverId?: string;
-  customerId?: string;
-}
-
-export const FALLBACK_DEMO_ACCOUNTS: DemoAccount[] = [
-  {
-    key: "admin",
-    role: "SUPER_ADMIN",
-    titleAr: "مدير النظام (الإدارة الشاملة)",
-    titleEn: "Super Admin",
-    email: "admin@ejaz.sa",
-    password: "Ejaz@2026Admin",
-    fullName: "فهد بن عبد العزيز السبيعي",
-    descAr: "التحكم الكامل بمنظومة إيجاز: الأسطول، الرحلات، المالية، التدقيق",
-    descEn: "Full control of the EJAZ platform: fleet, trips, finance, audit",
-  },
-  {
-    key: "ops",
-    role: "OPERATIONS_MANAGER",
-    titleAr: "مدير العمليات",
-    titleEn: "Operations Manager",
-    email: "ops@ejaz.sa",
-    password: "Ejaz@2026Admin",
-    fullName: "سلطان بن حمد العتيبي",
-    descAr: "إدارة الرحلات والسائقين والشاحنات وطلبات النقل",
-    descEn: "Trips, drivers, vehicles and transport requests",
-  },
-  {
-    key: "accountant",
-    role: "ACCOUNTANT",
-    titleAr: "المحاسب المالي",
-    titleEn: "Accountant",
-    email: "finance@ejaz.sa",
-    password: "Ejaz@2026Admin",
-    fullName: "عمر بن إبراهيم القحطاني",
-    descAr: "الفواتير والتسويات المالية ومراجعة المطالبات",
-    descEn: "Invoices, settlements and claims review",
-  },
-  {
-    key: "driver",
-    role: "DRIVER",
-    titleAr: "حساب السائق الميداني",
-    titleEn: "Driver",
-    email: "driver@ejaz.sa",
-    password: "Ejaz@2026Driver",
-    fullName: "فهد الشمري (كابتن أسطول)",
-    driverId: "d1",
-    descAr: "بوابة السائق الميدانية وتنفيذ الرحلات وإثبات التسليم",
-    descEn: "Field driver portal, trip execution and POD",
-  },
-  {
-    key: "client",
-    role: "CUSTOMER",
-    titleAr: "حساب العميل (سدافكو)",
-    titleEn: "Client Portal",
-    email: "client@ejaz.sa",
-    password: "Ejaz@2026Client",
-    fullName: "شركة سدافكو للأغذية والمشروبات",
-    customerId: "cust-1",
-    descAr: "بوابة العميل لمتابعة الشحنات والتتبع المباشر وبوليصة الشحن",
-    descEn: "Client portal: shipments, live tracking and waybill",
-  },
-  {
-    key: "rep-central",
-    role: "REPRESENTATIVE",
-    titleAr: "ممثّل المنطقة الوسطى (الرياض والقصيم)",
-    titleEn: "Central Region Rep",
-    email: "rep.central@ejaz.sa",
-    password: "Ejaz@2026Admin",
-    fullName: "ممثّل المنطقة الوسطى",
-    descAr: "تشغيل رحلات وعملاء وسائقي المنطقة الوسطى وفق الصلاحيات المعتمدة",
-    descEn: "Central region operations, trips, customers & drivers per RBAC",
-  },
-  {
-    key: "rep-west",
-    role: "REPRESENTATIVE",
-    titleAr: "ممثّل المنطقة الغربية (جدة ومكة)",
-    titleEn: "Western Region Rep",
-    email: "rep.west@ejaz.sa",
-    password: "Ejaz@2026Admin",
-    fullName: "ممثّل المنطقة الغربية",
-    descAr: "تشغيل ومتابعة رحلات الساحل الغربي وجدة ومكة والمدينة",
-    descEn: "Western region operations covering Jeddah, Makkah & Madinah",
-  },
-  {
-    key: "rep-east",
-    role: "REPRESENTATIVE",
-    titleAr: "ممثّل المنطقة الشرقية (الدمام والجبيل)",
-    titleEn: "Eastern Region Rep",
-    email: "rep.east@ejaz.sa",
-    password: "Ejaz@2026Admin",
-    fullName: "ممثّل المنطقة الشرقية",
-    descAr: "تشغيل ومتابعة رحلات المنطقة الشرقية والموانئ الصناعية",
-    descEn: "Eastern region operations covering Dammam and Jubail ports",
-  },
-  {
-    key: "rep-south",
-    role: "REPRESENTATIVE",
-    titleAr: "ممثّل المنطقة الجنوبية (أبها وجازان)",
-    titleEn: "Southern Region Rep",
-    email: "rep.south@ejaz.sa",
-    password: "Ejaz@2026Admin",
-    fullName: "ممثّل المنطقة الجنوبية",
-    descAr: "تشغيل ومتابعة رحلات المنطقة الجنوبية وعسير وجازان",
-    descEn: "Southern region operations covering Abha and Jazan",
-  },
-  {
-    key: "rep-north",
-    role: "REPRESENTATIVE",
-    titleAr: "ممثّل المنطقة الشمالية (تبوك والجوف)",
-    titleEn: "Northern Region Rep",
-    email: "rep.north@ejaz.sa",
-    password: "Ejaz@2026Admin",
-    fullName: "ممثّل المنطقة الشمالية",
-    descAr: "تشغيل ومتابعة رحلات المنطقة الشمالية وتبوك والحدود",
-    descEn: "Northern region operations covering Tabuk and Al-Jawf",
-  },
-];
-
-function buildOfflineUser(acc: DemoAccount) {
-  const normalizedRole =
-    acc.role === "ADMIN"
-      ? "SUPER_ADMIN"
-      : acc.role === "CLIENT"
-        ? "CUSTOMER"
-        : acc.role;
-  return {
-    id: `u-${acc.key}`,
-    email: acc.email,
-    fullName: acc.fullName || acc.titleAr,
-    phone: "+966501112233",
-    role: normalizedRole,
-    driverId: acc.driverId || (normalizedRole === "DRIVER" ? "d1" : undefined),
-    customerId: acc.customerId || (normalizedRole === "CUSTOMER" ? "cust-1" : undefined),
-    permissions: ["*"],
-    accountApproved: true,
-  };
 }
 
 export function ConsoleAuthGate({
@@ -191,8 +53,23 @@ export function ConsoleAuthGate({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [demoAccounts] = useState<DemoAccount[]>(FALLBACK_DEMO_ACCOUNTS);
+  const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>([]);
   const [showLangMenu, setShowLangMenu] = useState(false);
+
+  useEffect(() => {
+    if (previewMode) return;
+    let active = true;
+    apiClient.auth.getDemoAccounts()
+      .then((response) => {
+        if (active) setDemoAccounts(response.enabled ? response.accounts : []);
+      })
+      .catch(() => {
+        if (active) setDemoAccounts([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [previewMode]);
 
   useEffect(() => {
     if (previewMode) return;
@@ -208,11 +85,10 @@ export function ConsoleAuthGate({
     restore();
   }, [onAuthenticated, previewMode]);
 
-  const completeLogin = (user: any, token?: string) => {
+  const completeLogin = (user: any, token: string) => {
     if (previewMode) return;
-    if (token) {
-      setAuthToken(token);
-    }
+    if (!token || !user?.role) throw new Error("The authentication server returned an invalid session.");
+    setAuthToken(token);
     try {
       localStorage.setItem("ejaz_current_user", JSON.stringify(user));
     } catch {
@@ -229,9 +105,8 @@ export function ConsoleAuthGate({
     try {
       const res = await apiClient.auth.login(acc.email, acc.password);
       completeLogin(res.user, res.token);
-    } catch {
-      // Fallback for static deployments or when backend is unreachable
-      completeLogin(buildOfflineUser(acc));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("Demo sign-in is unavailable.", "الدخول التجريبي غير متاح."));
     } finally {
       setIsSubmitting(false);
     }
@@ -244,15 +119,10 @@ export function ConsoleAuthGate({
       return;
     }
     if (!email.trim() || !password) {
-      /*
-       * Never sign anybody in on their behalf. An empty form used to log the
-       * visitor straight in as the system administrator; now it just asks for the
-       * credentials, and the demo accounts below remain an explicit choice.
-       */
       setError(
         t(
-          "Enter your email and password, or pick one of the demo accounts below.",
-          "أدخل بريدك الإلكتروني وكلمة المرور، أو اختر أحد الحسابات التجريبية في الأسفل.",
+          "Enter your authorized work email and password.",
+          "أدخل بريد العمل وكلمة المرور المعتمدين لحسابك.",
         ),
       );
       return;
@@ -264,19 +134,12 @@ export function ConsoleAuthGate({
       const res = await apiClient.auth.login(email.trim(), password);
       completeLogin(res.user, res.token);
     } catch (err: any) {
-      const matchedDemo = FALLBACK_DEMO_ACCOUNTS.find(
-        (a) => a.email.toLowerCase() === email.trim().toLowerCase()
-      );
-      if (matchedDemo) {
-        completeLogin(buildOfflineUser(matchedDemo));
-        return;
-      }
       setError(
         err?.message && !String(err.message).startsWith("HTTP")
           ? err.message
           : t(
-              "Invalid credentials. Tap any demo account below for instant access.",
-              "بيانات الدخول غير مطابقة. يمكنك الضغط على أي حساب تجريبي بالأسفل للدخول الفوري بدون كلمة مرور.",
+              "Authentication failed. Check your credentials and server connectivity.",
+              "فشل تسجيل الدخول. تحقق من بياناتك واتصال الخادم.",
             ),
       );
     } finally {
@@ -357,7 +220,7 @@ export function ConsoleAuthGate({
         </div>
 
         {/* Credentials panel */}
-        <div className="rounded-card border border-border-subtle bg-surface-1 p-6 sm:p-8">
+        <div className="scroll-thin max-h-[94vh] overflow-y-auto rounded-card border border-border-subtle bg-surface-1 p-4 sm:p-6 lg:p-8">
           <div className="mb-6 lg:hidden">
             <BrandLogo size={38} sub={tk("app.subtitle")} />
             <p className="tagline mt-2">{tk("app.tagline")}</p>
@@ -373,25 +236,27 @@ export function ConsoleAuthGate({
               <p className="mt-1 text-label-lg text-text-secondary">
                 {previewMode
                   ? t("Preview only — sign-in and app entry are disabled.", "معاينة فقط — تسجيل الدخول ودخول التطبيقات معطّلة.")
-                  : t("Instant preview enabled — click below to enter without password.", "وضع الاستعراض المباشر مفعّل — يمكنك الدخول فورا بدون كلمة مرور.")}
+                  : demoAccounts.length > 0
+                    ? t("Server-enabled demo accounts are available below.", "الحسابات التجريبية المفعّلة من الخادم متاحة أدناه.")
+                    : t("Sign in with your authorized work credentials.", "سجّل الدخول ببيانات العمل المعتمدة لحسابك.")}
               </p>
             </div>
           </div>
 
-          {!previewMode && (
+          {!previewMode && demoAccounts.length > 0 && (
           <div className="mt-5 border-t border-border-subtle pt-4">
             <div className="mb-2.5 flex items-center justify-between">
               <span className="text-label font-bold uppercase tracking-wider text-brand">
                 {t(
-                  "Choose an account to enter (no password)",
-                  "اختر الحساب للدخول (بدون كلمة مرور)",
+                  "Choose a server-enabled demo account",
+                  "اختر حسابًا تجريبيًا مفعّلًا من الخادم",
                 )}
               </span>
               <span className="text-label font-semibold text-status-active">
-                {t("Instant Entry", "دخول مباشر بضغطة واحدة")}
+                {t("Backend sign-in", "دخول عبر الخادم")}
               </span>
             </div>
-            <div className="grid gap-2">
+            <div className="scroll-thin grid max-h-[34vh] grid-cols-1 gap-1.5 overflow-y-auto overscroll-contain sm:grid-cols-2">
               {demoAccounts.map((acc) => {
                 const isHiddenAccount = acc.key === "driver" || acc.key === "client";
                 return (
@@ -401,20 +266,20 @@ export function ConsoleAuthGate({
                     disabled={isSubmitting}
                     onClick={() => handleQuickDemoLogin(acc)}
                     className={cn(
-                      "rounded-inner border p-3 text-start transition-all hover:border-brand hover:bg-surface-2 active:scale-[0.99]",
+                      "min-w-0 rounded-inner border p-2.5 text-start transition-all hover:border-brand hover:bg-surface-2 active:scale-[0.99]",
                       email === acc.email ? "border-brand/60 bg-surface-2" : "border-border-subtle",
                       isHiddenAccount && "hidden",
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-body font-bold text-text-primary">
+                      <span className="min-w-0 truncate text-body font-bold text-text-primary">
                         {t(acc.titleEn, acc.titleAr)}
                       </span>
                       <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-micro font-bold text-brand">
                         {t("Enter Now →", "دخول فوري ←")}
                       </span>
                     </div>
-                    <div className="mt-1 text-label leading-relaxed text-text-muted">
+                    <div className="mt-0.5 line-clamp-2 text-micro leading-relaxed text-text-muted">
                       {acc.descEn ? t(acc.descEn, acc.descAr) : acc.descAr}
                     </div>
                   </button>

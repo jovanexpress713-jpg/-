@@ -9,6 +9,9 @@ export interface TokenPayload {
   role: string;
   driverId?: string;
   customerId?: string;
+  /** Canonical stable region identifier loaded from the account record. */
+  regionId?: string;
+  /** Legacy display label retained for older clients. */
   region?: string;
   permissions?: string[];
   registrationId?: string;

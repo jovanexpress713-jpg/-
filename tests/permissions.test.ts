@@ -296,57 +296,98 @@ async function runPersonaBarTests(adminToken: string, opsToken: string) {
 }
 
 /**
- * The sign-in form must let the visitor choose.
- *
- * It used to ship pre-filled with the system administrator's credentials and to
- * sign the visitor in as him when submitted empty — so nobody ever picked an
- * account. Both are asserted away here.
+ * Authentication never falls back to a browser-created account. Demo choices
+ * are rendered only from the server response, and a failed API login creates no
+ * session even when the account card was visible.
  */
 async function runAuthGateTests() {
   const { ConsoleAuthGate } = await import("../src/components/ConsoleAuthGate");
+  const { apiClient, setAuthToken } = await import("../src/services/apiClient");
+  const { act } = await import("react");
+  const originalGetDemoAccounts = apiClient.auth.getDemoAccounts;
+  const originalLogin = apiClient.auth.login;
   let authenticated: any = null;
+  let loginAttempts = 0;
 
-  const mounted = await mountInJsdom(({ React, SettingsProvider }) =>
-    React.createElement(SettingsProvider, null, React.createElement(ConsoleAuthGate, {
-      onAuthenticated: (user: any) => {
-        authenticated = user;
-      },
-    }))
-  );
+  const serverAccounts = [
+    { key: "admin", role: "SUPER_ADMIN", titleAr: "مدير النظام", titleEn: "System Administrator", email: "admin@ejaz.sa", password: "server-demo-password", descAr: "حساب تجريبي" },
+    { key: "ops", role: "OPERATIONS_MANAGER", titleAr: "مدير العمليات", titleEn: "Operations Manager", email: "ops@ejaz.sa", password: "server-demo-password", descAr: "حساب تجريبي" },
+    { key: "accountant", role: "ACCOUNTANT", titleAr: "المحاسب المالي", titleEn: "Accountant", email: "finance@ejaz.sa", password: "server-demo-password", descAr: "حساب تجريبي" },
+    { key: "driver", role: "DRIVER", titleAr: "حساب السائق", titleEn: "Driver", email: "driver@ejaz.sa", password: "server-demo-password", descAr: "حساب تجريبي" },
+    { key: "client", role: "CUSTOMER", titleAr: "حساب العميل", titleEn: "Client", email: "client@ejaz.sa", password: "server-demo-password", descAr: "حساب تجريبي" },
+  ];
 
-  const doc = mounted.host.ownerDocument;
-  const email = doc.querySelector('input[autocomplete="username"]') as HTMLInputElement | null;
-  const password = doc.querySelector('input[autocomplete="current-password"]') as HTMLInputElement | null;
+  (apiClient.auth as any).getDemoAccounts = async () => ({ enabled: true, accounts: serverAccounts });
+  (apiClient.auth as any).login = async () => {
+    loginAttempts += 1;
+    throw new Error("Authentication server unavailable");
+  };
+  setAuthToken(null);
 
-  assert.ok(email && password, "the sign-in form renders its two fields");
-  assert.strictEqual(email!.value, "", "no account is pre-selected for the visitor");
-  assert.strictEqual(password!.value, "", "and no password is pre-filled");
+  try {
+    const mounted = await mountInJsdom(({ React, SettingsProvider }) =>
+      React.createElement(SettingsProvider, null, React.createElement(ConsoleAuthGate, {
+        onAuthenticated: (user: any) => {
+          authenticated = user;
+        },
+      }))
+    );
 
-  /* Submitting an empty form must ask for credentials, not sign anybody in. */
-  const form = doc.querySelector("form");
-  assert.ok(form, "the form is present");
-  await form!.dispatchEvent(
-    new (mounted.host.ownerDocument.defaultView as any).Event("submit", { bubbles: true, cancelable: true })
-  );
-  await new Promise((r) => setTimeout(r, 30));
-  assert.strictEqual(authenticated, null, "an empty form never signs the visitor in as the administrator");
+    const doc = mounted.host.ownerDocument;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    const email = doc.querySelector('input[autocomplete="username"]') as HTMLInputElement | null;
+    const password = doc.querySelector('input[autocomplete="current-password"]') as HTMLInputElement | null;
 
-  /* The visitor chooses a role; nothing enters the control room for him. */
-  const gateText = mounted.text;
-  assert.ok(
-    !gateText.includes("دخول مباشر للوحة التحكم والإدارة"),
-    "there is no one-click entry hardcoded to the system administrator"
-  );
-  assert.ok(
-    gateText.includes("اختر الحساب للدخول"),
-    "the sign-in surface offers an explicit choice of account"
-  );
-  for (const role of ["مدير النظام", "مدير العمليات", "المحاسب المالي", "حساب السائق", "حساب العميل"]) {
-    assert.ok(gateText.includes(role), `the role list offers ${role}`);
+    assert.ok(email && password, "the sign-in form renders its two fields");
+    assert.strictEqual(email!.value, "", "no account is pre-selected for the visitor");
+    assert.strictEqual(password!.value, "", "and no password is pre-filled");
+
+    /* Submitting an empty form must ask for credentials, not sign anybody in. */
+    const form = doc.querySelector("form");
+    assert.ok(form, "the form is present");
+    await act(async () => {
+      form!.dispatchEvent(new (doc.defaultView as any).Event("submit", { bubbles: true, cancelable: true }));
+    });
+    assert.strictEqual(authenticated, null, "an empty form never signs the visitor in as the administrator");
+
+    const gateText = doc.body.textContent ?? "";
+    assert.ok(!gateText.includes("دخول مباشر للوحة التحكم والإدارة"), "there is no hardcoded admin entry button");
+    assert.ok(gateText.includes("اختر حسابًا تجريبيًا مفعّلًا من الخادم"), "demo choices are identified as server-enabled");
+    for (const role of ["مدير النظام", "مدير العمليات", "المحاسب المالي", "حساب السائق", "حساب العميل"]) {
+      assert.ok(gateText.includes(role), `the server-provided role list offers ${role}`);
+    }
+
+    const adminCard = Array.from(doc.querySelectorAll("button")).find((button) => button.textContent?.includes("مدير النظام"));
+    assert.ok(adminCard, "the server-provided administrator demo account is selectable");
+    await act(async () => {
+      adminCard!.dispatchEvent(new (doc.defaultView as any).MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    assert.strictEqual(loginAttempts, 1, "selecting a demo account calls the authentication server");
+    assert.strictEqual(authenticated, null, "an unavailable server never creates a local session");
+    assert.strictEqual(doc.defaultView!.localStorage.getItem("ejaz_auth_token"), null, "no token is stored on failure");
+    await mounted.unmount();
+    mounted.close();
+
+    /* When the server disables demos, the UI must not invent accounts. */
+    (apiClient.auth as any).getDemoAccounts = async () => ({ enabled: false, accounts: [] });
+    const disabled = await mountInJsdom(({ React, SettingsProvider }) =>
+      React.createElement(SettingsProvider, null, React.createElement(ConsoleAuthGate, { onAuthenticated: () => {} }))
+    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    assert.ok(!disabled.host.textContent?.includes("اختر حسابًا تجريبيًا"), "disabled demo accounts are absent");
+    assert.ok(!Array.from(disabled.host.querySelectorAll("button")).some((button) => button.textContent?.includes("مدير النظام")), "no local account choices are fabricated");
+    await disabled.unmount();
+    disabled.close();
+  } finally {
+    (apiClient.auth as any).getDemoAccounts = originalGetDemoAccounts;
+    (apiClient.auth as any).login = originalLogin;
+    setAuthToken(null);
   }
-
-  await mounted.unmount();
-  mounted.close();
 }
 
 /** The Arabic labels the sidebar renders, taken from the live i18n table. */

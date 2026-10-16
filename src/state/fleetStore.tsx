@@ -187,8 +187,9 @@ interface FleetStoreContextType {
     newStatus: TripStatus,
     noteAr?: string,
     noteEn?: string,
-    signature?: string
-  ) => void;
+    signature?: string,
+    podDetails?: { recipientName: string; recipientPhone?: string }
+  ) => Promise<boolean>;
   updateCargoWeight: (tripId: string, tons: number) => void;
   assignDriverAndTruck: (tripId: string, driverId: string, truckId: string) => void;
   createNewTrip: (tripData: Partial<Trip>) => Trip;
@@ -700,7 +701,8 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
   const [selectedTripId, setSelectedTripId] = useState<string>(() => trips[0]?.id || "trip-1");
   const [selectedTruckId, setSelectedTruckId] = useState<string>("v1");
   const [currentRole, setCurrentRole] = useState<Role>("admin");
-  const [isSimulating, setIsSimulating] = useState<boolean>(true);
+  // Simulation is opt-in and never starts as though GPS were live.
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Synchronize with Authoritative Backend API
@@ -746,7 +748,7 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
                 corridorKey: bt.corridorKey || "riyadh-jeddah",
                 cargoType: normalizeVehicleType(bt.cargoType),
                 cargoWeightTons: Number(bt.cargoWeightTons),
-                maxCapacityTons: Number(bt.maxCapacityTons || 25),
+                maxCapacityTons: Number(bt.maxCapacityTons || 0),
                 status: mappedStatus,
                 progressPct: keepLiveSimulation
                   ? existing.progressPct
@@ -916,56 +918,14 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
   };
 
   // Actions
-  const updateTripStatus = (
+  const updateTripStatus = async (
     tripId: string,
     newStatus: TripStatus,
     noteAr?: string,
     noteEn?: string,
-    signature?: string
-  ) => {
-    setTrips((prev) =>
-      prev.map((t) => {
-        if (t.id !== tripId) return t;
-
-        const timeStr = new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
-        const actorName =
-          currentRole === "driver"
-            ? "السائق"
-            : currentRole === "shipper"
-            ? "العميل المستلم"
-            : "غرفة العمليات";
-
-        const newEvent: TimelineEvent = {
-          id: `e-${Date.now()}`,
-          timestamp: timeStr,
-          titleAr: noteAr || `تحديث حالة الرحلة إلى ${newStatus}`,
-          titleEn: noteEn || `Trip status updated to ${newStatus}`,
-          status: newStatus,
-          actor: actorName,
-        };
-
-        const updated: Trip = {
-          ...t,
-          status: newStatus,
-          timeline: [...t.timeline, newEvent],
-          recipientSignature: signature || t.recipientSignature,
-          deliveryTime: newStatus === "delivered" || newStatus === "completed" ? timeStr : t.deliveryTime,
-          /* A fresh lifecycle write clears the stale-status alert automatically. */
-          lastStatusAt: Date.now(),
-        };
-
-        return updated;
-      })
-    );
-
-    recordAuditLog(
-      `تحديث حالة الرحلة ${tripId} إلى ${newStatus}`,
-      `Updated trip ${tripId} status to ${newStatus}`,
-      tripId,
-      noteAr
-    );
-
-    // Map UI status to Canonical Backend State
+    signature?: string,
+    podDetails?: { recipientName: string; recipientPhone?: string },
+  ): Promise<boolean> => {
     const CANONICAL_MAP: Record<TripStatus, string> = {
       new: "DRAFT_CREATED",
       planning: "PENDING_APPROVAL",
@@ -978,30 +938,82 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
       completed: "COMPLETED",
       cancelled: "CANCELLED",
     };
-
     const targetCanonical = CANONICAL_MAP[newStatus];
-    if (targetCanonical) {
-      apiClient.trips
-        .transition(tripId, {
+    const applyLocalTransition = (recordedSignature?: string) => {
+      setTrips((prev) =>
+        prev.map((t) => {
+          if (t.id !== tripId) return t;
+
+          const timeStr = new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+          const actorName =
+            currentRole === "driver"
+              ? "السائق"
+              : currentRole === "shipper"
+                ? "العميل المستلم"
+                : "غرفة العمليات";
+          const newEvent: TimelineEvent = {
+            id: `e-${Date.now()}`,
+            timestamp: timeStr,
+            titleAr: noteAr || `تحديث حالة الرحلة إلى ${newStatus}`,
+            titleEn: noteEn || `Trip status updated to ${newStatus}`,
+            status: newStatus,
+            actor: actorName,
+          };
+          return {
+            ...t,
+            status: newStatus,
+            timeline: [...t.timeline, newEvent],
+            recipientSignature: recordedSignature || t.recipientSignature,
+            deliveryTime: newStatus === "delivered" || newStatus === "completed" ? timeStr : t.deliveryTime,
+            lastStatusAt: Date.now(),
+          };
+        })
+      );
+      recordAuditLog(
+        `تحديث حالة الرحلة ${tripId} إلى ${newStatus}`,
+        `Updated trip ${tripId} status to ${newStatus}`,
+        tripId,
+        noteAr,
+      );
+    };
+
+    // Persona views in the control room are explicitly local previews; they may
+    // update only the preview state and never write to an authenticated API.
+    if (currentRole !== "admin" || !getAuthToken()) {
+      applyLocalTransition(signature);
+      return true;
+    }
+
+    if (!targetCanonical) return false;
+    if (newStatus === "delivered" && (!signature || !podDetails?.recipientName.trim())) {
+      console.warn("[FleetStore] Delivery was not recorded: a captured signature and recipient name are required.");
+      return false;
+    }
+
+    try {
+      if (newStatus === "delivered") {
+        // The POD endpoint validates the captured signature and performs the
+        // DELIVERED state transition in the same server-side operation.
+        await apiClient.pod.create({
+          tripId,
+          recipientName: podDetails!.recipientName.trim(),
+          recipientPhone: podDetails!.recipientPhone || "",
+          signatureUrl: signature,
+          notes: noteAr || "",
+        });
+        applyLocalTransition(signature);
+      } else {
+        await apiClient.trips.transition(tripId, {
           targetStatus: targetCanonical,
           notes: noteAr,
           reason: noteAr,
-        })
-        .catch((err) => {
-          console.warn("[FleetStore] Backend transition sync:", err);
         });
-
-      // If delivered and signature present, record authoritative POD
-      if (newStatus === "delivered" && signature) {
-        apiClient.pod
-          .create({
-            tripId,
-            recipientName: "العميل المستلم",
-            signatureUrl: signature,
-            notes: noteAr || "تم الاستلام والتوقيع عبر التطبيق",
-          })
-          .catch((e) => console.warn("[FleetStore] POD sync:", e));
+        applyLocalTransition();
       }
+      return true;
+    } catch (error) {
+      console.warn("[FleetStore] Trip action was not applied:", error);
+      return false;
     }
   };
 
@@ -1208,6 +1220,11 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const sendChatMessage = (tripId: string, text: string) => {
+    const normalizedText = text.trim();
+    if (!normalizedText) return;
+
+    // This is a local preview only. No chat API exists yet, so do not claim a
+    // dispatch, driver, sensor, or delivery response has been sent or received.
     const timeStr = new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -1215,46 +1232,17 @@ export function FleetStoreProvider({ children }: { children: ReactNode }) {
       from: currentRole === "driver" ? "driver" : currentRole === "shipper" ? "shipper" : "dispatch",
       senderName:
         currentRole === "driver"
-          ? "السائق فهد القحطاني"
+          ? "السائق (معاينة محلية)"
           : currentRole === "shipper"
-          ? "العميل (شركة سدافكو)"
-          : "غرفة العمليات المركزية",
-      textAr: text,
-      textEn: text,
+            ? "العميل (معاينة محلية)"
+            : "المشغل (معاينة محلية)",
+      textAr: normalizedText,
+      textEn: normalizedText,
       timestamp: timeStr,
       read: true,
     };
 
     setChatMessages((prev) => [...prev, userMsg]);
-
-    // Simulated instant smart AI / dispatch reply after 1.5 seconds
-    setTimeout(() => {
-      const replyRepliesAr = [
-        "علم وجاري المتابعة، تم تأكيد البيانات مع السائق فوراً.",
-        "تم فحص مستشعرات GPS والحرارة، القراءات كلها سليمة ومطابقة.",
-        "الشاحنة تسير بسرعة ٨٦ كم/س والوصول المتوقع في وقته المحدد.",
-        "تم إرسال بوليصة الشحن الإلكترونية المحدثة إلى بريدكم.",
-      ];
-      const replyRepliesEn = [
-        "Roger that, verified with driver immediately.",
-        "Telemetry and thermal sensors checked; all parameters nominal.",
-        "Truck cruising at 86 km/h, on track for scheduled ETA.",
-        "Updated electronic waybill dispatched to your terminal.",
-      ];
-      const randIdx = Math.floor(Math.random() * replyRepliesAr.length);
-
-      const botReply: ChatMessage = {
-        id: `msg-${Date.now() + 1}`,
-        tripId,
-        from: currentRole === "driver" ? "dispatch" : "driver",
-        senderName: currentRole === "driver" ? "غرفة العمليات المركزية" : "السائق (الميدان)",
-        textAr: replyRepliesAr[randIdx],
-        textEn: replyRepliesEn[randIdx],
-        timestamp: new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }),
-        read: false,
-      };
-      setChatMessages((prev) => [...prev, botReply]);
-    }, 1400);
   };
 
   const resetAllDemoData = () => {

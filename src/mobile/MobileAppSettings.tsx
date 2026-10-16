@@ -45,7 +45,13 @@ export function MobileAppSettings({
 }) {
   const { t, tk, lang, setLang, theme, setTheme, resolvedTheme } = useSettings();
   const { prefs, set: setPref } = usePreferences();
-  const [systemInfo, setSystemInfo] = useState<{ version?: string; environment?: string; uptimeSeconds?: number } | null>(null);
+  const [systemInfo, setSystemInfo] = useState<{
+    version?: string;
+    environment?: string;
+    uptimeSeconds?: number;
+    status?: string;
+    database?: { durable?: boolean; mode?: string };
+  } | null>(null);
   const [logoutArmed, setLogoutArmed] = useState(false);
 
   useEffect(() => {
@@ -53,10 +59,18 @@ export function MobileAppSettings({
     apiClient.system
       .health()
       .then((h) => {
-        if (!cancelled && h) setSystemInfo({ version: h.version, environment: h.environment, uptimeSeconds: h.uptimeSeconds });
+        if (!cancelled && h) {
+          setSystemInfo({
+            version: h.version,
+            environment: h.environment,
+            uptimeSeconds: h.uptimeSeconds,
+            status: h.status,
+            database: h.database,
+          });
+        }
       })
       .catch(() => {
-        /* offline — the static app info below is still accurate */
+        if (!cancelled) setSystemInfo(null);
       });
     return () => {
       cancelled = true;
@@ -228,7 +242,13 @@ export function MobileAppSettings({
         {/* ── معلومات التطبيق ─────────────────────────────────────── */}
         <MobileSection title={t("App information", "معلومات التطبيق")} hint={t("Platform, establishment and system", "المنصة والمؤسسة والنظام")}>
           <MobileRow icon={IconStar} label={t("Platform", "المنصة")} value={tk("app.shortName")} />
-          <MobileRow icon={IconInfo} label={t("App version", "إصدار التطبيق")} value={systemInfo?.version || "1.0.0-PROD"} />
+          <MobileRow icon={IconInfo} label={t("App version", "إصدار التطبيق")} value={systemInfo?.version || "—"} />
+          <MobileRow icon={IconBolt} label={t("API status", "حالة الواجهة الخلفية")} value={systemInfo?.status || "—"} />
+          <MobileRow
+            icon={IconLock}
+            label={t("Database persistence", "استمرارية قاعدة البيانات")}
+            value={systemInfo ? (systemInfo.database?.durable ? t("Persistent storage", "تخزين دائم") : t("In-memory only", "ذاكرة مؤقتة فقط")) : "—"}
+          />
           <MobileRow
             icon={IconTruck}
             label={t("EJAZ Transport Establishment", "مؤسسة إيجاز للنقليات")}

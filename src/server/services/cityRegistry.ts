@@ -31,6 +31,17 @@ export const SAUDI_REGIONS = [
 
 export type SaudiRegion = (typeof SAUDI_REGIONS)[number];
 
+/** Stable database/API identifiers for the five supported operating regions. */
+export const SAUDI_REGION_RECORDS = [
+  { id: "north", label: "المنطقة الشمالية" },
+  { id: "east", label: "المنطقة الشرقية" },
+  { id: "west", label: "المنطقة الغربية" },
+  { id: "south", label: "المنطقة الجنوبية" },
+  { id: "central", label: "المنطقة الوسطى" },
+] as const;
+
+export type SaudiRegionId = (typeof SAUDI_REGION_RECORDS)[number]["id"];
+
 export const ROAD_FACTOR = 1.12;
 
 export const KSA_CITIES: CityRecord[] = [
@@ -161,10 +172,53 @@ export function normalizeRegion(raw: string | null | undefined): SaudiRegion | n
   return null;
 }
 
+export function normalizeRegionId(raw: string | null | undefined): SaudiRegionId | null {
+  if (!raw) return null;
+  const cleaned = String(raw).trim().toLowerCase();
+  const byId = SAUDI_REGION_RECORDS.find((region) => region.id === cleaned);
+  if (byId) return byId.id;
+
+  const normalizedLabel = normalizeRegion(raw);
+  if (!normalizedLabel) return null;
+  return SAUDI_REGION_RECORDS.find((region) => region.label === normalizedLabel)?.id || null;
+}
+
+export function regionLabelForId(raw: string | null | undefined): SaudiRegion | null {
+  const regionId = normalizeRegionId(raw);
+  if (!regionId) return null;
+  return SAUDI_REGION_RECORDS.find((region) => region.id === regionId)?.label || null;
+}
+
 export function getCityRegion(cityName: string | null | undefined): SaudiRegion | null {
   const city = resolveCity(cityName);
   if (city?.region) return city.region as SaudiRegion;
   return null;
+}
+
+export function getCityRegionId(cityName: string | null | undefined): SaudiRegionId | null {
+  return normalizeRegionId(getCityRegion(cityName));
+}
+
+/**
+ * Region check for a trip. Persisted region_id/region is authoritative. Legacy
+ * trips without a stored assignment fall back to their known origin/destination
+ * cities; unknown locations fail closed.
+ */
+export function isTripInRegionId(
+  trip: { originCity?: string; destinationCity?: string; region?: string; regionId?: string },
+  targetRegionId: string | null | undefined
+): boolean {
+  const target = normalizeRegionId(targetRegionId);
+  if (!target) return false;
+
+  const hasStoredRegion =
+    (trip.regionId !== undefined && trip.regionId !== null && String(trip.regionId).trim() !== "") ||
+    (trip.region !== undefined && trip.region !== null && String(trip.region).trim() !== "");
+  if (hasStoredRegion) {
+    return normalizeRegionId(trip.regionId || trip.region) === target;
+  }
+
+  return getCityRegionId(trip.originCity) === target || getCityRegionId(trip.destinationCity) === target;
 }
 
 export function isTripInRegion(

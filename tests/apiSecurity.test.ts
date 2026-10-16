@@ -2,6 +2,9 @@ import assert from "assert";
 import http from "http";
 import type { AddressInfo } from "net";
 import { createServerApp } from "../src/server/app";
+import { db } from "../src/server/db";
+import { getAuditLogs } from "../src/server/services/auditService";
+import { generateToken } from "../src/server/auth/jwt";
 
 /**
  * EJAZ Transport — Live API authorization & lifecycle guard tests.
@@ -114,6 +117,11 @@ export async function runApiSecurityTests() {
     const accountant = await login("finance@ejaz.sa", "Ejaz@2026Admin");
     assert.strictEqual(accountant.status, 200, "ACCOUNTANT must be able to authenticate");
 
+    const westRepresentative = await login("rep.west@ejaz.sa", "Ejaz@2026Admin");
+    assert.strictEqual(westRepresentative.status, 200, "a regional representative must be able to authenticate");
+    const centralRepresentative = await login("rep.central@ejaz.sa", "Ejaz@2026Admin");
+    assert.strictEqual(centralRepresentative.status, 200, "a second regional representative must be able to authenticate");
+
     // ------------------------------------------------------------------
     // 4. RBAC: unauthorized roles are denied, authorized roles are allowed
     // ------------------------------------------------------------------
@@ -157,9 +165,153 @@ export async function runApiSecurityTests() {
     for (const trip of clientList.body?.trips || []) {
       assert.strictEqual(trip.customerId, "cust-1", "Customer must never receive another client's shipment");
     }
+    const crossCustomerCreate = await api("POST", "/api/trips", {
+      token: client.token,
+      body: { originCity: "جدة", destinationCity: "الرياض", cargoDescription: "محاولة خارج الحساب", cargoType: "جاف", cargoWeightTons: 4, customerId: "cust-2" },
+    });
+    assert.strictEqual(crossCustomerCreate.status, 403, "a customer cannot create a trip for another customer");
+    const missingCustomerCreate = await api("POST", "/api/trips", {
+      token: admin.token,
+      body: { originCity: "جدة", destinationCity: "الرياض", cargoDescription: "عميل مفقود", cargoType: "جاف", cargoWeightTons: 4 },
+    });
+    assert.strictEqual(missingCustomerCreate.status, 422, "the server must not invent a customer for a trip");
 
     // ------------------------------------------------------------------
-    // 6. Canonical lifecycle: full chain plus business-rule guards
+    // 6. Regional representative scope: database region is authoritative
+    // ------------------------------------------------------------------
+    const westTrips = await api("GET", "/api/trips", { token: westRepresentative.token });
+    assert.strictEqual(westTrips.status, 200, "a representative can list regional trips");
+    assert.ok((westTrips.body?.trips || []).length > 0, "the west region has seed trips");
+    for (const trip of westTrips.body?.trips || []) {
+      assert.strictEqual(trip.regionId, "west", "representative trip lists must be restricted to the assigned region ID");
+    }
+
+    const centralTrips = await api("GET", "/api/trips", { token: centralRepresentative.token });
+    assert.strictEqual(centralTrips.status, 200, "a central representative can list regional trips");
+    for (const trip of centralTrips.body?.trips || []) {
+      assert.strictEqual(trip.regionId, "central", "the central representative must not receive another region's trips");
+    }
+    for (const alias of ["/api/client/trips", "/api/driver/trips"]) {
+      const aliasTrips = await api("GET", alias, { token: westRepresentative.token });
+      assert.strictEqual(aliasTrips.status, 200, `the trip alias ${alias} must remain region-scoped`);
+      assert.ok((aliasTrips.body?.trips || []).every((trip: any) => trip.regionId === "west"));
+    }
+
+    // A stale/overstated token claim cannot widen access beyond the live user row.
+    const staleScopeToken = generateToken({
+      userId: "u-rep-west",
+      email: "rep.west@ejaz.sa",
+      fullName: "Regional representative",
+      role: "REPRESENTATIVE",
+      regionId: "east",
+      region: "المنطقة الشرقية",
+    });
+    const staleScopeList = await api("GET", "/api/trips", { token: staleScopeToken });
+    assert.strictEqual(staleScopeList.status, 200);
+    assert.ok(
+      (staleScopeList.body?.trips || []).every((trip: any) => trip.regionId === "west"),
+      "regional authorization must use the database assignment instead of a stale JWT region claim",
+    );
+
+    const westAccount = db.users.get("u-rep-west")!;
+    const originalRegionId = westAccount.regionId;
+    westAccount.regionId = undefined;
+    try {
+      const missingDatabaseAssignment = await api("GET", "/api/trips", { token: westRepresentative.token });
+      assert.strictEqual(missingDatabaseAssignment.status, 403, "a JWT region claim cannot replace a missing database assignment");
+      assert.strictEqual(missingDatabaseAssignment.body?.code, "REGION_ACCESS_DENIED");
+    } finally {
+      westAccount.regionId = originalRegionId;
+    }
+
+    const outOfRegionTrip = await api("GET", "/api/trips/trip-3", { token: westRepresentative.token });
+    assert.strictEqual(outOfRegionTrip.status, 403, "a representative cannot read a trip from another region");
+    const outOfRegionTripEvents = await api("GET", "/api/trips/trip-3/events", { token: westRepresentative.token });
+    assert.strictEqual(outOfRegionTripEvents.status, 403, "trip subresources must enforce the same region boundary");
+    const outOfRegionCustomer = await api("GET", "/api/customers/cust-3", { token: westRepresentative.token });
+    assert.strictEqual(outOfRegionCustomer.status, 403, "a representative cannot read a customer from another region");
+    const outOfRegionDriver = await api("GET", "/api/drivers/d3", { token: westRepresentative.token });
+    assert.strictEqual(outOfRegionDriver.status, 403, "a representative cannot read a driver from another region");
+    const outOfRegionTripUpdate = await api("PUT", "/api/trips/trip-3", {
+      token: westRepresentative.token,
+      body: { notes: "محاولة تعديل خارج النطاق" },
+    });
+    assert.strictEqual(outOfRegionTripUpdate.status, 403, "a representative cannot update a trip from another region");
+    const outOfRegionCustomerUpdate = await api("PATCH", "/api/customers/cust-3", {
+      token: westRepresentative.token,
+      body: { companyName: "تعديل خارج النطاق" },
+    });
+    assert.strictEqual(outOfRegionCustomerUpdate.status, 403, "a representative cannot update a customer from another region");
+    const outOfRegionDriverUpdate = await api("PATCH", "/api/drivers/d3", {
+      token: westRepresentative.token,
+      body: { fullName: "تعديل خارج النطاق" },
+    });
+    assert.strictEqual(outOfRegionDriverUpdate.status, 403, "a representative cannot update a driver from another region");
+
+    const westCustomers = await api("GET", "/api/customers", { token: westRepresentative.token });
+    assert.strictEqual(westCustomers.status, 200);
+    assert.ok((westCustomers.body?.customers || []).every((customer: any) => customer.regionId === "west"));
+    const westDrivers = await api("GET", "/api/drivers", { token: westRepresentative.token });
+    assert.strictEqual(westDrivers.status, 200);
+    assert.ok((westDrivers.body?.drivers || []).every((driver: any) => driver.regionId === "west"));
+
+    const outOfRegionTripCreate = await api("POST", "/api/trips", {
+      token: westRepresentative.token,
+      body: {
+        originCity: "الرياض",
+        destinationCity: "الدمام",
+        cargoDescription: "محاولة إنشاء خارج النطاق",
+        cargoType: "جاف",
+        cargoWeightTons: 3,
+      },
+    });
+    assert.strictEqual(outOfRegionTripCreate.status, 403, "trip creation outside the assigned region must be blocked");
+
+    const outOfRegionCustomerCreate = await api("POST", "/api/customers", {
+      token: westRepresentative.token,
+      body: { companyName: "عميل خارج النطاق", phone: "+966500000001", city: "الرياض", password: "StrongPass123" },
+    });
+    assert.strictEqual(outOfRegionCustomerCreate.status, 403, "customer creation outside the assigned region must be blocked");
+
+    const outOfRegionDriverCreate = await api("POST", "/api/drivers", {
+      token: westRepresentative.token,
+      body: {
+        fullName: "سائق خارج النطاق",
+        phone: "+966500000002",
+        nationalId: "1000000002",
+        licenseNumber: "DL-OUT-REGION",
+        licenseExpiry: "2030-01-01",
+        city: "الرياض",
+        password: "StrongPass123",
+      },
+    });
+    assert.strictEqual(outOfRegionDriverCreate.status, 403, "driver creation outside the assigned region must be blocked");
+
+    const inRegionTripCreate = await api("POST", "/api/trips", {
+      token: centralRepresentative.token,
+      body: {
+        originCity: "الرياض",
+        destinationCity: "الخرج",
+        customerId: "cust-2",
+        driverId: "d2",
+        cargoDescription: "رحلة ضمن المنطقة الوسطى",
+        cargoType: "براد",
+        cargoWeightTons: 6,
+      },
+    });
+    assert.strictEqual(inRegionTripCreate.status, 201, "a representative can create a trip within the assigned region");
+    assert.strictEqual(inRegionTripCreate.body.trip.regionId, "central", "the server must assign the database region ID");
+
+    for (const [entity, entityId] of [["trips", "trip-3"], ["customers", "cust-3"], ["drivers", "d3"]] as const) {
+      const attempts = getAuditLogs({ entity, entityId, limit: 20 });
+      assert.ok(
+        attempts.some((record) => record.action === "REGION_ACCESS_DENIED" && record.actorId === "u-rep-west"),
+        `cross-region access to ${entity}/${entityId} must be written to the audit log`,
+      );
+    }
+
+    // ------------------------------------------------------------------
+    // 7. Canonical lifecycle: full chain plus business-rule guards
     // ------------------------------------------------------------------
     const created = await api("POST", "/api/trips", {
       token: admin.token,
@@ -170,6 +322,7 @@ export async function runApiSecurityTests() {
         cargoType: "براد",
         cargoWeightTons: 20,
         tripPrice: 5000,
+        customerId: "cust-1",
         vehicleId: "v2",
         driverId: "d2",
       },
@@ -178,7 +331,7 @@ export async function runApiSecurityTests() {
     const tripId: string = created.body.trip.id;
     assert.match(created.body.trip.tripNumber, /^EJ-\d{4}-\d{6}$/, "Trip number must follow the EJ-YYYY-XXXXXX convention");
 
-    const earlyPod = await api("POST", "/api/pod", { token: admin.token, body: { tripId, recipientName: "تسليم مبكر" } });
+    const earlyPod = await api("POST", "/api/pod", { token: admin.token, body: { tripId, recipientName: "تسليم مبكر", signatureUrl: "data:image/png;base64,AA==" } });
     assert.strictEqual(earlyPod.status, 422, "POD must be rejected before the trip reaches the destination");
 
     const earlySettlement = await api("POST", "/api/finance/settle", { token: admin.token, body: { tripId, paidAmount: 5000 } });
@@ -202,9 +355,14 @@ export async function runApiSecurityTests() {
     const illegalJump = await api("POST", `/api/trips/${tripId}/transition`, { token: admin.token, body: { targetStatus: "DRAFT_CREATED" } });
     assert.strictEqual(illegalJump.status, 422, "Illegal state jumps must be rejected by the state machine");
 
+    const unsignedPod = await api("POST", "/api/pod", {
+      token: admin.token,
+      body: { tripId, recipientName: "مندوب الاستلام" },
+    });
+    assert.strictEqual(unsignedPod.status, 400, "POD must require a captured signature image");
     const pod = await api("POST", "/api/pod", {
       token: admin.token,
-      body: { tripId, recipientName: "مندوب الاستلام", signatureUrl: "SIGNED_DIGITALLY" },
+      body: { tripId, recipientName: "مندوب الاستلام", signatureUrl: "data:image/png;base64,AA==" },
     });
     assert.strictEqual(pod.status, 201, "POD must be accepted once the trip is at the destination");
 
@@ -225,6 +383,7 @@ export async function runApiSecurityTests() {
         cargoDescription: "مسار خارج دفتر التعرفة",
         cargoType: "جاف",
         cargoWeightTons: 12,
+        customerId: "cust-1",
         vehicleId: "v2",
         driverId: "d2",
       },
@@ -325,6 +484,7 @@ export async function runApiSecurityTests() {
         cargoDescription: "طلب رحلة آلي",
         cargoType: "جاف",
         cargoWeightTons: 10,
+        customerId: "cust-1",
         driverId: "unassigned",
       },
     });

@@ -12,6 +12,7 @@ import { canSwitchAccounts, isClientRole, isDriverRole, type SessionUser } from 
 import { BrandLogo } from "../components/Logo";
 import { IconBell, IconMenu, IconArrowRight } from "../components/Icons";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import type { MobileExportStatus } from "./useMobileScreenExport";
 
 type ScreenFlow = "welcome" | "login" | "register" | "app";
 
@@ -32,6 +33,9 @@ export function MobileApp({
   bypassAuthUser,
   forcedInterface,
   onLogout,
+  exportAllSignal = 0,
+  exportBusy = false,
+  onBulkExportStatus,
 }: {
   onStaffLogin?: (user: any) => void;
   bypassAuthUser?: any;
@@ -39,6 +43,10 @@ export function MobileApp({
   forcedInterface?: "driver" | "client";
   /** Delegated sign-out (control-room sessions log out of everything). */
   onLogout?: () => void;
+  /** Bumped by the shared app header to export every screen in this app. */
+  exportAllSignal?: number;
+  exportBusy?: boolean;
+  onBulkExportStatus?: (status: MobileExportStatus) => void;
 } = {}) {
   const { t } = useSettings();
   const [currentUser, setCurrentUser] = useState<any | null>(null);
@@ -51,6 +59,10 @@ export function MobileApp({
   const [notifSignal, setNotifSignal] = useState(0);
   const [interfacePref, setInterfacePref] = useState<"driver" | "client">("driver");
   const { unread } = useMobileNotifications();
+
+  useEffect(() => {
+    if (exportAllSignal > 0) setSettingsOpen(false);
+  }, [exportAllSignal]);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,6 +206,12 @@ export function MobileApp({
   const inApp = currentScreen === "app" && currentUser && !awaitingApproval;
   const showChrome = !!currentUser && currentScreen === "app";
 
+  useEffect(() => {
+    if (exportAllSignal > 0 && !inApp) {
+      onBulkExportStatus?.({ busy: false, progress: null, error: "لا توجد شاشات تشغيلية متاحة لهذا الحساب." });
+    }
+  }, [exportAllSignal, inApp, onBulkExportStatus]);
+
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-surface-0">
       {/* Clean app header (§4): logo · title · notifications · menu. */}
@@ -210,8 +228,9 @@ export function MobileApp({
             onClick={() => {
               setNotifSignal((n) => n + 1);
             }}
-            className="relative grid h-8 w-8 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+            className="relative grid h-8 w-8 place-items-center rounded-full bg-white/10 hover:bg-white/20 disabled:cursor-wait disabled:opacity-50"
             aria-label={t("Notifications", "الإشعارات")}
+            disabled={exportBusy}
           >
             <IconBell size={15} />
             {unread > 0 && (
@@ -221,8 +240,9 @@ export function MobileApp({
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
-            className="grid h-8 w-8 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+            className="grid h-8 w-8 place-items-center rounded-full bg-white/10 hover:bg-white/20 disabled:cursor-wait disabled:opacity-50"
             aria-label={t("App Settings", "إعدادات التطبيق")}
+            disabled={exportBusy}
           >
             <IconMenu size={15} />
           </button>
@@ -295,6 +315,9 @@ export function MobileApp({
               onLogout={handleLogout}
               onOpenSettings={() => setSettingsOpen(true)}
               notificationsSignal={notifSignal}
+              exportAllSignal={exportAllSignal}
+              exportBusy={exportBusy}
+              onBulkExportStatus={onBulkExportStatus}
             />
           ) : (
             <ClientMode
@@ -302,6 +325,9 @@ export function MobileApp({
               onLogout={handleLogout}
               onOpenSettings={() => setSettingsOpen(true)}
               notificationsSignal={notifSignal}
+              exportAllSignal={exportAllSignal}
+              exportBusy={exportBusy}
+              onBulkExportStatus={onBulkExportStatus}
             />
           )
         )}

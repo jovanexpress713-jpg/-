@@ -655,4 +655,10 @@ export const UR_ORGANIZATION: Record<string, string> = {
   "Processing…": "کارروائی جاری ہے…",
   "No trips associated with this representative yet": "اس نمائندے سے منسلک ابھی تک کوئی ٹرپ نہیں ہے",
   "No audit events recorded for this representative": "اس نمائندے کے لیے کوئی آڈٹ ایونٹ درج نہیں ہے",
+
+  /* Backend persistence and deployment status */
+  "Database persistence": "ڈیٹابیس میں مستقل محفوظ کاری",
+  "Persistent storage": "مستقل اسٹوریج",
+  "In-memory only": "صرف میموری میں",
+  "Not configured": "ترتیب نہیں دیا گیا",
 };

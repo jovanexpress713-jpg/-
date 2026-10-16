@@ -29,10 +29,9 @@ interface TripsManagerProps {
  *
  * The same screen, reorganised around the real lifecycle: a tabbed card list
  * (الكل · متاحة · مؤكدة · جارية · مكتملة) wired to the canonical 18 states,
- * a strong «من ← إلى» route visual, live metrics (distance · weight · date ·
- * time) and the tariff-resolved price. Every row comes from the backend sync —
- * there are no mock trips — and every action (waybill, POD, replacements,
- * lifecycle steps) keeps working against the authoritative API.
+ * a strong «من ← إلى» route visual, persisted trip fields, and the tariff-resolved
+ * price. Mutations use the authoritative API; the printable shipment summary is
+ * explicitly a draft, not an issued waybill or external authority registration.
  */
 export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps) {
   const { t, td } = useSettings();
@@ -55,9 +54,11 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
   const [showWaybillModal, setShowWaybillModal] = useState(false);
   const [showSignModal, setShowSignModal] = useState(false);
   const [signDataUrl, setSignDataUrl] = useState<string | null>(null);
+  const [podRecipientName, setPodRecipientName] = useState("");
+  const [podRecipientPhone, setPodRecipientPhone] = useState("");
   const signCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isSigning, setIsSigning] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedReference, setCopiedReference] = useState(false);
 
   const [showReplaceDriverModal, setShowReplaceDriverModal] = useState(false);
   const [newDriverId, setNewDriverId] = useState("");
@@ -199,9 +200,32 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
     }
   };
 
-  const handleAdvanceStatus = (nextStatus: TripStatus, noteAr: string, noteEn: string) => {
-    if (!currentTrip) return;
-    updateTripStatus(currentTrip.id, nextStatus, noteAr, noteEn, signDataUrl || undefined);
+  const handleAdvanceStatus = async (
+    nextStatus: TripStatus,
+    noteAr: string,
+    noteEn: string,
+    podDetails?: { recipientName: string; recipientPhone?: string },
+  ): Promise<boolean> => {
+    if (!currentTrip) return false;
+    if (nextStatus === "delivered" && (!signDataUrl || !podDetails?.recipientName.trim())) {
+      toast(
+        t("A recipient name and captured signature are required.", "يلزم إدخال اسم المستلم ورسم توقيعه قبل إثبات التسليم."),
+        currentTrip.tripNumber,
+      );
+      return false;
+    }
+    const saved = await updateTripStatus(
+      currentTrip.id,
+      nextStatus,
+      noteAr,
+      noteEn,
+      nextStatus === "delivered" ? signDataUrl || undefined : undefined,
+      podDetails,
+    );
+    if (!saved) {
+      toast(t("The action was not saved to the server.", "لم يتم حفظ الإجراء على الخادم."), currentTrip.tripNumber);
+    }
+    return saved;
   };
 
   // Signature canvas handlers
@@ -251,13 +275,15 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
     setSignDataUrl(null);
   };
 
-  const copyShareLink = () => {
+  const copyTripReference = async () => {
     if (!currentTrip) return;
-    navigator.clipboard?.writeText?.(
-      `${window.location.origin}/?track=${currentTrip.tripNumber}`
-    );
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2400);
+    try {
+      await navigator.clipboard.writeText(currentTrip.tripNumber);
+      setCopiedReference(true);
+      setTimeout(() => setCopiedReference(false), 2400);
+    } catch {
+      toast(t("Could not copy the trip reference", "تعذّر نسخ رقم الرحلة"), currentTrip.tripNumber);
+    }
   };
 
   const fmtDate = (iso?: string) => {
@@ -315,23 +341,23 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
           </div>
           <p className="text-label-lg text-text-muted mt-0.5">
             {t(
-              "End-to-end trip execution: dispatch, GPS milestone tracking, e-waybill, and consignee POD signature",
-              "إدارة دورة حياة الرحلة بالكامل: أمر النقل، التتبع المباشر، بوليصة الشحن، وإثبات التسليم الرقمي"
+              "Trip lifecycle, authorized tracking records, draft trip summary, and captured POD signature",
+              "دورة حياة الرحلة وسجلات التتبع المصرّح بها وملخص الرحلة وإثبات التسليم الموقّع"
             )}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={copyShareLink} className="btn-ghost text-label-lg py-1.5 px-3">
+          <button onClick={copyTripReference} className="btn-ghost text-label-lg py-1.5 px-3">
             <IconLayers size={14} />
-            {copiedLink ? t("Link Copied!", "تم النسخ!") : t("Share Tracking Link", "مشاركة رابط التتبع")}
+            {copiedReference ? t("Reference copied", "تم نسخ رقم الرحلة") : t("Copy trip reference", "نسخ رقم الرحلة")}
           </button>
           <button
             onClick={() => setShowWaybillModal(true)}
             className="btn-primary text-label-lg py-1.5 px-4"
           >
             <IconDoc size={14} />
-            {t("Print e-Waybill", "بوليصة الشحن الإلكترونية")}
+            {t("Print trip summary (draft)", "طباعة ملخص الرحلة (مسودة)")}
           </button>
           {onClose && (
             <button onClick={onClose} className="btn-icon" aria-label={t("Close", "إغلاق")}>
@@ -866,7 +892,10 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                     مؤسسة إيجاز للنقليات · EJAZ TRANSPORT
                   </h3>
                   <span className="text-label text-navy/60 block font-medium">
-                    بوليصة شحن بري إلكترونية موحدة · E-WAYBILL #{currentTrip.qrCodeToken}
+                    {t("Shipment summary · draft", "ملخص الشحنة · مسودة")} · {currentTrip.tripNumber}
+                  </span>
+                  <span className="badge mt-1 bg-amber-100 text-amber-900 text-micro">
+                    {t("Preview only — not an official waybill", "للمعاينة فقط — ليست بوليصة رسمية")}
                   </span>
                 </div>
               </div>
@@ -920,32 +949,21 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
               </div>
             </div>
 
-            {/* QR Code and Digital Seal */}
+            {/* Internal trip reference — no QR or external authority validation is configured. */}
             <div className="mt-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                {/* Visual SVG QR representation */}
-                <div className="grid h-20 w-20 place-items-center rounded-inner bg-navy/10 p-2 border border-navy/20">
-                  <svg viewBox="0 0 40 40" className="h-full w-full" fill="#0A1931">
-                    <rect x="2" y="2" width="14" height="14" rx="2" fill="none" stroke="#0A1931" strokeWidth="3" />
-                    <rect x="6" y="6" width="6" height="6" />
-                    <rect x="24" y="2" width="14" height="14" rx="2" fill="none" stroke="#0A1931" strokeWidth="3" />
-                    <rect x="28" y="6" width="6" height="6" />
-                    <rect x="2" y="24" width="14" height="14" rx="2" fill="none" stroke="#0A1931" strokeWidth="3" />
-                    <rect x="6" y="28" width="6" height="6" />
-                    <rect x="22" y="22" width="4" height="4" />
-                    <rect x="28" y="26" width="6" height="4" />
-                    <rect x="24" y="32" width="6" height="4" />
-                  </svg>
+                <div className="grid h-20 w-20 place-items-center rounded-inner bg-navy/10 p-2 border border-navy/20 text-navy">
+                  <IconDoc size={40} />
                 </div>
                 <div>
                   <span className="text-label-lg font-bold text-navy block">
-                    {t("Transport Authority electronic verification token", "رمز التحقق الإلكتروني لهيئة النقل")}
+                    {t("Internal trip reference", "رقم الرحلة الداخلي")}
                   </span>
                   <span className="text-label text-navy/60 block font-mono">
-                    {currentTrip.qrCodeToken}
+                    {currentTrip.tripNumber}
                   </span>
-                  <span className="text-label text-status-active font-semibold block mt-1">
-                    ✓ {t("Consignment valid & registered on Bayan", "بوليصة سارية ومسجلة في منصة بيان")}
+                  <span className="text-label text-amber-800 font-semibold block mt-1">
+                    {t("No transport-authority verification is connected.", "لا يوجد ربط للتحقق من جهة النقل.")}
                   </span>
                 </div>
               </div>
@@ -1003,6 +1021,26 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
               </button>
             </div>
 
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block text-label-lg text-text-secondary">
+                {t("Recipient name", "اسم المستلم")} *
+                <input
+                  value={podRecipientName}
+                  onChange={(event) => setPodRecipientName(event.target.value)}
+                  className="field mt-1 w-full"
+                />
+              </label>
+              <label className="block text-label-lg text-text-secondary">
+                {t("Recipient phone", "هاتف المستلم")}
+                <input
+                  value={podRecipientPhone}
+                  onChange={(event) => setPodRecipientPhone(event.target.value)}
+                  className="field mt-1 w-full"
+                  inputMode="tel"
+                />
+              </label>
+            </div>
+
             <div className="mt-4 rounded-inner bg-surface-1 p-2 border border-border-subtle">
               <canvas
                 ref={signCanvasRef}
@@ -1031,13 +1069,19 @@ export function TripsManager({ onClose, onOpenLiveTracking }: TripsManagerProps)
                   {t("Cancel", "إلغاء")}
                 </button>
                 <button
-                  onClick={() => {
-                    handleAdvanceStatus(
+                  onClick={async () => {
+                    const saved = await handleAdvanceStatus(
                       "delivered",
                       "تم تسليم الشحنة وتوقيع إثبات الاستلام الرقمي من العميل",
-                      "Cargo delivered & digital POD signed by consignee"
+                      "Cargo delivered & digital POD signed by consignee",
+                      { recipientName: podRecipientName, recipientPhone: podRecipientPhone },
                     );
-                    setShowSignModal(false);
+                    if (saved) {
+                      setShowSignModal(false);
+                      setPodRecipientName("");
+                      setPodRecipientPhone("");
+                      clearSignature();
+                    }
                   }}
                   className="btn-primary text-label-lg py-1.5 px-4 font-bold"
                 >

@@ -23,71 +23,13 @@ interface LoginScreenProps {
 }
 
 interface DemoAccount {
-  key: "client" | "driver" | "admin";
-  role: "CLIENT" | "DRIVER" | "ADMIN";
+  key: string;
+  role: string;
   titleAr: string;
   titleEn: string;
   email: string;
   password: string;
   descAr: string;
-  fullName: string;
-  driverId?: string;
-  customerId?: string;
-}
-
-const OFFICIAL_DEMO_ACCOUNTS: DemoAccount[] = [
-  {
-    key: "client",
-    role: "CLIENT",
-    titleAr: "تجربة حساب العميل",
-    titleEn: "Demo Client",
-    email: "client@ejaz.sa",
-    password: "Ejaz@2026Client",
-    fullName: "شركة سدافكو للأغذية والمشروبات (عميل)",
-    customerId: "cust-1",
-    descAr: "متابعة الشحنات والرحلات، والتتبع المباشر، ومستندات بوليصة الشحن وإثبات التسليم POD",
-  },
-  {
-    key: "driver",
-    role: "DRIVER",
-    titleAr: "تجربة حساب السائق",
-    titleEn: "Demo Driver",
-    email: "driver@ejaz.sa",
-    password: "Ejaz@2026Driver",
-    fullName: "فهد الشمري (كابتن أسطول)",
-    driverId: "d1",
-    descAr: "عرض وطلب الرحلات المتاحة، تنفيذ مراحل الرحلة، وإثبات التسليم الميداني",
-  },
-  {
-    key: "admin",
-    role: "ADMIN",
-    titleAr: "تجربة حساب الإدارة",
-    titleEn: "Demo Admin",
-    email: "admin@ejaz.sa",
-    password: "Ejaz@2026Admin",
-    fullName: "فهد بن عبد العزيز السبيعي",
-    descAr: "لوحة التحكم المركزية، إدارة الأسطول والشاحنات، واعتماد طلبات السائقين",
-  },
-];
-
-function buildOfflineMobileUser(account: DemoAccount) {
-  const canonicalRole =
-    account.role === "ADMIN"
-      ? "SUPER_ADMIN"
-      : account.role === "CLIENT"
-        ? "CUSTOMER"
-        : "DRIVER";
-  return {
-    id: `u-${account.key}`,
-    email: account.email,
-    fullName: account.fullName,
-    phone: "+966551234567",
-    role: canonicalRole,
-    driverId: account.driverId,
-    customerId: account.customerId,
-    permissions: ["*"],
-    accountApproved: true,
-  };
 }
 
 export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
@@ -105,10 +47,28 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [activeDemoKey, setActiveDemoKey] = useState<string | null>(null);
+  const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>([]);
+  const isDemoEnabled = demoAccounts.length > 0;
 
-  const isDemoEnabled = true;
+  useEffect(() => {
+    let active = true;
+    apiClient.auth.getDemoAccounts()
+      .then((response) => {
+        if (!active) return;
+        const mobileAccounts = response.enabled
+          ? response.accounts.filter((account) => ["client", "driver", "admin"].includes(account.key))
+          : [];
+        setDemoAccounts(mobileAccounts);
+      })
+      .catch(() => {
+        if (active) setDemoAccounts([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  // Load remembered username on mount
+  // Only restore an explicitly remembered username; never prefill a demo identity.
   useEffect(() => {
     try {
       const savedRemember = localStorage.getItem("ejaz_remember_me");
@@ -116,18 +76,15 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
       if (savedRemember === "true" && savedUser) {
         setUsername(savedUser);
         setRememberMe(true);
-      } else if (!username) {
-        setUsername("client@ejaz.sa");
       }
     } catch {
-      if (!username) setUsername("client@ejaz.sa");
+      /* storage may be disabled; keep the field empty */
     }
   }, []);
 
-  const finalizeLogin = (user: any, token?: string) => {
-    if (token) {
-      setAuthToken(token);
-    }
+  const finalizeLogin = (user: any, token: string) => {
+    if (!token || !user?.role) throw new Error("The authentication server returned an invalid session.");
+    setAuthToken(token);
     try {
       localStorage.setItem("ejaz_current_user", JSON.stringify(user));
     } catch {
@@ -136,7 +93,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
     onLoginSuccess(user);
   };
 
-  // Instant 1-click demo login (works with backend or offline/static)
+  // Demo sign-in uses only credentials returned by the explicitly enabled server.
   const handleSelectDemo = async (account: DemoAccount) => {
     setUsername(account.email);
     setPassword(account.password);
@@ -146,34 +103,22 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
     setIsLoading(true);
     try {
       const res = await apiClient.auth.login(account.email, account.password);
-      if (res?.token && res?.user) {
-        finalizeLogin(res.user, res.token);
-      } else {
-        finalizeLogin(buildOfflineMobileUser(account));
-      }
-    } catch {
-      finalizeLogin(buildOfflineMobileUser(account));
+      finalizeLogin(res.user, res.token);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : t("Demo sign-in is unavailable.", "الدخول التجريبي غير متاح."));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Real authentication submission with demo fallback
+  // Real authentication submission; a server error never creates a local session.
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!username.trim() || !password) {
-      // If password wasn't typed, check if username matches a demo account for instant login
-      const matched = OFFICIAL_DEMO_ACCOUNTS.find(
-        (a) => a.email.toLowerCase() === username.trim().toLowerCase()
-      );
-      if (matched) {
-        await handleSelectDemo(matched);
-        return;
-      }
       setErrorMsg(
         t(
-          "Please enter your username/email and password",
-          "يرجى إدخال اسم المستخدم وكلمة المرور أو اختيار حساب تجريبي للدخول الفوري"
+          "Please enter your work email and password.",
+          "يرجى إدخال بريد العمل وكلمة المرور."
         )
       );
       return;
@@ -207,18 +152,11 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
         );
       }
     } catch (err: any) {
-      const matched = OFFICIAL_DEMO_ACCOUNTS.find(
-        (a) => a.email.toLowerCase() === username.trim().toLowerCase()
-      );
-      if (matched) {
-        finalizeLogin(buildOfflineMobileUser(matched));
-        return;
-      }
       setErrorMsg(
         err.message ||
           t(
-            "Authentication failed. Please check server connectivity.",
-            "فشل تسجيل الدخول. يرجى اختيار أحد الحسابات التجريبية بالأسفل للدخول الفوري."
+            "Authentication failed. Check your credentials and server connectivity.",
+            "فشل تسجيل الدخول. تحقق من بياناتك واتصال الخادم."
           )
       );
     } finally {
@@ -271,18 +209,18 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
       {/* 3. Main Form Container */}
       <div className="relative z-10 w-full max-w-[390px] mx-auto px-6 py-2 flex-1 flex flex-col justify-center">
-        {/* Instant 1-Click Entry Strip (No Password Required) */}
+        {isDemoEnabled && (
         <div className="mb-3.5 rounded-inner border border-brand/35 bg-[#0e1626]/90 p-2.5 shadow-lg">
           <div className="mb-2 flex items-center justify-between text-label">
             <span className="font-bold text-amber-300">
-              {t("Instant Preview (No Password):", "دخول فوري بدون كلمة مرور:")}
+              {t("Server-enabled demo accounts:", "حسابات تجريبية مفعّلة من الخادم:")}
             </span>
             <span className="text-emerald-400 font-bold">
               {t("1-Tap Access", "بضغطة واحدة")}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-1.5">
-            {OFFICIAL_DEMO_ACCOUNTS.map((acc) => (
+            {demoAccounts.map((acc) => (
               <button
                 key={acc.key}
                 type="button"
@@ -304,6 +242,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
             ))}
           </div>
         </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Authentication Error Feedback Banner */}
@@ -489,7 +428,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
 
       {/* Footer System Line */}
       <div className="relative z-10 py-2.5 text-center text-label text-slate-500 border-t border-slate-900">
-        <span>{t("EJAZ Enterprise Logistics Platform V1.0-PROD", "مؤسسة إيجاز للنقليات · منظومة إدارة الأسطول الموحدة")}</span>
+        <span>{t("EJAZ Transport Logistics Platform", "مؤسسة إيجاز للنقليات · منظومة إدارة الأسطول الموحدة")}</span>
       </div>
 
       {/* 12. Demo Accounts Modal / Panel */}
@@ -520,7 +459,7 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
             </div>
 
             <div className="space-y-2">
-              {OFFICIAL_DEMO_ACCOUNTS.map((acc) => {
+              {demoAccounts.map((acc) => {
                 const isSelected = username === acc.email;
                 return (
                   <button

@@ -117,7 +117,7 @@ export const apiClient = {
         method: "POST",
       }),
     getDemoAccounts: () =>
-      request<{ enabled: boolean; accounts: Array<{ key: string; role: string; titleAr: string; titleEn: string; email: string; password: string; descAr: string }> }>("/api/auth/demo-accounts"),
+      request<{ enabled: boolean; accounts: Array<{ key: string; role: string; titleAr: string; titleEn: string; email: string; password: string; descAr: string; descEn?: string }> }>("/api/auth/demo-accounts"),
   },
   trips: {
     getAll: (params?: Record<string, string>) => {

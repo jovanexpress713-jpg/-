@@ -981,3 +981,79 @@
   [dir="rtl"] .text-right { text-align: left; }
   [dir="rtl"] .rotate-8 { transform: rotate(-8deg); }
 }
+
+@media print {
+  @page {
+    size: auto;
+    margin: 12mm;
+  }
+
+  html,
+  body,
+  #root {
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  [data-export-root],
+  [data-export-root] * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  [data-export-root] {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  [data-export-root] .app-header {
+    position: static !important;
+    top: auto !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  [data-export-root] main,
+  [data-export-root] .overflow-hidden,
+  [data-export-root] .overflow-y-auto,
+  [data-export-root] .overflow-x-auto,
+  [data-export-root] .scroll-thin {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  [data-export-exclude],
+  [data-export-exclude] * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  [data-export-root] img,
+  [data-export-root] svg,
+  [data-export-root] canvas,
+  [data-export-root] table,
+  [data-export-root] tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-export-root] a {
+    text-decoration: none !important;
+  }
+}

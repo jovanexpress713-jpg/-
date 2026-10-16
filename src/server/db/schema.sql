@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(32),
     role VARCHAR(64) NOT NULL,
+    region_id VARCHAR(64),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -71,6 +72,8 @@ CREATE TABLE IF NOT EXISTS drivers (
     rating NUMERIC(3, 2) DEFAULT 5.0,
     total_trips INT DEFAULT 0,
     current_trip_id VARCHAR(64),
+    city VARCHAR(128),
+    region_id VARCHAR(64),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -88,6 +91,7 @@ CREATE TABLE IF NOT EXISTS customers (
     vat_number VARCHAR(64),
     city VARCHAR(128),
     address TEXT,
+    region_id VARCHAR(64),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -96,6 +100,7 @@ CREATE TABLE IF NOT EXISTS trips (
     id VARCHAR(64) PRIMARY KEY,
     trip_number VARCHAR(64) UNIQUE NOT NULL, -- Format: EJ-YYYY-XXXXXX
     status VARCHAR(64) NOT NULL DEFAULT 'DRAFT_CREATED',
+    region_id VARCHAR(64),
     customer_id VARCHAR(64) REFERENCES customers(id),
     vehicle_id VARCHAR(64) REFERENCES vehicles(id),
     driver_id VARCHAR(64) REFERENCES drivers(id),
@@ -384,7 +389,85 @@ ALTER TABLE trips ADD COLUMN IF NOT EXISTS tariff_id VARCHAR(64) REFERENCES tari
 ALTER TABLE trips ADD COLUMN IF NOT EXISTS distance_km NUMERIC(10, 2);
 ALTER TABLE trips ADD COLUMN IF NOT EXISTS declined_driver_ids JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS region VARCHAR(64);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS region_id VARCHAR(64);
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS city VARCHAR(128);
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS region_id VARCHAR(64);
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS region_id VARCHAR(64);
 ALTER TABLE trips ADD COLUMN IF NOT EXISTS region VARCHAR(64);
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS region_id VARCHAR(64);
+
+-- One-time backfill for legacy Arabic region labels before enforcing ID-based scope.
+UPDATE users
+SET region_id = CASE
+    WHEN region LIKE '%شمالية%' OR region ILIKE '%north%' THEN 'north'
+    WHEN region LIKE '%شرقية%' OR region ILIKE '%east%' THEN 'east'
+    WHEN region LIKE '%غربية%' OR region ILIKE '%west%' THEN 'west'
+    WHEN region LIKE '%جنوبية%' OR region ILIKE '%south%' THEN 'south'
+    WHEN region LIKE '%وسطى%' OR region ILIKE '%central%' THEN 'central'
+    ELSE region_id
+END
+WHERE role = 'REPRESENTATIVE' AND region_id IS NULL AND region IS NOT NULL;
+
+-- Backfill customer/driver ownership from the registered city. Unknown cities
+-- intentionally remain NULL and are denied by the application until reviewed.
+UPDATE customers
+SET region_id = CASE
+    WHEN city ~* '(تبوك|حائل|عرعر|سكاكا|نيوم|tabuk|hail|arar|sakaka|neom)' THEN 'north'
+    WHEN city ~* '(الدمام|الخبر|الظهران|الجبيل|الهفوف|الأحساء|الاحساء|القيصومة|dammam|khobar|dhahran|jubail|hofuf|qaisumah)' THEN 'east'
+    WHEN city ~* '(جدة|مكة|المدينة|الطائف|ينبع|jeddah|makkah|madinah|medina|taif|yanbu)' THEN 'west'
+    WHEN city ~* '(أبها|ابها|خميس|جازان|جيزان|نجران|الباحة|الباحه|abha|jazan|najran|baha)' THEN 'south'
+    WHEN city ~* '(الرياض|بريدة|القصيم|الخرج|riyadh|buraydah|qassim|kharj)' THEN 'central'
+    ELSE NULL
+END
+WHERE region_id IS NULL AND city IS NOT NULL;
+
+UPDATE drivers
+SET region_id = CASE
+    WHEN city ~* '(تبوك|حائل|عرعر|سكاكا|نيوم|tabuk|hail|arar|sakaka|neom)' THEN 'north'
+    WHEN city ~* '(الدمام|الخبر|الظهران|الجبيل|الهفوف|الأحساء|الاحساء|القيصومة|dammam|khobar|dhahran|jubail|hofuf|qaisumah)' THEN 'east'
+    WHEN city ~* '(جدة|مكة|المدينة|الطائف|ينبع|jeddah|makkah|madinah|medina|taif|yanbu)' THEN 'west'
+    WHEN city ~* '(أبها|ابها|خميس|جازان|جيزان|نجران|الباحة|الباحه|abha|jazan|najran|baha)' THEN 'south'
+    WHEN city ~* '(الرياض|بريدة|القصيم|الخرج|riyadh|buraydah|qassim|kharj)' THEN 'central'
+    ELSE NULL
+END
+WHERE region_id IS NULL AND city IS NOT NULL;
+
+UPDATE trips
+SET region_id = CASE
+    WHEN region ~* '(شمالية|north)' THEN 'north'
+    WHEN region ~* '(شرقية|east)' THEN 'east'
+    WHEN region ~* '(غربية|west)' THEN 'west'
+    WHEN region ~* '(جنوبية|south)' THEN 'south'
+    WHEN region ~* '(وسطى|central)' THEN 'central'
+    WHEN origin_city ~* '(تبوك|حائل|عرعر|سكاكا|نيوم|tabuk|hail|arar|sakaka|neom)' THEN 'north'
+    WHEN origin_city ~* '(الدمام|الخبر|الظهران|الجبيل|الهفوف|الأحساء|الاحساء|القيصومة|dammam|khobar|dhahran|jubail|hofuf|qaisumah)' THEN 'east'
+    WHEN origin_city ~* '(جدة|مكة|المدينة|الطائف|ينبع|jeddah|makkah|madinah|medina|taif|yanbu)' THEN 'west'
+    WHEN origin_city ~* '(أبها|ابها|خميس|جازان|جيزان|نجران|الباحة|الباحه|abha|jazan|najran|baha)' THEN 'south'
+    WHEN origin_city ~* '(الرياض|بريدة|القصيم|الخرج|riyadh|buraydah|qassim|kharj)' THEN 'central'
+    ELSE NULL
+END
+WHERE region_id IS NULL;
+
+-- Older driver records have no home-city field. Backfill their assignment from
+-- operational history only when every region-tagged trip points to one region;
+-- drivers with mixed or unknown history stay unassigned and fail closed until
+-- an operator reviews them.
+UPDATE drivers AS driver
+SET region_id = regional_history.region_id
+FROM (
+    SELECT driver_id, MIN(region_id) AS region_id
+    FROM trips
+    WHERE driver_id IS NOT NULL
+    GROUP BY driver_id
+    HAVING COUNT(region_id) = COUNT(*) AND COUNT(DISTINCT region_id) = 1
+) AS regional_history
+WHERE driver.id = regional_history.driver_id AND driver.region_id IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_users_region_id ON users(region_id);
+CREATE INDEX IF NOT EXISTS idx_customers_region_id ON customers(region_id);
+CREATE INDEX IF NOT EXISTS idx_drivers_region_id ON drivers(region_id);
+CREATE INDEX IF NOT EXISTS idx_trips_region_id ON trips(region_id);
+
 ALTER TABLE trips ADD COLUMN IF NOT EXISTS price_approval_required BOOLEAN DEFAULT FALSE;
 ALTER TABLE trips ADD COLUMN IF NOT EXISTS price_approved_by VARCHAR(64);
 ALTER TABLE trips ADD COLUMN IF NOT EXISTS price_approved_at TIMESTAMP WITH TIME ZONE;
