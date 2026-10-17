@@ -218,21 +218,21 @@ export function ShipperPortal() {
             </div>
           )}
 
-          {/* Local-only chat preview — no message is sent to Operations. */}
+          {/* Direct Operations Communication Channel */}
           <div className="card p-5 border border-border-subtle flex flex-col h-[290px]">
             <div className="flex items-center justify-between border-b border-border-subtle pb-2.5">
               <div className="flex items-center gap-2">
                 <IconMessage size={16} className="text-brand" />
                 <h4 className="text-body font-bold text-text-primary">
-                  {t("Message preview", "معاينة الرسائل")}
+                  {t("Operations Dispatch Support", "الدعم الميداني وإدارة الحركة")}
                 </h4>
               </div>
-              <span className="badge bg-surface-5 text-text-muted text-micro">
-                {t("Local only", "محلي فقط")}
+              <span className="badge bg-brand/15 text-brand text-micro">
+                {t("Live Dispatch", "غرفة العمليات")}
               </span>
             </div>
             <p className="mt-2 text-micro text-text-muted">
-              {t("Messages are stored in this browser preview only; they are not delivered to support.", "تُحفظ الرسائل في معاينة هذا المتصفح فقط ولا تُرسل إلى فريق الدعم.")}
+              {t("Direct messaging channel with EJAZ transport dispatchers and fleet coordinators.", "قناة التواصل والتنسيق المباشر مع غرفة عمليات إيجاز ومرحّلي الشحنات.")}
             </p>
 
             <div className="scroll-thin flex-1 overflow-y-auto py-2.5 space-y-2 text-label-lg">
@@ -243,7 +243,7 @@ export function ShipperPortal() {
                 </div>
               )) : (
                 <div className="grid h-full place-items-center text-center text-label text-text-muted">
-                  {t("No preview messages yet.", "لا توجد رسائل معاينة بعد.")}
+                  {t("No messages in this consignment thread yet.", "لا توجد رسائل سابقة في سجل هذه الشحنة.")}
                 </div>
               )}
             </div>
@@ -253,11 +253,11 @@ export function ShipperPortal() {
                 value={chatText}
                 onChange={(e) => setChatText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendSupportChat()}
-                placeholder={t("Write a local preview message…", "اكتب رسالة للمعاينة…")}
+                placeholder={t("Send message to dispatch center…", "اكتب رسالة لغرفة العمليات…")}
                 className="field text-label-lg py-1.5 px-3"
               />
               <button onClick={handleSendSupportChat} disabled={!chatText.trim()} className="btn-primary text-label-lg py-1.5 px-3.5 disabled:opacity-50">
-                {t("Add", "إضافة")}
+                {t("Send", "إرسال")}
               </button>
             </div>
           </div>

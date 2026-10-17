@@ -251,9 +251,12 @@ async function renderAccountMenu(token: string): Promise<string> {
   const doc = mounted.host.ownerDocument;
   const trigger = doc.querySelector("button") as HTMLButtonElement | null;
   assert.ok(trigger, "the account menu renders its trigger");
-  await trigger!.dispatchEvent(
-    new (doc.defaultView as any).MouseEvent("click", { bubbles: true, cancelable: true })
-  );
+  const { act } = await import("react");
+  await act(async () => {
+    trigger!.dispatchEvent(
+      new (doc.defaultView as any).MouseEvent("click", { bubbles: true, cancelable: true })
+    );
+  });
   await new Promise((r) => setTimeout(r, 20));
 
   const text = mounted.host.textContent ?? "";
