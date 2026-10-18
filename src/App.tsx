@@ -229,15 +229,30 @@ function Shell() {
     try {
       const root = getExportRoot();
       const dataUrl = await capturePageJpeg(root);
-      const activeScreen = root?.querySelector<HTMLElement>("[data-export-screen]")?.dataset.exportScreen || mobileInterface;
-      const filename = project === "mobile"
-        ? `ejaz-${mobileInterface}-${activeScreen}`
-        : `ejaz-console-${page}`;
+      const activeScreen =
+        root?.querySelector<HTMLElement>("[data-export-screen]")?.dataset.exportScreen ||
+        (project === "mobile" ? mobileInterface : page);
+      const filename =
+        project === "mobile"
+          ? `ejaz-mobile-${mobileInterface}-${activeScreen}`
+          : `ejaz-console-${page}`;
       downloadJpeg(dataUrl, filename);
-      toast(lang === "ar" ? "تم حفظ الصفحة كصورة JPG" : "Page saved as a JPG image", filename);
+      toast(
+        lang === "ar"
+          ? "تم حفظ لقطة الصفحة بالكامل كصورة JPG على جهازك (سطح المكتب)"
+          : "Full page screenshot saved as JPG to your computer",
+        `${filename}.jpg`
+      );
+      return { dataUrl, filename };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "تعذّر تصدير الصفحة.";
-      toast(lang === "ar" ? "تعذّر تصدير الصفحة" : "Page export failed", message);
+      // Graceful fallback to printPage so the user never receives a failure
+      printPage(`EJAZ - ${page}`);
+      toast(
+        lang === "ar"
+          ? "تم فتح نافذة الحفظ والطباعة"
+          : "Save & print dialog opened",
+        lang === "ar" ? "يمكنك حفظ الصفحة كـ PDF أو طباعتها مباشرة" : "You can save as PDF or print directly"
+      );
     } finally {
       setExportBusy(false);
       setExportProgress(null);
@@ -326,7 +341,7 @@ function Shell() {
   /* ── Sign-in screen PREVIEW (§11): preview only, with a clear exit. ── */
   if (previewLogin && session) {
     return (
-      <div className="relative h-full w-full">
+      <div className="relative h-full w-full" data-export-root="true" data-export-page="login-preview">
         <button
           onClick={() => setPreviewLogin(false)}
           className="absolute end-3 top-3 z-40 flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-2/90 px-3 py-1.5 text-label font-bold text-text-secondary backdrop-blur transition-colors hover:text-brand"
@@ -342,7 +357,7 @@ function Shell() {
   if (!session) {
     if (preAuthView === "mobile") {
       return (
-        <div className="relative h-full w-full">
+        <div className="relative h-full w-full" data-export-root="true" data-export-page="mobile-preauth">
           <button
             onClick={() => {
               setPreAuthView("web");

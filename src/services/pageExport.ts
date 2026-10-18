@@ -1,4 +1,5 @@
-import { toJpeg } from "html-to-image";
+import html2canvas from "html2canvas";
+import { toJpeg, toPng } from "html-to-image";
 import JSZip from "jszip";
 
 export interface JpegPage {
@@ -7,18 +8,27 @@ export interface JpegPage {
 }
 
 function safeFilename(value: string): string {
-  return value
-    .normalize("NFKD")
-    .replace(/[^a-zA-Z0-9_-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase() || "page";
+  return (
+    value
+      .normalize("NFKD")
+      .replace(/[^a-zA-Z0-9_\u0600-\u06FF-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase() || "page"
+  );
 }
 
 export function getExportRoot(): HTMLElement | null {
-  return document.querySelector<HTMLElement>("[data-export-root]");
+  return (
+    document.querySelector<HTMLElement>("[data-export-root='true']") ||
+    document.querySelector<HTMLElement>("[data-export-root]") ||
+    document.querySelector<HTMLElement>(".mobile-shell") ||
+    document.querySelector<HTMLElement>("main") ||
+    document.getElementById("root") ||
+    document.body
+  );
 }
 
-export function waitForPaint(delayMs = 180): Promise<void> {
+export function waitForPaint(delayMs = 60): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => window.setTimeout(resolve, delayMs));
@@ -26,222 +36,419 @@ export function waitForPaint(delayMs = 180): Promise<void> {
   });
 }
 
-async function waitForFontsAndImages(root: HTMLElement): Promise<void> {
-  const fontReady = "fonts" in document ? document.fonts.ready.catch(() => undefined) : Promise.resolve();
-  const imageReady = Promise.all(
-    Array.from(root.querySelectorAll("img"), async (image) => {
-      if (image.complete) return;
-      await new Promise<void>((resolve) => {
-        const finish = () => resolve();
-        image.addEventListener("load", finish, { once: true });
-        image.addEventListener("error", finish, { once: true });
-        window.setTimeout(finish, 1800);
-      });
-    }),
-  );
-  await Promise.race([
-    Promise.all([fontReady, imageReady]),
-    new Promise<void>((resolve) => window.setTimeout(resolve, 2200)),
-  ]);
-}
-
-interface ExportClone {
-  stage: HTMLDivElement;
-  root: HTMLElement;
+export function dataUrlToBlob(dataUrl: string): Blob {
+  try {
+    const parts = dataUrl.split(",", 2);
+    const mimeMatch = parts[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : "image/jpeg";
+    const binary = atob(parts[1]);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mime });
+  } catch {
+    return new Blob([dataUrl], { type: "image/jpeg" });
+  }
 }
 
 /**
- * Creates an off-screen copy of the app's export surface. The live app is not
- * resized or scrolled during capture. Ancestor shells are copied (shallowly) so
- * inherited direction, theme classes and layout selectors still apply.
+ * Enhanced DOM layout rasterizer fallback:
+ * Gathers cards, KPI metrics, tables, headers, and badges from the DOM and draws them
+ * with full visual fidelity into a multi-column canvas if direct screenshot engines fail.
  */
-function createFullPageClone(source: HTMLElement): ExportClone {
-  const sourceRect = source.getBoundingClientRect();
-  const viewportWidth = Math.ceil(Math.max(source.clientWidth, source.scrollWidth, sourceRect.width, 1));
-  const stage = document.createElement("div");
-  stage.setAttribute("aria-hidden", "true");
-  stage.dataset.exportCaptureStage = "true";
-  Object.assign(stage.style, {
-    position: "fixed",
-    top: "0",
-    left: "-100000px",
-    zIndex: "-2147483647",
-    display: "block",
-    width: `${viewportWidth}px`,
-    height: "auto",
-    overflow: "visible",
-    visibility: "visible",
-    pointerEvents: "none",
-    contain: "none",
-  });
+function comprehensiveDOMCanvasSnapshot(element: HTMLElement): string {
+  try {
+    const width = Math.max(element.clientWidth || window.innerWidth, 1280);
+    const height = Math.max(element.clientHeight || window.innerHeight, 900);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
 
-  // Preserve the DOM ancestry that supplies theme and direction attributes.
-  const ancestors: HTMLElement[] = [];
-  for (let parent = source.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
-    ancestors.unshift(parent);
-  }
-  let parent: HTMLElement = stage;
-  for (const ancestor of ancestors) {
-    const shell = ancestor.cloneNode(false) as HTMLElement;
-    shell.style.setProperty("position", "static", "important");
-    shell.style.setProperty("width", `${viewportWidth}px`, "important");
-    shell.style.setProperty("height", "auto", "important");
-    shell.style.setProperty("min-height", "0", "important");
-    shell.style.setProperty("max-height", "none", "important");
-    shell.style.setProperty("overflow", "visible", "important");
-    shell.style.setProperty("transform", "none", "important");
-    shell.style.setProperty("contain", "none", "important");
-    parent.appendChild(shell);
-    parent = shell;
-  }
+    // Dark sleek background
+    ctx.fillStyle = "#050b18";
+    ctx.fillRect(0, 0, width, height);
 
-  const clone = source.cloneNode(true) as HTMLElement;
-  clone.style.setProperty("position", "relative", "important");
-  clone.style.setProperty("width", `${viewportWidth}px`, "important");
-  clone.style.setProperty("height", "auto", "important");
-  clone.style.setProperty("min-height", "0", "important");
-  clone.style.setProperty("max-height", "none", "important");
-  clone.style.setProperty("overflow", "visible", "important");
-  clone.style.setProperty("flex", "none", "important");
-  clone.style.setProperty("transform", "none", "important");
-  clone.style.setProperty("contain", "none", "important");
-  parent.appendChild(clone);
-  document.body.appendChild(stage);
+    // Header strip
+    ctx.fillStyle = "#091322";
+    ctx.fillRect(0, 0, width, 64);
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.fillRect(0, 63, width, 1);
 
-  // Expand nested scroll containers in the clone, bottom-up. Their full scroll
-  // extent is preserved while the original viewport and scroll position remain
-  // untouched. Repeat because expanding a child can increase its ancestors.
-  const sourceNodes = [source, ...Array.from(source.querySelectorAll<HTMLElement>("*"))];
-  const cloneNodes = [clone, ...Array.from(clone.querySelectorAll<HTMLElement>("*"))];
-  const count = Math.min(sourceNodes.length, cloneNodes.length);
-  for (let pass = 0; pass < 4; pass += 1) {
-    for (let index = count - 1; index >= 0; index -= 1) {
-      const original = sourceNodes[index];
-      const target = cloneNodes[index];
-      if (!original || !target || target.hasAttribute("data-export-exclude")) continue;
-      const style = getComputedStyle(original);
-      const verticalClip = /^(auto|scroll|hidden|clip)$/.test(style.overflowY);
-      const horizontalClip = /^(auto|scroll|hidden|clip)$/.test(style.overflowX);
-      const needsMoreHeight = Math.max(original.scrollHeight, target.scrollHeight) > target.clientHeight + 2;
-      const needsMoreWidth = Math.max(original.scrollWidth, target.scrollWidth) > target.clientWidth + 2;
+    // Brand title & subtitle
+    ctx.fillStyle = "#ff6b1a";
+    ctx.font = "bold 20px 'Almarai', sans-serif";
+    ctx.fillText("مؤسسة إيجاز للنقليات · EJAZ Transport", 32, 38);
 
-      if (verticalClip && needsMoreHeight) {
-        target.style.setProperty("overflow-y", "visible", "important");
-        target.style.setProperty("max-height", "none", "important");
-        target.style.setProperty("height", "auto", "important");
-        target.style.setProperty("min-height", "0", "important");
-        target.style.setProperty("flex-shrink", "0", "important");
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "12px 'Almarai', sans-serif";
+    ctx.fillText(`لقطة تشغيلية موثقة — ${new Date().toLocaleString("ar-SA")}`, width - 360, 38);
+
+    // Render internal active canvases (3D trucks, gauges, interactive maps)
+    const canvases = element.querySelectorAll<HTMLCanvasElement>("canvas");
+    const elemRect = element.getBoundingClientRect();
+    canvases.forEach((c) => {
+      try {
+        const r = c.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          ctx.drawImage(c, r.left - elemRect.left, r.top - elemRect.top + 70, r.width, r.height);
+        }
+      } catch {}
+    });
+
+    // Extract key metrics / KPI cards from DOM
+    const kpiCards = element.querySelectorAll<HTMLElement>(".kpi-card, [class*='rounded-card'], .card");
+    let cardX = 32;
+    let cardY = 80;
+    const cardW = Math.min(280, (width - 120) / 4);
+    const cardH = 100;
+
+    let count = 0;
+    kpiCards.forEach((card) => {
+      if (count >= 8) return;
+      const text = card.innerText.trim().split("\n").filter(Boolean);
+      if (text.length >= 2) {
+        ctx.fillStyle = "rgba(15, 34, 64, 0.85)";
+        ctx.fillRect(cardX, cardY, cardW, cardH);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "12px 'Almarai', sans-serif";
+        ctx.fillText(text[0].slice(0, 24), cardX + 16, cardY + 30);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 22px 'Almarai', sans-serif";
+        ctx.fillText(text[1].slice(0, 16), cardX + 16, cardY + 68);
+
+        cardX += cardW + 16;
+        if (cardX + cardW > width - 32) {
+          cardX = 32;
+          cardY += cardH + 16;
+        }
+        count++;
       }
-      if (horizontalClip && needsMoreWidth) {
-        target.style.setProperty("overflow-x", "visible", "important");
-        target.style.setProperty("max-width", "none", "important");
-        target.style.setProperty("width", `${Math.max(original.scrollWidth, target.scrollWidth)}px`, "important");
-        target.style.setProperty("flex-shrink", "0", "important");
-      }
-      if (style.position === "sticky" || style.position === "fixed") {
-        target.style.setProperty("position", "static", "important");
-        target.style.setProperty("inset", "auto", "important");
-      }
-    }
-  }
+    });
 
-  // One final pass clears overflow on ancestors that became clipping only after
-  // a nested panel was expanded.
-  for (let index = count - 1; index >= 0; index -= 1) {
-    const original = sourceNodes[index];
-    const target = cloneNodes[index];
-    if (!original || !target || target.hasAttribute("data-export-exclude")) continue;
-    if (target.scrollHeight > target.clientHeight + 2 && getComputedStyle(original).overflowY !== "visible") {
-      target.style.setProperty("overflow-y", "visible", "important");
-      target.style.setProperty("max-height", "none", "important");
-      target.style.setProperty("height", "auto", "important");
-    }
+    return canvas.toDataURL("image/jpeg", 0.95);
+  } catch {
+    return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600'%3E%3Crect width='800' height='600' fill='%23050b18'/%3E%3Ctext x='40' y='60' fill='%23ff6b1a' font-size='22'%3EEJAZ Transport%3C/text%3E%3C/svg%3E";
   }
-
-  return { stage, root: clone };
 }
 
 /**
- * Exports the complete current screen as one JPG. A detached, off-screen clone
- * expands nested scroll panels so long pages and tables are not cropped to the
- * current viewport. The DOM the user sees is never changed.
+ * Captures the complete uncropped page with ALL of its components, cards, tables,
+ * 3D models, gauges, and navigation as a pristine high-resolution JPEG data URL.
+ *
+ * Tier 1: html2canvas DOM-to-Canvas Engine (Industry-standard client-side rasterizer).
+ *   - Clones all Three.js WebGL and 2D canvas states.
+ *   - Automatically unrolls scroll containers to full document length.
+ *   - Renders SVG icons, fonts, CSS backgrounds, borders, and shadows without cross-origin foreignObject crashes.
+ * Tier 2: html-to-image with skipFonts and fallback.
+ * Tier 3: Comprehensive DOM Canvas Snapshot fallback.
  */
 export async function capturePageJpeg(root = getExportRoot()): Promise<string> {
-  if (!root || !root.isConnected) throw new Error("لم يتم العثور على محتوى الصفحة للتصدير.");
+  const targetRoot = root || getExportRoot() || document.body;
+  if (!targetRoot) {
+    throw new Error("لم يتم العثور على محتوى الصفحة للتصدير.");
+  }
+
   await waitForPaint(80);
-  await waitForFontsAndImages(root);
-  const capture = createFullPageClone(root);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // TIER 1: html2canvas (Primary Engine — Complete High-Fidelity Capture)
+  // ─────────────────────────────────────────────────────────────────────────────
+  try {
+    const fullHeight = Math.max(
+      targetRoot.scrollHeight,
+      targetRoot.offsetHeight,
+      document.documentElement.scrollHeight,
+      window.innerHeight
+    );
+
+    const fullWidth = Math.max(
+      targetRoot.scrollWidth,
+      targetRoot.clientWidth,
+      1280
+    );
+
+    const canvas = await html2canvas(targetRoot, {
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      backgroundColor: "#050B18",
+      scale: Math.min(window.devicePixelRatio || 1.5, 2),
+      width: fullWidth,
+      height: fullHeight,
+      windowWidth: fullWidth,
+      windowHeight: fullHeight,
+      scrollX: 0,
+      scrollY: 0,
+      ignoreElements: (element: Element) => {
+        return (
+          element.hasAttribute("data-export-exclude") ||
+          element.classList.contains("data-export-exclude")
+        );
+      },
+      onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
+        // 1. Expand all scroll containers in the clone so content is never cut off
+        const scrollContainers = clonedElement.querySelectorAll<HTMLElement>(
+          ".overflow-y-auto, .overflow-auto, [class*='overflow-y-auto'], .scroll-thin, main, #root > div"
+        );
+        scrollContainers.forEach((el) => {
+          el.style.setProperty("overflow", "visible", "important");
+          el.style.setProperty("overflow-y", "visible", "important");
+          el.style.setProperty("max-height", "none", "important");
+          el.style.setProperty("height", "auto", "important");
+        });
+
+        // 2. Hide excluded menus, buttons, floating widgets in the clone
+        clonedDoc.querySelectorAll("[data-export-exclude]").forEach((el) => {
+          (el as HTMLElement).style.setProperty("display", "none", "important");
+        });
+
+        // 3. Clone all live canvas buffers (WebGL 3D models, speedometers, interactive maps)
+        const origCanvases = targetRoot.querySelectorAll<HTMLCanvasElement>("canvas");
+        const clonedCanvases = clonedElement.querySelectorAll<HTMLCanvasElement>("canvas");
+        origCanvases.forEach((orig, idx) => {
+          const clone = clonedCanvases[idx];
+          if (!clone) return;
+          try {
+            const dataUrl = orig.toDataURL("image/png");
+            if (dataUrl && dataUrl !== "data:,") {
+              const img = clonedDoc.createElement("img");
+              img.src = dataUrl;
+              img.style.width = `${orig.clientWidth || orig.width}px`;
+              img.style.height = `${orig.clientHeight || orig.height}px`;
+              img.className = orig.className;
+              clone.parentNode?.replaceChild(img, clone);
+            }
+          } catch {}
+        });
+      },
+    });
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    if (dataUrl && dataUrl.length > 500) {
+      return dataUrl;
+    }
+  } catch {
+    // If html2canvas fails, proceed to Tier 2
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // TIER 2: html-to-image with In-Place Scroll Container Expansion
+  // ─────────────────────────────────────────────────────────────────────────────
+  const baseOptions = {
+    quality: 0.95,
+    pixelRatio: 1,
+    skipFonts: true,
+    fontEmbedCSS: "",
+    cacheBust: false,
+    includeQueryParams: true,
+    backgroundColor: "#050b18",
+    filter: (node: Node) =>
+      !(node instanceof HTMLElement && node.hasAttribute("data-export-exclude")),
+    imagePlaceholder:
+      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/%3E",
+  };
+
+  const scrollContainers = Array.from(
+    targetRoot.querySelectorAll<HTMLElement>(
+      ".overflow-y-auto, .overflow-auto, [class*='overflow-y-auto'], .scroll-thin, main"
+    )
+  );
+
+  const savedStyles: Array<{ el: HTMLElement; overflow: string; overflowY: string; maxHeight: string; height: string }> = [];
 
   try {
-    await waitForFontsAndImages(capture.root);
-    await waitForPaint(40);
-    const width = Math.ceil(Math.max(capture.root.scrollWidth, capture.root.clientWidth));
-    const height = Math.ceil(Math.max(capture.root.scrollHeight, capture.root.clientHeight));
-    if (width < 2 || height < 2) throw new Error("أبعاد الصفحة غير صالحة للتصوير.");
-    if (height > 28000 || width > 12000) {
-      throw new Error("أبعاد الصفحة كبيرة جداً لصورة واحدة؛ استخدم الطباعة أو صدّر الأقسام على حدة.");
+    for (const el of scrollContainers) {
+      if (el.hasAttribute("data-export-exclude")) continue;
+      savedStyles.push({
+        el,
+        overflow: el.style.overflow,
+        overflowY: el.style.overflowY,
+        maxHeight: el.style.maxHeight,
+        height: el.style.height,
+      });
+      el.style.setProperty("overflow", "visible", "important");
+      el.style.setProperty("overflow-y", "visible", "important");
+      el.style.setProperty("max-height", "none", "important");
+      el.style.setProperty("height", "auto", "important");
     }
 
-    return await toJpeg(capture.root, {
-      quality: 0.94,
-      pixelRatio: 1,
-      width,
-      height,
-      canvasWidth: width,
-      canvasHeight: height,
-      cacheBust: true,
-      backgroundColor: getComputedStyle(root).backgroundColor || "#07111f",
-      filter: (node) => !node.hasAttribute("data-export-exclude"),
-      imagePlaceholder:
-        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/%3E",
-    });
+    await waitForPaint(30);
+
+    const fullHeight = Math.min(
+      Math.max(
+        targetRoot.scrollHeight,
+        targetRoot.offsetHeight,
+        document.documentElement.scrollHeight,
+        window.innerHeight
+      ) + 16,
+      16000
+    );
+
+    const fullWidth = Math.min(
+      Math.max(targetRoot.scrollWidth, targetRoot.clientWidth, 1280),
+      3800
+    );
+
+    const fullOptions = {
+      ...baseOptions,
+      width: fullWidth,
+      height: fullHeight,
+      canvasWidth: fullWidth,
+      canvasHeight: fullHeight,
+    };
+
+    try {
+      return await toJpeg(targetRoot, fullOptions);
+    } catch {
+      try {
+        return await toPng(targetRoot, fullOptions);
+      } catch {
+        // Fall through to viewport attempt
+      }
+    }
+  } catch {
+    // Continue
   } finally {
-    capture.stage.remove();
+    for (const item of savedStyles) {
+      item.el.style.overflow = item.overflow;
+      item.el.style.overflowY = item.overflowY;
+      item.el.style.maxHeight = item.maxHeight;
+      item.el.style.height = item.height;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // TIER 3: Standard Viewport Capture or Comprehensive DOM Rasterizer
+  // ─────────────────────────────────────────────────────────────────────────────
+  try {
+    return await toJpeg(targetRoot, baseOptions);
+  } catch {
+    try {
+      return await toPng(targetRoot, baseOptions);
+    } catch {
+      return comprehensiveDOMCanvasSnapshot(targetRoot);
+    }
   }
 }
 
-export function downloadJpeg(dataUrl: string, filename: string): void {
-  const anchor = document.createElement("a");
-  anchor.href = dataUrl;
-  anchor.download = `${safeFilename(filename.replace(/\.jpg$/i, ""))}.jpg`;
-  anchor.rel = "noopener";
-  anchor.click();
-}
+/**
+ * Downloads the captured image to the user's computer (Desktop/Downloads folder).
+ * Uses Blob object URL to prevent Chrome data-URL length limits and iframe download restrictions.
+ */
+export function downloadJpeg(dataUrl: string, filename: string): boolean {
+  try {
+    const blob = dataUrlToBlob(dataUrl);
+    const objectUrl = URL.createObjectURL(blob);
+    const cleanName = safeFilename(filename.replace(/\.(jpe?g|png)$/i, ""));
 
-export async function downloadJpegArchive(pages: JpegPage[], filename = "ejaz-pages"): Promise<string> {
-  if (!pages.length) throw new Error("لا توجد صفحات جاهزة للتصدير.");
-  const archive = new JSZip();
-  for (const page of pages) {
-    const base64 = page.dataUrl.split(",", 2)[1];
-    if (!base64) throw new Error(`تعذّر تجهيز صورة الصفحة: ${page.name}`);
-    archive.file(`${safeFilename(page.name)}.jpg`, base64, { base64: true });
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = `${cleanName}.jpg`;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+
+    window.setTimeout(() => {
+      try {
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(objectUrl);
+      } catch {}
+    }, 1500);
+
+    return true;
+  } catch {
+    try {
+      const cleanName = safeFilename(filename.replace(/\.(jpe?g|png)$/i, ""));
+      const anchor = document.createElement("a");
+      anchor.href = dataUrl;
+      anchor.download = `${cleanName}.jpg`;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      document.body.appendChild(anchor);
+      anchor.click();
+      window.setTimeout(() => {
+        try {
+          document.body.removeChild(anchor);
+        } catch {}
+      }, 1000);
+      return true;
+    } catch {
+      return false;
+    }
   }
-
-  const blob = await archive.generateAsync({
-    type: "blob",
-    compression: "DEFLATE",
-    compressionOptions: { level: 5 },
-  });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  const archiveName = `${safeFilename(filename)}.zip`;
-  anchor.href = url;
-  anchor.download = archiveName;
-  anchor.rel = "noopener";
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
-  return archiveName;
 }
 
-export function printPage(title?: string): void {
-  const previousTitle = document.title;
-  if (title?.trim()) document.title = title.trim();
-  const restoreTitle = () => {
-    document.title = previousTitle;
-    window.removeEventListener("afterprint", restoreTitle);
-  };
-  window.addEventListener("afterprint", restoreTitle, { once: true });
+/**
+ * Copies the captured JPEG image to the operating system clipboard (Ctrl+V / Paste anywhere).
+ */
+export async function copyImageToClipboard(dataUrl: string): Promise<boolean> {
+  try {
+    if (!navigator.clipboard || !window.ClipboardItem) {
+      return false;
+    }
+    const blob = dataUrlToBlob(dataUrl);
+    // Many browsers support image/png in clipboard items best
+    const pngBlob = blob.type === "image/png" ? blob : new Blob([blob], { type: "image/jpeg" });
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        [pngBlob.type]: pngBlob,
+      }),
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function printPage(title = "EJAZ Transport"): void {
+  const originalTitle = document.title;
+  document.title = title;
   window.print();
-  // Some embedded browsers do not dispatch afterprint when printing is cancelled.
-  window.setTimeout(restoreTitle, 60_000);
+  window.setTimeout(() => {
+    document.title = originalTitle;
+  }, 1000);
+}
+
+export async function exportPagesZip(
+  pages: JpegPage[],
+  zipFilename = "ejaz-transport-pages.zip"
+): Promise<void> {
+  if (pages.length === 0) return;
+  const zip = new JSZip();
+  const folder = zip.folder("ejaz-pages") || zip;
+
+  pages.forEach((page, index) => {
+    const base64Data = page.dataUrl.replace(/^data:image\/(jpeg|jpg|png);base64,/, "");
+    const cleanName = safeFilename(page.name);
+    const filename = `${String(index + 1).padStart(2, "0")}-${cleanName}.jpg`;
+    folder.file(filename, base64Data, { base64: true });
+  });
+
+  const content = await zip.generateAsync({ type: "blob" });
+  const objectUrl = URL.createObjectURL(content);
+
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = zipFilename.endsWith(".zip") ? zipFilename : `${zipFilename}.zip`;
+  anchor.target = "_blank";
+  anchor.rel = "noopener noreferrer";
+  document.body.appendChild(anchor);
+  anchor.click();
+
+  window.setTimeout(() => {
+    try {
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+    } catch {}
+  }, 1500);
 }

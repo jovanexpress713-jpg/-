@@ -757,6 +757,7 @@ export function Vehicle3DViewer({
       alpha: true,
       powerPreference: "high-performance",
       stencil: false,
+      preserveDrawingBuffer: true,
     });
     const applyPixelRatio = () => {
       // Retina-class density, capped at 2 so phones stay smooth without

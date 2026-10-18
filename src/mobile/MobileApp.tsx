@@ -12,6 +12,8 @@ import { canSwitchAccounts, isClientRole, isDriverRole, type SessionUser } from 
 import { BrandLogo } from "../components/Logo";
 import { IconBell, IconMenu, IconArrowRight } from "../components/Icons";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { PageExportMenu } from "../components/PageExportMenu";
+import { capturePageJpeg, downloadJpeg, printPage } from "../services/pageExport";
 import type { MobileExportStatus } from "./useMobileScreenExport";
 
 type ScreenFlow = "welcome" | "login" | "register" | "app";
@@ -58,7 +60,32 @@ export function MobileApp({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notifSignal, setNotifSignal] = useState(0);
   const [interfacePref, setInterfacePref] = useState<"driver" | "client">("driver");
+  const [localExportBusy, setLocalExportBusy] = useState(false);
   const { unread } = useMobileNotifications();
+
+  const handleMobileExportCurrent = async () => {
+    if (localExportBusy || exportBusy) return;
+    setLocalExportBusy(true);
+    try {
+      const root =
+        document.querySelector<HTMLElement>("[data-export-root='true']") ||
+        document.querySelector<HTMLElement>(".mobile-shell") ||
+        document.getElementById("root");
+      const dataUrl = await capturePageJpeg(root);
+      const activeScreen = currentScreen === "app" ? interfacePref : currentScreen;
+      const filename = `ejaz-mobile-${activeScreen}`;
+      downloadJpeg(dataUrl, filename);
+      return { dataUrl, filename };
+    } catch {
+      printPage(`EJAZ Mobile - ${currentScreen === "app" ? interfacePref : currentScreen}`);
+    } finally {
+      setLocalExportBusy(false);
+    }
+  };
+
+  const handleMobilePrintCurrent = () => {
+    printPage(`EJAZ Mobile - ${currentScreen === "app" ? interfacePref : currentScreen}`);
+  };
 
   useEffect(() => {
     if (exportAllSignal > 0) setSettingsOpen(false);
@@ -213,8 +240,13 @@ export function MobileApp({
   }, [exportAllSignal, inApp, onBulkExportStatus]);
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden bg-surface-0">
-      {/* Clean app header (§4): logo · title · notifications · menu. */}
+    <div
+      className="mobile-shell relative flex h-full w-full flex-col overflow-hidden bg-surface-0"
+      data-export-root="true"
+      data-export-page="mobile"
+      data-export-screen={currentScreen === "app" ? interfacePref : currentScreen}
+    >
+      {/* Clean app header (§4): logo · title · export · notifications · menu. */}
       {showChrome && !settingsOpen && (
         <header className="relative z-30 flex shrink-0 items-center gap-2 border-b border-border-subtle bg-navy px-3 py-2 text-white">
           <BrandLogo size={26} showSub={false} />
@@ -223,6 +255,14 @@ export function MobileApp({
           ) : (
             <div className="min-w-0 flex-1" />
           )}
+          <PageExportMenu
+            surface="screen"
+            busy={localExportBusy || exportBusy}
+            onExportCurrent={handleMobileExportCurrent}
+            onPrint={handleMobilePrintCurrent}
+            onExportAll={handleMobileExportCurrent}
+            buttonClassName="h-8 w-8 text-white border-white/20 bg-white/10 hover:bg-white/20"
+          />
           <button
             type="button"
             onClick={() => {
@@ -261,10 +301,31 @@ export function MobileApp({
             <IconArrowRight size={15} className="rtl:rotate-180" />
           </button>
           <h1 className="min-w-0 flex-1 truncate text-body font-bold">{pageTitle}</h1>
+          <PageExportMenu
+            surface="screen"
+            busy={localExportBusy || exportBusy}
+            onExportCurrent={handleMobileExportCurrent}
+            onPrint={handleMobilePrintCurrent}
+            onExportAll={handleMobileExportCurrent}
+            buttonClassName="h-8 w-8 text-white border-white/20 bg-white/10 hover:bg-white/20"
+          />
         </header>
       )}
 
       <main className="relative min-h-0 flex-1 overflow-hidden bg-surface-0">
+        {/* Floating screenshot / export button for standalone pre-auth screens */}
+        {!showChrome && (
+          <div className="absolute start-3 top-3 z-50" data-export-exclude="true">
+            <PageExportMenu
+              surface="screen"
+              busy={localExportBusy || exportBusy}
+              onExportCurrent={handleMobileExportCurrent}
+              onPrint={handleMobilePrintCurrent}
+              onExportAll={handleMobileExportCurrent}
+              buttonClassName="h-9 w-9 text-white border-white/20 bg-black/50 hover:bg-black/75 shadow-lg backdrop-blur-md"
+            />
+          </div>
+        )}
         {currentScreen === "welcome" && (
           <SplashScreen onContinue={handleWelcomeContinue} />
         )}

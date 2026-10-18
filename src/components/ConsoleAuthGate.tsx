@@ -6,6 +6,8 @@ import { LanguageList } from "./AccountMenu";
 import { BrandLogo } from "./Logo";
 import { apiClient, setAuthToken, getAuthToken } from "../services/apiClient";
 import { IconLock, IconProfile, IconEye, IconEyeOff, IconAlertCircle, IconTruck } from "./Icons";
+import { PageExportMenu } from "./PageExportMenu";
+import { capturePageJpeg, downloadJpeg, printPage } from "../services/pageExport";
 
 /**
  * EJAZ Transport — Control Room Authentication Gate
@@ -55,6 +57,28 @@ export function ConsoleAuthGate({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>([]);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+
+  const handleExportLogin = async () => {
+    if (exportBusy) return;
+    setExportBusy(true);
+    try {
+      const root =
+        document.querySelector<HTMLElement>("[data-export-root='true']") ||
+        document.getElementById("root");
+      const dataUrl = await capturePageJpeg(root);
+      downloadJpeg(dataUrl, "ejaz-auth-login");
+      return { dataUrl, filename: "ejaz-auth-login" };
+    } catch {
+      printPage(t("EJAZ Transport - Sign In", "مؤسسة إيجاز للنقليات - تسجيل الدخول"));
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
+  const handlePrintLogin = () => {
+    printPage(t("EJAZ Transport - Sign In", "مؤسسة إيجاز للنقليات - تسجيل الدخول"));
+  };
 
   useEffect(() => {
     if (previewMode) return;
@@ -148,11 +172,27 @@ export function ConsoleAuthGate({
   };
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-y-auto bg-surface-0 px-4 py-8">
+    <div
+      className="relative flex h-full w-full items-center justify-center overflow-y-auto bg-surface-0 px-4 py-8"
+      data-export-root="true"
+      data-export-page="login"
+      data-export-screen="auth-login"
+    >
       {/* Brand backdrop */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-24 -start-24 h-96 w-96 rounded-full bg-brand/10 blur-3xl" />
         <div className="absolute -bottom-32 -end-16 h-96 w-96 rounded-full bg-brand/5 blur-3xl" />
+      </div>
+
+      {/* Screen export / capture button — available immediately upon opening the app */}
+      <div className="absolute start-4 top-4 z-30" data-export-exclude="true">
+        <PageExportMenu
+          surface="page"
+          busy={exportBusy}
+          onExportCurrent={handleExportLogin}
+          onPrint={handlePrintLogin}
+          onExportAll={handleExportLogin}
+        />
       </div>
 
       {/* Language — reachable before signing in, in all three languages (hidden per user selection) */}
