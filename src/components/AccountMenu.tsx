@@ -78,6 +78,101 @@ export function LanguageList({
   );
 }
 
+/** Operational role names mapped to standard localized executive titles. */
+export function getLocalizedRoleLabel(role?: string, lang?: string): string {
+  if (lang === "en") {
+    switch (role) {
+      case "SUPER_ADMIN":
+        return "System Admin";
+      case "GENERAL_MANAGER":
+        return "General Manager";
+      case "OPERATIONS_MANAGER":
+        return "Operations Manager";
+      case "DISPATCHER":
+        return "Dispatcher";
+      case "ACCOUNTANT":
+        return "Accountant";
+      case "DRIVER":
+        return "Fleet Captain";
+      case "CUSTOMER":
+      case "CLIENT":
+        return "Client";
+      case "REPRESENTATIVE":
+        return "Representative";
+      case "WAREHOUSE":
+        return "Warehouse";
+      case "BROKER":
+        return "Broker";
+      case "CUSTOMS_BROKER":
+        return "Customs Broker";
+      default:
+        return role || "Admin";
+    }
+  }
+
+  if (lang === "ur") {
+    switch (role) {
+      case "SUPER_ADMIN":
+        return "سسٹم ایڈمن";
+      case "GENERAL_MANAGER":
+        return "جنرل مینیجر";
+      case "OPERATIONS_MANAGER":
+        return "آپریشنز مینیجر";
+      case "DISPATCHER":
+        return "ڈسپیچر";
+      case "ACCOUNTANT":
+        return "اکاؤنٹنٹ";
+      case "DRIVER":
+        return "ڈرائیور";
+      case "CUSTOMER":
+      case "CLIENT":
+        return "کلائنٹ";
+      case "REPRESENTATIVE":
+        return "نمائندہ";
+      case "WAREHOUSE":
+        return "گودام نگران";
+      case "BROKER":
+        return "بروکر";
+      case "CUSTOMS_BROKER":
+        return "کسٹمز کلیئرنس";
+      default:
+        return role || "ایڈمن";
+    }
+  }
+
+  switch (role) {
+    case "SUPER_ADMIN":
+      return "مدير النظام";
+    case "GENERAL_MANAGER":
+      return "المدير العام";
+    case "OPERATIONS_MANAGER":
+      return "مدير العمليات";
+    case "DISPATCHER":
+      return "مرحّل العمليات";
+    case "ACCOUNTANT":
+      return "المحاسب المالي";
+    case "DRIVER":
+      return "كابتن أسطول";
+    case "CUSTOMER":
+    case "CLIENT":
+      return "عميل معتمد";
+    case "REPRESENTATIVE":
+      return "ممثل إقليمي";
+    case "WAREHOUSE":
+      return "مشرف المستودع";
+    case "BROKER":
+      return "وسيط نقل";
+    case "CUSTOMS_BROKER":
+      return "مخلّص جمركي";
+    default:
+      return role || "مدير النظام";
+  }
+}
+
+export function getArabicRoleLabel(role?: string): string {
+  return getLocalizedRoleLabel(role, "ar");
+}
+
 interface AccountMenuProps {
   user: any;
   onOpenSettings: (tab?: "account" | "app" | "apps" | "loginPreview" | "system" | "help") => void;
@@ -88,6 +183,7 @@ interface AccountMenuProps {
   onPreviewLogin: () => void;
   onLogout: () => void;
   className?: string;
+  variant?: "default" | "premium";
 }
 
 export function AccountMenu({
@@ -98,6 +194,7 @@ export function AccountMenu({
   onPreviewLogin,
   onLogout,
   className,
+  variant = "premium",
 }: AccountMenuProps) {
   const { tk, lang } = useSettings();
   const { can, wildcard, role } = usePermissions();
@@ -149,43 +246,69 @@ export function AccountMenu({
     }
   };
 
-  /**
-   * Avatar initials. An Arabic name cannot be abbreviated into a Latin session
-   * («فه» would be the only Arabic fragment on an English screen), so outside
-   * the Arabic session the initials come from the Latin part of the name or,
-   * failing that, from the e-mail handle.
-   */
-  const initials = (() => {
-    const name = (user?.fullName || "").trim();
-    const latin = name.match(/[A-Za-z]+/g)?.join("") ?? "";
-    if (latin.length >= 2) return latin.slice(0, 2).toUpperCase();
-    if (latin.length === 1) return (latin + (user?.email?.[0] ?? "")).toUpperCase();
-    if (lang === "ar") return (name || user?.email || "EJ").slice(0, 2);
-    const handle = (user?.email ?? "").split("@")[0];
-    return (handle.slice(0, 2) || "EJ").toUpperCase();
-  })();
 
   return (
     <div ref={ref} className={cn("relative", className)}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title={tk("header.account")}
-        className={cn(
-          "flex h-9 items-center gap-1.5 rounded-full border border-white/[0.08] bg-surface-2/70 px-2 backdrop-blur-md transition-all hover:border-brand/60 hover:bg-surface-2",
-          open && "border-brand/70 bg-brand/10 shadow-sm shadow-brand/20",
-        )}
-      >
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand/20 text-brand shadow-sm" title={user?.fullName || tk("settings.tabSystem")}>
-          <IconSettings size={14} className="text-brand transition-transform hover:rotate-45" />
-        </span>
-        <span className="text-label-lg font-bold text-text-primary px-0.5">
-          {tk("settings.tabSystem")}
-        </span>
-        <IconChevronInline />
-      </button>
+      {variant === "premium" ? (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          title={user?.fullName || tk("header.account")}
+          className={cn(
+            "flex items-center gap-2 rounded-full border border-white/10 bg-[#08152c]/85 py-1 ps-1 pe-2.5 backdrop-blur-md transition-all hover:border-orange-500/60 hover:bg-[#0c1f40] focus-visible:ring-2 focus-visible:ring-orange-500/40 active:scale-95 group shadow-sm",
+            open && "border-orange-500/80 bg-orange-500/10 shadow-[0_0_12px_rgba(249,115,22,0.25)]"
+          )}
+        >
+          <span
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-orange-500/75 bg-[#09152b] text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.35)] transition-transform group-hover:scale-105"
+            title={user?.fullName || tk("settings.tabSystem")}
+          >
+            <IconProfile size={17} className="text-orange-400" />
+          </span>
+          <div className="hidden min-w-0 flex-col items-start leading-tight sm:flex text-start">
+            <span className="truncate text-body font-bold text-text-primary max-w-[120px] lg:max-w-[150px]">
+              {user?.fullName || tk("app.shortName")}
+            </span>
+            <span className="truncate text-label font-semibold text-orange-400 max-w-[120px] lg:max-w-[150px]">
+              {getLocalizedRoleLabel(user?.role, lang)}
+            </span>
+          </div>
+          <svg
+            width={12}
+            height={12}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.4}
+            strokeLinecap="round"
+            className={cn("shrink-0 text-orange-400/80 transition-transform duration-200", open && "rotate-180")}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          title={tk("header.account")}
+          className={cn(
+            "flex h-9 items-center gap-1.5 rounded-full border border-white/[0.08] bg-surface-2/70 px-2 backdrop-blur-md transition-all hover:border-brand/60 hover:bg-surface-2",
+            open && "border-brand/70 bg-brand/10 shadow-sm shadow-brand/20",
+          )}
+        >
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand/20 text-brand shadow-sm" title={user?.fullName || tk("settings.tabSystem")}>
+            <IconSettings size={14} className="text-brand transition-transform hover:rotate-45" />
+          </span>
+          <span className="text-label-lg font-bold text-text-primary px-0.5">
+            {tk("settings.tabSystem")}
+          </span>
+          <IconChevronInline />
+        </button>
+      )}
 
       {open && (
         <div
@@ -197,8 +320,8 @@ export function AccountMenu({
               {/* Identity block */}
               <div className="mb-1.5 rounded-control bg-surface-2/80 border border-white/[0.06] p-2.5 backdrop-blur-sm">
                 <div className="flex items-center gap-2.5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/15 text-label-lg font-bold text-brand">
-                    {initials}
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-orange-500/40 bg-orange-500/15 text-orange-400 shadow-sm">
+                    <IconProfile size={18} className="text-orange-400" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-body font-bold text-text-primary">

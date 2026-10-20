@@ -1,23 +1,40 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
+import { useBranding } from "../state/brandingStore";
+import { useFleetStore, type Trip } from "../state/fleetStore";
+import { usePermissions } from "../state/permissionStore";
 import { BrandEmblem } from "./Logo";
 import { GlobalSearch } from "./GlobalSearch";
 import { AccountMenu } from "./AccountMenu";
 import type { SettingsTab } from "./SettingsCenter";
 import type { SessionUser } from "../utils/permissions";
-import { IconSparkles, IconBell, IconMenu } from "./Icons";
+import {
+  IconBell,
+  IconMenu,
+  IconSearch,
+  IconClose,
+  IconRepair,
+  IconTruck,
+  IconDoc,
+  IconProfile,
+} from "./Icons";
 import { PageExportMenu, type PageExportProgress } from "./PageExportMenu";
+import { getVehicleTypeMeta } from "../data/vehicleTypes";
 
 /**
- * The operational application bar (§2).
+ * Premium Operational Application Bar — EJAZ Transport Establishment.
  *
- * Design rules this component is built to keep:
- *   • ONE row, 58px, never wraps — no element can push another out of place.
- *   • Clean and uncluttered: identity, search button, assistant, notifications,
- *     and system/account menu.
- *   • Sticky, frosted, hairline-bottom: it reads as an app chrome, not a
- *     marketing hero.
+ * Implements the executive luxury navy & gold design reference:
+ *   • Deep luxury navy background (#050D1D) with subtle warm gold/amber rim & glow
+ *   • RTL layout from Right to Left:
+ *       1. Main Menu button [☰] (far right)
+ *       2. Establishment Identity (Emblem + «مؤسسة إيجاز للنقليات» + «شريكك في نقل أعمالك»)
+ *       3. Global Search field (center) with instant autocomplete & navigation
+ *       4. Action Tools: Camera (Page Export), Tools (Wrench / Settings), Bell (Notifications)
+ *       5. Personal Account Profile (Golden ring avatar, full name, role, chevron)
+ *   • Fully responsive on desktop, tablet, and mobile with zero horizontal scroll
+ *   • Strict adherence to canonical design scale tokens and logical RTL properties
  */
 export function AppHeader({
   user,
@@ -25,7 +42,7 @@ export function AppHeader({
   pageHint: _pageHint,
   unreadAlerts,
   onOpenSidebar,
-  onOpenAssistant,
+  onOpenAssistant: _onOpenAssistant,
   onOpenAlerts,
   onOpenSettings,
   onPreviewLogin,
@@ -59,125 +76,417 @@ export function AppHeader({
   };
   showMenuButton?: boolean;
 }) {
-  const { tk, lang } = useSettings();
-  const [searchOpen, setSearchOpen] = useState(false);
+  const { tk, lang, t, td } = useSettings();
+  const { branding } = useBranding();
+  const { trips, trucks, drivers, selectTrip, selectTruck } = useFleetStore();
+  const { can } = usePermissions();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResultsOpen, setSearchResultsOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Close search autocomplete on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSearchResultsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Aggregated live search results respecting user permissions
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return { trips: [], shipments: [], trucks: [], drivers: [] };
+
+    const matchingTrips = can("trips.view")
+      ? trips
+          .filter(
+            (tr) =>
+              tr.tripNumber.toLowerCase().includes(q) ||
+              tr.originCity.toLowerCase().includes(q) ||
+              tr.destinationCity.toLowerCase().includes(q)
+          )
+          .slice(0, 4)
+      : [];
+
+    const matchingShipments = can("shipments.view")
+      ? trips
+          .filter(
+            (tr) =>
+              tr.qrCodeToken.toLowerCase().includes(q) ||
+              tr.shipper.toLowerCase().includes(q) ||
+              tr.consignee.toLowerCase().includes(q)
+          )
+          .slice(0, 4)
+      : [];
+
+    const matchingTrucks = can("vehicles.view")
+      ? trucks
+          .filter(
+            (v) =>
+              v.plate.toLowerCase().includes(q) ||
+              v.model.toLowerCase().includes(q) ||
+              v.brand.toLowerCase().includes(q) ||
+              v.partner.toLowerCase().includes(q)
+          )
+          .slice(0, 4)
+      : [];
+
+    const matchingDrivers = can("drivers.view")
+      ? drivers
+          .filter((d) => d.name.toLowerCase().includes(q) || d.phone.includes(q))
+          .slice(0, 3)
+      : [];
+
+    return {
+      trips: matchingTrips,
+      shipments: matchingShipments,
+      trucks: matchingTrucks,
+      drivers: matchingDrivers,
+    };
+  }, [searchQuery, trips, trucks, drivers, can]);
+
+  const totalResults =
+    searchResults.trips.length +
+    searchResults.shipments.length +
+    searchResults.trucks.length +
+    searchResults.drivers.length;
+
+  const handleSelectTrip = (tr: Trip) => {
+    selectTrip(tr.id);
+    selectTruck(tr.truckId);
+    onNavigate("trips", tr.id);
+    setSearchResultsOpen(false);
+    setSearchQuery("");
+  };
+
+  const handleSelectShipment = (tr: Trip) => {
+    selectTrip(tr.id);
+    selectTruck(tr.truckId);
+    onNavigate("shipments", tr.id);
+    setSearchResultsOpen(false);
+    setSearchQuery("");
+  };
+
+  const handleSelectTruck = (truckId: string) => {
+    selectTruck(truckId);
+    const matchingTrip = trips.find((t) => t.truckId === truckId);
+    if (matchingTrip) selectTrip(matchingTrip.id);
+    onNavigate("fleet", truckId);
+    setSearchResultsOpen(false);
+    setSearchQuery("");
+  };
+
+  const handleSelectDriver = (driverId: string) => {
+    onNavigate("drivers", driverId);
+    setSearchResultsOpen(false);
+    setSearchQuery("");
+  };
+
+  const brandTitle = lang === "ar" ? (branding.officialNameAr || tk("app.name")) : tk("app.name");
+  const brandTagline = lang === "ar" ? "شريكك في نقل أعمالك" : tk("app.tagline");
+  const searchPlaceholder =
+    lang === "en" ? "Search system..." : lang === "ur" ? "نظام میں تلاش کریں..." : "البحث في النظام...";
 
   return (
-    <header className="app-header sticky top-0 z-[60] h-[var(--header-height)] shrink-0 bg-[#060e1d]/85 backdrop-blur-2xl border-b border-white/[0.08] shadow-[0_4px_24px_-4px_rgba(2,6,23,0.7),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all">
-      <div className="mx-auto flex h-full items-center gap-2.5 px-3 sm:gap-3.5 sm:px-5">
-        {showMenuButton && onOpenSidebar && (
-          <button
-            onClick={onOpenSidebar}
-            className="btn-icon shrink-0 rounded-inner border border-white/[0.08] bg-surface-2/70 hover:bg-surface-3 hover:text-text-primary backdrop-blur-md lg:hidden"
-            aria-label={tk("nav.openMenu")}
-            title={tk("nav.openMenu")}
-          >
-            <IconMenu size={17} />
-          </button>
-        )}
+    <header className="app-header sticky top-0 z-[60] shrink-0 p-2 sm:px-4 sm:pt-2.5 sm:pb-2 transition-all">
+      {/* Luxury Navy & Orange Capsule Bar matching visual reference */}
+      <div className="mx-auto flex w-full items-center justify-between rounded-card border border-orange-500/30 bg-[#050D1D]/90 px-2.5 py-1.5 sm:px-4 sm:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.65),0_0_24px_rgba(249,115,22,0.10)] backdrop-blur-2xl">
+        {/* Right Section (RTL): Menu Toggle + Brand Identity */}
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          {showMenuButton && onOpenSidebar && (
+            <button
+              onClick={onOpenSidebar}
+              className="btn-icon shrink-0 rounded-inner border border-orange-500/35 bg-[#08152c]/90 text-orange-400 hover:text-orange-300 hover:border-orange-500/60 hover:bg-[#0c1f40] shadow-sm shadow-orange-500/15 backdrop-blur-md transition-all active:scale-95 lg:hidden"
+              aria-label={tk("nav.openMenu")}
+              title={tk("nav.openMenu")}
+            >
+              <IconMenu size={18} />
+            </button>
+          )}
 
-        {/* Brand — emblem always, wordmark from lg up so the row never wraps. */}
-        <div className="flex shrink-0 items-center gap-2.5">
-          <div className="relative flex items-center justify-center rounded-inner p-1 bg-gradient-to-br from-brand/25 via-surface-2/85 to-brand/5 border border-brand/35 shadow-sm shadow-brand/20 backdrop-blur-md">
-            <BrandEmblem size={32} variant="header" />
-          </div>
-          <div className="hidden min-w-0 leading-tight lg:block">
-            <div className="truncate text-card-title font-extrabold text-text-primary tracking-tight">
-              {tk("app.name")}
+          {/* Brand Identity: Official Logo + Name + Tagline */}
+          <div className="flex shrink-0 items-center gap-2.5 select-none">
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-orange-500/40 bg-gradient-to-br from-orange-500/20 via-[#0a1832] to-[#040a18] p-1 shadow-sm shadow-orange-500/20 backdrop-blur-md transition-transform hover:scale-105">
+              <BrandEmblem size={28} variant="header" />
             </div>
-            <div className="tagline truncate text-label font-semibold text-brand-soft">{tk("app.tagline")}</div>
+            <div className="hidden min-w-0 flex-col leading-tight sm:flex">
+              <span className="truncate text-page-title font-extrabold text-white tracking-wide">
+                {brandTitle}
+              </span>
+              <span className="truncate text-label font-bold text-orange-400 tracking-normal">
+                {brandTagline}
+              </span>
+            </div>
           </div>
+
+          {/* Thin subtle vertical divider */}
+          <span className="hidden h-7 w-px shrink-0 bg-white/10 lg:block ms-1 me-1" aria-hidden="true" />
         </div>
 
-        <span className="hidden h-6 w-px shrink-0 bg-white/[0.08] lg:block" aria-hidden="true" />
-
-        {/* Spacer to push actions to the end */}
-        <div className="min-w-0 flex-1" />
-
-        {pageExport && (
-          <PageExportMenu
-            surface={pageExport.surface}
-            busy={pageExport.busy}
-            progress={pageExport.progress}
-            eligiblePageCount={pageExport.eligiblePageCount}
-            onExportCurrent={pageExport.onExportCurrent}
-            onPrint={pageExport.onPrint}
-            onExportAll={pageExport.onExportAll}
-          />
-        )}
-
-        {/* Assistant */}
-        <button
-          onClick={onOpenAssistant}
-          className="btn-icon relative shrink-0 rounded-full border border-brand/40 bg-gradient-to-br from-brand/20 via-surface-2/80 to-brand/10 text-brand shadow-sm shadow-brand/20 backdrop-blur-md transition-all duration-200 hover:from-brand hover:to-orange-soft hover:text-white hover:shadow-brand/40 hover:border-brand active:scale-95 group"
-          title={tk("header.assistantTitle")}
-          aria-label={tk("header.assistantTitle")}
+        {/* Center Section: Global Search Field */}
+        <div
+          ref={searchContainerRef}
+          className="relative mx-2 hidden flex-1 max-w-md md:block"
         >
-          <IconSparkles size={17} className="transition-transform duration-200 group-hover:scale-110" />
-        </button>
+          <div className="flex items-center gap-2 rounded-full bg-[#060f22]/90 px-3.5 py-1.5 border border-white/10 hover:border-orange-500/40 focus-within:border-orange-500/70 shadow-[0_2px_14px_rgba(249,115,22,0.15)] transition-all">
+            <IconSearch size={16} className="text-orange-400/90 shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onFocus={() => setSearchResultsOpen(true)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchResultsOpen(true);
+              }}
+              placeholder={searchPlaceholder}
+              className="w-full bg-transparent text-label-lg text-text-primary placeholder:text-text-muted outline-none"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setSearchResultsOpen(false);
+                }}
+                className="text-text-muted hover:text-text-primary transition-colors"
+                aria-label={tk("common.close")}
+              >
+                <IconClose size={14} />
+              </button>
+            )}
+          </div>
 
-        {/* Search — placed next to notifications */}
-        <button
-          onClick={() => setSearchOpen((v) => !v)}
-          className={cn(
-            "btn-icon relative shrink-0 rounded-full border border-white/[0.08] bg-surface-2/70 hover:bg-surface-3 hover:text-text-primary hover:border-brand/40 backdrop-blur-md transition-all active:scale-95",
-            searchOpen && "text-brand border-brand/50 bg-brand/10"
+          {/* Autocomplete Dropdown */}
+          {searchResultsOpen && searchQuery.trim() && (
+            <div
+              className="animate-fade-in absolute top-full mt-2 inset-x-0 z-50 rounded-panel bg-[#060e1d]/95 backdrop-blur-2xl p-2 shadow-2xl border border-white/10 max-h-[380px] overflow-y-auto text-label-lg"
+              data-export-exclude="true"
+            >
+              {totalResults === 0 ? (
+                <div className="p-4 text-center text-text-muted text-label-lg">
+                  {t("No matching results found for", "لا توجد نتائج مطابقة لـ")} "{searchQuery}"
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* Trips */}
+                  {searchResults.trips.length > 0 && (
+                    <div>
+                      <div className="px-2 py-1 text-micro font-bold text-orange-400/90 uppercase tracking-wider">
+                        {t("Trips", "الرحلات")}
+                      </div>
+                      {searchResults.trips.map((tr) => (
+                        <button
+                          key={tr.id}
+                          onClick={() => handleSelectTrip(tr)}
+                          className="w-full p-2 rounded-chip hover:bg-[#0b1b37] flex items-center justify-between text-start transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="p-1 rounded-micro bg-orange-500/15 text-orange-400">
+                              <IconTruck size={14} />
+                            </span>
+                            <div>
+                              <div className="font-mono font-bold text-text-primary">
+                                {tr.tripNumber}
+                              </div>
+                              <div className="text-label text-text-muted">
+                                {td(tr.originCity)} → {td(tr.destinationCity)}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-micro font-mono text-status-active">
+                            {tr.status}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Shipments */}
+                  {searchResults.shipments.length > 0 && (
+                    <div className="border-t border-white/5 pt-1.5">
+                      <div className="px-2 py-1 text-micro font-bold text-orange-400/90 uppercase tracking-wider">
+                        {t("Shipments", "الشحنات")}
+                      </div>
+                      {searchResults.shipments.map((tr) => (
+                        <button
+                          key={`sh-${tr.id}`}
+                          onClick={() => handleSelectShipment(tr)}
+                          className="w-full p-2 rounded-chip hover:bg-[#0b1b37] flex items-center justify-between text-start transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="p-1 rounded-micro bg-sky-400/15 text-sky-300">
+                              <IconDoc size={14} />
+                            </span>
+                            <div>
+                              <div className="font-mono font-bold text-text-primary">
+                                {tr.qrCodeToken || `SH-${tr.tripNumber}`}
+                              </div>
+                              <div className="text-label text-text-muted truncate max-w-[200px]">
+                                {tr.shipper}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-micro text-orange-400 font-bold">
+                            {getVehicleTypeMeta(tr.cargoType).arabicName}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Trucks */}
+                  {searchResults.trucks.length > 0 && (
+                    <div className="border-t border-white/5 pt-1.5">
+                      <div className="px-2 py-1 text-micro font-bold text-orange-400/90 uppercase tracking-wider">
+                        {t("Vehicles & Fleet", "الأسطول والشاحنات")}
+                      </div>
+                      {searchResults.trucks.map((v) => (
+                        <button
+                          key={v.id}
+                          onClick={() => handleSelectTruck(v.id)}
+                          className="w-full p-2 rounded-chip hover:bg-[#0b1b37] flex items-center justify-between text-start transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="p-1 rounded-micro bg-surface-3 text-text-secondary">
+                              <IconTruck size={14} />
+                            </span>
+                            <div>
+                              <div className="font-mono font-bold text-text-primary">{v.plate}</div>
+                              <div className="text-label text-text-muted truncate">
+                                {v.brand} {v.model}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-micro text-text-muted font-mono">{v.body}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Drivers */}
+                  {searchResults.drivers.length > 0 && (
+                    <div className="border-t border-white/5 pt-1.5">
+                      <div className="px-2 py-1 text-micro font-bold text-orange-400/90 uppercase tracking-wider">
+                        {t("Drivers", "السائقون")}
+                      </div>
+                      {searchResults.drivers.map((d) => (
+                        <button
+                          key={d.name}
+                          onClick={() => handleSelectDriver(d.name)}
+                          className="w-full p-2 rounded-chip hover:bg-[#0b1b37] flex items-center justify-between text-start transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="p-1 rounded-micro bg-status-active/15 text-status-active">
+                              <IconProfile size={14} />
+                            </span>
+                            <div>
+                              <div className="font-semibold text-text-primary">{d.name}</div>
+                              <div className="text-label text-text-muted font-mono">{d.phone}</div>
+                            </div>
+                          </div>
+                          <span className="text-micro text-text-muted">⭐ {d.rating}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
-          aria-label={tk("common.search")}
-          title={tk("common.search")}
-        >
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
-            <circle cx="11" cy="11" r="7" />
-            <path d="M20 20l-3.6-3.6" />
-          </svg>
-        </button>
+        </div>
 
-        {/* Notifications */}
-        <button
-          onClick={onOpenAlerts}
-          className="btn-icon relative shrink-0 rounded-full border border-white/[0.08] bg-surface-2/70 hover:bg-surface-3 hover:text-text-primary hover:border-brand/40 backdrop-blur-md transition-all active:scale-95"
-          title={tk("header.notificationsTitle")}
-          aria-label={tk("header.notificationsTitle")}
-        >
-          <IconBell size={16} />
-          {unreadAlerts > 0 && (
-            <span className="num absolute -top-1 -end-1 grid h-4 min-w-4 place-items-center rounded-full bg-status-danger px-1 text-micro font-extrabold text-white ring-2 ring-surface-0 shadow-sm animate-pulse">
-              {unreadAlerts > 99 ? "99+" : unreadAlerts}
-            </span>
+        {/* Left Section (RTL): Tools + Notifications + Personal Account Profile */}
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+          {/* Mobile search toggle button (visible on smaller screens) */}
+          <button
+            onClick={() => setMobileSearchOpen((v) => !v)}
+            className={cn(
+              "btn-icon relative shrink-0 rounded-full border border-white/10 bg-[#08152c]/80 text-text-secondary hover:text-text-primary hover:border-orange-500/50 hover:bg-[#0c1f40] backdrop-blur-md transition-all active:scale-95 md:hidden shadow-sm",
+              mobileSearchOpen && "border-orange-500/70 text-orange-400 bg-orange-500/10 shadow-orange-500/20"
+            )}
+            aria-label={tk("common.search")}
+            title={tk("common.search")}
+          >
+            <IconSearch size={16} />
+          </button>
+
+          {/* Camera / Screenshot Page Export Tool */}
+          {pageExport && (
+            <PageExportMenu
+              surface={pageExport.surface}
+              busy={pageExport.busy}
+              progress={pageExport.progress}
+              eligiblePageCount={pageExport.eligiblePageCount}
+              onExportCurrent={pageExport.onExportCurrent}
+              onPrint={pageExport.onPrint}
+              onExportAll={pageExport.onExportAll}
+              buttonClassName="border border-white/10 hover:border-orange-500/50 bg-[#08152c]/80 hover:bg-[#0c1f40] text-text-secondary hover:text-orange-300 shadow-sm"
+            />
           )}
-        </button>
 
-        {/* Account — everything secondary lives inside. */}
-        <div className="shrink-0" data-export-exclude="true">
-          <AccountMenu
-            className="shrink-0"
-            user={user}
-            onOpenSettings={onOpenSettings}
-            onOpenAssistant={onOpenAssistant}
-            onOpenMobileApp={onOpenMobileApp ?? (() => {})}
-            onPreviewLogin={onPreviewLogin}
-            onLogout={onLogout}
-          />
+          {/* Tools & Settings / Maintenance Tool */}
+          <button
+            onClick={() => onOpenSettings("system")}
+            className="btn-icon relative shrink-0 rounded-full border border-white/10 hover:border-orange-500/50 bg-[#08152c]/80 hover:bg-[#0c1f40] text-text-secondary hover:text-orange-300 shadow-sm transition-all active:scale-95 group"
+            title={tk("nav.settings")}
+            aria-label={tk("nav.settings")}
+          >
+            <IconRepair size={16} className="transition-transform group-hover:rotate-45" />
+          </button>
+
+          {/* Notifications Center Bell with Real Unread Badge */}
+          <button
+            onClick={onOpenAlerts}
+            className="btn-icon relative shrink-0 rounded-full border border-white/10 hover:border-orange-500/50 bg-[#08152c]/80 hover:bg-[#0c1f40] text-text-secondary hover:text-orange-300 shadow-sm transition-all active:scale-95 group"
+            title={tk("header.notificationsTitle")}
+            aria-label={tk("header.notificationsTitle")}
+          >
+            <IconBell size={16} className="transition-transform group-hover:scale-105" />
+            {unreadAlerts > 0 && (
+              <span className="num absolute -top-1 -end-1 grid h-4 min-w-4 place-items-center rounded-full bg-orange-500 px-1 text-micro font-extrabold text-white ring-2 ring-[#050D1D] shadow-[0_0_8px_rgba(249,115,22,0.5)]">
+                {unreadAlerts > 99 ? "99+" : unreadAlerts}
+              </span>
+            )}
+          </button>
+
+          {/* Personal Account Profile Capsule with Dropdown Menu */}
+          <div className="shrink-0" data-export-exclude="true">
+            <AccountMenu
+              className="shrink-0"
+              user={user}
+              variant="premium"
+              onOpenSettings={onOpenSettings}
+              onOpenAssistant={_onOpenAssistant}
+              onOpenMobileApp={onOpenMobileApp ?? (() => {})}
+              onPreviewLogin={onPreviewLogin}
+              onLogout={onLogout}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Search overlay popup — keeps the bar itself uncluttered and clean */}
-      {searchOpen && (
-        <div className="animate-fade-in absolute inset-x-0 top-full border-b border-white/[0.08] bg-[#060e1d]/95 backdrop-blur-2xl p-2.5 shadow-2xl" data-export-exclude="true">
-          <div className="max-w-2xl mx-auto">
-            <GlobalSearch
-              onNavigate={(view, id) => {
-                setSearchOpen(false);
-                onNavigate(view, id);
-              }}
-            />
-            <button
-              onClick={() => setSearchOpen(false)}
-              className="mt-2 w-full rounded-control py-1.5 text-center text-label-lg font-semibold text-text-muted hover:text-text-primary"
-            >
-              {tk("common.close")}
-            </button>
-          </div>
+      {/* Mobile Search Overlay Modal for small screens */}
+      {mobileSearchOpen && (
+        <div
+          className="animate-fade-in absolute inset-x-0 top-full mt-2 border border-white/10 bg-[#050D1D]/95 backdrop-blur-2xl p-3 shadow-2xl rounded-panel mx-2 md:hidden"
+          data-export-exclude="true"
+        >
+          <GlobalSearch
+            onNavigate={(view, id) => {
+              setMobileSearchOpen(false);
+              onNavigate(view, id);
+            }}
+          />
+          <button
+            onClick={() => setMobileSearchOpen(false)}
+            className="mt-2 w-full rounded-control py-1.5 text-center text-label-lg font-semibold text-text-muted hover:text-text-primary transition-colors"
+          >
+            {tk("common.close")}
+          </button>
         </div>
       )}
 
@@ -188,3 +497,4 @@ export function AppHeader({
     </header>
   );
 }
+
