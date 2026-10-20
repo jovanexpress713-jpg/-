@@ -333,7 +333,7 @@ export function ConsoleAuthGate({
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <div className="text-body font-extrabold text-white flex items-center gap-2">
-                    <span className="text-base">👑</span>
+                    <span className="text-page-title leading-6">👑</span>
                     <span>{t("Direct Owner Entry (Passwordless)", "دخول صاحب المشروع والعميل (بدون كلمة سر)")}</span>
                   </div>
                   <p className="mt-0.5 text-micro sm:text-label text-text-secondary">
