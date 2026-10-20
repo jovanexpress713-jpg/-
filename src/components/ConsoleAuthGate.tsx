@@ -328,7 +328,7 @@ export function ConsoleAuthGate({
             </div>
             <div className="scroll-thin grid max-h-[34vh] grid-cols-1 gap-1.5 overflow-y-auto overscroll-contain sm:grid-cols-2">
               {demoAccounts.map((acc) => {
-                const isHiddenAccount = acc.key === "driver" || acc.key === "client";
+                const isClient = acc.key === "client";
                 return (
                   <button
                     key={acc.key}
@@ -338,15 +338,22 @@ export function ConsoleAuthGate({
                     className={cn(
                       "min-w-0 rounded-inner border p-2.5 text-start transition-all hover:border-brand hover:bg-surface-2 active:scale-[0.99]",
                       email === acc.email ? "border-brand/60 bg-surface-2" : "border-border-subtle",
-                      isHiddenAccount && "hidden",
+                      isClient && "border-accent-2/40 bg-accent-2/5 hover:border-accent-2"
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="min-w-0 truncate text-body font-bold text-text-primary">
                         {t(acc.titleEn, acc.titleAr)}
                       </span>
-                      <span className="rounded-full bg-brand/15 px-2.5 py-0.5 text-micro font-bold text-brand">
-                        {t("Enter Now →", "دخول فوري ←")}
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-0.5 text-micro font-bold",
+                          isClient
+                            ? "bg-accent-2/20 text-accent-2"
+                            : "bg-brand/15 text-brand"
+                        )}
+                      >
+                        {isClient ? t("No password required →", "بدون كلمة سر ←") : t("Enter Now →", "دخول فوري ←")}
                       </span>
                     </div>
                     <div className="mt-0.5 line-clamp-2 text-micro leading-relaxed text-text-muted">
@@ -366,9 +373,10 @@ export function ConsoleAuthGate({
                 type="button"
                 onClick={() => onOpenMobileApp("client")}
                 className="flex h-10 items-center justify-center gap-2 rounded-inner border border-accent-2/40 bg-accent-2/10 text-label-lg font-bold text-accent-2 transition-colors hover:bg-accent-2 hover:text-white"
+                title={t("Instant Client Login (Passwordless)", "دخول العميل المباشر (بدون كلمة سر)")}
               >
                 <IconProfile size={15} />
-                {t("Open the client app", "فتح تطبيق العميل")}
+                {t("Open the client app", "فتح تطبيق العميل (دخول مباشر)")}
               </button>
               <button
                 type="button"

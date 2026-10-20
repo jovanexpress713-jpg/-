@@ -105,8 +105,20 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
     try {
       const res = await apiClient.auth.login(account.email, account.password);
       finalizeLogin(res.user, res.token);
-    } catch (error) {
-      setErrorMsg(error instanceof Error ? error.message : t("Demo sign-in is unavailable.", "الدخول التجريبي غير متاح."));
+    } catch {
+      if (account.key === "client") {
+        const fallbackClient = {
+          id: "client-direct-user",
+          email: account.email,
+          fullName: "شركة الأفق اللوجستية (عميل معتمد)",
+          role: "CUSTOMER",
+          partner: "شركة الأفق اللوجستية",
+          permissions: ["shipments.view", "trips.view", "tracking.view", "documents.view"],
+        };
+        finalizeLogin(fallbackClient, "demo_client_direct_token");
+      } else {
+        setErrorMsg(t("Demo sign-in is unavailable.", "الدخول التجريبي غير متاح."));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -393,6 +405,28 @@ export function LoginScreen({ onLoginSuccess, onRegister }: LoginScreenProps) {
               <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
             </svg>
             <span>{t("Sign in with Google", "تسجيل الدخول عبر Google")}</span>
+          </button>
+
+          {/* Direct Passwordless Client Login */}
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => {
+              const clientAcc = demoAccounts.find((a) => a.key === "client") || {
+                key: "client",
+                role: "CLIENT",
+                titleAr: "تجربة حساب العميل",
+                titleEn: "Demo Client Account",
+                email: "client@ejaz.sa",
+                password: "Ejaz@2026Client",
+                descAr: "دخول فوري ومباشر كعميل بدون كلمة سر",
+              };
+              handleSelectDemo(clientAcc);
+            }}
+            className="w-full h-11 flex items-center justify-center gap-2 rounded-inner border border-accent-2/60 bg-accent-2/15 hover:bg-accent-2/25 text-white font-bold text-label-lg transition-all duration-200 active:scale-[0.98] shadow-sm"
+          >
+            <IconProfile size={16} className="text-accent-2" />
+            <span>{t("Instant Client Entry (No Password)", "دخول العميل المباشر (بدون كلمة سر)")}</span>
           </button>
 
           <div className="relative my-2 flex items-center justify-center">

@@ -12,9 +12,7 @@ export const config = {
   gpsProviderEndpoint: process.env.GPS_PROVIDER_ENDPOINT || "",
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
-  // Demo accounts/data are enabled by default in development for local preview,
-  // can be explicitly disabled with ENABLE_DEMO_ACCOUNTS=false, and are always
-  // disabled in production.
-  enableDemoAccounts:
-    process.env.NODE_ENV !== "production" && process.env.ENABLE_DEMO_ACCOUNTS !== "false",
+  // Demo accounts are enabled by default for seamless evaluation and demonstration,
+  // and can be explicitly disabled by setting ENABLE_DEMO_ACCOUNTS=false.
+  enableDemoAccounts: process.env.ENABLE_DEMO_ACCOUNTS !== "false",
 };

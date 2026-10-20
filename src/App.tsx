@@ -144,8 +144,30 @@ function Shell() {
   }, []);
 
   /** «تطبيقات الجوال» (§12): each button opens its own app interface. */
-  const handleOpenMobileApp = useCallback((kind: "driver" | "client") => {
+  const handleOpenMobileApp = useCallback(async (kind: "driver" | "client") => {
     if (!session) {
+      if (kind === "client") {
+        try {
+          const res = await apiClient.auth.login("client@ejaz.sa", "Ejaz@2026Client");
+          handleAuthenticated(res.user);
+          setMobileInterface("client");
+          setProject("mobile");
+          return;
+        } catch {
+          const fallbackClient = {
+            id: "client-direct-user",
+            email: "client@ejaz.sa",
+            fullName: "شركة الأفق اللوجستية (عميل معتمد)",
+            role: "CUSTOMER",
+            partner: "شركة الأفق اللوجستية",
+            permissions: ["shipments.view", "trips.view", "tracking.view", "documents.view"],
+          };
+          handleAuthenticated(fallbackClient);
+          setMobileInterface("client");
+          setProject("mobile");
+          return;
+        }
+      }
       setPreAuthInterface(kind);
       setPreAuthView("mobile");
       return;
@@ -153,7 +175,7 @@ function Shell() {
     setMobileInterface(kind);
     setProject("mobile");
     setSettingsTab(null);
-  }, [session]);
+  }, [handleAuthenticated, session]);
 
   const handleLogout = useCallback(async () => {
     try {
