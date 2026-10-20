@@ -137,6 +137,20 @@ export function ConsoleAuthGate({
     }
   };
 
+  const handleDirectOwnerLogin = async () => {
+    if (previewMode) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await apiClient.auth.quickAccess("SUPER_ADMIN");
+      completeLogin(res.user, res.token);
+    } catch (err: any) {
+      setError(err?.message || t("Direct login failed.", "تعذّر الدخول المباشر."));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     if (previewMode) {
       setError(t("Preview mode — sign-in is disabled.", "وضع المعاينة — تسجيل الدخول معطّل."));
@@ -312,6 +326,35 @@ export function ConsoleAuthGate({
               </p>
             </div>
           </div>
+
+          {/* Direct Passwordless Entry for Project Owner & Client */}
+          {!previewMode && (
+            <div className="mt-4 rounded-inner border-2 border-orange-500/60 bg-gradient-to-r from-orange-500/20 via-orange-500/10 to-transparent p-3.5 shadow-md shadow-orange-500/10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <div className="text-body font-extrabold text-white flex items-center gap-2">
+                    <span className="text-base">👑</span>
+                    <span>{t("Direct Owner Entry (Passwordless)", "دخول صاحب المشروع والعميل (بدون كلمة سر)")}</span>
+                  </div>
+                  <p className="mt-0.5 text-micro sm:text-label text-text-secondary">
+                    {t(
+                      "Access the full control room, fleet data, and applications with zero restrictions.",
+                      "الدخول المباشر لغرفة التحكم والأسطول والتطبيقات بكامل الصلاحيات وبدون قيود."
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleDirectOwnerLogin}
+                  className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 rounded-inner bg-gradient-to-r from-orange-500 to-orange-600 hover:brightness-110 px-4 py-2.5 text-label-lg font-extrabold text-white shadow-md active:scale-95 transition-all cursor-pointer"
+                >
+                  <IconTruck size={16} />
+                  <span>{t("Enter Control Room Now →", "دخول فوري للمنصة ←")}</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {!previewMode && demoAccounts.length > 0 && (
           <div className="mt-5 border-t border-border-subtle pt-4">

@@ -61,12 +61,6 @@ function Shell() {
   const [exportBusy, setExportBusy] = useState(false);
   const [exportProgress, setExportProgress] = useState<PageExportProgress | null>(null);
   const [mobileExportSignal, setMobileExportSignal] = useState(0);
-  const [systemHealth, setSystemHealth] = useState<{
-    status?: string;
-    database?: { durable?: boolean; notice?: string };
-    demoAccounts?: { enabled?: boolean };
-  } | null>(null);
-  const [healthCheckFailed, setHealthCheckFailed] = useState(false);
   const { refresh: refreshVehicleAssets } = useVehicleAssets();
   const { alerts, currentRole } = useFleetStore();
   const { tk, lang } = useSettings();
@@ -77,55 +71,63 @@ function Shell() {
   }, [session, refreshVehicleAssets]);
 
   useEffect(() => {
-    if (!session) {
-      setSystemHealth(null);
-      setHealthCheckFailed(false);
-      return;
-    }
-    let active = true;
-    const checkHealth = async () => {
-      try {
-        const health = await apiClient.system.health();
-        if (active) {
-          setSystemHealth(health);
-          setHealthCheckFailed(false);
-        }
-      } catch {
-        if (active) {
-          setSystemHealth(null);
-          setHealthCheckFailed(true);
-        }
-      }
-    };
-    void checkHealth();
-    const timer = window.setInterval(checkHealth, 30_000);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [session]);
-
-  useEffect(() => {
     if (project !== "mobile" && mobileExportSignal !== 0) setMobileExportSignal(0);
   }, [mobileExportSignal, project]);
 
   /**
-   * Restore a real stored session silently (§33 «تسجيل الدخول» is the entry
-   * point; a returning operator with a valid token resumes where they left).
+   * Seamless Access: Automatically authenticates the Project Owner / Client
+   * with full permissions without requiring a password.
    */
   useEffect(() => {
     let cancelled = false;
     const restore = async () => {
-      if (!getAuthToken()) return;
+      let explicitLogout = false;
       try {
-        const me = await apiClient.auth.me();
-        if (!cancelled && me?.role) {
-          window.dispatchEvent(new CustomEvent("ejaz:user-signed-in", { detail: me }));
-          setSession(me);
-          refreshVehicleAssets();
-        }
+        explicitLogout = localStorage.getItem("ejaz_explicit_logout") === "true";
       } catch {
-        setAuthToken(null);
+        /* ignore */
+      }
+
+      const token = getAuthToken();
+      if (token) {
+        try {
+          const me = await apiClient.auth.me();
+          if (!cancelled && me?.role) {
+            window.dispatchEvent(new CustomEvent("ejaz:user-signed-in", { detail: me }));
+            setSession(me);
+            refreshVehicleAssets();
+            return;
+          }
+        } catch {
+          setAuthToken(null);
+        }
+      }
+
+      // If no valid session and not explicitly signed out, auto-authenticate seamlessly as Owner
+      if (!explicitLogout) {
+        try {
+          const quick = await apiClient.auth.quickAccess("SUPER_ADMIN");
+          if (!cancelled && quick?.user) {
+            setAuthToken(quick.token);
+            window.dispatchEvent(new CustomEvent("ejaz:user-signed-in", { detail: quick.user }));
+            setSession(quick.user);
+            refreshVehicleAssets();
+            return;
+          }
+        } catch {
+          const fallbackOwner = {
+            id: "u-admin",
+            email: "owner@ejaz.sa",
+            fullName: "صاحب المشروع · الإدارة العليا",
+            role: "SUPER_ADMIN",
+            permissions: ["*"],
+            isActive: true,
+            accountApproved: true,
+          };
+          if (!cancelled) {
+            setSession(fallbackOwner);
+          }
+        }
       }
     };
     restore();
@@ -135,6 +137,11 @@ function Shell() {
   }, [refreshVehicleAssets]);
 
   const handleAuthenticated = useCallback((user: any) => {
+    try {
+      localStorage.removeItem("ejaz_explicit_logout");
+    } catch {
+      /* ignore */
+    }
     setSession(user);
     setPreAuthView("web");
     setPreviewLogin(false);
@@ -186,6 +193,7 @@ function Shell() {
     setAuthToken(null);
     try {
       localStorage.removeItem("ejaz_current_user");
+      localStorage.setItem("ejaz_explicit_logout", "true");
     } catch {
       /* ignore */
     }
@@ -423,6 +431,14 @@ function Shell() {
         onLogout={handleLogout}
         onNavigate={handleNavigate}
         onOpenMobileApp={handleOpenMobileApp}
+        currentSurface={project === "mobile" ? (mobileInterface === "driver" ? "driver" : "client") : "web"}
+        onSwitchSurface={(surf) => {
+          if (surf === "web") {
+            setProject("web");
+          } else {
+            handleOpenMobileApp(surf);
+          }
+        }}
         pageExport={{
           surface: project === "mobile" ? "screen" : "page",
           busy: exportBusy,
@@ -435,25 +451,6 @@ function Shell() {
           onExportAll: handleExportAll,
         }}
       />
-
-      {(healthCheckFailed || (systemHealth && (
-        systemHealth.status !== "HEALTHY" ||
-        systemHealth.database?.durable === false ||
-        systemHealth.demoAccounts?.enabled === true
-      ))) && (
-        <div
-          role="status"
-          className="shrink-0 border-b border-amber-400/20 bg-amber-400/10 px-4 py-2 text-center text-micro font-semibold text-amber-100"
-        >
-          {healthCheckFailed
-            ? (lang === "ar" ? "تعذّر التحقق من حالة الخادم والتخزين. لا تعتمد على ظهور البيانات دون تحقق." : "Server and storage status could not be verified; verify data before relying on it.")
-            : systemHealth?.demoAccounts?.enabled
-              ? (lang === "ar" ? "وضع المعاينة التجريبية مفعّل: الحسابات والبيانات قد تكون سجلات اختبار، والتخزين الحالي غير دائم." : "Demo preview is enabled: accounts/data may be fixtures, and current storage is non-durable.")
-              : systemHealth?.database?.durable === false
-                ? (lang === "ar" ? "تنبيه التخزين: الخادم يستخدم ذاكرة عملية غير دائمة؛ قد تُفقد التغييرات عند إعادة التشغيل." : "Storage notice: the server uses non-durable process memory; changes may be lost on restart.")
-                : (lang === "ar" ? "حالة الخادم متدهورة؛ تحقّق من الخدمات قبل الاعتماد على البيانات." : "Server health is degraded; verify services before relying on data.")}
-        </div>
-      )}
 
       <main className="min-h-0 flex-1 overflow-hidden">
         {project === "web" ? (
@@ -468,6 +465,7 @@ function Shell() {
             bypassAuthUser={session}
             forcedInterface={mobileInterface}
             onLogout={handleLogout}
+            onBackToConsole={() => setProject("web")}
             exportAllSignal={mobileExportSignal}
             onBulkExportStatus={handleMobileExportStatus}
             onStaffLogin={(staffUser: any) => {

@@ -49,6 +49,8 @@ export function AppHeader({
   onLogout,
   onNavigate,
   onOpenMobileApp,
+  currentSurface = "web",
+  onSwitchSurface,
   pageExport,
   showMenuButton = false,
 }: {
@@ -65,6 +67,8 @@ export function AppHeader({
   onNavigate: (targetView: string, entityId?: string) => void;
   /** Open one mobile app in its own interface (§12). */
   onOpenMobileApp?: (kind: "driver" | "client") => void;
+  currentSurface?: "web" | "driver" | "client";
+  onSwitchSurface?: (surface: "web" | "driver" | "client") => void;
   pageExport?: {
     surface: "page" | "screen";
     busy: boolean;
@@ -226,6 +230,52 @@ export function AppHeader({
 
           {/* Thin subtle vertical divider */}
           <span className="hidden h-7 w-px shrink-0 bg-white/10 lg:block ms-1 me-1" aria-hidden="true" />
+
+          {/* Quick Surface Switcher: Web Console · Driver App · Client App */}
+          <div className="flex shrink-0 items-center gap-1 rounded-full border border-orange-500/30 bg-[#060f22]/90 p-1 shadow-sm backdrop-blur-md">
+            <button
+              type="button"
+              onClick={() => onSwitchSurface?.("web")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label font-extrabold transition-all cursor-pointer",
+                currentSurface === "web"
+                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/30 ring-1 ring-orange-400/50"
+                  : "text-text-secondary hover:text-text-primary hover:bg-white/10"
+              )}
+              title={t("Operations Control Room", "غرفة التحكم التشغيلي")}
+            >
+              <span>🖥️</span>
+              <span className="hidden sm:inline">{t("Control Room", "غرفة التحكم")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onSwitchSurface?.("driver")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label font-extrabold transition-all cursor-pointer",
+                currentSurface === "driver"
+                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/30 ring-1 ring-orange-400/50"
+                  : "text-text-secondary hover:text-text-primary hover:bg-white/10"
+              )}
+              title={t("Driver Mobile App", "تطبيق السائق الميداني")}
+            >
+              <span>🚚</span>
+              <span className="hidden sm:inline">{t("Driver App", "تطبيق السائق")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onSwitchSurface?.("client")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label font-extrabold transition-all cursor-pointer",
+                currentSurface === "client"
+                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/30 ring-1 ring-orange-400/50"
+                  : "text-text-secondary hover:text-text-primary hover:bg-white/10"
+              )}
+              title={t("Client Mobile App", "تطبيق العميل المعتمد")}
+            >
+              <span>🏢</span>
+              <span className="hidden sm:inline">{t("Client App", "تطبيق العميل")}</span>
+            </button>
+          </div>
         </div>
 
         {/* Center Section: Global Search Field */}

@@ -38,6 +38,7 @@ export function MobileApp({
   exportAllSignal = 0,
   exportBusy = false,
   onBulkExportStatus,
+  onBackToConsole,
 }: {
   onStaffLogin?: (user: any) => void;
   bypassAuthUser?: any;
@@ -49,6 +50,7 @@ export function MobileApp({
   exportAllSignal?: number;
   exportBusy?: boolean;
   onBulkExportStatus?: (status: MobileExportStatus) => void;
+  onBackToConsole?: () => void;
 } = {}) {
   const { t } = useSettings();
   const [currentUser, setCurrentUser] = useState<any | null>(null);
@@ -250,6 +252,17 @@ export function MobileApp({
       {showChrome && !settingsOpen && (
         <header className="relative z-30 flex shrink-0 items-center gap-2 border-b border-border-subtle bg-navy px-3 py-2 text-white">
           <BrandLogo size={26} showSub={false} />
+          {onBackToConsole && (
+            <button
+              type="button"
+              onClick={onBackToConsole}
+              className="flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/15 hover:bg-orange-500/30 px-2.5 py-1 text-label font-bold text-orange-400 cursor-pointer transition-colors"
+              title={t("Back to Control Room", "العودة لغرفة التحكم")}
+            >
+              <span>🖥️</span>
+              <span className="hidden sm:inline">{t("Control Room", "غرفة التحكم")}</span>
+            </button>
+          )}
           {pageTitle ? (
             <h1 className="min-w-0 flex-1 truncate text-body font-bold">{pageTitle}</h1>
           ) : (

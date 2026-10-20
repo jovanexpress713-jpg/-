@@ -116,6 +116,11 @@ export const apiClient = {
       request<any>("/api/auth/logout", {
         method: "POST",
       }),
+    quickAccess: (role: string = "SUPER_ADMIN", email?: string) =>
+      request<{ token: string; user: any }>("/api/auth/quick-access", {
+        method: "POST",
+        body: JSON.stringify({ role, email }),
+      }),
     getDemoAccounts: () =>
       request<{ enabled: boolean; accounts: Array<{ key: string; role: string; titleAr: string; titleEn: string; email: string; password: string; descAr: string; descEn?: string }> }>("/api/auth/demo-accounts"),
   },
