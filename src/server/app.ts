@@ -22,6 +22,7 @@ import registrationRoutes from "./routes/registrationRoutes";
 import tariffRoutes from "./routes/tariffRoutes";
 import permissionRoutes from "./routes/permissionRoutes";
 import representativeRoutes from "./routes/representativeRoutes";
+import geminiRoutes from "./routes/geminiRoutes";
 import { getUploadsServeRoot } from "./services/vehicleAssetRegistry";
 
 export function createServerApp() {
@@ -80,6 +81,7 @@ export function createServerApp() {
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/audit", auditRoutes);
   app.use("/api/reports", reportRoutes);
+  app.use("/api/gemini", geminiRoutes);
   app.use("/api", systemRoutes);
 
   // Official uploaded vehicle reference assets handler

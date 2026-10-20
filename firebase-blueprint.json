@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with authentication and role information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth user ID", "maxLength": 128 },
+        "email": { "type": "string", "description": "User email address", "maxLength": 256 },
+        "displayName": { "type": "string", "description": "Full name", "maxLength": 256 },
+        "photoURL": { "type": "string", "description": "Profile avatar URL", "maxLength": 1024 },
+        "role": { "type": "string", "description": "Assigned role in EJAZ Transport", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time", "maxLength": 64 },
+        "updatedAt": { "type": "string", "format": "date-time", "maxLength": 64 }
+      },
+      "required": ["uid", "email"]
+    },
+    "UserPreferences": {
+      "title": "UserPreferences",
+      "description": "User persistent settings and preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "theme": { "type": "string", "enum": ["dark", "light"], "maxLength": 16 },
+        "language": { "type": "string", "enum": ["ar", "en", "ur"], "maxLength": 8 },
+        "updatedAt": { "type": "string", "format": "date-time", "maxLength": 64 }
+      },
+      "required": ["userId"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Multi-turn Gemini chat conversation message",
+      "type": "object",
+      "properties": {
+        "conversationId": { "type": "string", "description": "Thread identifier", "maxLength": 128 },
+        "userId": { "type": "string", "description": "Owner user ID", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["user", "model", "system"], "maxLength": 16 },
+        "text": { "type": "string", "maxLength": 20000 },
+        "modelUsed": { "type": "string", "maxLength": 64 },
+        "agentRole": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time", "maxLength": 64 }
+      },
+      "required": ["conversationId", "userId", "role", "text"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles"
+    },
+    "/users/{userId}/preferences/{prefId}": {
+      "schema": "UserPreferences",
+      "description": "User specific configuration preferences"
+    },
+    "/users/{userId}/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "User multi-turn Gemini conversation message history"
+    }
+  }
+}

@@ -650,4 +650,27 @@ export const apiClient = {
         body: JSON.stringify(payload),
       }),
   },
+  gemini: {
+    chat: (data: {
+      messages: Array<{ role: "user" | "model" | "assistant" | "system"; text: string }>;
+      model?: string;
+      agentRole?: string;
+      customSystemInstruction?: string;
+      operationalContext?: any;
+    }) =>
+      request<{
+        text: string;
+        modelUsed: string;
+        agentRole: string;
+        persisted: boolean;
+      }>("/api/gemini/chat", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    getConfig: () =>
+      request<{
+        models: Array<{ id: string; name: string; tag: string; tagAr: string; description: string }>;
+        roles: Array<{ id: string; nameAr: string; nameEn: string; recommendedModel: string }>;
+      }>("/api/gemini/config"),
+  },
 };

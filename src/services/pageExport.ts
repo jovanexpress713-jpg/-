@@ -452,3 +452,12 @@ export async function exportPagesZip(
     } catch {}
   }, 1500);
 }
+
+export async function downloadJpegArchive(
+  pages: JpegPage[],
+  zipFilename = "ejaz-transport-pages"
+): Promise<string> {
+  const filename = zipFilename.endsWith(".zip") ? zipFilename : `${zipFilename}.zip`;
+  await exportPagesZip(pages, filename);
+  return filename;
+}
