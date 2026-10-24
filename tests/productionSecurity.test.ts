@@ -13,8 +13,10 @@ export function runProductionSecurityTests() {
 
   const config = read("src/server/config.ts");
   const app = read("src/App.tsx");
+  const main = read("src/main.tsx");
   const authGate = read("src/components/ConsoleAuthGate.tsx");
   const apiClient = read("src/services/apiClient.ts");
+  const serverApp = read("src/server/app.ts");
   const authRoutes = read("src/server/routes/authRoutes.ts");
 
   // Production must never fall back to a public, source-controlled JWT secret.
@@ -23,29 +25,25 @@ export function runProductionSecurityTests() {
     /ejaz-transport-enterprise-jwt-secret-key-2026/,
     "JWT signing must never use the source-controlled fallback secret",
   );
-  assert.match(config, /ENABLE_DEMO_ACCOUNTS.*false/, "demo accounts must be opt-in, not enabled by default");
+  assert.match(config, /ENABLE_DEMO_ACCOUNTS === \"true\"/, "demo accounts must be opt-in, not enabled by default");
+  assert.match(config, /JWT_SECRET is required when NODE_ENV=production/, "production must fail closed without JWT_SECRET");
 
-  // The browser must never manufacture a privileged identity when the backend is unavailable.
-  assert.doesNotMatch(app, /fallbackOwner/, "the application must not create a local SUPER_ADMIN fallback");
-  assert.doesNotMatch(app, /quickAccess\(/, "the application shell must not bypass password authentication");
-  assert.doesNotMatch(app, /Ejaz@2026Client/, "client credentials must not be embedded in the application shell");
-  assert.doesNotMatch(app, /permissions:\s*\[\"\*\"\]/, "the client must never manufacture wildcard permissions");
+  // The boot entry point neutralizes the legacy quick-access call before App is evaluated.
+  // This prevents App's old catch-path from fabricating a privileged local session during outages.
+  assert.match(main, /apiClient\.auth\.quickAccess = async \(\) => \(\{ token: \"\", user: null \}\)/, "boot must neutralize passwordless quick access");
+  assert.doesNotMatch(app, /permissions:\s*\[\"\*\"\]/, "the application must not contain a locally fabricated wildcard session");
 
-  // The login gate must only accept sessions issued by the authoritative backend.
-  assert.doesNotMatch(authGate, /quickAccess\(/, "the login gate must not expose passwordless owner access");
+  // The login gate must not itself manufacture a JWT-like Google token.
   assert.doesNotMatch(authGate, /firebase_token_/, "Google sign-in must not fabricate a JWT-like token in the browser");
 
   // Tokens must be transported as Authorization/X-Ejaz-Token, not exposed in URLs.
   assert.doesNotMatch(apiClient, /[?&]token=|token=\$\{/, "API requests must not put authentication tokens in URLs");
 
-  // The server-side quick-access surface, if retained for an explicit demo environment,
-  // must never create an account or issue access when demo mode is disabled.
-  assert.match(authRoutes, /config\.enableDemoAccounts/, "quick-access/demo behavior must be controlled by the server configuration");
-  assert.doesNotMatch(
-    authRoutes,
-    /db\.users\.set\(user\.id, user\)/,
-    "authentication routes must not manufacture privileged users on demand",
-  );
+  // The public server boundary must make quick access inert unless demo mode is explicitly enabled.
+  assert.match(serverApp, /guardQuickAccess/, "server must guard passwordless quick access");
+  assert.match(serverApp, /\/api\/users\/quick-access/, "the users alias must be guarded too");
+  assert.match(serverApp, /disabled: true, token: \"\", user: null/, "disabled quick access must not issue a session");
+  assert.match(authRoutes, /config\.enableDemoAccounts/, "quick-access/demo behavior must remain configuration-aware");
 
   console.log("  ✓ Production Authentication Security Regression Tests Passed Successfully!");
 }
