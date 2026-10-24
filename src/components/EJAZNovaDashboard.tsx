@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import type { Vehicle } from "../data/types";
-import { EJAZTruckStage } from "./EJAZTruckStage";
+import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { IconTruck, IconCargo, IconDriver, IconTracking, IconReport, IconArrowRight } from "./Icons";
 
 type Props = {
@@ -80,7 +80,7 @@ export function EJAZNovaDashboard({ vehicles, onSelect, onNav, onToast }: Props)
               <span className="ej-chip">عارض ثلاثي الأبعاد</span>
             </div>
             <div className="mt-2 min-h-[205px] flex-1">
-              <EJAZTruckStage variant={featured?.body || "curtain"} />
+              <Vehicle3DViewer vehicleType={featured?.body || "curtain"} vehicleModel={featured?.model} vehiclePlate={featured?.plate} compact showControls height="220px" className="w-full" />
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
               <div><p className="text-base font-bold">{featured ? `${featured.brand} ${featured.model}` : "لا توجد مركبات مسجلة بعد"}</p><p className="ej-muted mt-1 text-xs">{featured ? `رقم اللوحة: ${featured.plate || "غير مسجل"}` : "أضف أول مركبة لعرض بياناتها هنا"}</p></div>
