@@ -463,13 +463,15 @@ export function DriverMode({
         {activeTab === "home" && (
           <div className="px-5 py-4 space-y-4 animate-fade-in">
             {active ? (
-              <div className="rounded-panel bg-gradient-to-br from-navy via-surface-1 to-surface-2 p-4 border border-border-subtle shadow-xl space-y-3">
+              <div className="ej-v2-mobile-trip-hero rounded-panel bg-gradient-to-br from-navy via-surface-1 to-surface-2 p-4 border border-border-subtle shadow-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-text-muted uppercase">{t("Current trip", "الرحلة الحالية")}</span>
                   <span className="text-label font-bold text-brand tabular-nums">{active.tripNumber}</span>
                 </div>
-                <div className="text-card-title font-bold text-white">
-                  {td(active.originCity)} ← {td(active.destinationCity)}
+                <div className="ej-v2-mobile-route-line text-card-title font-bold text-white">
+                  <span className="ej-v2-route-endpoint"><i />{td(active.originCity)}</span>
+                  <span className="ej-v2-route-arrow" aria-hidden="true">←</span>
+                  <span className="ej-v2-route-endpoint"><i />{td(active.destinationCity)}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center text-micro rounded-control bg-surface-2 p-2.5 border border-white/5 tabular-nums">
                   <div>

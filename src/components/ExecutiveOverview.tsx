@@ -2,18 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "../settings";
 import { apiClient, getAuthToken } from "../services/apiClient";
 import { useFleetStore } from "../state/fleetStore";
-import { useToast } from "./Toast";
-import { CapacityTruck } from "./CapacityTruck";
-import { TruckTypeAvatar } from "./TruckTypeIcon";
-import { IconMenu, IconTracking, IconTruck, IconCheck, IconSearch, IconChevron } from "./Icons";
-import { FuelTankGauge } from "./telemetry/FuelTankGauge";
-import { SpeedometerGauge } from "./telemetry/SpeedometerGauge";
-import { KpiCards } from "./overview/KpiCards";
-import { CargoDonut } from "./overview/CargoDonut";
-import { TripBars } from "./overview/TripBars";
-import { ActivitiesTable } from "./overview/ActivitiesTable";
+import { IconMenu, IconTracking, IconTruck, IconSearch, IconCargo, IconDriver, IconArrowRight } from "./Icons";
 import { statusGroup } from "./overview/shared";
-import { APPROVED_VEHICLE_TYPES_LIST, normalizeVehicleType } from "../data/vehicleTypes";
+import { CapacityTruck } from "./CapacityTruck";
 
 interface Props {
   userName?: string;
@@ -22,9 +13,8 @@ interface Props {
   onOpenTracking?: () => void;
   onOpenMaintenance?: () => void;
 }
-
 type GpsState = "checking" | "configured" | "unconfigured" | "unavailable";
-type CargoFilter = "all" | "flatbed" | "reefer" | "dry" | "curtain";
+type StatusFilter = "all" | "pending" | "transit" | "delivered" | "cancelled";
 
 function greeting(t: (en: string, ar: string) => string) {
   const h = new Date().getHours();
@@ -32,477 +22,172 @@ function greeting(t: (en: string, ar: string) => string) {
   if (h < 18) return t("Good afternoon", "مساء الخير");
   return t("Good evening", "مساء النور");
 }
-
-function MetricCard({
-  label,
-  value,
-  hint,
-  icon,
-  tone,
-  trend,
-  sparkData = [40, 55, 48, 62, 70, 68, 85],
-  onClick,
-  active = false,
-}: {
-  label: string;
-  value: number;
-  hint: string;
-  icon: React.ReactNode;
-  tone: string;
-  trend?: { up: boolean; text: string };
-  sparkData?: number[];
-  onClick?: () => void;
-  active?: boolean;
-}) {
-  const Tag = onClick ? "button" : "div";
-  const minVal = Math.min(...sparkData);
-  const maxVal = Math.max(...sparkData);
-  const range = maxVal - minVal || 1;
-  const points = sparkData
-    .map((d, i) => {
-      const x = (i / (sparkData.length - 1)) * 56;
-      const y = 20 - ((d - minVal) / range) * 16;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <Tag
-      onClick={onClick}
-      aria-pressed={onClick ? active : undefined}
-      className={`ej-overview-metric card group relative flex min-w-0 flex-col justify-between overflow-hidden p-3.5 sm:p-4 text-start transition-all duration-300 hover:border-brand/50 hover:shadow-md ${
-        active ? "border-brand/70 bg-brand/5 ring-1 ring-brand/30" : "bg-surface-1/90 backdrop-blur-sm"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-inner transition-transform duration-300 group-hover:scale-105 ${tone}`}>
-          {icon}
-        </span>
-        {/* Live Sparkline Micro-Chart */}
-        <div className="flex flex-col items-end">
-          <svg className="h-5 w-14 overflow-visible opacity-75 transition-opacity group-hover:opacity-100" viewBox="0 0 56 20">
-            <polyline
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={trend?.up ? "text-emerald-500" : "text-brand"}
-              points={points}
-            />
-          </svg>
-          {trend && (
-            <span
-              className={`mt-0.5 inline-flex items-center gap-0.5 text-micro font-semibold ${
-                trend.up ? "text-emerald-500" : "text-amber-500"
-              }`}
-            >
-              <span>{trend.up ? "↑" : "↓"}</span>
-              <span>{trend.text}</span>
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-2 min-w-0">
-        <span className="block truncate text-label text-text-muted">{label}</span>
-        <div className="mt-0.5 flex items-baseline justify-between gap-1">
-          <span className="text-hero-sm font-bold leading-none tabular-nums text-text-primary">
-            {value.toLocaleString()}
-          </span>
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400 telemetry-live-glow" />
-        </div>
-        <span className="mt-1 block truncate text-micro text-text-muted">{hint}</span>
-      </div>
-
-      {/* Modern bottom ambient accent line */}
-      <span
-        aria-hidden="true"
-        className={`absolute bottom-0 inset-x-0 h-[2px] transition-all duration-300 ${
-          active
-            ? "bg-gradient-to-r from-brand via-brand to-emerald-400 opacity-100"
-            : "bg-gradient-to-r from-transparent via-border-subtle to-transparent opacity-40 group-hover:opacity-100 group-hover:from-brand/60"
-        }`}
-      />
-    </Tag>
-  );
+function formatNumber(n: number) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(Number.isFinite(n) ? n : 0);
+}
+function StatusPill({ status, t }: { status: string; t: (en: string, ar: string) => string }) {
+  const group = statusGroup(status as any);
+  const label = group === "transit" ? t("On the road", "على الطريق") : group === "delivered" ? t("Delivered", "تم التسليم") : group === "cancelled" ? t("Cancelled", "ملغاة") : t("Preparing", "قيد التجهيز");
+  const tone = group === "transit" ? "ej-pill-live" : group === "delivered" ? "ej-pill-done" : group === "cancelled" ? "ej-pill-off" : "ej-pill-wait";
+  return <span className={`ej-status-pill ${tone}`}><span />{label}</span>;
 }
 
 export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, onOpenTracking }: Props) {
   const { t } = useSettings();
-  const toast = useToast();
   const { trips, trucks, drivers, selectedTripId, selectTrip, selectTruck } = useFleetStore();
-  const [group, setGroup] = useState<"all" | "pending" | "transit" | "delivered" | "cancelled">("all");
-  const [cargo, setCargo] = useState<CargoFilter>("all");
-  const [customer, setCustomer] = useState("all");
-  const [driverFilter, setDriverFilter] = useState("all");
+  const [filter, setFilter] = useState<StatusFilter>("all");
   const [query, setQuery] = useState("");
   const [gpsState, setGpsState] = useState<GpsState>("checking");
-  const [truckTypesExpanded, setTruckTypesExpanded] = useState(false);
+  const [clock, setClock] = useState(() => new Date());
 
   useEffect(() => {
+    const id = window.setInterval(() => setClock(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+  useEffect(() => {
     let alive = true;
-    if (!getAuthToken()) {
-      setGpsState("unavailable");
-      return;
-    }
+    if (!getAuthToken()) { setGpsState("unavailable"); return; }
     apiClient.gps.getStatus().then((result: any) => {
       if (alive) setGpsState(result?.configured && !result?.isDevelopment ? "configured" : "unconfigured");
-    }).catch(() => {
-      if (alive) setGpsState("unavailable");
-    });
+    }).catch(() => { if (alive) setGpsState("unavailable"); });
     return () => { alive = false; };
   }, []);
 
   const filteredTrips = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
     return trips.filter((trip) => {
-      if (group !== "all" && statusGroup(trip.status) !== group) return false;
-      if (cargo !== "all" && trip.cargoType !== cargo) return false;
-      if (customer !== "all" && trip.shipper !== customer) return false;
-      if (driverFilter !== "all" && trip.driverId !== driverFilter) return false;
+      if (filter !== "all" && statusGroup(trip.status) !== filter) return false;
       if (!needle) return true;
-      const truck = trucks.find((item) => item.id === trip.truckId);
-      const driver = drivers.find((item) => item.id === trip.driverId);
+      const truck = trucks.find((v) => v.id === trip.truckId);
+      const driver = drivers.find((v) => v.id === trip.driverId);
       return [trip.tripNumber, trip.shipper, trip.consignee, trip.originCity, trip.destinationCity, driver?.name, truck?.plate]
         .filter(Boolean).join(" ").toLocaleLowerCase().includes(needle);
     });
-  }, [trips, trucks, drivers, group, cargo, customer, driverFilter, query]);
+  }, [trips, trucks, drivers, filter, query]);
 
   const selected = filteredTrips.find((trip) => trip.id === selectedTripId) ?? filteredTrips[0];
+  const selectedTruck = selected ? trucks.find((truck) => truck.id === selected.truckId) : undefined;
+  const activeTrips = trips.filter((trip) => statusGroup(trip.status) === "transit");
+  const deliveredTrips = trips.filter((trip) => statusGroup(trip.status) === "delivered");
+  const pendingTrips = trips.filter((trip) => statusGroup(trip.status) === "pending");
+  const activeVehicles = trucks.filter((truck) => truck.status === "active").length;
   const loadPercent = selected && selected.maxCapacityTons > 0
-    ? Math.max(0, Math.min(100, (selected.cargoWeightTons / selected.maxCapacityTons) * 100))
-    : 0;
-  const onToast = (text: string, sub?: string) => toast(text, sub);
+    ? Math.max(0, Math.min(100, (selected.cargoWeightTons / selected.maxCapacityTons) * 100)) : 0;
 
-  const handleSelect = (id: string) => {
-    selectTrip(id);
-    const trip = trips.find((item) => item.id === id);
-    if (trip) selectTruck(trip.truckId);
+  const openTrip = (trip: typeof trips[number]) => {
+    selectTrip(trip.id);
+    selectTruck(trip.truckId);
+    onOpenTripDetails?.(trip.id);
   };
-
-  const filterGroup = (next: typeof group) => setGroup((current) => current === next ? "all" : next);
-  const cargoOptions: { id: CargoFilter; label: string }[] = [
-    { id: "all", label: t("All cargo", "كل الأنواع") },
-    { id: "reefer", label: t("Refrigerated", "براد") },
-    { id: "flatbed", label: t("Flatbed", "سطحة") },
-    { id: "dry", label: t("Dry van", "جاف") },
-    { id: "curtain", label: t("Curtainsider", "ستارة") },
+  const statusOptions: { id: StatusFilter; label: string; count: number }[] = [
+    { id: "all", label: t("All trips", "كل الرحلات"), count: trips.length },
+    { id: "pending", label: t("Preparing", "قيد التجهيز"), count: pendingTrips.length },
+    { id: "transit", label: t("On the road", "على الطريق"), count: activeTrips.length },
+    { id: "delivered", label: t("Delivered", "تم التسليم"), count: deliveredTrips.length },
+    { id: "cancelled", label: t("Cancelled", "ملغاة"), count: trips.filter((trip) => statusGroup(trip.status) === "cancelled").length },
   ];
 
-  if (!trips.length) {
-    return (
-      <div className="scroll-thin h-full overflow-y-auto bg-surface-0 p-5 lg:p-8">
-        <div className="mx-auto grid min-h-[55vh] max-w-5xl place-items-center rounded-panel border border-dashed border-border-subtle p-8 text-center">
-          <div><span className="mx-auto grid h-12 w-12 place-items-center rounded-panel bg-surface-3 text-brand"><IconTruck size={22} /></span>
-            <h1 className="mt-4 text-headline leading-7 font-semibold text-text-primary">{t("No trips to display", "لا توجد رحلات لعرضها")}</h1>
-            <p className="mt-2 text-card-title leading-5 text-text-muted">{t("Trips will appear here when available to your account.", "ستظهر الرحلات هنا عند توفرها لحسابك.")}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="ej-overview scroll-thin h-full overflow-y-auto bg-surface-0">
-      <div className="mx-auto flex max-w-[1560px] flex-col gap-5 p-4 sm:p-5 xl:p-7">
-        <header className="flex flex-wrap items-end justify-between gap-4">
+    <main className="ej-v2-overview scroll-thin h-full overflow-y-auto">
+      <div className="ej-v2-content">
+        <header className="ej-v2-topbar">
           <div className="flex min-w-0 items-start gap-3">
-            {onOpenSidebar && <button onClick={onOpenSidebar} className="btn-icon mt-1 lg:hidden" aria-label={t("Menu", "القائمة")}><IconMenu size={17} /></button>}
+            {onOpenSidebar && <button onClick={onOpenSidebar} className="ej-v2-icon-button lg:hidden" aria-label={t("Open menu", "فتح القائمة")}><IconMenu size={19} /></button>}
             <div className="min-w-0">
-              <p className="text-body text-text-secondary">{greeting(t)}{userName ? `، ${userName}` : ""}</p>
-              <h1 className="mt-1 text-hero font-bold leading-tight text-text-primary sm:text-metric">{t("Logistics Dashboard", "لوحة الخدمات اللوجستية")}</h1>
-              <p className="mt-1 text-label text-text-muted">{t("Operations overview · EJAZ Transport Establishment", "نظرة تشغيلية · مؤسسة إيجاز للنقليات")}</p>
+              <div className="ej-v2-eyebrow"><span className="ej-v2-live-dot" />{t("EJAZ OPERATIONS CENTER", "مركز عمليات إيجاز")}</div>
+              <h1>{t("Your fleet. In focus.", "أسطولك… تحت السيطرة.")}</h1>
+              <p>{greeting(t)}{userName ? `، ${userName}` : ""} · {clock.toLocaleDateString(t("en-US", "ar-YE"), { weekday: "long", day: "numeric", month: "long" })}</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex h-10 min-w-[220px] items-center gap-2 rounded-inner border border-border-subtle bg-surface-2 px-3 text-text-muted focus-within:border-brand/60">
-              <IconSearch size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search trips, customers, drivers…", "ابحث برحلة أو عميل أو سائق…")} className="min-w-0 flex-1 bg-transparent text-label-lg text-text-primary outline-none placeholder:text-text-muted" />
-            </label>
-            <button onClick={onOpenTracking} className="btn-ghost h-10 gap-2 rounded-inner px-3 text-label" disabled={!onOpenTracking}>
-              <span className={`h-2 w-2 rounded-full ${gpsState === "configured" ? "bg-status-active" : "bg-status-waiting"}`} />
-              {gpsState === "checking" ? t("Checking GPS…", "جارٍ التحقق من GPS…") : gpsState === "configured" ? t("GPS provider connected", "مزود GPS متصل") : gpsState === "unconfigured" ? t("Tracking not configured", "خدمة التتبع غير مهيأة") : t("GPS status unavailable", "حالة GPS غير متاحة")}
-            </button>
+          <div className="ej-v2-top-actions">
+            <label className="ej-v2-search"><IconSearch size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search trips, customers, drivers…", "ابحث عن رحلة أو عميل أو سائق…")} /><kbd>/</kbd></label>
+            <button className="ej-v2-map-button" onClick={onOpenTracking} disabled={!onOpenTracking}><IconTracking size={17} />{t("Tracking", "التتبع")}<span className={gpsState === "configured" ? "ej-v2-dot-good" : "ej-v2-dot-warn"} /></button>
           </div>
         </header>
 
-        <section aria-label={t("Operations summary", "ملخص العمليات")} className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <MetricCard
-            label={t("Trips in view", "الرحلات المعروضة")}
-            value={filteredTrips.length}
-            hint={t("Current filters", "وفق الفلاتر الحالية")}
-            icon={<IconTracking size={18} />}
-            tone="bg-brand/12 text-brand"
-            trend={{ up: true, text: "+14%" }}
-            sparkData={[24, 32, 28, 45, 40, 52, 60]}
-            onClick={() => filterGroup("all")}
-            active={group === "all"}
-          />
-          <MetricCard
-            label={t("In transit", "على الطريق")}
-            value={filteredTrips.filter((trip) => statusGroup(trip.status) === "transit").length}
-            hint={t("Trips currently underway", "الرحلات الجارية ضمن النتائج")}
-            icon={<IconTracking size={18} />}
-            tone="bg-status-info/12 text-status-info"
-            trend={{ up: true, text: "+8%" }}
-            sparkData={[12, 18, 15, 22, 26, 24, 30]}
-            onClick={() => filterGroup("transit")}
-            active={group === "transit"}
-          />
-          <MetricCard
-            label={t("Fleet vehicles", "مركبات الأسطول")}
-            value={trucks.length}
-            hint={t("Registered vehicles", "المركبات المسجلة")}
-            icon={<IconTruck size={18} />}
-            tone="bg-status-waiting/12 text-status-waiting"
-            trend={{ up: true, text: "98% جاهزية" }}
-            sparkData={[18, 19, 19, 20, 20, 21, 22]}
-            onClick={() => onToast(t("Fleet inventory", "مخزون الأسطول"), t("Open Fleet from the navigation menu.", "افتح الأسطول من قائمة التنقل."))}
-          />
-          <MetricCard
-            label={t("Drivers", "السائقون")}
-            value={drivers.length}
-            hint={t("Available driver records", "سجلات السائقين المتاحة")}
-            icon={<IconCheck size={18} />}
-            tone="bg-status-active/12 text-status-active"
-            trend={{ up: true, text: "نشط" }}
-            sparkData={[14, 15, 15, 16, 17, 18, 18]}
-            onClick={() => onToast(t("Driver records", "سجلات السائقين"), t("Open Drivers from the navigation menu.", "افتح السائقين من قائمة التنقل."))}
-          />
-        </section>
-
-        <section className="card overflow-hidden border border-border-subtle p-0">
-          {selected ? (() => {
-            const assignedTruck = trucks.find((item) => item.id === selected.truckId);
-            const fuelVal = Math.max(0, Math.min(100, assignedTruck?.fuel ?? 78));
-            const speedVal = Math.max(0, assignedTruck?.speed ?? (statusGroup(selected.status) === "transit" ? 82 : 0));
-            const speedMax = 120;
-
-            // Smart fuel status
-            const fuelTone = fuelVal <= 20
-              ? { bg: "bg-status-danger/15", text: "text-status-danger", border: "border-status-danger/30", label: t("Low fuel", "منخفض", "کم ایندھن") }
-              : fuelVal <= 45
-              ? { bg: "bg-status-waiting/15", text: "text-status-waiting", border: "border-status-waiting/30", label: t("Moderate", "متوسط", "معتدل") }
-              : { bg: "bg-status-active/15", text: "text-status-active", border: "border-status-active/30", label: t("Optimal", "ممتاز", "بہترین") };
-
-            // Smart speed status
-            const speedTone = speedVal === 0
-              ? { bg: "bg-surface-3", text: "text-text-muted", border: "border-border-subtle", label: t("Idle", "متوقفة", "ساکن") }
-              : speedVal > 95
-              ? { bg: "bg-status-danger/15", text: "text-status-danger", border: "border-status-danger/30", label: t("Over limit", "تجاوز السرعة", "حد سے زیادہ") }
-              : { bg: "bg-brand/15", text: "text-brand", border: "border-brand/30", label: t("Cruising", "سرعة مثالية", "معمول کی رفتار") };
-
-            return (
-            <div className="relative flex min-h-[510px] flex-col overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,color-mix(in_srgb,var(--color-brand)_7%,transparent),transparent_60%)] px-5 py-5 sm:min-h-[590px] sm:px-8 sm:py-6">
-              <div className="flex flex-wrap items-start justify-between gap-4" dir="ltr">
-                <div>
-                  <strong className="block text-start text-page-title font-bold tabular-nums text-text-primary sm:text-section-title">
-                    {selected.cargoWeightTons.toLocaleString()} / {selected.maxCapacityTons} {t("tons", "طن")}
-                  </strong>
-                  <span className="mt-0.5 block text-start text-label text-text-muted">
-                    {t("Truck & Payload Live Telemetry", "القياس الحي للحمولة ومؤشرات الشاحنة", "ٹرک اور سامان کی براہ راست ٹیلی میٹری")}
-                  </span>
-                </div>
-                <h2 className="pt-0.5 text-end text-section-title font-bold text-text-primary sm:text-hero-sm" dir="rtl">{t("Truck load capacity", "حمولة الشاحنة")}</h2>
-              </div>
-
-              {/* Modern Smart Fuel & Speed Telemetry Panel */}
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {/* Modern Smart Moving Fuel Tank */}
-                <FuelTankGauge
-                  fuelVal={fuelVal}
-                  tankCapacityLiters={600}
-                  tone={fuelTone}
-                  t={t}
-                />
-
-                {/* Modern Smart Speedometer Clock */}
-                <SpeedometerGauge
-                  speedVal={speedVal}
-                  speedMax={speedMax}
-                  tone={speedTone}
-                  t={t}
-                />
-              </div>
-
-              <div className="relative flex flex-1 flex-col items-center justify-center py-3 sm:py-5">
-                {/* Floating Smart Telemetry Badges - Top HUD Rail */}
-                <div className="mb-2 flex w-full max-w-[810px] items-center justify-between gap-2 px-2" dir="ltr">
-                  <div className="flex items-center gap-2 rounded-control border border-border-subtle/80 bg-surface-1/90 px-3 py-1 text-micro font-medium text-text-secondary shadow-xs backdrop-blur-md">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 telemetry-live-glow" />
-                    <span>{t("Axle Load: Steer 34% · Tandem 66%", "توزيع أحمال المحاور: أمامي ٣٤% · خلفي ٦٦%", "ایکسل وزن")}</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-control border border-border-subtle/80 bg-surface-1/90 px-3 py-1 text-micro font-medium text-text-secondary shadow-xs backdrop-blur-md">
-                    <span className="h-2 w-2 rounded-full bg-brand telemetry-live-glow" />
-                    <span>{t("CG Center of Gravity: Optimal", "مركز الثقل: متزن ومثالي", "مرکز ثقل")}</span>
-                  </div>
-                </div>
-
-                <CapacityTruck
-                  key={`hero-${selected.id}`}
-                  pct={loadPercent}
-                  countUp
-                  truckType={selected.cargoType}
-                  vehicle={trucks.find((item) => item.id === selected.truckId)}
-                  className="relative z-5 w-full max-w-[810px] drop-shadow-[0_24px_30px_rgba(0,0,0,.3)]"
-                  label={t(`Truck load ${Math.round(loadPercent)} percent of ${selected.maxCapacityTons} tonnes`, `حمولة الشاحنة ${Math.round(loadPercent)} بالمئة من ${selected.maxCapacityTons} طن`)}
-                />
-
-                {/* Dynamic Highway Runway under truck with moving lane dashes */}
-                <div className="relative -mt-6 h-9 w-full max-w-[810px] overflow-hidden rounded-inner border-t border-border-subtle/80 bg-gradient-to-b from-surface-3/90 via-surface-2/70 to-transparent shadow-inner">
-                  {/* Road asphalt texture & moving dashed stripes */}
-                  <div className="absolute inset-0 flex items-center justify-around overflow-hidden opacity-90">
-                    <div className="highway-lane-flow flex w-[200%] shrink-0 items-center justify-around gap-10">
-                      {Array.from({ length: 20 }).map((_, i) => (
-                        <span
-                          key={i}
-                          className="h-1.5 w-11 shrink-0 rounded-full bg-gradient-to-r from-amber-400 to-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.7)]"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  {/* Road edge guard lines */}
-                  <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-border-subtle to-transparent" />
-                </div>
-
-                {/* Floating Smart Telemetry Badges - Bottom HUD Rail */}
-                <div className="mt-3 flex w-full max-w-[810px] items-center justify-between gap-2 px-2 text-micro text-text-muted" dir="ltr">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    <span>{t("TPMS: 110 PSI All 4 Axles Verified", "ضغط الإطارات: 110 PSI (جميع المحاور سليمة)", "ٹائر پریشر درست")}</span>
-                  </span>
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <span className="h-1.5 w-1.5 rounded-full bg-sky-400 telemetry-live-glow" />
-                    <span>{t("5G High-Speed Telemetry Link", "اتصال تيليماتكس نشط 5G فائق السرعة", "براہ راست رابطہ")}</span>
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-2" dir="ltr">
-                <button onClick={() => onOpenTripDetails?.(selected.id)} className="btn-primary min-h-[54px] rounded-inner px-7 py-3 text-card-title font-bold sm:min-h-[60px] sm:px-8 sm:text-page-title">
-                  {t("Trip details", "تفاصيل الرحلة")}
-                </button>
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-body sm:gap-x-8 sm:text-page-title" dir="ltr">
-                  <span className="flex items-center gap-2 whitespace-nowrap"><span className="text-text-muted">ETA</span><strong className="font-semibold text-text-primary">{selected.etaMinutes > 0 ? `${Math.floor(selected.etaMinutes / 60)}h ${String(selected.etaMinutes % 60).padStart(2, "0")}m` : "—"}</strong></span>
-                  <span className="flex items-center gap-2 whitespace-nowrap"><span className="text-text-muted" dir="rtl">{t("Distance", "المسافة")}</span><strong className="font-semibold tabular-nums text-text-primary">{Math.round(selected.distanceTotalKm).toLocaleString()} {t("km", "كم")}</strong></span>
-                </div>
-              </div>
-            </div>
-            );
-          })() : <div className="p-8 text-center text-card-title leading-5 text-text-muted">{t("No trips match the selected filters.", "لا توجد رحلات تطابق الفلاتر المحددة.")}</div>}
-        </section>
-
-        <section className="card p-4 sm:p-5">
-          <div className="mb-4 flex items-start justify-between gap-4" dir="ltr">
-            <span className="pt-1 text-label font-medium text-text-secondary" dir="rtl">{APPROVED_VEHICLE_TYPES_LIST.length} {t("approved types", "أنواع معتمدة")}</span>
-            <div className="text-end" dir="rtl">
-              <button
-                type="button"
-                onClick={() => setTruckTypesExpanded((expanded) => !expanded)}
-                aria-expanded={truckTypesExpanded}
-                aria-controls="executive-truck-type-cards"
-                aria-label={truckTypesExpanded ? t("Hide truck types", "إخفاء أنواع الشاحنات") : t("Show truck types", "عرض أنواع الشاحنات")}
-                className="inline-flex cursor-pointer items-center gap-1.5 text-section-title font-bold text-text-primary transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 sm:text-hero-sm"
-              >
-                {t("Truck load capacity", "حمولة الشاحنة")}
-                <IconChevron size={17} className={`transition-transform duration-200 ${truckTypesExpanded ? "rotate-180" : ""}`} />
-              </button>
-              <p className="mt-1 text-micro text-text-muted sm:text-label-lg">{t("Four approved types · select one to filter trips and focus its assigned truck.", "أربعة أنواع معتمدة · اختر نوعاً لتصفية الرحلات والتركيز على شاحنتك.")}</p>
+        <section className="ej-v2-hero">
+          <div className="ej-v2-hero-copy">
+            <span className="ej-v2-kicker">{t("LIVE OPERATIONS SNAPSHOT", "ملخص التشغيل الحالي")}</span>
+            <h2>{t("Every delivery, accounted for.", "كل شحنة… محسوبة بدقة.")}</h2>
+            <p>{t("A clear view of trip activity, fleet readiness and cargo movement — in one workspace.", "نظرة واضحة على حركة الرحلات وجاهزية الأسطول وانتقال الشحنات في مساحة عمل واحدة.")}</p>
+            <div className="ej-v2-hero-meta">
+              <span><span className="ej-v2-live-dot" />{gpsState === "configured" ? t("GPS provider connected", "مزود GPS متصل") : gpsState === "checking" ? t("Checking GPS connection", "يجري التحقق من GPS") : t("GPS feed not connected", "بيانات GPS غير متصلة")}</span>
+              <span className="ej-v2-meta-separator" />
+              <span>{trips.length} {t("registered trips", "رحلة مسجلة")}</span>
             </div>
           </div>
-          <div id="executive-truck-type-cards" className={truckTypesExpanded ? "block" : "hidden"}>
-            <div className="grid grid-cols-2 gap-3">
-              {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
-              const vehicle = trucks.find((item) => normalizeVehicleType(item.body) === meta.id);
-              const matchingTypeTrips = trips.filter((trip) => normalizeVehicleType(trip.cargoType) === meta.id);
-              const matchingTrip = matchingTypeTrips.find((trip) => trip.cargoWeightTons > 0 && (!vehicle || trip.truckId === vehicle.id))
-                ?? matchingTypeTrips.find((trip) => trip.cargoWeightTons > 0)
-                ?? matchingTypeTrips.find((trip) => !vehicle || trip.truckId === vehicle.id)
-                ?? matchingTypeTrips[0];
-              const count = trucks.filter((item) => normalizeVehicleType(item.body) === meta.id).length;
-              const typeLoadPercent = matchingTrip && matchingTrip.maxCapacityTons > 0
-                ? Math.max(0, Math.min(100, matchingTrip.cargoWeightTons / matchingTrip.maxCapacityTons * 100))
-                : 0;
-              const active = cargo === meta.id;
-              return <button key={meta.id} onClick={() => {
-                setCargo(meta.id);
-                setGroup("all");
-                setCustomer("all");
-                setDriverFilter("all");
-                setQuery("");
-                if (matchingTrip) handleSelect(matchingTrip.id);
-              }} aria-pressed={active} className={`group min-w-0 overflow-hidden rounded-inner border p-2.5 text-start transition hover:border-brand/55 sm:p-3 ${active ? "border-brand/60 bg-brand/5 ring-1 ring-brand/15" : "border-border-subtle bg-surface-2/50"}`}>
-                <div className="relative overflow-hidden rounded-chip bg-surface-2/70 p-1">
-                  <CapacityTruck
-                    pct={typeLoadPercent}
-                    countUp={Boolean(matchingTrip)}
-                    truckType={meta.id}
-                    className="w-full transition-transform duration-300 group-hover:scale-[1.02]"
-                    label={t(meta.englishName, meta.arabicName)}
-                  />
-                  <span className="absolute end-2.5 top-2.5 inline-flex transition-transform duration-200 group-hover:scale-105 drop-shadow-md">
-                    <TruckTypeAvatar truckType={meta.id} size={36} iconSize={20} showBadge />
-                  </span>
-                </div>
-                <div className="mt-2 flex min-w-0 items-center justify-between gap-2" dir="ltr">
-                  <span className="h-4 w-4 shrink-0 rounded-full" style={{ backgroundColor: meta.accentColor }} aria-hidden="true" />
-                  <span className="truncate text-page-title font-bold text-text-primary sm:text-section-title" dir="rtl">{t(meta.englishName, meta.arabicName)}</span>
-                </div>
-                <div className="mt-1 flex min-w-0 items-center justify-between gap-2 text-micro text-text-muted sm:text-label" dir="ltr">
-                  <span className="truncate" dir="rtl">{count} {t("vehicles", "مركبة")}{vehicle?.plate ? ` · ${vehicle.plate}` : ""}</span>
-                  {matchingTrip
-                    ? <strong className="shrink-0 tabular-nums text-text-primary" dir="ltr">{matchingTrip.cargoWeightTons.toLocaleString()} / {matchingTrip.maxCapacityTons} · {Math.round(typeLoadPercent)}%</strong>
-                    : <span className="shrink-0 text-text-muted">—</span>}
-                </div>
-              </button>;
+          <div className="ej-v2-route-art" aria-hidden="true">
+            <div className="ej-v2-route-orbit ej-v2-orbit-one" />
+            <div className="ej-v2-route-orbit ej-v2-orbit-two" />
+            <svg viewBox="0 0 500 220" role="presentation">
+              <defs><linearGradient id="ejRouteGradient" x1="0" x2="1"><stop offset="0" stopColor="#ff8a3d" /><stop offset="1" stopColor="#ffd19c" /></linearGradient></defs>
+              <path d="M20 155 C80 40, 150 200, 225 100 S355 30, 470 95" fill="none" stroke="url(#ejRouteGradient)" strokeWidth="3" strokeLinecap="round" strokeDasharray="7 10" className="ej-v2-route-dash" />
+              <circle cx="20" cy="155" r="7" fill="#ff8a3d" /><circle cx="225" cy="100" r="6" fill="#ff8a3d" /><circle cx="470" cy="95" r="8" fill="#ffd19c" />
+              <g transform="translate(172 64)" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round"><path d="M4 18h94l20 19v26H4z" fill="#ff8a3d"/><path d="M98 18h20l20 19v26H98z" fill="#f6b26b"/><path d="M106 25h10l13 14h-23z" fill="#17304b"/><path d="M11 27h78v29H11z" fill="#17304b"/><path d="M21 34h58M21 42h58M21 50h58" stroke="#ffb077" strokeWidth="2"/><circle cx="30" cy="66" r="11" fill="#071426"/><circle cx="30" cy="66" r="4" fill="#9daec5"/><circle cx="110" cy="66" r="11" fill="#071426"/><circle cx="110" cy="66" r="4" fill="#9daec5"/></g>
+            </svg>
+            <div className="ej-v2-route-label ej-v2-route-label-a"><span />{t("Origin", "نقطة الانطلاق")}</div>
+            <div className="ej-v2-route-label ej-v2-route-label-b"><span />{t("Destination", "الوجهة")}</div>
+          </div>
+          <div className="ej-v2-hero-index"><strong>01</strong><span>/</span><span>OPERATIONS</span></div>
+        </section>
+
+        <section className="ej-v2-metrics" aria-label={t("Fleet metrics", "مؤشرات الأسطول")}>
+          <article className="ej-v2-metric ej-v2-metric-featured"><div className="ej-v2-metric-head"><span>{t("Trips on the road", "رحلات على الطريق")}</span><span className="ej-v2-metric-icon"><IconTracking size={18} /></span></div><strong>{formatNumber(activeTrips.length)}</strong><div className="ej-v2-metric-foot"><span className="ej-v2-mini-bar"><i style={{ width: `${trips.length ? Math.min(100, activeTrips.length / trips.length * 100) : 0}%` }} /></span><span>{t("of all trips", "من إجمالي الرحلات")}</span></div></article>
+          <article className="ej-v2-metric"><div className="ej-v2-metric-head"><span>{t("Fleet ready", "مركبات جاهزة")}</span><span className="ej-v2-metric-icon"><IconTruck size={18} /></span></div><strong>{formatNumber(activeVehicles)}<small> / {formatNumber(trucks.length)}</small></strong><div className="ej-v2-metric-foot"><span className="ej-v2-status-mark good" />{t("Vehicles marked active", "مركبة بحالة نشطة")}</div></article>
+          <article className="ej-v2-metric"><div className="ej-v2-metric-head"><span>{t("Awaiting dispatch", "بانتظار التشغيل")}</span><span className="ej-v2-metric-icon"><IconCargo size={18} /></span></div><strong>{formatNumber(pendingTrips.length)}</strong><div className="ej-v2-metric-foot"><span className="ej-v2-status-mark wait" />{t("Need operational follow-up", "تحتاج متابعة تشغيلية")}</div></article>
+          <article className="ej-v2-metric"><div className="ej-v2-metric-head"><span>{t("Drivers registered", "السائقون المسجلون")}</span><span className="ej-v2-metric-icon"><IconDriver size={18} /></span></div><strong>{formatNumber(drivers.length)}</strong><div className="ej-v2-metric-foot"><span className="ej-v2-status-mark neutral" />{t("In the fleet directory", "في سجل الأسطول")}</div></article>
+        </section>
+
+        <div className="ej-v2-work-grid">
+          <section className="ej-v2-panel ej-v2-trips-panel">
+            <div className="ej-v2-panel-heading"><div><span className="ej-v2-kicker">{t("DISPATCH BOARD", "لوحة التوجيه")}</span><h2>{t("Trip activity", "حركة الرحلات")}</h2><p>{t("Select a trip to inspect its details.", "اختر رحلة لعرض تفاصيلها.")}</p></div><button className="ej-v2-text-action" onClick={() => onOpenTracking?.()}>{t("Open tracking", "فتح التتبع")} <IconArrowRight size={15} /></button></div>
+            <div className="ej-v2-filter-row">{statusOptions.map((option) => <button key={option.id} className={filter === option.id ? "active" : ""} onClick={() => setFilter(option.id)}>{option.label}<span>{option.count}</span></button>)}</div>
+            <div className="ej-v2-trip-list">
+              {filteredTrips.slice(0, 6).map((trip) => {
+                const truck = trucks.find((v) => v.id === trip.truckId);
+                const driver = drivers.find((v) => v.id === trip.driverId);
+                const isSelected = selected?.id === trip.id;
+                return <button key={trip.id} className={`ej-v2-trip-row ${isSelected ? "selected" : ""}`} onClick={() => openTrip(trip)}>
+                  <span className="ej-v2-trip-code"><IconCargo size={18} /><small>{trip.tripNumber}</small></span>
+                  <span className="ej-v2-trip-route"><strong>{trip.originCity || t("Origin pending", "الانطلاق غير محدد")} <i>→</i> {trip.destinationCity || t("Destination pending", "الوجهة غير محددة")}</strong><small>{trip.shipper || t("Customer not specified", "العميل غير محدد")} · {driver?.name || t("Driver not assigned", "لم يعيّن سائق")}</small></span>
+                  <span className="ej-v2-trip-vehicle">{truck?.plate || t("Unassigned", "غير مخصص")}</span>
+                  <StatusPill status={trip.status} t={t} />
+                </button>;
               })}
+              {!filteredTrips.length && <div className="ej-v2-empty"><IconSearch size={22} /><strong>{t("No matching trips", "لا توجد رحلات مطابقة")}</strong><span>{t("Try another search or status filter.", "جرّب بحثًا أو حالة مختلفة.")}</span></div>}
             </div>
-          </div>
-        </section>
+            {filteredTrips.length > 6 && <div className="ej-v2-list-footer">{t("Showing", "عرض")} 6 {t("of", "من")} {filteredTrips.length} {t("trips", "رحلة")} · {t("Use search to narrow results", "استخدم البحث لتحديد النتائج")}</div>}
+          </section>
 
-        <section className="card p-4 sm:p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <div><h2 className="text-card-title font-semibold text-text-primary">{t("Operations & fleet snapshot", "لمحة التشغيل والأسطول")}</h2><p className="mt-0.5 text-micro text-text-muted">{t("Counts are calculated from the records currently available to you.", "المؤشرات محسوبة من السجلات المتاحة لحسابك حالياً.")}</p></div>
-            <div className="flex max-w-full gap-1 overflow-x-auto rounded-inner bg-surface-2 p-1" role="group" aria-label={t("Cargo type filters", "فلاتر نوع الشاحنة")}>
-              {cargoOptions.map((option) => <button key={option.id} onClick={() => setCargo(option.id)} aria-pressed={cargo === option.id} className={`shrink-0 rounded-chip px-2.5 py-1.5 text-micro transition ${cargo === option.id ? "bg-brand font-semibold text-on-brand" : "text-text-secondary hover:text-text-primary"}`}>{option.label}</button>)}
-            </div>
-          </div>
-          <div className="mb-3 grid gap-2 sm:grid-cols-3">
-            <label className="min-w-0 text-micro text-text-muted">{t("Trip status", "حالة الرحلة")}
-              <select value={group} onChange={(event) => setGroup(event.target.value as typeof group)} className="mt-1 block h-9 w-full rounded-chip border border-border-subtle bg-surface-2 px-2.5 text-label text-text-primary outline-none focus:border-brand/60">
-                <option value="all">{t("All statuses", "كل الحالات")}</option>
-                <option value="pending">{t("Pending", "قيد التجهيز")}</option>
-                <option value="transit">{t("In transit", "على الطريق")}</option>
-                <option value="delivered">{t("Delivered", "تم التسليم")}</option>
-                <option value="cancelled">{t("Cancelled", "ملغاة")}</option>
-              </select>
-            </label>
-            <label className="min-w-0 text-micro text-text-muted">{t("Customer", "العميل")}
-              <select value={customer} onChange={(event) => setCustomer(event.target.value)} className="mt-1 block h-9 w-full rounded-chip border border-border-subtle bg-surface-2 px-2.5 text-label text-text-primary outline-none focus:border-brand/60">
-                <option value="all">{t("All customers", "كل العملاء")}</option>
-                {Array.from(new Set(trips.map((trip) => trip.shipper).filter(Boolean))).sort().map((name) => <option key={name} value={name}>{name}</option>)}
-              </select>
-            </label>
-            <label className="min-w-0 text-micro text-text-muted">{t("Driver", "السائق")}
-              <select value={driverFilter} onChange={(event) => setDriverFilter(event.target.value)} className="mt-1 block h-9 w-full rounded-chip border border-border-subtle bg-surface-2 px-2.5 text-label text-text-primary outline-none focus:border-brand/60">
-                <option value="all">{t("All drivers", "كل السائقين")}</option>
-                {drivers.filter((person) => trips.some((trip) => trip.driverId === person.id)).map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
-              </select>
-            </label>
-          </div>
-          <KpiCards trips={filteredTrips} activeGroup={group} onGroup={filterGroup} />
-        </section>
-
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <CargoDonut trips={filteredTrips} />
-          <TripBars trips={filteredTrips} selectedId={selected?.id ?? ""} onSelect={handleSelect} />
+          <aside className="ej-v2-side-stack">
+            <section className="ej-v2-panel ej-v2-truck-capacity-panel">
+              <div className="ej-v2-panel-heading"><div><span className="ej-v2-kicker">{t("VISUAL LOAD MONITOR", "مراقبة الحمولة بصريًا")}</span><h2>{t("Truck capacity", "سعة الشاحنة")}</h2><p>{selected ? (selected.tripNumber || t("Selected trip", "الرحلة المحددة")) : t("Choose a trip", "اختر رحلة")}</p></div><span className="ej-v2-panel-icon"><IconTruck size={18} /></span></div>
+              {selected ? <>
+                <div className="ej-v2-truck-visual"><CapacityTruck pct={loadPercent} countUp truckType={selectedTruck?.body} vehicle={selectedTruck} className="ej-v2-capacity-truck-svg" label={t("Truck load", "حمولة الشاحنة")} /></div>
+                <div className="ej-v2-truck-visual-legend"><span><i className="ej-v2-legend-filled" />{t("Loaded", "محمّل")}</span><span><i className="ej-v2-legend-empty" />{t("Available capacity", "السعة المتبقية")}</span></div>
+                <div className="ej-v2-truck-visual-stats"><span><small>{t("Cargo weight", "وزن الحمولة")}</small><strong>{formatNumber(selected.cargoWeightTons)} {t("tons", "طن")}</strong></span><span><small>{t("Maximum capacity", "السعة القصوى")}</small><strong>{formatNumber(selected.maxCapacityTons)} {t("tons", "طن")}</strong></span><span><small>{t("Utilization", "نسبة الاستخدام")}</small><strong>{formatNumber(loadPercent)}%</strong></span></div>
+              </> : <div className="ej-v2-empty"><IconTruck size={22} /><span>{t("Select a trip to view its truck capacity.", "اختر رحلة لعرض سعة شاحنتها.")}</span></div>}
+            </section>
+            <section className="ej-v2-panel ej-v2-load-panel">
+              <div className="ej-v2-panel-heading"><div><span className="ej-v2-kicker">{t("SELECTED TRIP", "الرحلة المحددة")}</span><h2>{t("Cargo capacity", "سعة الحمولة")}</h2></div><span className="ej-v2-panel-icon"><IconCargo size={18} /></span></div>
+              {selected ? <>
+                <div className="ej-v2-load-route"><span>{selected.originCity || "—"}</span><i>→</i><span>{selected.destinationCity || "—"}</span></div>
+                <div className="ej-v2-load-number"><strong>{formatNumber(loadPercent)}<small>%</small></strong><span>{t("capacity used", "من السعة المستخدمة")}</span></div>
+                <div className="ej-v2-capacity-track"><span style={{ width: `${loadPercent}%` }} /></div>
+                <div className="ej-v2-capacity-values"><span>{t("Cargo", "الحمولة")}<strong>{formatNumber(selected.cargoWeightTons)} {t("tons", "طن")}</strong></span><span>{t("Maximum", "السعة القصوى")}<strong>{formatNumber(selected.maxCapacityTons)} {t("tons", "طن")}</strong></span></div>
+                <div className="ej-v2-load-note"><span className="ej-v2-status-mark neutral" />{t("Calculated from the selected trip record", "محسوبة من بيانات الرحلة المحددة")}</div>
+              </> : <div className="ej-v2-empty"><IconCargo size={22} /><span>{t("Select a trip to view cargo capacity.", "اختر رحلة لعرض سعة الحمولة.")}</span></div>}
+            </section>
+            <section className="ej-v2-panel ej-v2-system-panel">
+              <div className="ej-v2-panel-heading"><div><span className="ej-v2-kicker">{t("SYSTEM STATUS", "حالة النظام")}</span><h2>{t("Connection health", "حالة الاتصال")}</h2></div><span className={`ej-v2-connection-icon ${gpsState === "configured" ? "ok" : "warn"}`}><IconTracking size={17} /></span></div>
+              <div className="ej-v2-connection-row"><span><i className={gpsState === "configured" ? "good" : "wait"} />{t("GPS provider", "مزود GPS")}</span><strong>{gpsState === "configured" ? t("Connected", "متصل") : gpsState === "checking" ? t("Checking", "جارٍ التحقق") : t("Not configured", "غير مهيأ")}</strong></div>
+              <div className="ej-v2-connection-row"><span><i className="good" />{t("Trip records", "سجلات الرحلات")}</span><strong>{t("Available", "متاحة")}</strong></div>
+              <p className="ej-v2-system-note">{gpsState === "configured" ? t("The GPS provider is configured. Actual positions appear only when device telemetry is received.", "مزود GPS مهيأ. لا تظهر المواقع الفعلية إلا عند استقبال بيانات الأجهزة.") : t("Live vehicle positions are not shown until a GPS provider is configured and sending data.", "لن تظهر مواقع المركبات مباشرة حتى تتم تهيئة مزود GPS وإرسال البيانات.")}</p>
+            </section>
+          </aside>
         </div>
-
-        <section className="card overflow-hidden p-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle px-4 py-4 sm:px-5"><div><h2 className="text-card-title font-semibold text-text-primary">{t("Trips & activity", "الرحلات والنشاط")}</h2><p className="mt-0.5 text-micro text-text-muted">{filteredTrips.length} {t("matching records", "سجل مطابق للفلاتر")}</p></div><div className="flex items-center gap-2 text-micro text-text-muted"><span className={`h-2 w-2 rounded-full ${gpsState === "configured" ? "bg-status-active" : "bg-status-waiting"}`} />{gpsState === "configured" ? t("Provider configured; live positions are shown only when a device feed is available.", "المزود مهيأ؛ لا تظهر المواقع إلا عند توفر بيانات جهاز فعلية.") : t("Live locations unavailable until a GPS provider is configured.", "المواقع المباشرة غير متاحة حتى تهيئة مزود GPS.")}</div></div>
-          <ActivitiesTable trips={filteredTrips} drivers={drivers} selectedId={selected?.id ?? ""} group={group} onGroup={(next) => setGroup(next)} onSelect={handleSelect} onToast={onToast} />
-        </section>
+        <footer className="ej-v2-footer"><span>© {clock.getFullYear()} EJAZ TRANSPORT</span><span>{t("Operational workspace", "مساحة العمل التشغيلية")} · {t("Records reflect the connected project data", "تعكس السجلات بيانات المشروع المتصلة")}</span></footer>
       </div>
-    </div>
+    </main>
   );
 }
