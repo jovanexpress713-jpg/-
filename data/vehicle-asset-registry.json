@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-16T15:22:28.141Z",
+  "updatedAt": "2026-10-24T23:14:25.966Z",
   "types": {
     "flatbed": {
       "type": "flatbed",
@@ -12,11 +12,20 @@
         "source": "NONE",
         "scale": 1,
         "rotationY": 0,
-        "yOffset": 0
+        "yOffset": 0,
+        "status": "MODEL_REQUIRED",
+        "requiredFormat": "GLB",
+        "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
+        "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
       },
       "originalImage": "/images/trucks/official/official-flatbed.png",
       "imageFileName": "official-flatbed.png",
-      "imageUpdatedAt": "2026-10-03T14:37:35.881Z"
+      "imageUpdatedAt": "2026-10-03T14:37:35.881Z",
+      "displayName": "سطحة",
+      "preferredTruckBrands": [
+        "Mercedes-Benz Actros",
+        "Volvo FH"
+      ]
     },
     "reefer": {
       "type": "reefer",
@@ -28,11 +37,20 @@
         "source": "NONE",
         "scale": 1,
         "rotationY": 0,
-        "yOffset": 0
+        "yOffset": 0,
+        "status": "MODEL_REQUIRED",
+        "requiredFormat": "GLB",
+        "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
+        "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
       },
       "originalImage": "/images/trucks/official/official-reefer.png",
       "imageFileName": "official-reefer.png",
-      "imageUpdatedAt": "2026-10-03T14:37:36.149Z"
+      "imageUpdatedAt": "2026-10-03T14:37:36.149Z",
+      "displayName": "براد",
+      "preferredTruckBrands": [
+        "Mercedes-Benz Actros",
+        "Volvo FH"
+      ]
     },
     "dry": {
       "type": "dry",
@@ -44,11 +62,20 @@
         "source": "NONE",
         "scale": 1,
         "rotationY": 0,
-        "yOffset": 0
+        "yOffset": 0,
+        "status": "MODEL_REQUIRED",
+        "requiredFormat": "GLB",
+        "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
+        "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
       },
       "originalImage": "/images/trucks/official/official-dry.png",
       "imageFileName": "official-dry.png",
-      "imageUpdatedAt": "2026-10-03T14:37:36.419Z"
+      "imageUpdatedAt": "2026-10-03T14:37:36.419Z",
+      "displayName": "جاف",
+      "preferredTruckBrands": [
+        "Mercedes-Benz Actros",
+        "Volvo FH"
+      ]
     },
     "curtain": {
       "type": "curtain",
@@ -60,11 +87,20 @@
         "source": "NONE",
         "scale": 1,
         "rotationY": 0,
-        "yOffset": 0
+        "yOffset": 0,
+        "status": "MODEL_REQUIRED",
+        "requiredFormat": "GLB",
+        "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
+        "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
       },
       "originalImage": "/images/trucks/official/official-curtain.png",
       "imageFileName": "official-curtain.png",
-      "imageUpdatedAt": "2026-10-03T14:37:36.703Z"
+      "imageUpdatedAt": "2026-10-03T14:37:36.703Z",
+      "displayName": "ستارة",
+      "preferredTruckBrands": [
+        "Mercedes-Benz Actros",
+        "Volvo FH"
+      ]
     }
   },
   "vehicles": {}
