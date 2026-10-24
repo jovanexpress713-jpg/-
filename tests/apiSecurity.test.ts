@@ -5,6 +5,7 @@ import { createServerApp } from "../src/server/app";
 import { db } from "../src/server/db";
 import { getAuditLogs } from "../src/server/services/auditService";
 import { generateToken } from "../src/server/auth/jwt";
+import { config } from "../src/server/config";
 
 /**
  * EJAZ Transport — Live API authorization & lifecycle guard tests.
@@ -79,6 +80,20 @@ export async function runApiSecurityTests() {
     for (const endpoint of protectedGets) {
       const res = await api("GET", endpoint);
       assert.strictEqual(res.status, 401, `Anonymous GET ${endpoint} must return 401, received ${res.status}`);
+    }
+
+    // Passwordless quick-access must never be reachable in production, even if a
+    // demo flag was set in the deployment environment.
+    const previousNodeEnv = config.nodeEnv;
+    const previousDemoFlag = config.enableDemoAccounts;
+    try {
+      config.nodeEnv = "production";
+      config.enableDemoAccounts = true;
+      const quickAccess = await api("POST", "/api/auth/quick-access", { body: { role: "SUPER_ADMIN" } });
+      assert.strictEqual(quickAccess.status, 404, "Production quick-access must be hidden");
+    } finally {
+      config.nodeEnv = previousNodeEnv;
+      config.enableDemoAccounts = previousDemoFlag;
     }
 
     const ingest = await api("POST", "/api/dev/gps", {
