@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "updatedAt": "2026-10-25T00:00:00Z",
   "types": {
     "flatbed": {
@@ -10,16 +10,18 @@
       "imageLicense": "CC BY-SA 2.0",
       "imageAttribution": "Felix O / Wikimedia Commons",
       "model": {
-        "url": null,
-        "format": null,
-        "source": "NONE",
+        "url": "https://cdn.3dassets.dev/assets/38713/v1/model.glb",
+        "format": "GLB",
+        "source": "3DASSETS_DEV_CC0",
         "scale": 1,
         "rotationY": 0,
         "yOffset": 0,
-        "status": "MODEL_REQUIRED",
+        "status": "PUBLISHED_REAL_GLB",
         "requiredFormat": "GLB",
         "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
-        "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
+        "assetPage": "https://3dassets.dev/assets/distillery-and-bonded-warehouse-delivery-lorry-5a2271a0",
+        "license": "CC0 1.0 Universal",
+        "note": "Verified real-world-scale GLB. Generic modern flatbed delivery lorry; no procedural geometry is used when this asset loads."
       },
       "originalImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Actros_truck%2C_flatbed.jpg",
       "imageFileName": "Actros_truck_flatbed.jpg",
@@ -38,16 +40,18 @@
       "imageLicense": "CC BY 2.0",
       "imageAttribution": "Joost J. Bakker IJmuiden / Wikimedia Commons",
       "model": {
-        "url": null,
-        "format": null,
-        "source": "NONE",
+        "url": "https://cdn.3dassets.dev/assets/13963/v1/model.glb",
+        "format": "GLB",
+        "source": "3DASSETS_DEV_CC0",
         "scale": 1,
         "rotationY": 0,
         "yOffset": 0,
-        "status": "MODEL_REQUIRED",
+        "status": "PUBLISHED_REAL_GLB",
         "requiredFormat": "GLB",
         "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
-        "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
+        "assetPage": "https://3dassets.dev/assets/long-haul-trucking-and-truck-stop-refrigerated-rigid-64c20541",
+        "license": "CC0 1.0 Universal",
+        "note": "Verified real-world-scale GLB refrigerated rigid truck."
       },
       "originalImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Volvo_FH_K_%26_E_Trucking.jpg",
       "imageFileName": "Volvo_FH_K_E_Trucking.jpg",
@@ -66,16 +70,18 @@
       "imageLicense": "CC BY 2.0",
       "imageAttribution": "bilbobagweed / Wikimedia Commons",
       "model": {
-        "url": null,
-        "format": null,
-        "source": "NONE",
+        "url": "https://cdn.3dassets.dev/assets/13949/v1/model.glb",
+        "format": "GLB",
+        "source": "3DASSETS_DEV_CC0",
         "scale": 1,
         "rotationY": 0,
         "yOffset": 0,
-        "status": "MODEL_REQUIRED",
+        "status": "PUBLISHED_REAL_GLB",
         "requiredFormat": "GLB",
         "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
-        "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
+        "assetPage": "https://3dassets.dev/assets/long-haul-trucking-and-truck-stop-rigid-box-delivery-truck",
+        "license": "CC0 1.0 Universal",
+        "note": "Verified real-world-scale GLB box delivery truck."
       },
       "originalImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Woodside_Haulage_Mercedes-Benz_Actros_truck_with_box_trailer%2C_1_February_2009.jpg",
       "imageFileName": "Woodside_Haulage_Actros_box_trailer.jpg",
@@ -94,16 +100,18 @@
       "imageLicense": "CC BY-SA 2.0",
       "imageAttribution": "Freggs / Wikimedia Commons",
       "model": {
-        "url": null,
-        "format": null,
-        "source": "NONE",
+        "url": "https://cdn.3dassets.dev/assets/13957/v1/model.glb",
+        "format": "GLB",
+        "source": "3DASSETS_DEV_CC0",
         "scale": 1,
         "rotationY": 0,
         "yOffset": 0,
-        "status": "MODEL_REQUIRED",
+        "status": "PUBLISHED_REAL_GLB",
         "requiredFormat": "GLB",
         "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
-        "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
+        "assetPage": "https://3dassets.dev/assets/long-haul-trucking-and-truck-stop-curtainsider-trailer-3902c6e2",
+        "license": "CC0 1.0 Universal",
+        "note": "Verified real-world-scale GLB curtainsider semitrailer. The current published asset is the trailer body; tractor coupling can be added as a separate GLB in the next composition pass."
       },
       "originalImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/I.T.S._Transport_Volvo_FH16_750_Curtain_Sider.jpg",
       "imageFileName": "ITS_Volvo_FH16_750_Curtain_Sider.jpg",
