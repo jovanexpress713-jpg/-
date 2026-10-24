@@ -3,7 +3,8 @@ import * as THREE from "three";
 
 /** Procedural 3D concept truck: real Three.js geometry, no fake GLB URL or external model dependency. */
 export function EJAZTruckStage({ variant = "curtain" }: { variant?: string }) {
-  const hostRef = useRef<HTMLDivElement | null>(null);\n  const [webglUnavailable, setWebglUnavailable] = useState(false);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const [webglUnavailable, setWebglUnavailable] = useState(false);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -21,7 +22,14 @@ export function EJAZTruckStage({ variant = "curtain" }: { variant?: string }) {
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
     camera.position.set(7.4, 4.6, 8.5);
     camera.lookAt(0, 1.1, 0);
-    let renderer: THREE.WebGLRenderer;\n    try {\n      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });\n      setWebglUnavailable(false);\n    } catch {\n      setWebglUnavailable(true);\n      return;\n    }
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
+      setWebglUnavailable(false);
+    } catch {
+      setWebglUnavailable(true);
+      return;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
@@ -161,5 +169,14 @@ export function EJAZTruckStage({ variant = "curtain" }: { variant?: string }) {
     };
   }, [variant]);
 
-  return (\n    <div className="relative h-full min-h-[190px] w-full touch-pan-y" role="img" aria-label="مجسم شاحنة ثلاثي الأبعاد قابل للتدوير بالسحب">\n      <div ref={hostRef} className="h-full min-h-[190px] w-full" />\n      {webglUnavailable && (\n        <div className="absolute inset-0 grid place-items-center rounded-xl border border-white/10 bg-slate-900/70 p-4 text-center text-sm text-slate-300">\n          تعذّر تشغيل العرض ثلاثي الأبعاد على هذا الجهاز. جرّب متصفحًا يدعم WebGL.\n        </div>\n      )}\n    </div>\n  );
+  return (
+    <div className="relative h-full min-h-[190px] w-full touch-pan-y" role="img" aria-label="مجسم شاحنة ثلاثي الأبعاد قابل للتدوير بالسحب">
+      <div ref={hostRef} className="h-full min-h-[190px] w-full" />
+      {webglUnavailable && (
+        <div className="absolute inset-0 grid place-items-center rounded-xl border border-white/10 bg-slate-900/70 p-4 text-center text-sm text-slate-300">
+          تعذّر تشغيل العرض ثلاثي الأبعاد على هذا الجهاز. جرّب متصفحًا يدعم WebGL.
+        </div>
+      )}
+    </div>
+  );
 }
