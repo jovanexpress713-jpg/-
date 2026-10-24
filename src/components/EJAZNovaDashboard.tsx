@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { Vehicle } from "../data/types";
-import { Vehicle3DViewer } from "./Vehicle3DViewer";
+import { EJAZTruckStage } from "./EJAZTruckStage";
 import { IconTruck, IconCargo, IconDriver, IconTracking, IconReport, IconArrowRight } from "./Icons";
 
 type Props = {
@@ -12,7 +12,7 @@ type Props = {
 
 const money = (n: number) => new Intl.NumberFormat("ar-YE", { maximumFractionDigits: 0 }).format(n);
 
-function Metric({ label, value, hint, icon, tone }: { label: string; value: string; hint: string; icon: React.ReactNode; tone: string }) {
+function Metric({ label, value, hint, icon, tone }: { label: string; value: string; hint: string; icon: ReactNode; tone: string }) {
   return (
     <article className="ej-metric">
       <div className={`ej-metric-icon ${tone}`}>{icon}</div>
@@ -80,7 +80,7 @@ export function EJAZNovaDashboard({ vehicles, onSelect, onNav, onToast }: Props)
               <span className="ej-chip">عارض ثلاثي الأبعاد</span>
             </div>
             <div className="mt-2 min-h-[205px] flex-1">
-              <Vehicle3DViewer vehicleType={featured?.body || "curtain"} vehicleModel={featured?.model} vehiclePlate={featured?.plate} vehicle={featured ? {id:featured.id,body:featured.body,customImage:featured.customImage} : undefined} compact showControls height={230}/>
+              <EJAZTruckStage variant={featured?.body || "curtain"} />
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
               <div><p className="text-base font-bold">{featured ? `${featured.brand} ${featured.model}` : "لا توجد مركبات مسجلة بعد"}</p><p className="ej-muted mt-1 text-xs">{featured ? `رقم اللوحة: ${featured.plate || "غير مسجل"}` : "أضف أول مركبة لعرض بياناتها هنا"}</p></div>
