@@ -24,6 +24,7 @@ import permissionRoutes from "./routes/permissionRoutes";
 import representativeRoutes from "./routes/representativeRoutes";
 import geminiRoutes from "./routes/geminiRoutes";
 import { getUploadsServeRoot } from "./services/vehicleAssetRegistry";
+import { config } from "./config";
 
 export function createServerApp() {
   const app = express();
@@ -50,6 +51,15 @@ export function createServerApp() {
 
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+
+  // Passwordless quick access is a demo-only surface. In production and normal
+  // operation the endpoint is unavailable; real sessions must come from login.
+  app.use("/api/auth/quick-access", (req, res, next) => {
+    if (!config.enableDemoAccounts) {
+      return res.status(404).json({ error: "Endpoint not found", code: "NOT_FOUND" });
+    }
+    next();
+  });
 
   // API Routes
   app.use("/api/auth", authRoutes);
