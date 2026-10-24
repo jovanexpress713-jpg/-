@@ -206,7 +206,7 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
   return (
     <div className="ej-overview scroll-thin h-full overflow-y-auto bg-surface-0">
       <div className="mx-auto flex max-w-[1560px] flex-col gap-5 p-4 sm:p-5 xl:p-7">
-        <header className="flex flex-wrap items-end justify-between gap-4">
+        <header className="ej-overview-header flex flex-wrap items-end justify-between gap-4">
           <div className="flex min-w-0 items-start gap-3">
             {onOpenSidebar && <button onClick={onOpenSidebar} className="btn-icon mt-1 lg:hidden" aria-label={t("Menu", "القائمة")}><IconMenu size={17} /></button>}
             <div className="min-w-0">
@@ -226,7 +226,7 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
           </div>
         </header>
 
-        <section aria-label={t("Operations summary", "ملخص العمليات")} className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <section aria-label={t("Operations summary", "ملخص العمليات")} className="ej-overview-summary grid grid-cols-2 gap-3 xl:grid-cols-4">
           <MetricCard
             label={t("Trips in view", "الرحلات المعروضة")}
             value={filteredTrips.length}
@@ -271,7 +271,7 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
           />
         </section>
 
-        <section className="card overflow-hidden border border-border-subtle p-0">
+        <section className="ej-truck-hero card overflow-hidden border border-border-subtle p-0">
           {selected ? (() => {
             const assignedTruck = trucks.find((item) => item.id === selected.truckId);
             const fuelVal = Math.max(0, Math.min(100, assignedTruck?.fuel ?? 78));
