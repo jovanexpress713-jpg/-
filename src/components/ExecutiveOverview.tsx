@@ -4,6 +4,7 @@ import { apiClient, getAuthToken } from "../services/apiClient";
 import { useFleetStore } from "../state/fleetStore";
 import { IconMenu, IconTracking, IconTruck, IconSearch, IconCargo, IconDriver, IconArrowRight } from "./Icons";
 import { statusGroup } from "./overview/shared";
+import { CapacityTruck } from "./CapacityTruck";
 
 interface Props {
   userName?: string;
@@ -65,6 +66,7 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
   }, [trips, trucks, drivers, filter, query]);
 
   const selected = filteredTrips.find((trip) => trip.id === selectedTripId) ?? filteredTrips[0];
+  const selectedTruck = selected ? trucks.find((truck) => truck.id === selected.truckId) : undefined;
   const activeTrips = trips.filter((trip) => statusGroup(trip.status) === "transit");
   const deliveredTrips = trips.filter((trip) => statusGroup(trip.status) === "delivered");
   const pendingTrips = trips.filter((trip) => statusGroup(trip.status) === "pending");
@@ -158,6 +160,14 @@ export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, 
           </section>
 
           <aside className="ej-v2-side-stack">
+            <section className="ej-v2-panel ej-v2-truck-capacity-panel">
+              <div className="ej-v2-panel-heading"><div><span className="ej-v2-kicker">{t("VISUAL LOAD MONITOR", "مراقبة الحمولة بصريًا")}</span><h2>{t("Truck capacity", "سعة الشاحنة")}</h2><p>{selected ? (selected.tripNumber || t("Selected trip", "الرحلة المحددة")) : t("Choose a trip", "اختر رحلة")}</p></div><span className="ej-v2-panel-icon"><IconTruck size={18} /></span></div>
+              {selected ? <>
+                <div className="ej-v2-truck-visual"><CapacityTruck pct={loadPercent} countUp truckType={selectedTruck?.body} vehicle={selectedTruck} className="ej-v2-capacity-truck-svg" label={t("Truck load", "حمولة الشاحنة")} /></div>
+                <div className="ej-v2-truck-visual-legend"><span><i className="ej-v2-legend-filled" />{t("Loaded", "محمّل")}</span><span><i className="ej-v2-legend-empty" />{t("Available capacity", "السعة المتبقية")}</span></div>
+                <div className="ej-v2-truck-visual-stats"><span><small>{t("Cargo weight", "وزن الحمولة")}</small><strong>{formatNumber(selected.cargoWeightTons)} {t("tons", "طن")}</strong></span><span><small>{t("Maximum capacity", "السعة القصوى")}</small><strong>{formatNumber(selected.maxCapacityTons)} {t("tons", "طن")}</strong></span><span><small>{t("Utilization", "نسبة الاستخدام")}</small><strong>{formatNumber(loadPercent)}%</strong></span></div>
+              </> : <div className="ej-v2-empty"><IconTruck size={22} /><span>{t("Select a trip to view its truck capacity.", "اختر رحلة لعرض سعة شاحنتها.")}</span></div>}
+            </section>
             <section className="ej-v2-panel ej-v2-load-panel">
               <div className="ej-v2-panel-heading"><div><span className="ej-v2-kicker">{t("SELECTED TRIP", "الرحلة المحددة")}</span><h2>{t("Cargo capacity", "سعة الحمولة")}</h2></div><span className="ej-v2-panel-icon"><IconCargo size={18} /></span></div>
               {selected ? <>
