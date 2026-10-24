@@ -152,7 +152,7 @@ export function Dashboard({
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col bg-surface-0">
-      <header className="flex items-center gap-3 border-b border-border-subtle px-4 py-4 lg:px-5">
+      <header className="ej-dashboard-header flex items-center gap-3 border-b border-border-subtle px-4 py-4 lg:px-5">
         <button onClick={onOpenSidebar} className="btn-icon lg:hidden" aria-label={t("Menu", "القائمة")}>
           <IconMenu size={17} />
         </button>
