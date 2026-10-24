@@ -1147,3 +1147,88 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* EJAZ operations console — substantive dashboard header refinement */
+.ej-dashboard-header {
+  position: relative;
+  isolation: isolate;
+  min-height: 88px;
+  background:
+    radial-gradient(ellipse at 100% 0%, color-mix(in oklab, var(--color-brand) 10%, transparent), transparent 48%),
+    linear-gradient(135deg, color-mix(in oklab, var(--color-surface-2) 72%, transparent), transparent 72%);
+}
+.ej-dashboard-header::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 3px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, var(--color-brand-soft), var(--color-brand), transparent);
+  opacity: .9;
+  pointer-events: none;
+}
+.ej-dashboard-header h1 {
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+.ej-dashboard-header p {
+  line-height: 1.7;
+}
+.ej-dashboard-header > div:last-child {
+  border: 1px solid color-mix(in oklab, var(--color-border-strong) 58%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .035);
+}
+.ej-dashboard-header > div:last-child:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand) 15%, transparent), inset 0 0 0 1px var(--color-brand);
+}
+.ej-overview-metric {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.ej-overview-metric::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -26px;
+  top: -32px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklab, var(--color-brand) 15%, transparent);
+  pointer-events: none;
+  z-index: -1;
+}
+.ej-overview-metric:focus-within {
+  outline: 2px solid color-mix(in oklab, var(--color-brand) 70%, transparent);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .ej-dashboard-header {
+    min-height: 76px;
+    gap: 10px;
+    padding-block: 14px;
+  }
+  .ej-dashboard-header h1 {
+    font-size: clamp(1.2rem, 5vw, 1.55rem);
+    line-height: 1.3;
+  }
+  .ej-dashboard-header p {
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+  .ej-dashboard-header > div:last-child {
+    flex: 0 0 auto;
+  }
+  .ej-dashboard-header input {
+    width: min(42vw, 170px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ej-dashboard-header *,
+  .ej-overview-metric {
+    transition-duration: .01ms !important;
+  }
+}
