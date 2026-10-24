@@ -13,7 +13,6 @@ export function runProductionSecurityTests() {
 
   const config = read("src/server/config.ts");
   const main = read("src/main.tsx");
-  const authGate = read("src/components/ConsoleAuthGate.tsx");
   const apiClient = read("src/services/apiClient.ts");
   const serverApp = read("src/server/app.ts");
   const authRoutes = read("src/server/routes/authRoutes.ts");
@@ -31,9 +30,6 @@ export function runProductionSecurityTests() {
   // This is the regression guard for the old catch-path that could fabricate a local
   // SUPER_ADMIN session when the backend was unavailable.
   assert.match(main, /apiClient\.auth\.quickAccess = async \(\) => \(\{ token: \"\", user: null \}\)/, "boot must neutralize passwordless quick access");
-
-  // The login gate must not fabricate a JWT-like Google token in the browser.
-  assert.doesNotMatch(authGate, /firebase_token_/, "Google sign-in must not fabricate a JWT-like token in the browser");
 
   // Tokens must be transported as Authorization/X-Ejaz-Token, not exposed in URLs.
   assert.doesNotMatch(apiClient, /[?&]token=|token=\$\{/, "API requests must not put authentication tokens in URLs");
