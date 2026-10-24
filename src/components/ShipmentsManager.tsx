@@ -588,7 +588,7 @@ export function ShipmentsManager({
               </div>
               <div className="bg-surface-2 p-3 rounded-chip space-y-1">
                 <div className="text-label text-text-muted">{t("Security Seal Code", "رمز الختم الجمركي المعتمد")}</div>
-                <div className="font-mono text-status-active font-bold">EJAZ-SEAL-2026-9941</div>
+                <div className="font-mono text-status-active font-bold">غير مسجل في بيانات الشحنة</div>
               </div>
             </div>
             <button
