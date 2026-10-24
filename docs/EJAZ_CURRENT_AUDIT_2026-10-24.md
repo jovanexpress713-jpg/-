@@ -37,7 +37,13 @@ GPS provider, Google Maps, Gemini, document uploads and notifications require re
 - `npm run lint`
 - `npm run build`
 
-**Status at report creation:** not run here. Check the GitHub Actions run attached to the pull request before considering them passed.
+**Updated validation result (2026-10-24):** GitHub Actions run for this branch completed successfully. The run shows `npm test`, `npm run lint`, and `npm run build` all completed successfully. This validates the current branch's automated suite/build, but does not prove production persistence, deployment configuration, live GPS, backup recovery, or real accounting correctness.
 
 ## Release gate
 Do not sell or describe the current repository as production-ready until the persistent database migration, production identity provisioning (no seeded/demo accounts), financial ledger controls, backup/restore drill, provider integrations, deployment secrets, and independent security/acceptance tests are complete.
+
+
+### Additional finance route review — validation gaps
+The source review also found that `POST /api/finance/settlements` accepts `paidAmount` and writes it to the in-memory financial record without visible finite/non-negative/maximum validation in that handler. The related `PUT /api/finance/settlements/:tripId` route accepts multiple monetary fields; it needs consistent validation against non-finite and negative values before mutation. The legacy `POST /api/finance/settle` endpoint does perform non-negative and overpayment checks, but settlement/payment semantics are split across multiple endpoints and must be unified before production use.
+
+**Status:** identified and documented; the attempted route-level code edit was not applied. Do not treat this issue as fixed.
