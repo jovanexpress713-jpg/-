@@ -753,20 +753,24 @@ export class DevelopmentDatabaseAdapter extends InMemoryDatabase {
   }
 
   getStatus() {
+    // Report actual storage behavior. A successful PostgreSQL connectivity probe
+    // does not make the Map-backed entity CRUD durable.
+    const postgresConfigured = Boolean(this.targetDatabaseUrl);
+    const entityCrudUsesPostgres = false;
     return {
-      mode: "ENTERPRISE_DATABASE_ADAPTER",
+      mode: this.isDevelopment ? "DEVELOPMENT_IN_MEMORY" : "PRODUCTION_NOT_CONFIGURED",
       isDevelopment: this.isDevelopment,
-      connected: true,
-      ready: true,
-      durable: true,
-      productionSafe: true,
-      storage: "ENTERPRISE_STORAGE",
-      targetDatabaseConfigured: Boolean(this.targetDatabaseUrl),
+      connected: this.isPostgresConnected,
+      ready: this.isDevelopment || this.isPostgresConnected,
+      durable: entityCrudUsesPostgres && this.isPostgresConnected,
+      productionSafe: false,
+      storage: "PROCESS_LOCAL_MEMORY",
+      targetDatabaseConfigured: postgresConfigured,
       postgresProbeConnected: this.isPostgresConnected,
-      postgresUsedForEntityCrud: false,
-      schemaVersion: "2026.1",
-      tablesCount: 14,
-      notice: "Active enterprise database storage."
+      postgresUsedForEntityCrud: entityCrudUsesPostgres,
+      schemaVersion: null,
+      tablesCount: null,
+      notice: "Entity CRUD uses process-local Maps. Records can be lost when the process restarts; PostgreSQL connectivity alone does not enable persistence."
     };
   }
 }
