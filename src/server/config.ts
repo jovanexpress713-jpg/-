@@ -1,8 +1,9 @@
+import crypto from "node:crypto";
 import dotenv from "dotenv";
 dotenv.config();
 
 const nodeEnv = process.env.NODE_ENV || "development";
-const jwtSecret = process.env.JWT_SECRET || "";
+const jwtSecret = process.env.JWT_SECRET || (nodeEnv === "production" ? "" : crypto.randomBytes(32).toString("hex"));
 
 if (nodeEnv === "production" && !jwtSecret) {
   throw new Error("JWT_SECRET is required when NODE_ENV=production.");
