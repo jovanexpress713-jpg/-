@@ -6,6 +6,10 @@ import { createServerApp } from "./src/server/app";
 import { config } from "./src/server/config";
 
 async function start() {
+  if (config.nodeEnv === "production" && config.jwtSecret.length < 32) {
+    throw new Error("Production startup blocked: set JWT_SECRET to a random secret of at least 32 characters.");
+  }
+
   const app = createServerApp();
   const HOST = "0.0.0.0";
   const TARGET_PORT = config.port || 3000;
