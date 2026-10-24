@@ -16,6 +16,7 @@ import { ShipmentsManager } from "./ShipmentsManager";
 import { TariffsManager } from "./TariffsManager";
 import { FleetManager } from "./FleetManager";
 import { VehicleAssetsManager } from "./VehicleAssetsManager";
+import { Truck3DShowcase } from "./Truck3DShowcase";
 import { RegistrationRequestsManager } from "./RegistrationRequestsManager";
 import { LiveOperationsCenter } from "./LiveOperationsCenter";
 import { ExecutiveOverview } from "./ExecutiveOverview";
@@ -393,7 +394,10 @@ export function WebConsole({
           ) : nav === "registrations" ? (
             <RegistrationRequestsManager />
           ) : nav === "vehicle-assets" ? (
-            <VehicleAssetsManager />
+            <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+              <Truck3DShowcase />
+              <VehicleAssetsManager />
+            </div>
           ) : nav === "trips" ? (
             <TripsManager
               onOpenLiveTracking={(tripId) => {
