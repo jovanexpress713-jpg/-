@@ -1169,3 +1169,52 @@
 @media(max-width:1180px){.ej-v2-hero{grid-template-columns:minmax(0,1fr) minmax(250px,.8fr)}.ej-v2-work-grid{grid-template-columns:minmax(0,1fr)}.ej-v2-side-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.ej-v2-trip-row{grid-template-columns:85px minmax(0,1fr) auto}.ej-v2-trip-vehicle{display:none}}
 @media(max-width:760px){.ej-v2-content{padding:16px 12px 18px;gap:14px}.ej-v2-topbar{align-items:flex-start;flex-direction:column;gap:14px}.ej-v2-topbar h1{font-size:26px}.ej-v2-top-actions{width:100%}.ej-v2-search{min-width:0;flex:1}.ej-v2-map-button{padding:0 10px}.ej-v2-hero{grid-template-columns:minmax(0,1fr);min-height:0;padding:23px 20px 16px;border-radius:17px}.ej-v2-hero h2{font-size:29px}.ej-v2-hero-copy>p{font-size:12px}.ej-v2-route-art{height:145px;margin-top:8px}.ej-v2-route-art svg{max-height:150px}.ej-v2-route-orbit{width:160px;height:160px;right:25%}.ej-v2-orbit-two{width:210px;height:210px;right:15%}.ej-v2-route-label-a{bottom:0}.ej-v2-route-label-b{top:0}.ej-v2-hero-index{display:none}.ej-v2-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.ej-v2-metric{padding:13px;border-radius:13px}.ej-v2-metric-head{font-size:10px}.ej-v2-metric-icon{width:30px;height:30px}.ej-v2-metric>strong{font-size:29px;margin:12px 0 9px}.ej-v2-metric-foot{font-size:9px}.ej-v2-panel-heading{padding:17px 15px 14px}.ej-v2-panel-heading h2{font-size:16px}.ej-v2-filter-row{padding:0 13px 12px}.ej-v2-trip-row{grid-template-columns:minmax(0,1fr) auto;gap:7px;padding:12px 14px}.ej-v2-trip-code{grid-column:1;grid-row:1}.ej-v2-trip-route{grid-column:1;grid-row:2}.ej-v2-trip-route strong{white-space:normal}.ej-v2-status-pill{grid-column:2;grid-row:1;align-self:start}.ej-v2-side-stack{grid-template-columns:minmax(0,1fr)}.ej-v2-footer{flex-direction:column;gap:5px}.ej-v2-text-action{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.ej-v2-overview *,.ej-v2-overview *:before,.ej-v2-overview *:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+
+/* ============================================================
+   EJAZ V2 — cross-screen command-deck treatment
+   Shared styling for console, management modules and mobile app.
+   Existing application logic and permission gates remain intact.
+   ============================================================ */
+:root{color-scheme:dark}
+html,body,#root{min-height:100%;background:#050b18}
+body{background:radial-gradient(ellipse at 90% -15%,rgba(255,138,61,.065),transparent 35%),#050b18}
+.mobile-shell{background:radial-gradient(ellipse at 100% 0%,rgba(255,138,61,.09),transparent 34%),#07101f!important}
+.mobile-shell>header,.mobile-shell [class*="bg-navy"]{background:linear-gradient(110deg,#071426,#10213a 72%,#182943)!important;border-color:rgba(255,138,61,.2)!important}
+.mobile-shell [class*="border-b"]{border-color:rgba(145,174,211,.15)!important}
+.mobile-shell [class*="rounded-2xl"],.mobile-shell [class*="rounded-xl"],.mobile-shell [class*="rounded-lg"]{border-color:rgba(145,174,211,.17)}
+.mobile-shell button{transition:background-color .16s,border-color .16s,transform .16s}
+.mobile-shell button:active{transform:scale(.985)}
+/* Desktop navigation becomes a framed operations rail. */
+.lg\:flex.shrink-0.my-3.ms-3{padding:0!important;margin:12px!important}
+.lg\:flex.shrink-0.my-3.ms-3>aside,.lg\:flex.shrink-0.my-3.ms-3>div{border-radius:20px!important}
+[class*="bg-surface-0"]{background-color:#07101f}
+[class*="bg-surface-1"]{background-color:#0c1a2e}
+[class*="bg-surface-2"]{background-color:#10223a}
+[class*="border-border-subtle"]{border-color:rgba(145,174,211,.16)!important}
+[class*="border-border-strong"]{border-color:rgba(145,174,211,.25)!important}
+[class*="shadow-card"]{box-shadow:0 12px 34px rgba(0,0,0,.15)!important}
+/* Uniform interactive controls across every management screen. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea{border-color:rgba(145,174,211,.24)!important;border-radius:10px;transition:border-color .18s,box-shadow .18s,background-color .18s}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,select:focus,textarea:focus{border-color:rgba(255,138,61,.7)!important;box-shadow:0 0 0 3px rgba(255,138,61,.1)!important;outline:none}
+button:focus-visible,[role="button"]:focus-visible{outline:2px solid #ff9d5b!important;outline-offset:2px}
+table{border-collapse:separate;border-spacing:0}
+thead th{color:#9fb0c6}
+tbody tr{transition:background-color .14s}
+tbody tr:hover{background:rgba(255,138,61,.045)}
+/* Official photographed truck with live record-derived load overlay. */
+.ej-v2-truck-capacity-panel{overflow:hidden}
+.ej-v2-truck-visual{padding:0 12px;min-width:0;background:radial-gradient(ellipse at 50% 75%,rgba(40,92,146,.18),transparent 65%)}
+.ej-v2-capacity-truck-svg{display:block;width:100%;max-height:205px;overflow:visible}
+.ej-v2-truck-visual-legend{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;padding:2px 18px 12px;color:#879bb5;font-size:10px}
+.ej-v2-truck-visual-legend span{display:flex;align-items:center;gap:7px}
+.ej-v2-legend-filled,.ej-v2-legend-empty{display:inline-block;width:8px;height:8px;border-radius:3px;background:#2689ed}
+.ej-v2-legend-empty{background:#cbd5e1}
+.ej-v2-truck-visual-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 17px;padding:14px 0 17px;border-top:1px solid var(--ej-v2-line)}
+.ej-v2-truck-visual-stats>span{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ej-v2-truck-visual-stats small{font-size:9px;color:#8296b1;line-height:1.5}
+.ej-v2-truck-visual-stats strong{font-size:12px;color:#eaf0f8;overflow-wrap:anywhere}
+.ej-v2-side-stack{min-width:0}
+@media(min-width:1181px){.ej-v2-side-stack{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:1180px){.ej-v2-capacity-truck-svg{max-height:230px}}
+@media(max-width:760px){.ej-v2-truck-visual{padding:0 4px}.ej-v2-capacity-truck-svg{max-height:160px}.ej-v2-truck-visual-stats{margin:0 13px;gap:5px}.ej-v2-truck-visual-stats small{font-size:8px}.ej-v2-truck-visual-stats strong{font-size:10px}}
