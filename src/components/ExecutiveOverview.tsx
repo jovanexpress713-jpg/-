@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "../settings";
 import { apiClient, getAuthToken } from "../services/apiClient";
 import { useFleetStore } from "../state/fleetStore";
-import { useToast } from "./Toast";
-import { IconMenu, IconTracking, IconTruck, IconSearch, IconCheck, IconFuel, IconGauge, IconCargo, IconDriver, IconArrowRight } from "./Icons";
+import { IconMenu, IconTracking, IconTruck, IconSearch, IconCargo, IconDriver, IconArrowRight } from "./Icons";
 import { statusGroup } from "./overview/shared";
 
 interface Props {
@@ -34,7 +33,6 @@ function StatusPill({ status, t }: { status: string; t: (en: string, ar: string)
 
 export function ExecutiveOverview({ userName, onOpenSidebar, onOpenTripDetails, onOpenTracking }: Props) {
   const { t } = useSettings();
-  const toast = useToast();
   const { trips, trucks, drivers, selectedTripId, selectTrip, selectTruck } = useFleetStore();
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [query, setQuery] = useState("");
