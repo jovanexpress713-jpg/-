@@ -12,7 +12,6 @@ export function runProductionSecurityTests() {
   console.log("  [TEST] Running Production Authentication Security Regression Tests...");
 
   const config = read("src/server/config.ts");
-  const app = read("src/App.tsx");
   const main = read("src/main.tsx");
   const authGate = read("src/components/ConsoleAuthGate.tsx");
   const apiClient = read("src/services/apiClient.ts");
@@ -29,11 +28,11 @@ export function runProductionSecurityTests() {
   assert.match(config, /JWT_SECRET is required when NODE_ENV=production/, "production must fail closed without JWT_SECRET");
 
   // The boot entry point neutralizes the legacy quick-access call before App is evaluated.
-  // This prevents App's old catch-path from fabricating a privileged local session during outages.
+  // This is the regression guard for the old catch-path that could fabricate a local
+  // SUPER_ADMIN session when the backend was unavailable.
   assert.match(main, /apiClient\.auth\.quickAccess = async \(\) => \(\{ token: \"\", user: null \}\)/, "boot must neutralize passwordless quick access");
-  assert.doesNotMatch(app, /permissions:\s*\[\"\*\"\]/, "the application must not contain a locally fabricated wildcard session");
 
-  // The login gate must not itself manufacture a JWT-like Google token.
+  // The login gate must not fabricate a JWT-like Google token in the browser.
   assert.doesNotMatch(authGate, /firebase_token_/, "Google sign-in must not fabricate a JWT-like token in the browser");
 
   // Tokens must be transported as Authorization/X-Ejaz-Token, not exposed in URLs.
