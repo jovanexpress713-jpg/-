@@ -24,6 +24,7 @@ import permissionRoutes from "./routes/permissionRoutes";
 import representativeRoutes from "./routes/representativeRoutes";
 import geminiRoutes from "./routes/geminiRoutes";
 import { getUploadsServeRoot } from "./services/vehicleAssetRegistry";
+import { config } from "./config";
 
 export function createServerApp() {
   const app = express();
@@ -50,6 +51,19 @@ export function createServerApp() {
 
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+
+  // Passwordless quick access is a demo-only surface. When demo mode is off,
+  // return an inert response rather than forwarding to the legacy route; this
+  // prevents the browser from treating an unavailable shortcut as a reason to
+  // manufacture a local privileged session.
+  const guardQuickAccess = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!config.enableDemoAccounts) {
+      return res.status(200).json({ disabled: true, token: "", user: null });
+    }
+    next();
+  };
+  app.use("/api/auth/quick-access", guardQuickAccess);
+  app.use("/api/users/quick-access", guardQuickAccess);
 
   // API Routes
   app.use("/api/auth", authRoutes);
