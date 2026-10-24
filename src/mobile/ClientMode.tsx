@@ -331,14 +331,15 @@ export function ClientMode({
                   </span>
                 </div>
 
-                <div className="ej-v2-mobile-route-line mt-3 grid grid-cols-2 gap-2 text-label-lg">
-                  <div>
-                    <div className="text-micro text-text-muted">{t("From (Loading)", "نقطة التحميل")}</div>
-                    <div className="font-semibold text-white truncate mt-0.5">{td(activeTrip.originCity)}</div>
+                <div className="ej-v2-mobile-route-line mt-3 text-label-lg">
+                  <div className="ej-v2-route-endpoint">
+                    <i aria-hidden="true" />
+                    <span className="min-w-0"><span className="block text-micro text-text-muted">{t("From (Loading)", "نقطة التحميل")}</span><span className="block font-semibold text-white truncate mt-0.5">{td(activeTrip.originCity)}</span></span>
                   </div>
-                  <div>
-                    <div className="text-micro text-text-muted">{t("To (Delivery)", "نقطة التفريغ")}</div>
-                    <div className="font-semibold text-white truncate mt-0.5">{td(activeTrip.destinationCity)}</div>
+                  <span className="ej-v2-route-arrow" aria-hidden="true">←</span>
+                  <div className="ej-v2-route-endpoint">
+                    <i aria-hidden="true" />
+                    <span className="min-w-0"><span className="block text-micro text-text-muted">{t("To (Delivery)", "نقطة التفريغ")}</span><span className="block font-semibold text-white truncate mt-0.5">{td(activeTrip.destinationCity)}</span></span>
                   </div>
                 </div>
 
