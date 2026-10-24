@@ -48,8 +48,12 @@ function resolveAccountAccess(user: {
   };
 }
 
-// POST /api/auth/quick-access — Passwordless instant entry for project owner, client, and testing
+// POST /api/auth/quick-access — development-only convenience; never issue passwordless tokens in production.
 router.post("/quick-access", (req: AuthenticatedRequest, res: Response) => {
+  if (config.nodeEnv === "production") {
+    return res.status(404).json({ error: "Not found", code: "NOT_FOUND" });
+  }
+
   const targetRole = String(req.body?.role || "SUPER_ADMIN").toUpperCase();
   const targetEmail = req.body?.email;
 
@@ -67,18 +71,8 @@ router.post("/quick-access", (req: AuthenticatedRequest, res: Response) => {
     }
   }
 
-  if (!user) {
-    user = {
-      id: "u-admin",
-      email: "owner@ejaz.sa",
-      passwordHash: "",
-      fullName: "صاحب المشروع · الإدارة العليا",
-      phone: "+966501112233",
-      role: "SUPER_ADMIN",
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
-    db.users.set(user.id, user);
+  if (!user || !user.isActive) {
+    return res.status(404).json({ error: "No eligible development account found", code: "DEMO_ACCOUNT_NOT_FOUND" });
   }
 
   const access = resolveAccountAccess(user);
@@ -95,7 +89,7 @@ router.post("/quick-access", (req: AuthenticatedRequest, res: Response) => {
     permissions,
     registrationId: access.registration?.request.id ?? user.registrationId,
     registrationStatus: access.registration?.status ?? user.registrationStatus,
-    accountApproved: true,
+    accountApproved: access.approved,
   });
 
   logAuditEvent({
@@ -124,7 +118,7 @@ router.post("/quick-access", (req: AuthenticatedRequest, res: Response) => {
       registrationId: access.registration?.request.id ?? user.registrationId,
       registrationStatus: access.registration?.status ?? user.registrationStatus,
       registrationStatusAr: access.registration ? REGISTRATION_STATUS_AR[access.registration.status] : undefined,
-      accountApproved: true,
+      accountApproved: access.approved,
     },
   });
 });
