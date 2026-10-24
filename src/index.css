@@ -1218,3 +1218,75 @@ tbody tr:hover{background:rgba(255,138,61,.045)}
 @media(min-width:1181px){.ej-v2-side-stack{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:1180px){.ej-v2-capacity-truck-svg{max-height:230px}}
 @media(max-width:760px){.ej-v2-truck-visual{padding:0 4px}.ej-v2-capacity-truck-svg{max-height:160px}.ej-v2-truck-visual-stats{margin:0 13px;gap:5px}.ej-v2-truck-visual-stats small{font-size:8px}.ej-v2-truck-visual-stats strong{font-size:10px}}
+
+
+/* EJAZ V2 — reference-led mobile tracking surface (route-first, compact, operational). */
+.ej-v2-mobile-trip-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(120% 100% at 100% 0%, rgba(255, 107, 26, .13), transparent 48%), linear-gradient(145deg, #0d1b31 0%, #091221 72%, #080e19 100%) !important;
+  border: 1px solid rgba(255, 138, 61, .24) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+.ej-v2-mobile-trip-hero::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -58px;
+  top: -78px;
+  width: 190px;
+  height: 190px;
+  border: 1px solid rgba(255, 138, 61, .13);
+  border-radius: 50%;
+  box-shadow: 0 0 0 22px rgba(255,138,61,.025), 0 0 0 46px rgba(255,138,61,.018);
+  pointer-events: none;
+  z-index: -1;
+}
+.ej-v2-mobile-trip-hero > * { position: relative; z-index: 1; }
+.ej-v2-mobile-trip-hero [class*="grid-cols-3"] > div,
+.ej-v2-mobile-trip-hero [class*="grid-cols-3"] > span {
+  min-width: 0;
+  padding: 10px 5px;
+  border: 1px solid rgba(148, 163, 184, .10);
+  border-radius: 12px;
+  background: rgba(4, 10, 20, .48);
+}
+.ej-v2-mobile-trip-hero button {
+  min-height: 44px;
+  border-radius: 12px !important;
+  box-shadow: 0 7px 18px rgba(255, 107, 26, .12);
+}
+.ej-v2-mobile-route-line {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 13px 12px;
+  border: 1px solid rgba(148,163,184,.12);
+  border-radius: 14px;
+  background: rgba(3, 8, 16, .54);
+}
+.ej-v2-route-endpoint { display: flex; min-width: 0; align-items: center; gap: 7px; overflow: hidden; }
+.ej-v2-route-endpoint i { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: #ff8a3d; box-shadow: 0 0 0 4px rgba(255,138,61,.12); }
+.ej-v2-route-endpoint:last-child i { background: #f1f5f9; box-shadow: 0 0 0 4px rgba(241,245,249,.09); }
+.ej-v2-route-endpoint { font-size: 14px; font-weight: 800; white-space: nowrap; text-overflow: ellipsis; }
+.ej-v2-route-arrow { color: #ff8a3d; font-weight: 900; }
+.mobile-shell .absolute.bottom-3.inset-x-4 {
+  background: rgba(7, 15, 28, .94) !important;
+  border-color: rgba(255, 138, 61, .2) !important;
+  box-shadow: 0 18px 42px rgba(0,0,0,.38) !important;
+  padding-block: 10px;
+}
+.mobile-shell .absolute.bottom-3.inset-x-4 button { min-width: 48px; min-height: 44px; }
+.mobile-shell input, .mobile-shell textarea, .mobile-shell select {
+  border-radius: 12px;
+  min-height: 44px;
+}
+@media (max-width: 380px) {
+  .ej-v2-mobile-route-line { gap: 5px; padding: 11px 8px; }
+  .ej-v2-route-endpoint { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ej-v2-mobile-trip-hero, .ej-v2-mobile-trip-hero * { animation: none !important; transition: none !important; }
+}
