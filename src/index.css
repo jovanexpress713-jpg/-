@@ -1057,3 +1057,93 @@
     text-decoration: none !important;
   }
 }
+
+
+/* ============================================================
+   EJAZ NOVA — Phase 1 visual polish (admin console)
+   Visual-only guardrails: preserve component behavior and data flow.
+   ============================================================ */
+
+/* Keep the command center composed on narrow screens and prevent
+   long operational identifiers from creating page-wide overflow. */
+html,
+body,
+#root {
+  min-width: 320px;
+  max-width: 100%;
+}
+
+#root {
+  overflow-x: clip;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--color-brand-soft, #ff8a3d);
+  outline-offset: 3px;
+}
+
+/* Interactive cards feel responsive without changing click targets. */
+.ej-overview .card,
+.ej-overview-metric {
+  transition-property: border-color, background-color, box-shadow, transform;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ej-overview-metric:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Keep 3D and map surfaces inside their panels; avoid accidental
+   horizontal scrolling on phones and split-screen tablets. */
+:where(.mapboxgl-map, .leaflet-container, [data-map-root], .vehicle-3d-viewer) {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .ej-overview {
+    overscroll-behavior-y: contain;
+  }
+
+  .ej-overview header {
+    min-width: 0;
+  }
+
+  .ej-overview input,
+  .ej-overview select,
+  .ej-overview textarea {
+    max-width: 100%;
+  }
+}
+
+/* Respect the user's motion preference while keeping state and content
+   fully visible; no feature or interaction is disabled. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
