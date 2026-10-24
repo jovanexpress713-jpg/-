@@ -5,14 +5,13 @@ export const config = {
   port: parseInt(process.env.APP_PORT || "3000", 10),
   host: process.env.HOST || "0.0.0.0",
   nodeEnv: process.env.NODE_ENV || "development",
-  jwtSecret: process.env.JWT_SECRET || "ejaz-transport-enterprise-jwt-secret-key-2026",
+  jwtSecret: process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "dev-only-ejaz-transport-jwt-secret-not-for-production"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   databaseUrl: process.env.DATABASE_URL || "",
   gpsProviderApiKey: process.env.GPS_PROVIDER_API_KEY || "",
   gpsProviderEndpoint: process.env.GPS_PROVIDER_ENDPOINT || "",
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
-  // Demo accounts are enabled by default for seamless evaluation and demonstration,
-  // and can be explicitly disabled by setting ENABLE_DEMO_ACCOUNTS=false.
-  enableDemoAccounts: process.env.ENABLE_DEMO_ACCOUNTS !== "false",
+  // Demo accounts are opt-in for local development only and can never be enabled in production.
+  enableDemoAccounts: process.env.NODE_ENV !== "production" && process.env.ENABLE_DEMO_ACCOUNTS === "true",
 };
