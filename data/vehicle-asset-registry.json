@@ -1,11 +1,14 @@
 {
-  "version": 1,
-  "updatedAt": "2026-10-24T23:14:25.966Z",
+  "version": 2,
+  "updatedAt": "2026-10-25T00:00:00Z",
   "types": {
     "flatbed": {
       "type": "flatbed",
-      "officialImage": "/images/trucks/official/official-flatbed.png",
-      "imageSource": "OFFICIAL_UPLOAD",
+      "officialImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Actros_truck%2C_flatbed.jpg",
+      "imageSource": "WIKIMEDIA_COMMONS_CC_BY_SA_2_0",
+      "imageSourceUrl": "https://commons.wikimedia.org/wiki/File:Actros_truck,_flatbed.jpg",
+      "imageLicense": "CC BY-SA 2.0",
+      "imageAttribution": "Felix O / Wikimedia Commons",
       "model": {
         "url": null,
         "format": null,
@@ -18,9 +21,9 @@
         "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
         "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
       },
-      "originalImage": "/images/trucks/official/official-flatbed.png",
-      "imageFileName": "official-flatbed.png",
-      "imageUpdatedAt": "2026-10-03T14:37:35.881Z",
+      "originalImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Actros_truck%2C_flatbed.jpg",
+      "imageFileName": "Actros_truck_flatbed.jpg",
+      "imageUpdatedAt": "2026-10-25T00:00:00Z",
       "displayName": "سطحة",
       "preferredTruckBrands": [
         "Mercedes-Benz Actros",
@@ -29,8 +32,11 @@
     },
     "reefer": {
       "type": "reefer",
-      "officialImage": "/images/trucks/official/official-reefer.png",
-      "imageSource": "OFFICIAL_UPLOAD",
+      "officialImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Volvo_FH_K_%26_E_Trucking.jpg",
+      "imageSource": "WIKIMEDIA_COMMONS_CC_BY_2_0",
+      "imageSourceUrl": "https://commons.wikimedia.org/wiki/File:Volvo_FH_K_%26_E_Trucking.jpg",
+      "imageLicense": "CC BY 2.0",
+      "imageAttribution": "Joost J. Bakker IJmuiden / Wikimedia Commons",
       "model": {
         "url": null,
         "format": null,
@@ -43,19 +49,22 @@
         "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
         "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
       },
-      "originalImage": "/images/trucks/official/official-reefer.png",
-      "imageFileName": "official-reefer.png",
-      "imageUpdatedAt": "2026-10-03T14:37:36.149Z",
+      "originalImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Volvo_FH_K_%26_E_Trucking.jpg",
+      "imageFileName": "Volvo_FH_K_E_Trucking.jpg",
+      "imageUpdatedAt": "2026-10-25T00:00:00Z",
       "displayName": "براد",
       "preferredTruckBrands": [
-        "Mercedes-Benz Actros",
-        "Volvo FH"
+        "Volvo FH",
+        "Mercedes-Benz Actros"
       ]
     },
     "dry": {
       "type": "dry",
-      "officialImage": "/images/trucks/official/official-dry.png",
-      "imageSource": "OFFICIAL_UPLOAD",
+      "officialImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Woodside_Haulage_Mercedes-Benz_Actros_truck_with_box_trailer%2C_1_February_2009.jpg",
+      "imageSource": "WIKIMEDIA_COMMONS_CC_BY_2_0",
+      "imageSourceUrl": "https://commons.wikimedia.org/wiki/File:Woodside_Haulage_Mercedes-Benz_Actros_truck_with_box_trailer,_1_February_2009.jpg",
+      "imageLicense": "CC BY 2.0",
+      "imageAttribution": "bilbobagweed / Wikimedia Commons",
       "model": {
         "url": null,
         "format": null,
@@ -68,9 +77,9 @@
         "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
         "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
       },
-      "originalImage": "/images/trucks/official/official-dry.png",
-      "imageFileName": "official-dry.png",
-      "imageUpdatedAt": "2026-10-03T14:37:36.419Z",
+      "originalImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Woodside_Haulage_Mercedes-Benz_Actros_truck_with_box_trailer%2C_1_February_2009.jpg",
+      "imageFileName": "Woodside_Haulage_Actros_box_trailer.jpg",
+      "imageUpdatedAt": "2026-10-25T00:00:00Z",
       "displayName": "جاف",
       "preferredTruckBrands": [
         "Mercedes-Benz Actros",
@@ -79,8 +88,11 @@
     },
     "curtain": {
       "type": "curtain",
-      "officialImage": "/images/trucks/official/official-curtain.png",
-      "imageSource": "OFFICIAL_UPLOAD",
+      "officialImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/I.T.S._Transport_Volvo_FH16_750_Curtain_Sider.jpg",
+      "imageSource": "WIKIMEDIA_COMMONS_CC_BY_SA_2_0",
+      "imageSourceUrl": "https://commons.wikimedia.org/wiki/File:I.T.S._Transport_Volvo_FH16_750_Curtain_Sider.jpg",
+      "imageLicense": "CC BY-SA 2.0",
+      "imageAttribution": "Freggs / Wikimedia Commons",
       "model": {
         "url": null,
         "format": null,
@@ -93,13 +105,13 @@
         "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
         "note": "Do not replace with a photograph or procedural geometry; publish a verified real GLB before enabling automatic 3D mode."
       },
-      "originalImage": "/images/trucks/official/official-curtain.png",
-      "imageFileName": "official-curtain.png",
-      "imageUpdatedAt": "2026-10-03T14:37:36.703Z",
+      "originalImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/I.T.S._Transport_Volvo_FH16_750_Curtain_Sider.jpg",
+      "imageFileName": "ITS_Volvo_FH16_750_Curtain_Sider.jpg",
+      "imageUpdatedAt": "2026-10-25T00:00:00Z",
       "displayName": "ستارة",
       "preferredTruckBrands": [
-        "Mercedes-Benz Actros",
-        "Volvo FH"
+        "Volvo FH",
+        "Mercedes-Benz Actros"
       ]
     }
   },
