@@ -83,6 +83,26 @@ function finish(state, message) {
   report.state = state;
   report.message = message;
   fs.writeFileSync(STATUS_FILE, JSON.stringify(report, null, 2) + "\n");
+  // سجل تاريخي: سطر JSON لكل دورة، لمعرفة إيقاع الفرع ونشاطه عبر الوقت.
+  try {
+    fs.appendFileSync(
+      path.join(LOG_DIR, "history.jsonl"),
+      JSON.stringify({
+        at: report.checkedAt,
+        state,
+        newCommits: report.newCommits?.length ?? 0,
+        subjects: report.newCommits || [],
+        merge: report.merge,
+        autofix: report.autofix,
+        typecheck: report.typecheck,
+        tests: report.tests,
+        pushed: report.pushed,
+        message,
+      }) + "\n",
+    );
+  } catch {
+    /* السجل ليس حرجًا */
+  }
   log(`STATE=${state} :: ${message}`);
   console.log(JSON.stringify(report, null, 2));
   process.exit(state === "error" ? 1 : 0);
