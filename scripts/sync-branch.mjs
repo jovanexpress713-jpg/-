@@ -72,6 +72,7 @@ const report = {
   merge: "skipped",
   depsChanged: false,
   autofix: "skipped",
+  radar: [],
   typecheck: "skipped",
   tests: RUN_TESTS ? "skipped" : "off",
   pushed: false,
@@ -124,18 +125,45 @@ if (dirty.out) {
 }
 
 // 3) جلب آخر ما نزل على الفرع المتتبَّع
-const fetchResult = git(
-  "fetch",
-  "origin",
-  `+refs/heads/${TRACK_BRANCH}:${TRACK_REF}`,
-  "+refs/heads/main:refs/remotes/all/main",
-);
+const fetchResult = git("fetch", "origin", "+refs/heads/*:refs/remotes/all/*", "--prune");
 if (!fetchResult.ok) finish("error", `فشل الجلب من GitHub: ${fetchResult.out.slice(0, 400)}`);
+
+// 3.5) رادار الفروع: نظرة معلوماتية على بقية الفروع النشطة (لا دمج، لا دفع).
+// الفروع التي نُشطت في آخر ٣ أيام فقط، حتى لا تكون هناك كلفة على الفروع القديمة.
+function buildRadar() {
+  const out = git(
+    "for-each-ref",
+    "--sort=-committerdate",
+    "--format=%(refname:short)|%(committerdate:iso8601)|%(contents:subject)|%(objectname:short)",
+    "refs/remotes/all",
+  );
+  if (!out.ok) return [];
+  const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+  return out.out
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const [ref, date, subject, sha] = line.split("|");
+      const branch = ref.replace(/^all\//, "").replace(/^origin\//, "");
+      return { branch, date, subject, sha };
+    })
+    .filter((b) => b.branch && b.branch !== TRACK_BRANCH && b.branch !== "HEAD")
+    .filter((b) => {
+      const when = Date.parse(b.date);
+      return Number.isFinite(when) && Date.now() - when < threeDaysMs;
+    })
+    .slice(0, 8)
+    .map((b) => {
+      const ahead = git("rev-list", "--count", `HEAD..all/${b.branch}`);
+      return { ...b, aheadOfSession: Number(ahead.out.trim() || 0) };
+    });
+}
 
 // 4) هل هناك جديد؟
 const incoming = git("log", "--oneline", `HEAD..${TRACK_REF}`);
 if (!incoming.ok) finish("error", `تعذّر حساب الفروق: ${incoming.out}`);
 report.newCommits = incoming.out ? incoming.out.split("\n").filter(Boolean) : [];
+report.radar = buildRadar();
 
 if (report.newCommits.length === 0) {
   report.durationMs = Date.now() - startedAt;
