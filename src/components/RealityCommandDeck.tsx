@@ -34,7 +34,7 @@ function RealityState({ label, value, tone = "neutral" }: { label: string; value
   return <div className={`rounded-inner border px-3 py-2 ${toneClass}`}><div className="text-micro uppercase tracking-[0.12em] opacity-70">{label}</div><div className="mt-0.5 text-label font-semibold">{value}</div></div>;
 }
 
-export function RealityCommandDeck({ vehicles, selectedId, onSelect, onNav, onToast }: RealityCommandDeckProps) {
+export function RealityCommandDeck({ vehicles, selectedId, onSelect, onNav }: RealityCommandDeckProps) {
   const { t } = useSettings();
   const { registry } = useVehicleAssets();
   const [focusType, setFocusType] = useState<FocusType>("all");
