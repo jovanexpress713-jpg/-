@@ -20,8 +20,8 @@
  *   --rotation  heading in degrees                     (optional, default 0)
  *   --yoffset   vertical offset                        (optional, default 0)
  *   --base      API base URL                           (default http://localhost:3000)
- *   --email     operator account                       (default admin@ejaz.sa)
- *   --password  operator password                      (default Ejaz@2026Admin)
+ *   --email     operator account                       (or EJAZ_OPERATOR_EMAIL)
+ *   --password  operator password                     (or EJAZ_OPERATOR_PASSWORD)
  */
 
 import fs from "fs";
@@ -97,8 +97,12 @@ async function main() {
   }
 
   const type = args.type;
-  const email = args.email || "admin@ejaz.sa";
-  const password = args.password || "Ejaz@2026Admin";
+  const email = args.email || process.env.EJAZ_OPERATOR_EMAIL;
+  const password = args.password || process.env.EJAZ_OPERATOR_PASSWORD;
+  if (!email || !password) {
+    console.error("✗ Operator credentials are required. Pass --email/--password or set EJAZ_OPERATOR_EMAIL/EJAZ_OPERATOR_PASSWORD.");
+    process.exit(1);
+  }
 
   console.log(`EJAZ Vehicle Asset Publisher → ${base}`);
   console.log(`  category : ${type} (${TYPE_IDS[type]})`);
