@@ -20,7 +20,6 @@ export function DriverPortal() {
 
   const driverTrip = trips.find((tr) => tr.id === selectedTripId) || trips[0];
   const [chatInput, setChatInput] = useState("");
-  const [isCalling, setIsCalling] = useState(false);
 
   const handleAction = (status: any, noteAr: string, noteEn: string) => {
     updateTripStatus(driverTrip.id, status, noteAr, noteEn);
@@ -61,14 +60,13 @@ export function DriverPortal() {
 
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => {
-                setIsCalling(true);
-                setTimeout(() => setIsCalling(false), 2800);
-              }}
-              className="btn-ghost text-label-lg py-2 px-3.5 border border-border-subtle"
+              type="button"
+              disabled
+              title={t("A verified dispatch phone number has not been configured.", "لم يتم إعداد رقم هاتف موثّق للعمليات.")}
+              className="btn-ghost text-label-lg py-2 px-3.5 border border-border-subtle opacity-70 cursor-not-allowed"
             >
               <IconPhone size={15} />
-              {isCalling ? t("Calling Dispatch...", "جارٍ الاتصال بالعمليات...") : t("Emergency Hotline", "خط الطوارئ والعمليات")}
+              {t("Hotline not configured", "رقم الطوارئ غير مُعد")}
             </button>
 
             <button
@@ -194,9 +192,14 @@ export function DriverPortal() {
         <div className="space-y-4">
           {/* Truck Hardware Telemetry */}
           <div className="card p-5 border border-border-subtle space-y-4">
-            <h4 className="text-card-title font-bold text-text-primary">
-              {t("Truck Telemetry & Sensors", "مؤشرات الشاحنة والمستشعرات")}
-            </h4>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <h4 className="text-card-title font-bold text-text-primary">
+                {t("Truck Telemetry & Sensors", "مؤشرات الشاحنة والمستشعرات")}
+              </h4>
+              <span className="badge bg-surface-3 text-text-muted text-micro">
+                {t("Sample values · not live", "قيم تجريبية · ليست مباشرة")}
+              </span>
+            </div>
 
             <div className="space-y-3 text-body">
               <div className="flex items-center justify-between border-b border-border-subtle/60 pb-2">
@@ -256,11 +259,14 @@ export function DriverPortal() {
                   {t("Dispatch Operations Radio", "لاسلكي العمليات المباشر")}
                 </h4>
               </div>
-              <span className="badge bg-status-active/20 text-status-active text-micro">
-                {t("Connected", "متصل")}
+              <span className="badge bg-surface-3 text-text-muted text-micro">
+                {t("Local preview", "معاينة محلية")}
               </span>
             </div>
 
+            <p className="pt-2 text-micro text-text-muted">
+              {t("Messages are not delivered to dispatch from this preview.", "الرسائل من هذه المعاينة لا تُرسل إلى العمليات.")}
+            </p>
             <div className="scroll-thin flex-1 overflow-y-auto py-3 space-y-2.5 text-label-lg">
               <div className="rounded-inner bg-surface-3 p-2.5 text-text-secondary border border-border-subtle">
                 <span className="text-micro text-brand font-bold block mb-1">
@@ -282,7 +288,7 @@ export function DriverPortal() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
-                placeholder={t("Message operations...", "اكتب للعمليات...")}
+                placeholder={t("Local preview message...", "رسالة معاينة محلية...")}
                 className="field text-label-lg py-1.5 px-3"
               />
               <button onClick={handleSendChat} className="btn-primary text-label-lg py-1.5 px-3.5">
