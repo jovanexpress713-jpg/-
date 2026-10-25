@@ -55,7 +55,7 @@ export function RealityEnvironment({ vehicle, children }: RealityEnvironmentProp
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-24 bg-[linear-gradient(180deg,transparent,rgba(217,119,6,.08))]" />
       )}
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border-subtle bg-surface-1/80 p-2 backdrop-blur-md">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-panel border border-border-subtle bg-surface-1/80 p-2 backdrop-blur-md">
         <div className="flex min-w-0 items-center gap-2 px-2">
           <span className="h-2 w-2 shrink-0 rounded-full bg-brand shadow-[0_0_14px_rgba(255,138,0,.65)]" />
           <div className="min-w-0">
