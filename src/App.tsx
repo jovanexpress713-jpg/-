@@ -75,62 +75,29 @@ function Shell() {
   }, [mobileExportSignal, project]);
 
   /**
-   * Seamless Access: Automatically authenticates the Project Owner / Client
-   * with full permissions without requiring a password.
+   * Restore only a previously authenticated, server-validated session.
+   * Backend failure must never create a privileged local identity.
    */
   useEffect(() => {
     let cancelled = false;
     const restore = async () => {
-      let explicitLogout = false;
-      try {
-        explicitLogout = localStorage.getItem("ejaz_explicit_logout") === "true";
-      } catch {
-        /* ignore */
-      }
-
       const token = getAuthToken();
-      if (token) {
-        try {
-          const me = await apiClient.auth.me();
-          if (!cancelled && me?.role) {
-            window.dispatchEvent(new CustomEvent("ejaz:user-signed-in", { detail: me }));
-            setSession(me);
-            refreshVehicleAssets();
-            return;
-          }
-        } catch {
+      if (!token) return;
+
+      try {
+        const me = await apiClient.auth.me();
+        if (!cancelled && me?.role) {
+          window.dispatchEvent(new CustomEvent("ejaz:user-signed-in", { detail: me }));
+          setSession(me);
+          refreshVehicleAssets();
+        } else {
           setAuthToken(null);
         }
-      }
-
-      // If no valid session and not explicitly signed out, auto-authenticate seamlessly as Owner
-      if (!explicitLogout) {
-        try {
-          const quick = await apiClient.auth.quickAccess("SUPER_ADMIN");
-          if (!cancelled && quick?.user) {
-            setAuthToken(quick.token);
-            window.dispatchEvent(new CustomEvent("ejaz:user-signed-in", { detail: quick.user }));
-            setSession(quick.user);
-            refreshVehicleAssets();
-            return;
-          }
-        } catch {
-          const fallbackOwner = {
-            id: "u-admin",
-            email: "owner@ejaz.sa",
-            fullName: "صاحب المشروع · الإدارة العليا",
-            role: "SUPER_ADMIN",
-            permissions: ["*"],
-            isActive: true,
-            accountApproved: true,
-          };
-          if (!cancelled) {
-            setSession(fallbackOwner);
-          }
-        }
+      } catch {
+        setAuthToken(null);
       }
     };
-    restore();
+    void restore();
     return () => {
       cancelled = true;
     };
@@ -154,26 +121,10 @@ function Shell() {
   const handleOpenMobileApp = useCallback(async (kind: "driver" | "client") => {
     if (!session) {
       if (kind === "client") {
-        try {
-          const res = await apiClient.auth.login("client@ejaz.sa", "Ejaz@2026Client");
-          handleAuthenticated(res.user);
-          setMobileInterface("client");
-          setProject("mobile");
-          return;
-        } catch {
-          const fallbackClient = {
-            id: "client-direct-user",
-            email: "client@ejaz.sa",
-            fullName: "شركة الأفق اللوجستية (عميل معتمد)",
-            role: "CUSTOMER",
-            partner: "شركة الأفق اللوجستية",
-            permissions: ["shipments.view", "trips.view", "tracking.view", "documents.view"],
-          };
-          handleAuthenticated(fallbackClient);
-          setMobileInterface("client");
-          setProject("mobile");
-          return;
-        }
+        // Open the client sign-in flow; never auto-login with a built-in password.
+        setPreAuthInterface(kind);
+        setPreAuthView("mobile");
+        return;
       }
       setPreAuthInterface(kind);
       setPreAuthView("mobile");

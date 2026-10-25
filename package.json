@@ -35,6 +35,9 @@
     "three": "^0.186.1",
     "tsx": "^4.23.15"
   },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.6"
+  },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.17",
     "@types/cors": "^2.8.19",

@@ -197,9 +197,9 @@ export function AppHeader({
     lang === "en" ? "Search system..." : lang === "ur" ? "نظام میں تلاش کریں..." : "البحث في النظام...";
 
   return (
-    <header className="app-header sticky top-0 z-[60] shrink-0 px-2 py-1.5 sm:px-3 sm:py-2 transition-colors">
+    <header className="app-header sticky top-0 z-[60] shrink-0 px-2 py-1 sm:px-3 sm:py-1.5 transition-colors">
       {/* Luxury Navy & Orange Capsule Bar matching visual reference */}
-      <div className="mx-auto flex w-full min-w-0 items-center justify-between gap-2 rounded-inner border border-white/10 bg-[#071328]/95 px-2 py-1.5 sm:gap-3 sm:px-3 sm:py-2 shadow-sm backdrop-blur-xl">
+      <div className="mx-auto flex w-full min-w-0 items-center justify-between gap-1.5 rounded-inner border border-white/10 bg-[#071328]/95 px-2 py-1 sm:gap-2 sm:px-3 sm:py-1.5 shadow-sm backdrop-blur-xl">
         {/* Right Section (RTL): Menu Toggle + Brand Identity */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {showMenuButton && onOpenSidebar && (
@@ -232,7 +232,7 @@ export function AppHeader({
           <span className="hidden h-7 w-px shrink-0 bg-white/10 lg:block ms-1 me-1" aria-hidden="true" />
 
           {/* Quick Surface Switcher: Web Console · Driver App · Client App */}
-          <div className="flex shrink-0 items-center gap-0.5 rounded-chip border border-white/10 bg-[#060f22]/70 p-0.5">
+          <div className="hidden 2xl:flex shrink-0 items-center gap-0.5 rounded-chip border border-white/10 bg-[#060f22]/70 p-0.5" aria-label={t("Application surface", "واجهات التطبيق")}>
             <button
               type="button"
               onClick={() => onSwitchSurface?.("web")}
@@ -281,7 +281,7 @@ export function AppHeader({
         {/* Center Section: Global Search Field */}
         <div
           ref={searchContainerRef}
-          className="relative mx-2 hidden flex-1 max-w-md md:block"
+          className="relative mx-2 hidden min-w-[160px] flex-1 md:block"
         >
           <div className="flex items-center gap-2 rounded-full bg-[#060f22]/90 px-3.5 py-1.5 border border-white/10 hover:border-orange-500/40 focus-within:border-orange-500/70 shadow-[0_2px_14px_rgba(249,115,22,0.15)] transition-all">
             <IconSearch size={16} className="text-orange-400/90 shrink-0" />
@@ -450,7 +450,7 @@ export function AppHeader({
         </div>
 
         {/* Left Section (RTL): Tools + Notifications + Personal Account Profile */}
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
           {/* Mobile search toggle button (visible on smaller screens) */}
           <button
             onClick={() => setMobileSearchOpen((v) => !v)}
