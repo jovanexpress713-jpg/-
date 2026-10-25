@@ -661,4 +661,6 @@ export const UR_ORGANIZATION: Record<string, string> = {
   "Persistent storage": "مستقل اسٹوریج",
   "In-memory only": "صرف میموری میں",
   "Not configured": "ترتیب نہیں دیا گیا",
+  "Local preview": "مقامی پیش نظارہ",
+  "Preview conversation only. Messages stay in this local app state and are not delivered to dispatch.": "یہ صرف آزمائشی گفتگو ہے۔ پیغامات اسی ایپ میں رہتے ہیں اور ڈسپیچ تک نہیں پہنچتے۔",
 };
