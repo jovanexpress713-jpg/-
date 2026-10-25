@@ -668,4 +668,5 @@ export const UR_ORGANIZATION: Record<string, string> = {
   "Navigation guidance · sample": "ملاحتی رہنمائی · آزمائشی ڈیٹا",
   "Sample instruction — not live navigation": "آزمائشی ہدایت — براہ راست نیویگیشن نہیں",
   "Assigned truck · sample vehicle data": "مختص ٹرک · آزمائشی گاڑی کا ڈیٹا",
+  "Shipments in preview": "معا ینے میں موجود کھیپیں",
 };
