@@ -67,7 +67,7 @@ export function Vehicle3DViewer({
         compact={compact}
       />
       {previewMode && (
-        <div className="absolute inset-x-3 bottom-3 z-30 flex flex-wrap justify-center gap-1.5 rounded-2xl border border-border-subtle bg-surface-1/85 p-2 backdrop-blur-md">
+        <div className="absolute inset-x-3 bottom-3 z-30 flex flex-wrap justify-center gap-1.5 rounded-panel border border-border-subtle bg-surface-1/85 p-2 backdrop-blur-md">
           {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
             const selected = normalizeVehicleType(meta.id) === activeType;
             return (
