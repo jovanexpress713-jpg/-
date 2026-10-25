@@ -23,6 +23,7 @@ import { runIntegrationTests } from "./integration.test";
 import { runPermissionTests } from "./permissions.test";
 import { runDesignScaleTests } from "./designScale.test";
 import { runARRealityTests } from "./arRealityTests";
+import { runCanonicalVehicleModelTests } from "./canonicalVehicleModels.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -54,8 +55,9 @@ async function runAll() {
     await runPermissionTests();
     runDesignScaleTests();
     runARRealityTests();
+    runCanonicalVehicleModelTests();
     console.log("============================================================");
-    console.log("  ✅ ALL 25 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 26 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {
