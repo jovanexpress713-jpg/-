@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - redesign/ejaz-reality-command-center
+      - main
   pull_request:
     branches:
       - main
