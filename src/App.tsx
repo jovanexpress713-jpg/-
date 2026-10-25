@@ -121,18 +121,10 @@ function Shell() {
   const handleOpenMobileApp = useCallback(async (kind: "driver" | "client") => {
     if (!session) {
       if (kind === "client") {
-        try {
-          const res = await apiClient.auth.login("client@ejaz.sa", "Ejaz@2026Client");
-          handleAuthenticated(res.user);
-          setMobileInterface("client");
-          setProject("mobile");
-          return;
-        } catch {
-          // Authentication failure returns the user to the normal sign-in gate.
-          setPreAuthInterface(kind);
-          setPreAuthView("mobile");
-          return;
-        }
+        // Open the client sign-in flow; never auto-login with a built-in password.
+        setPreAuthInterface(kind);
+        setPreAuthView("mobile");
+        return;
       }
       setPreAuthInterface(kind);
       setPreAuthView("mobile");
