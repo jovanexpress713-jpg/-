@@ -26,6 +26,7 @@ import { runARRealityTests } from "./arRealityTests";
 import { runCanonicalVehicleModelTests } from "./canonicalVehicleModels.test";
 import { runConfigPolicyTests } from "./configPolicy.test";
 import { runInteractiveIndicatorTests } from "./interactiveIndicators.test";
+import { runVehicleModelCatalogTests } from "./vehicleModelCatalog.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -34,6 +35,7 @@ async function runAll() {
   try {
     runConfigPolicyTests();
     runInteractiveIndicatorTests();
+    runVehicleModelCatalogTests();
     await runAuthTests();
     runTripLifecycleTests();
     await runGPSAdapterTests();
@@ -61,7 +63,7 @@ async function runAll() {
     runARRealityTests();
     runCanonicalVehicleModelTests();
     console.log("============================================================");
-    console.log("  ✅ ALL 28 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 29 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {
