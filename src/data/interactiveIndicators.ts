@@ -72,7 +72,7 @@ export function buildFleetIndicatorSnapshot(vehicle: Vehicle): FleetIndicatorSna
         value: `${Math.round(load)}%`,
         rawValue: load,
         unit: "%",
-        hintAr: `${vehicle.load} / ${vehicle.maxLoad} طن",
+        hintAr: `${vehicle.load} / ${vehicle.maxLoad} طن`,
         hintEn: `${vehicle.load} / ${vehicle.maxLoad} t`,
         tone: load >= 90 ? "warning" : "neutral",
         source: "VEHICLE_RECORD",
