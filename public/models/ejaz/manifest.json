@@ -1,0 +1,13 @@
+{
+  "name": "EJAZ Canonical Fleet Models",
+  "version": "1.0.0",
+  "provenance": "PROJECT_GENERATED_CANONICAL",
+  "note": "These are EJAZ-owned canonical geometry assets. They are not claimed to be official Volvo or Mercedes licensed models.",
+  "formats": ["obj"],
+  "variants": {
+    "curtain": "/models/ejaz/ejaz-curtain-canonical.obj",
+    "dry": "/models/ejaz/ejaz-dry-canonical.obj",
+    "reefer": "/models/ejaz/ejaz-reefer-canonical.obj",
+    "flatbed": "/models/ejaz/ejaz-flatbed-canonical.obj"
+  }
+}
