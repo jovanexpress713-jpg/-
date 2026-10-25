@@ -1,62 +1,34 @@
 import type { CanonicalVehicleTypeId } from "./vehicleTypes";
 
+/**
+ * Reference-image descriptors only.
+ * 3D models must be licensed GLB/GLTF files published through the vehicle asset registry.
+ * Procedural OBJ geometry is intentionally not a fallback.
+ */
 export interface CanonicalVehicleModelDescriptor {
   type: CanonicalVehicleTypeId;
   url: string;
   labelAr: string;
   labelEn: string;
-  source: "EJAZ_CANONICAL";
-  format: "obj";
+  source: "OFFICIAL_REFERENCE_PHOTO";
+  format: "image";
   scale: number;
   rotationY: number;
   yOffset: number;
 }
 
+const IMAGE_BY_TYPE: Record<CanonicalVehicleTypeId, string> = {
+  curtain: "/images/trucks/official/official-curtain.png",
+  dry: "/images/trucks/official/official-dry.png",
+  reefer: "/images/trucks/official/official-reefer.png",
+  flatbed: "/images/trucks/official/official-flatbed.png",
+};
+
 export const CANONICAL_VEHICLE_MODELS: Record<CanonicalVehicleTypeId, CanonicalVehicleModelDescriptor> = {
-  curtain: {
-    type: "curtain",
-    url: "/models/ejaz/ejaz-curtain-canonical.obj",
-    labelAr: "ستارة — نموذج EJAZ قياسي",
-    labelEn: "Curtain — EJAZ canonical model",
-    source: "EJAZ_CANONICAL",
-    format: "obj",
-    scale: 1,
-    rotationY: 0,
-    yOffset: 1.05,
-  },
-  dry: {
-    type: "dry",
-    url: "/models/ejaz/ejaz-dry-canonical.obj",
-    labelAr: "جاف — نموذج EJAZ قياسي",
-    labelEn: "Dry — EJAZ canonical model",
-    source: "EJAZ_CANONICAL",
-    format: "obj",
-    scale: 1,
-    rotationY: 0,
-    yOffset: 1.05,
-  },
-  reefer: {
-    type: "reefer",
-    url: "/models/ejaz/ejaz-reefer-canonical.obj",
-    labelAr: "بارد — نموذج EJAZ قياسي",
-    labelEn: "Reefer — EJAZ canonical model",
-    source: "EJAZ_CANONICAL",
-    format: "obj",
-    scale: 1,
-    rotationY: 0,
-    yOffset: 1.05,
-  },
-  flatbed: {
-    type: "flatbed",
-    url: "/models/ejaz/ejaz-flatbed-canonical.obj",
-    labelAr: "سطحة — نموذج EJAZ قياسي",
-    labelEn: "Flatbed — EJAZ canonical model",
-    source: "EJAZ_CANONICAL",
-    format: "obj",
-    scale: 1,
-    rotationY: 0,
-    yOffset: 1.05,
-  },
+  curtain: { type: "curtain", url: IMAGE_BY_TYPE.curtain, labelAr: "ستارة — صورة مرجعية", labelEn: "Curtainsider — reference photo", source: "OFFICIAL_REFERENCE_PHOTO", format: "image", scale: 1, rotationY: 0, yOffset: 0 },
+  dry: { type: "dry", url: IMAGE_BY_TYPE.dry, labelAr: "جاف — صورة مرجعية", labelEn: "Dry van — reference photo", source: "OFFICIAL_REFERENCE_PHOTO", format: "image", scale: 1, rotationY: 0, yOffset: 0 },
+  reefer: { type: "reefer", url: IMAGE_BY_TYPE.reefer, labelAr: "براد — صورة مرجعية", labelEn: "Reefer — reference photo", source: "OFFICIAL_REFERENCE_PHOTO", format: "image", scale: 1, rotationY: 0, yOffset: 0 },
+  flatbed: { type: "flatbed", url: IMAGE_BY_TYPE.flatbed, labelAr: "سطحة — صورة مرجعية", labelEn: "Flatbed — reference photo", source: "OFFICIAL_REFERENCE_PHOTO", format: "image", scale: 1, rotationY: 0, yOffset: 0 },
 };
 
 export function getCanonicalVehicleModel(type: CanonicalVehicleTypeId): CanonicalVehicleModelDescriptor {
