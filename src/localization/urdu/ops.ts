@@ -795,4 +795,11 @@ Object.assign(UR_OPS, {
   "Preview only — not an official waybill": "صرف پیش‌نمایش — سرکاری وے بل نہیں",
   "Internal trip reference": "اندرونی ٹرپ حوالہ",
   "No transport-authority verification is connected.": "ٹرانسپورٹ اتھارٹی کی تصدیق منسلک نہیں ہے۔",
+  "LOAD CAPACITY": "لوڈ کی گنجائش",
+  "Current load": "موجودہ لوڈ",
+  "Max capacity": "زیادہ سے زیادہ گنجائش",
+  "Remaining": "باقی",
+  "Integrated load indicator": "مربوط لوڈ انڈیکیٹر",
+  "Load percentage": "لوڈ کا فیصد",
+  "t": "ٹن",
 });
