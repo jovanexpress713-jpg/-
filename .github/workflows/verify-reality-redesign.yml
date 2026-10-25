@@ -1,0 +1,30 @@
+name: Verify Reality Command Deck
+
+on:
+  push:
+    branches:
+      - redesign/ejaz-reality-command-center
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Typecheck
+        run: npm run lint
+      - name: Diagnose Urdu coverage
+        run: node scripts/i18n-audit.mjs --list
+      - name: Tests
+        run: npm test
+      - name: Production build
+        run: npm run build

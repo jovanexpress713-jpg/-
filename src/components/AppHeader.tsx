@@ -197,9 +197,9 @@ export function AppHeader({
     lang === "en" ? "Search system..." : lang === "ur" ? "نظام میں تلاش کریں..." : "البحث في النظام...";
 
   return (
-    <header className="app-header sticky top-0 z-[60] shrink-0 p-2 sm:px-4 sm:pt-2.5 sm:pb-2 transition-all">
+    <header className="app-header sticky top-0 z-[60] shrink-0 px-2 py-1.5 sm:px-3 sm:py-2 transition-colors">
       {/* Luxury Navy & Orange Capsule Bar matching visual reference */}
-      <div className="mx-auto flex w-full items-center justify-between rounded-card border border-orange-500/30 bg-[#050D1D]/90 px-2.5 py-1.5 sm:px-4 sm:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.65),0_0_24px_rgba(249,115,22,0.10)] backdrop-blur-2xl">
+      <div className="mx-auto flex w-full min-w-0 items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#071328]/95 px-2 py-1.5 sm:gap-3 sm:px-3 sm:py-2 shadow-sm backdrop-blur-xl">
         {/* Right Section (RTL): Menu Toggle + Brand Identity */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {showMenuButton && onOpenSidebar && (
@@ -232,12 +232,12 @@ export function AppHeader({
           <span className="hidden h-7 w-px shrink-0 bg-white/10 lg:block ms-1 me-1" aria-hidden="true" />
 
           {/* Quick Surface Switcher: Web Console · Driver App · Client App */}
-          <div className="flex shrink-0 items-center gap-1 rounded-full border border-orange-500/30 bg-[#060f22]/90 p-1 shadow-sm backdrop-blur-md">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-white/10 bg-[#060f22]/70 p-0.5">
             <button
               type="button"
               onClick={() => onSwitchSurface?.("web")}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label font-extrabold transition-all cursor-pointer",
+                "flex items-center gap-1 rounded-md px-2 py-1.5 text-label font-semibold transition-colors cursor-pointer",
                 currentSurface === "web"
                   ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/30 ring-1 ring-orange-400/50"
                   : "text-text-secondary hover:text-text-primary hover:bg-white/10"
@@ -245,7 +245,7 @@ export function AppHeader({
               title={t("Operations Control Room", "غرفة التحكم التشغيلي")}
             >
               <span>🖥️</span>
-              <span className="hidden sm:inline">{t("Control Room", "غرفة التحكم")}</span>
+              <span className="hidden xl:inline">{t("Control Room", "غرفة التحكم")}</span>
             </button>
             <button
               type="button"
@@ -259,7 +259,7 @@ export function AppHeader({
               title={t("Driver Mobile App", "تطبيق السائق الميداني")}
             >
               <span>🚚</span>
-              <span className="hidden sm:inline">{t("Driver App", "تطبيق السائق")}</span>
+              <span className="hidden xl:inline">{t("Driver App", "تطبيق السائق")}</span>
             </button>
             <button
               type="button"
@@ -273,7 +273,7 @@ export function AppHeader({
               title={t("Client Mobile App", "تطبيق العميل المعتمد")}
             >
               <span>🏢</span>
-              <span className="hidden sm:inline">{t("Client App", "تطبيق العميل")}</span>
+              <span className="hidden xl:inline">{t("Client App", "تطبيق العميل")}</span>
             </button>
           </div>
         </div>

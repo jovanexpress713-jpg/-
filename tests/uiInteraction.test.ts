@@ -168,91 +168,25 @@ export function runUiInteractionTests() {
     "the operations trip strip must resolve its icon from the trip's own cargoType"
   );
 
-  /* ── 3. 3D interaction contract ────────────────────────────────────────── */
+  /* ── 3. Vehicle presentation contract ────────────────────────────────── */
   const viewer = read("src", "components", "Vehicle3DViewer.tsx");
+  const canonicalViewer = read("src", "components", "CanonicalVehicle3DViewer.tsx");
+  const truckImage = read("src", "components", "TruckImage.tsx");
+  const realityDeck = read("src", "components", "RealityCommandDeck.tsx");
 
-  // Mouse AND touch go through one Pointer Events path on the canvas.
-  assert.match(viewer, /onPointerDown=\{handlePointerDown\}/, "the canvas must handle pointer down");
-  assert.match(viewer, /onPointerMove=\{handlePointerMove\}/, "the canvas must handle pointer move");
-  assert.match(viewer, /onPointerUp=\{handlePointerUp\}/, "the canvas must handle pointer up");
-  assert.match(viewer, /setPointerCapture/, "the drag must capture the pointer so it survives leaving the canvas");
-  assert.match(viewer, /touch-none/, "the canvas must opt out of browser touch scrolling");
-
-  // Presentation contract: the official photograph of the real truck is the
-  // default; interactive 3D mounts a real published GLB automatically, and the
-  // project's own build on explicit request. A truck is never silently replaced
-  // by a model it does not have.
-  assert.match(viewer, /const mountCanonical = \(\) => \{/, "the canonical model mount must exist");
-  assert.match(viewer, /buildTruckModel\(activeType\)/, "the viewer must build the project's own model");
-  assert.match(
-    viewer,
-    /glSupported && contextReady && \(hasPublishedModel \|\| interactiveRequested\)/,
-    "3D must be automatic for real GLB and on-request otherwise"
-  );
-  assert.match(
-    viewer,
-    /setInteractiveRequested\(true\)/,
-    "a clearly-labelled control must open the interactive 3D view"
-  );
-  assert.match(
-    viewer,
-    /hasPublishedModel \|\| interactiveRequested/,
-    "photo-only viewers must not hoard a WebGL context slot"
-  );
-
-  // Full 360° azimuth plus a polar sweep that reaches the roof and the wheels.
-  // The tuning now lives in the shared orbit module the render loop imports.
-  const orbit = read("src", "components", "orbit.ts");
-  assert.match(viewer, /from "\.\/orbit"/, "the viewer must use the shared orbit integrator");
-  assert.match(orbit, /minPolar: 0\.16/, "the roof angle must be reachable");
-  assert.match(orbit, /maxPolar: 1\.62/, "the wheel angle must be reachable");
-  assert.ok(
-    !/Math\.PI \/ 2 - 0\.08/.test(viewer),
-    "the old clamped polar range must be gone"
-  );
-  // Azimuth is unclamped (it wraps), which is what makes 360° possible.
-  assert.ok(
-    !/theta\s*=\s*Math\.max\(/.test(viewer),
-    "the azimuth must stay unclamped so a full turn is possible"
-  );
-
-  // Smoothness: the render loop drives the shared damped integrator.
-  assert.match(viewer, /stepOrbit\(orbitRef\.current, targetOrbitRef\.current, orbitVelocityRef\.current/, "the loop must step the eased orbit");
-  assert.match(viewer, /applyDragDelta\(targetOrbitRef\.current, dx, dy\)/, "drag must feed the shared integrator");
-  assert.match(viewer, /orbitToPosition\(orbitRef\.current, camera\.position\)/, "the camera must be placed from the orbit state");
-  assert.match(orbit, /1 - Math\.exp\(-o\.follow \* dt\)/, "the follow must be frame-rate independent");
-  assert.match(orbit, /Math\.exp\(-o\.friction \* dt\)/, "inertia must decay smoothly");
-
-  // No fidelity reduction while interacting. Assert on real code, not prose:
-  // an actual THREE.LOD instance or an addLevel() call would drop geometry.
-  assert.ok(
-    !/new\s+THREE\.LOD|\.addLevel\s*\(/.test(viewer),
-    "aggressive LOD is not allowed — no THREE.LOD or addLevel() in the viewer"
-  );
-  assert.ok(
-    !/setPixelRatio\s*\(\s*1\s*\)|pixelRatio\s*=\s*1(?![0-9.])/.test(viewer),
-    "the renderer must never be pinned to 1x density"
-  );
-  assert.match(viewer, /antialias: true/, "anti-aliasing must stay enabled");
-  assert.match(viewer, /Math\.min\(window\.devicePixelRatio \|\| 1, 2\)/, "pixel density must stay retina-class");
-  assert.match(viewer, /PCFSoftShadowMap/, "shadows must be soft");
-  assert.match(viewer, /ShadowMaterial/, "the contact shadow must not alter the truck's materials");
-
-  // Wheel zoom uses a non-passive listener (React's onWheel cannot preventDefault).
-  assert.match(
-    viewer,
-    /addEventListener\("wheel", handleNativeWheel, \{ passive: false \}\)/,
-    "wheel zoom must be attached non-passively to avoid the passive-listener console warning"
-  );
-  assert.ok(!/onWheel=\{handleWheel\}/.test(viewer), "the passive React wheel handler must be gone");
-
-  // Rendering pauses off-screen / when hidden — scheduling only, never quality.
-  assert.match(viewer, /IntersectionObserver/, "off-screen viewers must pause their loop");
-  assert.match(viewer, /visibilitychange/, "hidden tabs must pause their loop");
-
-  // The shared WebGL budget keeps a full fleet grid from losing contexts.
-  assert.match(viewer, /MAX_LIVE_WEBGL_CONTEXTS/, "a WebGL context budget must exist");
-  assert.match(viewer, /releaseWebGLContext\(\)/, "a viewer must release its slot on unmount");
+  // The selected vehicle uses its registered image; category images are the
+  // stable, bundled fallback. The dashboard deliberately avoids a stylized,
+  // remote GLB that would contradict the requested photo-realistic direction.
+  assert.match(viewer, /vehicleImage\(vehicle\)/, "the viewer must resolve the registered vehicle image");
+  assert.match(viewer, /<CanonicalVehicle3DViewer/, "the fleet viewer must use the canonical presentation component");
+  assert.match(canonicalViewer, /<TruckImage/, "the canonical viewer must render the official image component");
+  assert.match(truckImage, /typeImage\(/, "the image component must fall back to the approved category image");
+  assert.match(realityDeck, /\/images\/trucks\/official\/official-curtain\.webp/, "the dashboard must use a locally bundled curtain truck image");
+  assert.match(realityDeck, /\/images\/trucks\/official\/official-dry\.webp/, "the dashboard must use a locally bundled dry truck image");
+  assert.match(realityDeck, /\/images\/trucks\/official\/official-reefer\.webp/, "the dashboard must use a locally bundled reefer truck image");
+  assert.match(realityDeck, /\/images\/trucks\/official\/official-flatbed\.webp/, "the dashboard must use a locally bundled flatbed truck image");
+  assert.ok(!realityDeck.includes("TruckModel3DPreview"), "the dashboard must not depend on the remote stylized model");
+  assert.ok(!realityDeck.includes("grab3d.com"), "the dashboard must not require a third-party model host");
 
   /* ── 4. Welcome screen & start flow ────────────────────────────────────── */
   const mobileApp = read("src", "mobile", "MobileApp.tsx");

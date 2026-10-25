@@ -661,4 +661,12 @@ export const UR_ORGANIZATION: Record<string, string> = {
   "Persistent storage": "مستقل اسٹوریج",
   "In-memory only": "صرف میموری میں",
   "Not configured": "ترتیب نہیں دیا گیا",
+  "Local preview": "مقامی پیش نظارہ",
+  "Preview conversation only. Messages stay in this local app state and are not delivered to dispatch.": "یہ صرف آزمائشی گفتگو ہے۔ پیغامات اسی ایپ میں رہتے ہیں اور ڈسپیچ تک نہیں پہنچتے۔",
+  "Driver profile · sample": "ڈرائیور پروفائل · آزمائشی ڈیٹا",
+  "Preview status": "معا ینے کی حالت",
+  "Navigation guidance · sample": "ملاحتی رہنمائی · آزمائشی ڈیٹا",
+  "Sample instruction — not live navigation": "آزمائشی ہدایت — براہ راست نیویگیشن نہیں",
+  "Assigned truck · sample vehicle data": "مختص ٹرک · آزمائشی گاڑی کا ڈیٹا",
+  "Shipments in preview": "معا ینے میں موجود کھیپیں",
 };
