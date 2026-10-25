@@ -48,8 +48,11 @@ function resolveAccountAccess(user: {
   };
 }
 
-// POST /api/auth/quick-access — Passwordless instant entry for project owner, client, and testing
+// POST /api/auth/quick-access — local demonstration only; never available in production.
 router.post("/quick-access", (req: AuthenticatedRequest, res: Response) => {
+  if (config.nodeEnv === "production" || !config.enableDemoAccounts) {
+    return res.status(404).json({ error: "Not found", code: "NOT_FOUND" });
+  }
   const targetRole = String(req.body?.role || "SUPER_ADMIN").toUpperCase();
   const targetEmail = req.body?.email;
 
