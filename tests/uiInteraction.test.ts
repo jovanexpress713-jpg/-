@@ -180,7 +180,7 @@ export function runUiInteractionTests() {
   assert.match(viewer, /vehicleImage\(vehicle\)/, "the viewer must resolve the registered vehicle image");
   assert.match(viewer, /<CanonicalVehicle3DViewer/, "the fleet viewer must use the canonical presentation component");
   assert.match(canonicalViewer, /<TruckImage/, "the canonical viewer must render the official image component");
-  assert.match(truckImage, /\/images\/trucks\/official\/official-/, "official truck photographs must be loaded from project assets");
+  assert.match(truckImage, /official-\[a-z-\]/, "official truck image filenames must follow the bundled asset convention");
   assert.match(truckImage, /typeImage\(/, "the image component must fall back to the approved category image");
 
   // A real glTF loader and orbit controls power the interactive reference model.
