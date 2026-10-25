@@ -15,6 +15,7 @@
  *   SYNC_PUSH         1 لدفع فرع الجلسة بعد الدمج الناجح (افتراضي 1)
  *   SYNC_INSTALL      1 لتثبيت الحزم عند تغيّر package.json (افتراضي 1)
  *   RUN_TESTS         1 لتشغيل npm test (افتراضي 0 — يستغرق وقتًا)
+ *   SYNC_AUTOFIX      0 لتعطيل الطيّ التلقائي لمقياس التصميم (افتراضي 1)
  *   SYNC_LOG_DIR      مجلد السجلّات (افتراضي .sync)
  */
 import { spawnSync } from "node:child_process";
@@ -29,6 +30,7 @@ const SESSION_BRANCH = process.env.SESSION_BRANCH || "arena/e25f790d-repo";
 const DO_PUSH = process.env.SYNC_PUSH !== "0";
 const DO_INSTALL = process.env.SYNC_INSTALL !== "0";
 const RUN_TESTS = process.env.RUN_TESTS === "1";
+const AUTOFIX = process.env.SYNC_AUTOFIX !== "0";
 const LOG_DIR = path.resolve(REPO, process.env.SYNC_LOG_DIR || ".sync");
 const STATUS_FILE = path.join(LOG_DIR, "status.json");
 const LOG_FILE = path.join(LOG_DIR, "sync.log");
@@ -67,6 +69,7 @@ const report = {
   newCommits: [],
   merge: "skipped",
   depsChanged: false,
+  autofix: "skipped",
   typecheck: "skipped",
   tests: RUN_TESTS ? "skipped" : "off",
   pushed: false,
@@ -154,6 +157,40 @@ if (!DO_INSTALL) {
   report.install = "unchanged";
 }
 
+// 6.5) إصلاح تلقائي لمقياس التصميم.
+// أكثر ما يكسر CI بعد كل اندماج: الفرع يكتب أدوات Tailwind الافتراضية
+// (text-sm / rounded-3xl / sm:text-4xl) وكودمود المشروع يعرف كيف يطويها إلى
+// الخطوات المعتمدة. نفحص أولًا، ولا نكتب شيئًا إن لم يكن هناك ما يحتاج طيًّا.
+if (AUTOFIX) {
+  const guard = run("node", ["scripts/migrate-design-tokens.mjs", "--check"]);
+  if (guard.ok) {
+    report.autofix = "clean";
+  } else {
+    log("مقياس التصميم يحتاج طيّ التحجيمات — تشغيل الكودمود…");
+    const fold = run("node", ["scripts/migrate-design-tokens.mjs"]);
+    if (!fold.ok) {
+      report.autofix = "failed";
+      report.autofixError = fold.out.slice(-400);
+    } else {
+      const touched = git("status", "--porcelain");
+      const files = touched.out.split("\n").filter(Boolean);
+      if (files.length) {
+        git("add", "-A");
+        const commit = git(
+          "commit",
+          "-m",
+          `chore(sync): fold design tokens after merging ${TRACK_BRANCH}`,
+        );
+        report.autofix = commit.ok ? `folded ${files.length} file(s)` : "commit-failed";
+      } else {
+        report.autofix = "clean";
+      }
+    }
+  }
+} else {
+  report.autofix = "off";
+}
+
 // 7) فحص الأنواع
 log("فحص الأنواع (tsc --noEmit)…");
 const tsc = run("npx", ["tsc", "--noEmit"], { timeout: 600_000 });
@@ -182,6 +219,7 @@ const summary = [
   RUN_TESTS ? `tests=${report.tests}` : null,
   DO_PUSH ? `push=${report.pushed ? "ok" : "failed"}` : null,
   report.depsChanged ? "الحزم تغيّرت (أعد تشغيل السيرفر)" : null,
+  ["clean", "off", "skipped"].includes(report.autofix) ? null : `autofix=${report.autofix}`,
 ]
   .filter(Boolean)
   .join(" · ");
