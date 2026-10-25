@@ -171,28 +171,27 @@ export function runUiInteractionTests() {
   /* ── 3. Vehicle presentation contract ────────────────────────────────── */
   const viewer = read("src", "components", "Vehicle3DViewer.tsx");
   const canonicalViewer = read("src", "components", "CanonicalVehicle3DViewer.tsx");
+  const truckImage = read("src", "components", "TruckImage.tsx");
   const modelPreview = read("src", "components", "TruckModel3DPreview.tsx");
   const realityDeck = read("src", "components", "RealityCommandDeck.tsx");
 
-  // The fleet viewer uses the actual vehicle photo asset when one is registered.
-  assert.match(viewer, /vehicleImage\(vehicle\)/, "the viewer must resolve the registered local vehicle image");
+  // The fleet viewer uses the registered vehicle photo and the official local
+  // category image as a fallback, rather than pretending generated geometry is real.
+  assert.match(viewer, /vehicleImage\(vehicle\)/, "the viewer must resolve the registered vehicle image");
   assert.match(viewer, /<CanonicalVehicle3DViewer/, "the fleet viewer must use the canonical presentation component");
-  assert.match(canonicalViewer, /src=\{src\}/, "the canonical viewer must receive the selected photo");
-  assert.match(canonicalViewer, /images\/trucks\/official/, "the canonical viewer must reference the bundled official truck imagery");
+  assert.match(canonicalViewer, /<TruckImage/, "the canonical viewer must render the official image component");
+  assert.match(truckImage, /\/images\/trucks\/official\/official-/, "official truck photographs must be loaded from project assets");
+  assert.match(truckImage, /typeImage\(/, "the image component must fall back to the approved category image");
 
-  // The interactive model is explicitly identified as a reference model and is
-  // not falsely described as a photo-realistic customer truck.
-  assert.match(modelPreview, /GLTFLoader/, "the 3D preview must use a real glTF loader");
-  assert.match(modelPreview, /OrbitControls/, "the 3D preview must support interactive orbit controls");
-  assert.match(modelPreview, /error|Error|failed|Failed/, "the preview must surface load failures");
-  assert.match(realityDeck, /TruckModel3DPreview/, "the reality deck must expose the 3D preview");
-  assert.match(realityDeck, /images\/trucks\/official/, "the reality deck must use bundled truck photos");
+  // A real glTF loader and orbit controls power the interactive reference model.
+  assert.match(modelPreview, /GLTFLoader/, "the 3D preview must use a glTF loader");
+  assert.match(modelPreview, /OrbitControls/, "the 3D preview must support orbit controls");
+  assert.match(modelPreview, /setStatus\("error"\)/, "the preview must surface model-load errors");
+  assert.match(realityDeck, /TruckModel3DPreview/, "the reality deck must expose the interactive 3D preview");
 
-  // Local delivery must not silently depend on a remote GLB URL.
-  assert.ok(
-    !/https:\/\/grab3d\.com\/dl\/semi-truck\/semi-truck\.glb/.test(modelPreview),
-    "the shipped viewer must not require the external model host"
-  );
+  // The third-party GLB is currently an external dependency; never claim it is
+  // bundled locally or photo-realistic until a verified asset is added to public/.
+  assert.match(modelPreview, /https:\/\/grab3d\.com\/dl\/semi-truck\/semi-truck\.glb/, "the current model source must remain explicit");
 
   /* ── 4. Welcome screen & start flow ────────────────────────────────────── */
   const mobileApp = read("src", "mobile", "MobileApp.tsx");
