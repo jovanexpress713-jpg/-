@@ -5,11 +5,11 @@ import { BRANDS, PARTNERS } from "../data/catalog";
 import type { Vehicle } from "../data/types";
 import { liveOf, useElapsed, useTicker } from "../hooks";
 import { ShipmentCard } from "./ShipmentCard";
+import { RealityCommandDeck } from "./RealityCommandDeck";
 import {
   AnalysisView,
   CargosView,
   ChatsView,
-  DashboardView,
   DriversView,
   FleetStrip,
   HistoryView,
@@ -133,7 +133,16 @@ export function Dashboard({
 
   const renderView = () => {
     switch (activeNav) {
-      case "dashboard": return <DashboardView {...viewProps} />;
+      case "dashboard":
+        return (
+          <RealityCommandDeck
+            vehicles={vehicles}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            onNav={onNav}
+            onToast={onToast}
+          />
+        );
       case "chats": return <ChatsView {...viewProps} />;
       case "partners": return <PartnersView {...viewProps} />;
       case "analysis": return <AnalysisView {...viewProps} />;
@@ -210,68 +219,37 @@ export function Dashboard({
               </div>
               <div className="flex flex-wrap gap-2">
                 {brandCounts.map((b) => (
-                  <button
-                    key={b.id}
-                    onClick={() => toggle(brands, b.id, setBrands)}
-                    className={cn("chip", brands.has(b.id) && "chip-on")}
-                  >
-                    {b.id}
-                    <span className="chip-count">{b.n}</span>
+                  <button key={b.id} onClick={() => toggle(brands, b.id, setBrands)} className={cn("chip", brands.has(b.id) && "chip-on")}>
+                    {b.id}<span className="chip-count">{b.n}</span>
                   </button>
                 ))}
               </div>
             </div>
-
             <div>
               <div className="mb-2 text-label tracking-wide text-text-muted uppercase">
                 {t("Filter by Partners", "الفلترة حسب الشريك")}
               </div>
               <div className="flex flex-wrap gap-2">
                 {partnerCounts.map((p) => (
-                  <button
-                    key={p.name}
-                    onClick={() => toggle(partners, p.name, setPartners)}
-                    className={cn("chip", partners.has(p.name) && "chip-on")}
-                  >
-                    {p.name}
-                    <span className="chip-count">{p.n}</span>
+                  <button key={p.name} onClick={() => toggle(partners, p.name, setPartners)} className={cn("chip", partners.has(p.name) && "chip-on")}>
+                    {p.name}<span className="chip-count">{p.n}</span>
                   </button>
                 ))}
               </div>
             </div>
-
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-label tracking-wide text-text-muted uppercase">
-                  {t("Show", "عرض")}
-                </span>
+                <span className="text-label tracking-wide text-text-muted uppercase">{t("Show", "عرض")}</span>
                 <div className="flex gap-1 rounded-full bg-surface-2 p-1">
-                  {(
-                    [
-                      ["all", t("All", "الكل")],
-                      ["active", t("Active", "نشط")],
-                      ["inactive", t("Inactive", "متوقف")],
-                    ] as [StatusTab, string][]
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      onClick={() => setTab(id)}
-                      className={cn(
-                        "rounded-full px-3 py-1 text-label-lg transition-all duration-200 active:scale-95",
-                        tab === id
-                          ? "bg-brand font-semibold text-on-brand"
-                          : "text-text-secondary hover:text-text-primary",
-                      )}
-                    >
+                  {([["all", t("All", "الكل")], ["active", t("Active", "نشط")], ["inactive", t("Inactive", "متوقف")]] as [StatusTab, string][]).map(([id, label]) => (
+                    <button key={id} onClick={() => setTab(id)} className={cn("rounded-full px-3 py-1 text-label-lg transition-all duration-200 active:scale-95", tab === id ? "bg-brand font-semibold text-on-brand" : "text-text-secondary hover:text-text-primary")}>
                       {label}
                     </button>
                   ))}
                 </div>
               </div>
               {(brands.size > 0 || partners.size > 0 || query || tab !== "all") && (
-                <button onClick={reset} className="text-label-lg text-brand hover:opacity-80">
-                  {t("Reset filters", "إعادة ضبط الفلاتر")}
-                </button>
+                <button onClick={reset} className="text-label-lg text-brand hover:opacity-80">{t("Reset filters", "إعادة ضبط الفلاتر")}</button>
               )}
             </div>
           </div>
@@ -280,34 +258,16 @@ export function Dashboard({
             {filtered.length === 0 ? (
               <div className="animate-fade-up grid h-full place-items-center">
                 <div className="max-w-[340px] text-center">
-                  <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-surface-3 text-text-muted">
-                    <IconTracking size={22} />
-                  </span>
-                  <h3 className="mt-4 text-section-title font-medium text-text-primary">
-                    {t("No shipments found", "لا توجد شحنات مطابقة")}
-                  </h3>
-                  <p className="mt-1 text-label-lg text-text-muted">
-                    {t(
-                      "Nothing matches the current brand, partner or status filters.",
-                      "لا يوجد ما يطابق الفلاتر الحالية للماركة أو الشريك أو الحالة.",
-                    )}
-                  </p>
-                  <button onClick={reset} className="btn-primary mt-4 px-5">
-                    {t("Reset filters", "إعادة ضبط الفلاتر")}
-                  </button>
+                  <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-surface-3 text-text-muted"><IconTracking size={22} /></span>
+                  <h3 className="mt-4 text-section-title font-medium text-text-primary">{t("No shipments found", "لا توجد شحنات مطابقة")}</h3>
+                  <p className="mt-1 text-label-lg text-text-muted">{t("Nothing matches the current brand, partner or status filters.", "لا يوجد ما يطابق الفلاتر الحالية للماركة أو الشريك أو الحالة.")}</p>
+                  <button onClick={reset} className="btn-primary mt-4 px-5">{t("Reset filters", "إعادة ضبط الفلاتر")}</button>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(min(292px,100%),1fr))] gap-3">
                 {filtered.map((v, i) => (
-                  <ShipmentCard
-                    key={v.id}
-                    v={v}
-                    live={liveOf(v, elapsed)}
-                    selected={v.id === selectedId}
-                    index={i}
-                    onSelect={() => onSelect(v.id)}
-                  />
+                  <ShipmentCard key={v.id} v={v} live={liveOf(v, elapsed)} selected={v.id === selectedId} index={i} onSelect={() => onSelect(v.id)} />
                 ))}
               </div>
             )}

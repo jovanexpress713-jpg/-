@@ -22,12 +22,13 @@ import { runTripIdentityTests } from "./tripIdentity.test";
 import { runIntegrationTests } from "./integration.test";
 import { runPermissionTests } from "./permissions.test";
 import { runDesignScaleTests } from "./designScale.test";
+import { runARRealityTests } from "./arRealityTests";
+import { runCanonicalVehicleModelTests } from "./canonicalVehicleModels.test";
 
 async function runAll() {
   console.log("============================================================");
   console.log("  EJAZ TRANSPORT — ENTERPRISE PRODUCTION TEST SUITE");
   console.log("============================================================");
-
   try {
     await runAuthTests();
     runTripLifecycleTests();
@@ -53,9 +54,10 @@ async function runAll() {
     await runIntegrationTests();
     await runPermissionTests();
     runDesignScaleTests();
-
+    runARRealityTests();
+    runCanonicalVehicleModelTests();
     console.log("============================================================");
-    console.log("  ✅ ALL 24 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 26 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {
@@ -64,5 +66,4 @@ async function runAll() {
     process.exit(1);
   }
 }
-
 runAll();

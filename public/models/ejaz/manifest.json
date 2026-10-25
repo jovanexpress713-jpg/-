@@ -1,0 +1,14 @@
+{
+  "name": "EJAZ Fleet Reference Assets",
+  "version": "2.0.0",
+  "provenance": "USER_SUPPLIED_REFERENCE_PHOTOGRAPHS",
+  "policy": "No procedural or generated geometry is used as a substitute for a real truck asset.",
+  "note": "The canonical viewer displays category reference photographs. 3D rendering must remain unavailable until a licensed GLB/GLTF truck model is uploaded and registered.",
+  "formats": ["png", "webp", "glb", "gltf"],
+  "variants": {
+    "curtain": { "image": "/images/trucks/official/official-curtain.png", "model": null },
+    "dry": { "image": "/images/trucks/official/official-dry.png", "model": null },
+    "reefer": { "image": "/images/trucks/official/official-reefer.png", "model": null },
+    "flatbed": { "image": "/images/trucks/official/official-flatbed.png", "model": null }
+  }
+}
