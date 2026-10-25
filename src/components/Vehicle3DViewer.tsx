@@ -64,7 +64,7 @@ export function Vehicle3DViewer({
                 onClick={() => selectType(meta.id)}
                 className={`min-h-9 rounded-full px-3 text-micro font-bold transition ${selected ? "bg-brand text-on-brand" : "bg-surface-2 text-text-secondary hover:bg-surface-3"}`}
               >
-                {t(meta.en, meta.ar)}
+                {t(meta.englishName, meta.arabicName)}
               </button>
             );
           })}
