@@ -48,90 +48,11 @@ function resolveAccountAccess(user: {
   };
 }
 
-// POST /api/auth/quick-access — Passwordless instant entry for project owner, client, and testing
-router.post("/quick-access", authenticate, (req: AuthenticatedRequest, res: Response) => {
-  // Passwordless access must never mint a session for an arbitrary account.
-  // Keep this legacy endpoint available only to an already-authenticated owner,
-  // and bind it to that owner account instead of trusting request-body identity.
-  if (req.user?.role !== "SUPER_ADMIN") {
-    return res.status(403).json({ error: "Owner authentication required", code: "OWNER_AUTH_REQUIRED" });
-  }
-  const targetRole = req.user.role;
-  const targetEmail = req.user.email;
-
-  let user = targetEmail
-    ? Array.from(db.users.values()).find((u) => u.email.toLowerCase() === targetEmail.toLowerCase())
-    : Array.from(db.users.values()).find((u) => u.role === targetRole || (targetRole === "CLIENT" && u.role === "CUSTOMER"));
-
-  if (!user) {
-    if (targetRole === "CUSTOMER" || targetRole === "CLIENT") {
-      user = db.users.get("u-client") || db.users.get("u-client-sadafco");
-    } else if (targetRole === "DRIVER") {
-      user = db.users.get("u-driver") || db.users.get("u-driver1");
-    } else {
-      user = db.users.get("u-admin") || db.users.get("u-gm");
-    }
-  }
-
-  if (!user) {
-    user = {
-      id: "u-admin",
-      email: "owner@ejaz.sa",
-      passwordHash: "",
-      fullName: "صاحب المشروع · الإدارة العليا",
-      phone: "+966501112233",
-      role: "SUPER_ADMIN",
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
-    db.users.set(user.id, user);
-  }
-
-  const access = resolveAccountAccess(user);
-  const permissions = access.permissions;
-  const token = generateToken({
-    userId: user.id,
-    email: user.email,
-    fullName: user.fullName,
-    role: user.role,
-    driverId: user.driverId,
-    customerId: user.customerId,
-    regionId: user.regionId,
-    region: user.region,
-    permissions,
-    registrationId: access.registration?.request.id ?? user.registrationId,
-    registrationStatus: access.registration?.status ?? user.registrationStatus,
-    accountApproved: true,
-  });
-
-  logAuditEvent({
-    actorId: user.id,
-    actorName: user.fullName,
-    actorRole: user.role,
-    action: "USER_QUICK_ACCESS",
-    entity: "users",
-    entityId: user.id,
-    ipAddress: req.ip,
-  });
-
-  return res.json({
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      phone: user.phone,
-      role: user.role,
-      regionId: user.regionId,
-      region: user.region,
-      driverId: user.driverId,
-      customerId: user.customerId,
-      permissions,
-      registrationId: access.registration?.request.id ?? user.registrationId,
-      registrationStatus: access.registration?.status ?? user.registrationStatus,
-      registrationStatusAr: access.registration ? REGISTRATION_STATUS_AR[access.registration.status] : undefined,
-      accountApproved: true,
-    },
+// Legacy passwordless endpoint disabled. All sessions must be created through /login.
+router.post("/quick-access", (_req: AuthenticatedRequest, res: Response) => {
+  return res.status(410).json({
+    error: "Passwordless quick access is disabled. Sign in with valid credentials.",
+    code: "QUICK_ACCESS_DISABLED",
   });
 });
 
