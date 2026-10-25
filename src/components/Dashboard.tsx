@@ -5,6 +5,7 @@ import { BRANDS, PARTNERS } from "../data/catalog";
 import type { Vehicle } from "../data/types";
 import { liveOf, useElapsed, useTicker } from "../hooks";
 import { ShipmentCard } from "./ShipmentCard";
+import { EJAZNovaDashboard } from "./EJAZNovaDashboard";
 import {
   AnalysisView,
   CargosView,
@@ -133,7 +134,7 @@ export function Dashboard({
 
   const renderView = () => {
     switch (activeNav) {
-      case "dashboard": return <DashboardView {...viewProps} />;
+      case "dashboard": return <EJAZNovaDashboard vehicles={vehicles} onSelect={viewProps.onSelect} onNav={onNav} onToast={onToast} />;
       case "chats": return <ChatsView {...viewProps} />;
       case "partners": return <PartnersView {...viewProps} />;
       case "analysis": return <AnalysisView {...viewProps} />;

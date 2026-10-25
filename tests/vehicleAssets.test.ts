@@ -11,17 +11,14 @@ import { createServerApp } from "../src/server/app";
  *
  * Verifies the single source of truth for vehicle imagery and 3D models:
  * the 4 approved categories, official image publication, GLB validation,
- * RBAC on publishing, automatic asset re-binding on a type change, and the
- * honest fallback when no 3D model has been provisioned.
+ * RBAC on publishing, automatic asset re-binding on a type change, the
+ * complete real-GLB curtain rig, and the honest fallback when no 3D model
+ * has been provisioned.
  */
 
 let server: http.Server | null = null;
 let baseUrl = "";
 
-/**
- * The registry is sandboxed for the duration of this test so publishing assets
- * here can never overwrite the official fleet assets of a running deployment.
- */
 const SANDBOX = fs.mkdtempSync(path.join(os.tmpdir(), "ejaz-vehicle-assets-"));
 process.env.VEHICLE_ASSET_UPLOAD_ROOT = path.join(SANDBOX, "uploads", "vehicle-assets");
 process.env.VEHICLE_ASSET_MANIFEST_PATH = path.join(SANDBOX, "manifest.json");
@@ -47,7 +44,6 @@ async function api(method: string, path: string, options: { token?: string | nul
 const PNG_1x1 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==";
 
-/** Builds a structurally valid (minimal) binary glTF 2.0 container. */
 function buildMinimalGlb(): string {
   const json = Buffer.from('{"asset":{"version":"2.0","generator":"ejaz-test"}}'.padEnd(52, " "), "utf8");
   const totalLength = 12 + 8 + json.length;
@@ -57,7 +53,7 @@ function buildMinimalGlb(): string {
   header.writeUInt32LE(totalLength, 8);
   const chunkHeader = Buffer.alloc(8);
   chunkHeader.writeUInt32LE(json.length, 0);
-  chunkHeader.writeUInt32LE(0x4e4f534a, 4); // "JSON"
+  chunkHeader.writeUInt32LE(0x4e4f534a, 4);
   return Buffer.concat([header, chunkHeader, json]).toString("base64");
 }
 
@@ -66,6 +62,18 @@ const GLB_MIN = buildMinimalGlb();
 export async function runVehicleAssetTests() {
   console.log("  [TEST] Running Official Vehicle Asset Registry Tests...");
 
+  // Regression guard: the curtain showcase must remain a real coupled GLB rig,
+  // not a photograph or procedural fallback. These URLs are the exact assets
+  // consumed by CurtainRig3DViewer.
+  const registryPath = path.resolve(process.cwd(), "data/vehicle-asset-registry.json");
+  const registryFile = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+  const curtain = registryFile.types.curtain;
+  assert.strictEqual(curtain.model.status, "PUBLISHED_REAL_GLB", "Curtain trailer must remain a published real GLB");
+  assert.strictEqual(curtain.composition?.type, "TRACTOR_PLUS_TRAILER", "Curtain must be represented as tractor + trailer");
+  assert.strictEqual(curtain.composition?.tractorUrl, "https://cdn.3dassets.dev/assets/13946/v1/model.glb", "Curtain tractor GLB URL must be pinned");
+  assert.strictEqual(curtain.composition?.trailerUrl, "https://cdn.3dassets.dev/assets/13957/v1/model.glb", "Curtain trailer GLB URL must be pinned");
+  assert.strictEqual(curtain.composition?.status, "PUBLISHED_REAL_GLB_COMPOSITION", "Curtain composition must be explicitly marked real");
+
   const app = createServerApp();
   server = http.createServer(app);
   await new Promise<void>((resolve) => server!.listen(0, "127.0.0.1", resolve));
@@ -73,14 +81,12 @@ export async function runVehicleAssetTests() {
   baseUrl = `http://127.0.0.1:${port}`;
 
   try {
-    // 1. The catalogue is a protected operational resource
     const anonymous = await api("GET", "/api/vehicle-assets");
     assert.strictEqual(anonymous.status, 401, "The asset catalogue must require authentication");
 
     const admin = (await api("POST", "/api/auth/login", { body: { email: "admin@ejaz.sa", password: "Ejaz@2026Admin" } })).body;
     const driver = (await api("POST", "/api/auth/login", { body: { email: "driver@ejaz.sa", password: "Ejaz@2026Driver" } })).body;
 
-    // 2. Exactly four approved categories — never a fifth type
     const registry = await api("GET", "/api/vehicle-assets", { token: admin.token });
     assert.strictEqual(registry.status, 200, "The registry must be readable by an authorized operator");
     const types = registry.body.registry.types;
@@ -94,14 +100,12 @@ export async function runVehicleAssetTests() {
       assert.ok(type.officialImage, `Category ${type.type} must always resolve an official image`);
     }
 
-    // 3. Only authorized roles can publish official assets
     const driverImage = await api("PUT", "/api/vehicle-assets/flatbed/image", {
       token: driver.token,
       body: { data: PNG_1x1, fileName: "x.png" },
     });
     assert.strictEqual(driverImage.status, 403, "DRIVER must not publish official assets");
 
-    // 4. Publishing an official reference image
     const publishedImage = await api("PUT", "/api/vehicle-assets/flatbed/image", {
       token: admin.token,
       body: { data: `data:image/png;base64,${PNG_1x1}`, fileName: "official-flatbed.png" },
@@ -110,11 +114,9 @@ export async function runVehicleAssetTests() {
     assert.strictEqual(publishedImage.body.asset.imageSource, "OFFICIAL_UPLOAD", "The image must be flagged as official");
     assert.ok(publishedImage.body.asset.originalImage, "The untouched original must be preserved");
 
-    // served through the same public URL the UI consumes
     const servedImage = await fetch(baseUrl + publishedImage.body.asset.officialImage);
     assert.strictEqual(servedImage.status, 200, "The published image must be served by the platform");
 
-    // 5. Payload validation
     const badExtension = await api("PUT", "/api/vehicle-assets/flatbed/image", {
       token: admin.token,
       body: { data: PNG_1x1, fileName: "payload.exe" },
@@ -133,7 +135,6 @@ export async function runVehicleAssetTests() {
     });
     assert.strictEqual(unknownType.status, 400, "A fifth vehicle category must never be accepted");
 
-    // 6. Publishing a real GLB model
     const publishedModel = await api("PUT", "/api/vehicle-assets/flatbed/model", {
       token: admin.token,
       body: { data: GLB_MIN, fileName: "flatbed.glb", scale: 1.25, rotationY: 90 },
@@ -147,7 +148,6 @@ export async function runVehicleAssetTests() {
     const magic = Buffer.from(await servedModel.arrayBuffer()).subarray(0, 4).toString("ascii");
     assert.strictEqual(magic, "glTF", "The stored model must keep its binary glTF container intact");
 
-    // 7. Viewer framing controls
     const transform = await api("PATCH", "/api/vehicle-assets/flatbed/model", {
       token: admin.token,
       body: { scale: 1.5, rotationY: 180, yOffset: 0.25 },
@@ -156,7 +156,6 @@ export async function runVehicleAssetTests() {
     assert.strictEqual(transform.body.asset.model.scale, 1.5, "Scale must persist");
     assert.strictEqual(transform.body.asset.model.rotationY, 180, "Heading must persist");
 
-    // 8. Changing a vehicle's category re-binds its official assets
     const created = await api("POST", "/api/vehicles", {
       token: admin.token,
       body: { plate: "س س س ٩٩٩", type: "سطحة", model: "Actros 2040", year: 2025, maxLoadTons: 30 },
@@ -172,7 +171,6 @@ export async function runVehicleAssetTests() {
     const invalidType = await api("PATCH", `/api/vehicles/${vehicleId}`, { token: admin.token, body: { type: "صهريج" } });
     assert.strictEqual(invalidType.status, 400, "A non-approved body type must be rejected");
 
-    // 9. Per-vehicle photographs override the category asset and can be reverted
     const vehicleImage = await api("PUT", `/api/vehicle-assets/vehicle/${vehicleId}/image`, {
       token: admin.token,
       body: { data: PNG_1x1, fileName: "unit.png" },
@@ -188,7 +186,6 @@ export async function runVehicleAssetTests() {
     const afterRemoval = await api("GET", "/api/vehicle-assets", { token: admin.token });
     assert.ok(!afterRemoval.body.registry.vehicles[vehicleId], "The photograph must be cleared from the registry");
 
-    // 10. Every sensitive asset operation is audited
     const audit = await api("GET", "/api/audit?limit=100", { token: admin.token });
     const actions = (audit.body.logs || []).map((l: any) => l.action);
     for (const action of [
@@ -200,7 +197,6 @@ export async function runVehicleAssetTests() {
       assert.ok(actions.includes(action), `${action} must be recorded in the audit log`);
     }
 
-    // 11. Withdrawing a model returns the viewer to the official photograph
     const withdrawn = await api("DELETE", "/api/vehicle-assets/flatbed/model", { token: admin.token });
     assert.strictEqual(withdrawn.status, 200, "A published model must be withdrawable");
     assert.strictEqual(withdrawn.body.asset.model.url, null, "The withdrawn model must clear its URL");
