@@ -370,7 +370,7 @@ export function InteractiveMap({
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
-      {/* 1) Canvas Map View or 3D Operational Stage or Google Maps */}
+      {/* 1) Canvas map, OpenStreetMap embed, or 3D operational scene */}
       {mapLayer === "3d_scene" ? (
         <Operational3DScene trip={trip} className="h-full w-full" />
       ) : mapLayer !== "openstreetmap" ? (
@@ -391,11 +391,11 @@ export function InteractiveMap({
         </div>
       )}
 
-      {/* 2) Top Floating Telemetry Capsule */}
+      {/* 2) Responsive trip summary; displayed values are trip data, not proof of live GPS */}
       {showCardOverlay && (
         <div
           className={cn(
-            "pointer-events-auto absolute top-3 flex items-center gap-2.5 rounded-full bg-navy/85 px-4 py-2 text-white shadow-xl backdrop-blur-md border border-white/10 text-label-lg",
+            "pointer-events-auto absolute top-3 flex max-w-[calc(100%-4.5rem)] flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl bg-navy/90 px-3 py-2 text-white shadow-xl backdrop-blur-md border border-white/10 text-[11px] sm:text-label-lg sm:gap-2.5 sm:rounded-full sm:px-4",
             dir === "rtl" ? "right-3" : "left-3"
           )}
         >
