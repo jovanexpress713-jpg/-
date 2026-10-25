@@ -29,35 +29,39 @@
 
 ### Task 1: Authentication hardening
 
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 
-- `POST /api/auth/quick-access` now returns HTTP 410 and cannot mint a token.
+- `POST /api/auth/quick-access` returns HTTP 410 and cannot mint a token.
 - Demo accounts are opt-in and are disabled in production.
-- Production now requires an explicit `JWT_SECRET` instead of using a predictable fallback.
-- Regression tests cover the production configuration policy.
+- Production requires an explicit `JWT_SECRET` instead of using a predictable fallback.
+- Regression coverage is included in the test suite.
 
 ### Task 2: Vehicle 3D asset truthfulness
 
 **Status:** VERIFIED AS HONEST FALLBACK
 
-- The asset registry already requires published GLB/GLTF assets before marking a model as official.
-- `public/models/trucks/` currently contains only documentation and no GLB/GLTF files.
-- The UI therefore continues to expose a reference/fallback asset rather than pretending a 3D model exists.
-- The existing vehicle asset integration test creates a minimal valid GLB in a sandbox and verifies publication, serving, fingerprinting, withdrawal, and RBAC.
+- The asset registry requires a published GLB/GLTF asset before marking a model as official.
+- `public/models/trucks/` currently contains documentation only; no GLB/GLTF files were invented or falsely registered.
+- The UI continues to expose a reference/fallback asset when no official model exists.
+- The existing vehicle asset integration suite verifies valid GLB publication, serving, fingerprinting, withdrawal, RBAC, and honest no-model behavior in a sandbox.
 
 ### Task 3: Dependency/security audit
 
-**Status:** GATE ADDED; FINAL RUN REQUIRED AFTER WORKFLOW COMMIT
+**Status:** VERIFIED
 
-- CI now includes `npm audit --audit-level=high`.
-- No forced dependency upgrade was applied because the current install/test/build run had no evidence requiring one.
-- A fresh CI run after the workflow commit is required to record the audit result for the current head.
+- CI now runs `npm audit --audit-level=high`.
+- The audit identified four high-severity paths through Firebase → Firestore → `@grpc/grpc-js`.
+- Instead of using `npm audit fix --force` and accepting a breaking Firebase downgrade, the project pins `@grpc/grpc-js` to the patched `^1.14.6` range through npm overrides.
+- The current CI audit passes with that override.
 
 ### Task 4: Production verification
 
-**Status:** IN PROGRESS
+**Status:** VERIFIED ON CURRENT HEAD
 
-- The latest completed CI run before the audit-gate commit passed TypeScript, tests, and production build.
-- The latest workflow commit adds the audit gate; the next PR synchronization run must verify that gate alongside the existing checks.
+- Current CI run: `40237060302`.
+- Dependency audit: passed.
+- TypeScript: passed.
+- Tests: passed.
+- Production build: passed.
 - PR #23 remains open and unmerged.
-- Vercel deployment is externally rate-limited by the free daily deployment quota; this is separate from source/build correctness.
+- Vercel deployment remains an external quota issue and is not treated as a source/build failure.
