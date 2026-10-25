@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import type { Vehicle } from "../data/types";
@@ -7,12 +7,11 @@ export type RealityEnvironmentMode = "auto" | "desert" | "rain" | "night";
 
 interface RealityEnvironmentProps {
   vehicle: Vehicle;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 function modeFromVehicle(vehicle: Vehicle): Exclude<RealityEnvironmentMode, "auto"> {
   if (vehicle.status === "inactive") return "night";
-  if (Number(vehicle.speed) <= 0) return "desert";
   return "desert";
 }
 
