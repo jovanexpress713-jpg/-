@@ -158,7 +158,7 @@ export function ShipperPortal() {
           {/* List of Shipments under Shipper Account */}
           <div className="card p-5 border border-border-subtle">
             <h4 className="text-card-title font-bold text-text-primary mb-3">
-              {t("My Active Shipments", "شحناتي المتعاقد عليها")} ({trips.length})
+              {t("Shipments in preview", "الشحنات في المعاينة")} ({trips.length})
             </h4>
 
             <div className="space-y-2">
