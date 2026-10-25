@@ -15,7 +15,6 @@ interface RealityCommandDeckProps {
   selectedId: string;
   onSelect: (id: string) => void;
   onNav: (key: string) => void;
-  onToast: (text: string, sub?: string) => void;
 }
 
 type FocusType = "all" | "curtain" | "dry" | "reefer" | "flatbed";
