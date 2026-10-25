@@ -78,10 +78,10 @@ export function RealityCommandDeck({ vehicles, selectedId, onSelect, onNav, onTo
         </div>
         <div className="max-w-[620px]">
           <p className="text-label font-semibold text-[#ffb45c]">{t("Freight. Visibility. Control.", "الشحن. الرؤية. التحكم.")}</p>
-          <h2 className="mt-2 text-section-title font-bold leading-tight text-white sm:text-4xl">
+          <h2 className="mt-2 text-section-title font-bold leading-tight text-white sm:text-headline">
             {t("Every shipment, in focus.", "كل شحنة أمامك بوضوح.")}
           </h2>
-          <p className="mt-2 max-w-[500px] text-label leading-6 text-white/75 sm:text-base">
+          <p className="mt-2 max-w-[500px] text-label leading-6 text-white/75 sm:text-body">
             {t("Manage your fleet from one operational workspace, with real vehicle photos and honest live-data status.", "أدر أسطولك من مساحة تشغيل واحدة، بصور المركبات الفعلية وحالة بيانات واضحة بلا مؤشرات وهمية.")}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
