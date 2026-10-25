@@ -20,10 +20,14 @@ These files were already present in the repository under public/images/trucks/of
 - Do not present procedural OBJ geometry as a real vehicle.
 - Before adding more third-party images, record the source and license of each image. Prefer free commercial-use assets and bundle approved files when binary asset upload is available.
 
-## Interactive 3D reference model
-- Model: Semi Truck (49,550 triangles, 2K textures), from Grab3D's Cozy Vehicles Kit.
-- Page: https://grab3d.com/models/vehicles/semi-truck/
-- Download: https://grab3d.com/dl/semi-truck/semi-truck.glb
-- License: CC0 1.0; the source catalog states that models may be used commercially without attribution.
-- Implementation: the dashboard loads this GLB through Three.js from the external source. It is a stylized reference model, not a photoreal scan, manufacturer CAD, or proof of a customer's actual vehicle. It requires internet access; if the source is unavailable, the component displays a clear fallback.
-- Source catalog and download URL policy: https://grab3d.com/developers/
+## Interactive 3D model status
+The previously prototyped remote Grab3D semi-truck preview was removed from the dashboard because it was stylized rather than photorealistic and required an external network download. It is not bundled or presented as a finished local 3D asset.
+
+A production 3D model must be added to the repository under public/models/ejaz/ only after:
+- its visual fidelity is reviewed and accepted;
+- its license explicitly permits the intended commercial use;
+- the GLB and all dependent textures are actually bundled;
+- the local viewer loads without network access; and
+- CI typecheck, tests, and production build pass.
+
+The existing category photos remain local project assets, but their original photographer/license provenance has not been independently verified here. Do not claim photorealistic 3D delivery until the model file itself is present and visually inspected.
