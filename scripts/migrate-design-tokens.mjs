@@ -112,6 +112,12 @@ const RADIUS_RE = /rounded(-[a-z]{1,2})?-\[(\d+(?:\.\d+)?)px\]/g;
  * and only the size is folded — the codemod never overrides a stated intent.
  */
 const DEFAULT_SIZE_ALIASES = [
+  /* The three display sizes above the old console's range. They are rare, but
+     `sm:text-4xl` on a hero headline is a real call site, and leaving them
+     unfolded kept the design-scale guard red. */
+  { from: "5xl", to: "metric-lg", leading: "leading-none" },
+  { from: "4xl", to: "metric-lg", leading: "leading-10" },
+  { from: "3xl", to: "metric", leading: "leading-9" },
   { from: "2xl", to: "hero-sm", leading: "leading-8" },
   { from: "xs", to: "label-lg", leading: "leading-4" },
   { from: "sm", to: "card-title", leading: "leading-5" },
@@ -120,8 +126,13 @@ const DEFAULT_SIZE_ALIASES = [
   { from: "xl", to: "headline", leading: "leading-7" },
 ];
 /* Longest alternative first so `2xl` is never read as `xl`. */
+/* A responsive/state variant may prefix the utility (`sm:text-sm`,
+   `md:hover:text-2xl`). The prefix is captured and re-emitted untouched so the
+   breakpoint survives the fold — dropping it would change behaviour, and
+   skipping the token entirely (the old behaviour) left the utility behind for
+   the design-scale guard to reject. */
 const DEFAULT_SIZE_RE = new RegExp(
-  `(?<![\\w:-])text-(${DEFAULT_SIZE_ALIASES.map((a) => a.from).join("|")})(?![\\w-])`,
+  `(?<![\\w-])((?:[a-z][a-z-]*:)*)text-(${DEFAULT_SIZE_ALIASES.map((a) => a.from).join("|")})(?![\\w-])`,
   "g",
 );
 
@@ -150,7 +161,7 @@ const DEFAULT_RADIUS_ALIASES = [
   { from: "md", to: "micro" },
 ];
 const DEFAULT_RADIUS_RE = new RegExp(
-  `(?<![\\w:-])rounded(-[a-z]{1,2})?-(${DEFAULT_RADIUS_ALIASES.map((a) => a.from).join("|")})(?![\\w-])`,
+  `(?<![\\w-])((?:[a-z][a-z-]*:)*)rounded(-[a-z]{1,2})?-(${DEFAULT_RADIUS_ALIASES.map((a) => a.from).join("|")})(?![\\w-])`,
   "g",
 );
 
@@ -225,22 +236,23 @@ for (const file of walk(path.join(ROOT, "src"))) {
     .split("\n")
     .map((line) => {
       const hasExplicitLeading = /(?<![\w:-])leading-[\w.[\]-]+/.test(line);
-      return line.replace(DEFAULT_SIZE_RE, (whole, from) => {
+      return line.replace(DEFAULT_SIZE_RE, (whole, variants, from) => {
         const alias = DEFAULT_SIZE_ALIASES.find((a) => a.from === from);
         stats.defaultSizeReplaced += 1;
         bump(
           stats.textHistogram,
           `text-${from} → text-${alias.to}${hasExplicitLeading ? "" : ` ${alias.leading}`}`,
         );
-        return hasExplicitLeading ? `text-${alias.to}` : `text-${alias.to} ${alias.leading}`;
+        const base = hasExplicitLeading ? `text-${alias.to}` : `text-${alias.to} ${alias.leading}`;
+        return `${variants}${base}`;
       });
     })
     .join("\n")
-    .replace(DEFAULT_RADIUS_RE, (whole, side, from) => {
+    .replace(DEFAULT_RADIUS_RE, (whole, variants, side, from) => {
       const alias = DEFAULT_RADIUS_ALIASES.find((a) => a.from === from);
       stats.defaultRadiusReplaced += 1;
       bump(stats.radiusHistogram, `rounded-${from} → rounded${side ?? ""}-${alias.to}`);
-      return `rounded${side ?? ""}-${alias.to}`;
+      return `${variants}rounded${side ?? ""}-${alias.to}`;
     });
 
   /* Anything still arbitrary after the pass is a value the scale does not
