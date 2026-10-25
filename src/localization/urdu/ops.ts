@@ -802,4 +802,6 @@ Object.assign(UR_OPS, {
   "Integrated load indicator": "مربوط لوڈ انڈیکیٹر",
   "Load percentage": "لوڈ کا فیصد",
   "t": "ٹن",
+  "OpenStreetMap · map view only": "OpenStreetMap · صرف نقشے کا منظر",
+  "Open OpenStreetMap": "OpenStreetMap کھولیں",
 });
