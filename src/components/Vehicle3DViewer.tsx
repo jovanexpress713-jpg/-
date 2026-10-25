@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { APPROVED_VEHICLE_TYPES_LIST, normalizeVehicleType, type CanonicalVehicleTypeId } from "../data/vehicleTypes";
+import { useVehicleAssets } from "../state/vehicleAssetStore";
 import { useSettings } from "../settings";
 import { CanonicalVehicle3DViewer } from "./CanonicalVehicle3DViewer";
 
@@ -32,6 +33,7 @@ interface Vehicle3DViewerProps {
 export function Vehicle3DViewer({
   vehicleType = "curtain",
   vehiclePlate,
+  vehicle,
   previewMode = false,
   onTypeChange,
   className,
@@ -39,11 +41,15 @@ export function Vehicle3DViewer({
   height = "100%",
 }: Vehicle3DViewerProps) {
   const { t } = useSettings();
-  const [activeType, setActiveType] = useState<CanonicalVehicleTypeId>(() => normalizeVehicleType(vehicleType));
+  const { vehicleImage } = useVehicleAssets();
+  const [activeType, setActiveType] = useState<CanonicalVehicleTypeId>(() => normalizeVehicleType(vehicle?.body ?? vehicleType));
 
   useEffect(() => {
-    setActiveType(normalizeVehicleType(vehicleType));
-  }, [vehicleType]);
+    setActiveType(normalizeVehicleType(vehicle?.body ?? vehicleType));
+  }, [vehicle?.body, vehicleType]);
+
+  // Resolve the exact vehicle asset first, including an operator-uploaded photo.
+  const vehiclePhotoSrc = vehicle ? vehicleImage(vehicle as any) : undefined;
 
   const selectType = (type: CanonicalVehicleTypeId) => {
     setActiveType(type);
@@ -52,7 +58,14 @@ export function Vehicle3DViewer({
 
   return (
     <div className={`relative h-full min-h-0 ${className ?? ""}`}>
-      <CanonicalVehicle3DViewer vehicleType={activeType} vehiclePlate={vehiclePlate} height={height} compact={compact} />
+      <CanonicalVehicle3DViewer
+        vehicleType={activeType}
+        vehiclePlate={vehiclePlate}
+        vehicle={vehicle}
+        src={vehiclePhotoSrc}
+        height={height}
+        compact={compact}
+      />
       {previewMode && (
         <div className="absolute inset-x-3 bottom-3 z-30 flex flex-wrap justify-center gap-1.5 rounded-2xl border border-border-subtle bg-surface-1/85 p-2 backdrop-blur-md">
           {APPROVED_VEHICLE_TYPES_LIST.map((meta) => {
