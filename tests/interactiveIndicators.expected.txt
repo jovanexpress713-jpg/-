@@ -1,0 +1,1 @@
+warning.attentionCount must equal 3 when inactive + low fuel + high engine temperature are all present.
