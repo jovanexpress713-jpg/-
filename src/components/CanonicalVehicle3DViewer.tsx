@@ -34,11 +34,7 @@ function materialFor(type: CanonicalVehicleTypeId) {
     reefer: 0xd9e1e8,
     flatbed: 0x9aa5b1,
   };
-  return new THREE.MeshStandardMaterial({
-    color: colors[type],
-    roughness: 0.28,
-    metalness: 0.42,
-  });
+  return new THREE.MeshStandardMaterial({ color: colors[type], roughness: 0.28, metalness: 0.42 });
 }
 
 export interface CanonicalVehicle3DViewerProps {
@@ -60,10 +56,10 @@ export function CanonicalVehicle3DViewer({
 }: CanonicalVehicle3DViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const zoomRef = useRef(compact ? 1.18 : 1);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [angle, setAngle] = useState(0);
-  const [zoom, setZoom] = useState(compact ? 1.18 : 1);
   const type = normalizeVehicleType(vehicleType);
   const descriptor = getCanonicalVehicleModel(type);
 
@@ -71,6 +67,10 @@ export function CanonicalVehicle3DViewer({
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
+    setFailed(false);
+    setReady(false);
+    zoomRef.current = compact ? 1.18 : 1;
+
     if (!claimContext()) {
       setFailed(true);
       return;
@@ -79,6 +79,7 @@ export function CanonicalVehicle3DViewer({
     let disposed = false;
     let frame = 0;
     let root: THREE.Object3D | null = null;
+    let lastHudUpdate = 0;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x090d15);
 
@@ -122,9 +123,8 @@ export function CanonicalVehicle3DViewer({
         const size = box.getSize(new THREE.Vector3());
         const largest = Math.max(size.x, size.y, size.z, 0.001);
         const target = compact ? 7.5 : 8.5;
-        const normalizedScale = (target / largest) * descriptor.scale;
         object.position.sub(center);
-        object.scale.setScalar(normalizedScale);
+        object.scale.setScalar((target / largest) * descriptor.scale);
         object.position.y = descriptor.yOffset;
         object.rotation.y = descriptor.rotationY;
         object.traverse((child) => {
@@ -154,12 +154,14 @@ export function CanonicalVehicle3DViewer({
     const observer = new ResizeObserver(resize);
     observer.observe(container);
 
+    type PointerState = { x: number; y: number };
+    const pointerState = { current: null as PointerState | null };
     const onPointerDown = (event: PointerEvent) => {
-      (canvas as HTMLCanvasElement & { __ejazPointer?: { x: number; y: number } }).__ejazPointer = { x: event.clientX, y: event.clientY };
+      pointerState.current = { x: event.clientX, y: event.clientY };
       canvas.setPointerCapture(event.pointerId);
     };
     const onPointerMove = (event: PointerEvent) => {
-      const state = (canvas as HTMLCanvasElement & { __ejazPointer?: { x: number; y: number } }).__ejazPointer;
+      const state = pointerState.current;
       if (!state || !root) return;
       const dx = event.clientX - state.x;
       state.x = event.clientX;
@@ -168,11 +170,11 @@ export function CanonicalVehicle3DViewer({
       setAngle((((root.rotation.y % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) * 180 / Math.PI);
     };
     const onPointerUp = () => {
-      delete (canvas as HTMLCanvasElement & { __ejazPointer?: { x: number; y: number } }).__ejazPointer;
+      pointerState.current = null;
     };
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
-      setZoom((value) => THREE.MathUtils.clamp(value * (event.deltaY > 0 ? 0.92 : 1.08), 0.65, 1.55));
+      zoomRef.current = THREE.MathUtils.clamp(zoomRef.current * (event.deltaY > 0 ? 0.92 : 1.08), 0.65, 1.55);
     };
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
@@ -180,20 +182,21 @@ export function CanonicalVehicle3DViewer({
     canvas.addEventListener("pointercancel", onPointerUp);
     canvas.addEventListener("wheel", onWheel, { passive: false });
 
-    const animate = () => {
+    const animate = (now: number) => {
       if (disposed) return;
       frame = requestAnimationFrame(animate);
-      if (root && autoRotate) {
-        root.rotation.y += 0.0035;
-        setAngle((((root.rotation.y % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) * 180 / Math.PI);
-      }
-      const targetDistance = (compact ? 13 : 15) / zoom;
+      if (root && autoRotate) root.rotation.y += 0.0035;
+      const targetDistance = (compact ? 13 : 15) / zoomRef.current;
       const direction = camera.position.clone().normalize();
       camera.position.lerp(direction.multiplyScalar(targetDistance), 0.06);
       camera.lookAt(0, 1.2, 0);
       renderer.render(scene, camera);
+      if (root && now - lastHudUpdate > 100) {
+        lastHudUpdate = now;
+        setAngle((((root.rotation.y % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) * 180 / Math.PI);
+      }
     };
-    animate();
+    animate(0);
 
     return () => {
       disposed = true;
@@ -210,15 +213,13 @@ export function CanonicalVehicle3DViewer({
       renderer.dispose();
       releaseContext();
     };
-  }, [descriptor.url, descriptor.scale, descriptor.rotationY, descriptor.yOffset, type, compact, autoRotate, zoom]);
+  }, [descriptor.url, descriptor.scale, descriptor.rotationY, descriptor.yOffset, type, compact, autoRotate]);
 
   if (failed) {
     return (
       <div className={`relative overflow-hidden rounded-[inherit] bg-surface-2 ${className}`} style={{ height }}>
         <TruckImage body={type} alt={vehiclePlate ? `EJAZ ${vehiclePlate}` : "EJAZ Transport"} className="h-full w-full object-contain p-8" loading="eager" />
-        <div className="absolute bottom-3 start-3 rounded-full border border-border-subtle bg-surface-1/90 px-3 py-1.5 text-micro font-semibold text-text-secondary backdrop-blur">
-          نموذج EJAZ القياسي غير متاح — صورة مرجعية
-        </div>
+        <div className="absolute bottom-3 start-3 rounded-full border border-border-subtle bg-surface-1/90 px-3 py-1.5 text-micro font-semibold text-text-secondary backdrop-blur">نموذج EJAZ القياسي غير متاح — صورة مرجعية</div>
       </div>
     );
   }
@@ -230,9 +231,7 @@ export function CanonicalVehicle3DViewer({
         <div className="rounded-full border border-brand/30 bg-surface-1/80 px-3 py-1.5 text-micro font-bold text-brand backdrop-blur">EJAZ · CANONICAL 3D</div>
         <div className="rounded-full border border-border-subtle bg-surface-1/80 px-3 py-1.5 text-micro font-semibold text-text-secondary backdrop-blur">{Math.round(angle)}°</div>
       </div>
-      <div className="pointer-events-none absolute bottom-3 start-3 rounded-panel border border-border-subtle bg-surface-1/85 px-3 py-2 text-micro text-text-secondary backdrop-blur">
-        {descriptor.labelAr} · اسحب للدوران · مرر للتقريب
-      </div>
+      <div className="pointer-events-none absolute bottom-3 start-3 rounded-panel border border-border-subtle bg-surface-1/85 px-3 py-2 text-micro text-text-secondary backdrop-blur">{descriptor.labelAr} · اسحب للدوران · مرر للتقريب</div>
       {!ready && <div className="absolute inset-0 grid place-items-center bg-surface-1/50 backdrop-blur-sm"><div className="rounded-full border border-brand/30 bg-surface-1 px-4 py-2 text-label font-semibold text-brand">جارٍ تحميل النموذج…</div></div>}
     </div>
   );
