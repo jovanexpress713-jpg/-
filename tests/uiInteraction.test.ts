@@ -172,26 +172,21 @@ export function runUiInteractionTests() {
   const viewer = read("src", "components", "Vehicle3DViewer.tsx");
   const canonicalViewer = read("src", "components", "CanonicalVehicle3DViewer.tsx");
   const truckImage = read("src", "components", "TruckImage.tsx");
-  const modelPreview = read("src", "components", "TruckModel3DPreview.tsx");
   const realityDeck = read("src", "components", "RealityCommandDeck.tsx");
 
-  // The fleet viewer uses the registered vehicle photo and the official local
-  // category image as a fallback, rather than pretending generated geometry is real.
+  // The selected vehicle uses its registered image; category images are the
+  // stable, bundled fallback. The dashboard deliberately avoids a stylized,
+  // remote GLB that would contradict the requested photo-realistic direction.
   assert.match(viewer, /vehicleImage\(vehicle\)/, "the viewer must resolve the registered vehicle image");
   assert.match(viewer, /<CanonicalVehicle3DViewer/, "the fleet viewer must use the canonical presentation component");
   assert.match(canonicalViewer, /<TruckImage/, "the canonical viewer must render the official image component");
-  assert.match(truckImage, /official-\[a-z-\]/, "official truck image filenames must follow the bundled asset convention");
   assert.match(truckImage, /typeImage\(/, "the image component must fall back to the approved category image");
-
-  // A real glTF loader and orbit controls power the interactive reference model.
-  assert.match(modelPreview, /GLTFLoader/, "the 3D preview must use a glTF loader");
-  assert.match(modelPreview, /OrbitControls/, "the 3D preview must support orbit controls");
-  assert.match(modelPreview, /setStatus\("error"\)/, "the preview must surface model-load errors");
-  assert.match(realityDeck, /TruckModel3DPreview/, "the reality deck must expose the interactive 3D preview");
-
-  // The third-party GLB is currently an external dependency; never claim it is
-  // bundled locally or photo-realistic until a verified asset is added to public/.
-  assert.match(modelPreview, /https:\/\/grab3d\.com\/dl\/semi-truck\/semi-truck\.glb/, "the current model source must remain explicit");
+  assert.match(realityDeck, /\/images\/trucks\/official\/official-curtain\.webp/, "the dashboard must use a locally bundled curtain truck image");
+  assert.match(realityDeck, /\/images\/trucks\/official\/official-dry\.webp/, "the dashboard must use a locally bundled dry truck image");
+  assert.match(realityDeck, /\/images\/trucks\/official\/official-reefer\.webp/, "the dashboard must use a locally bundled reefer truck image");
+  assert.match(realityDeck, /\/images\/trucks\/official\/official-flatbed\.webp/, "the dashboard must use a locally bundled flatbed truck image");
+  assert.ok(!realityDeck.includes("TruckModel3DPreview"), "the dashboard must not depend on the remote stylized model");
+  assert.ok(!realityDeck.includes("grab3d.com"), "the dashboard must not require a third-party model host");
 
   /* ── 4. Welcome screen & start flow ────────────────────────────────────── */
   const mobileApp = read("src", "mobile", "MobileApp.tsx");
