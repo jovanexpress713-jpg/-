@@ -1,70 +1,112 @@
-# EJAZ Reality Command Center Implementation Plan
+# EJAZ AR Reality Command Center Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Rebuild the EJAZ dashboard experience around realistic fleet visualization, interactive 3D trucks, operational telemetry, responsive composition, and a consistent visual language while preserving the existing business functions.
+**Goal:** Make EJAZ an AR-first fleet command center where the truck is the primary visual object and route, load, fuel, speed, maintenance, weather and operating state are trustworthy layers around it.
 
-**Architecture:** Keep the current stores, API contracts, RBAC, trip/vehicle data, and existing mobile surfaces. Replace the dashboard presentation layer with a focused Reality Command Deck and reuse the existing `Vehicle3DViewer` and `LiveOperationsCenter` instead of duplicating telemetry logic. The design must degrade honestly when real GPS or a published GLB asset is unavailable.
+**Architecture:** Preserve the existing stores, API contracts, RBAC, trips, vehicles and LiveOperationsCenter. Add a shared AR/reality scene layer that consumes those existing contracts, reuses the official vehicle asset registry, and exposes a real WebXR camera session only when the device/browser supports it. Desktop remains a high-fidelity 3D command center; mobile can enter true camera AR.
 
-**Tech Stack:** React 19, TypeScript, Tailwind CSS 4, Three.js 0.186, existing EJAZ fleet stores and API client.
+**Tech Stack:** React 19, TypeScript, Tailwind CSS 4, Three.js 0.186, existing EJAZ fleet stores/API, WebXR APIs without adding a second telemetry source of truth.
 
-**Spec:** `docs/superpowers/plans/2026-10-25-ejaz-reality-command-center.md`
+**Spec:** `docs/superpowers/specs/2026-10-25-ejaz-ar-reality.md`
 
 ## Global Constraints
 
 - Preserve existing business logic, permissions, API contracts, and navigation behavior.
-- Do not present simulated GPS as live GPS.
-- Use the existing official vehicle asset registry and `Vehicle3DViewer` as the 3D source of truth.
-- Support the four approved vehicle categories: curtain, dry, reefer, and flatbed.
+- Never present simulated GPS, weather, or telemetry as live data.
+- Prefer official published GLB/GLTF assets from the existing vehicle asset registry.
+- Never label procedural fallback geometry as an official Volvo/Mercedes model.
+- Support curtain, dry, reefer, and flatbed body types.
 - The interface must remain usable from narrow mobile widths through large desktop screens.
-- Every interactive control must work by tap/click and must respect reduced-motion preferences.
-- Arabic RTL remains the primary presentation; English labels remain available through the existing localization system.
+- Every interactive control must work by tap/click and respect reduced-motion preferences.
+- Arabic RTL remains primary; English remains available through existing settings/localization.
+- AR must fail honestly on unsupported devices, browsers, insecure contexts, or unavailable camera permissions.
 
 ## Review Focus
 
-- No-GPS configuration must show an honest non-live state rather than fake live telemetry.
-- Missing 3D models must fall back cleanly to the official vehicle image.
+- No-GPS configuration must show an honest non-live state rather than fake movement.
+- Missing 3D models must fall back to the official vehicle image without claiming realism it does not have.
 - Four vehicle body types must remain visually distinguishable.
-- 360-degree rotation, zoom, and auto-rotation must remain functional.
-- Dense dashboard layouts must reflow without clipping or horizontal page overflow.
+- 360-degree rotation, zoom, auto-rotation, touch and pointer interaction must remain functional.
+- AR session start/exit must handle unsupported browsers and permission failure without breaking the normal dashboard.
+- Dense reality overlays must reflow without clipping or horizontal page overflow.
 
 ---
 
 ### Task 1: Reality Command Deck
 
 **Files:**
-- Create: `src/components/RealityCommandDeck.tsx`
-- Modify: `src/components/views.tsx`
+- Create/modify: `src/components/RealityCommandDeck.tsx`
+- Modify: `src/components/Dashboard.tsx`
 
 **Interfaces:**
-- Consumes: `Vehicle[]`, current selected vehicle, existing `onSelect`, `onToast` callbacks.
-- Produces: responsive dashboard UI with 3D vehicle hero, fleet health, route progress, and operational metrics.
+- Consumes: `Vehicle[]`, selected vehicle, existing navigation/select/toast callbacks.
+- Produces: responsive truck-first command center with 3D vehicle hero, telemetry overlays, fleet health, route context and AR entry point.
 
-- [ ] Create the new command deck as a presentation-only component.
-- [ ] Use `Vehicle3DViewer` for the selected vehicle and expose rotation/zoom affordances.
-- [ ] Add responsive metric rail for fleet count, active routes, utilization, fuel state, and maintenance attention.
-- [ ] Add route progress cards using real fields from `Vehicle` without inventing live GPS claims.
-- [ ] Add vehicle-type identity using the canonical vehicle type metadata.
-- [ ] Add reduced-motion-safe micro-interactions.
-- [ ] Replace the old `DashboardView` body with the new command deck while keeping the same callbacks.
+- [ ] Keep the selected truck as the visual center of the dashboard.
+- [ ] Bind load, fuel, speed and remaining distance to existing vehicle fields.
+- [ ] Keep route progress based on `Vehicle.progress` and do not synthesize movement.
+- [ ] Add explicit operating states for moving, stopped/waiting, inactive and attention-required.
+- [ ] Add environment state presentation that is clearly labelled live, unavailable or simulation.
+- [ ] Keep 360-degree/zoom controls visible and usable.
 
-### Task 2: Visual System Refinement
+### Task 2: True Mobile AR Layer
+
+**Files:**
+- Create: `src/components/ARTruckExperience.tsx`
+- Create: `src/components/ar/webxr.ts`
+- Create: `src/components/ar/types.ts`
+- Modify: `src/components/RealityCommandDeck.tsx`
+
+**Interfaces:**
+- `detectARSupport(): Promise<{supported:boolean; reason:string}>`
+- `startARSession(options): Promise<XRSession>` when WebXR immersive-ar is available.
+- `ARTruckExperience` consumes the selected vehicle and official model descriptor and emits session status/exit callbacks.
+
+- [ ] Detect secure context, `navigator.xr`, immersive-ar support, and camera/session failures.
+- [ ] Start a real immersive AR session using Three.js WebXR renderer only on supported devices.
+- [ ] Load the selected official GLB/GLTF when available; otherwise clearly show a model-unavailable state instead of pretending a procedural truck is manufacturer-accurate.
+- [ ] Render truck-anchored telemetry labels for load, fuel, speed and maintenance only when data exists.
+- [ ] Provide exit/close controls and restore the normal 3D command deck after session end.
+- [ ] Keep the AR layer optional so desktop and unsupported mobile browsers remain fully usable.
+
+### Task 3: Asset and Vehicle Reality Contract
+
+**Files:**
+- Modify: `src/state/vehicleAssetStore.tsx`
+- Modify: `src/data/types.ts` only if a missing non-breaking type is required.
+- Create: `src/data/vehicleReality.ts`
+
+**Interfaces:**
+- `getRealityAsset(vehicle): { modelUrl|null; modelSource; imageUrl; bodyType; manufacturer; modelName; isOfficialModel }`
+
+- [ ] Centralize the truth about whether a model is official, fallback, unavailable or simulation.
+- [ ] Preserve existing asset registry API behavior.
+- [ ] Expose manufacturer/model metadata without forcing fake values when unknown.
+- [ ] Keep the four body types normalized through the existing vehicle type helpers.
+
+### Task 4: Reality Visual System
 
 **Files:**
 - Modify: `src/index.css`
 
-- [ ] Add only the tokens/utilities needed for the new command deck: glass surfaces, telemetry lines, responsive 3D stage, and status indicators.
-- [ ] Keep the existing design-token system and avoid hardcoded global theme overrides.
-- [ ] Verify 320px, tablet, desktop, and wide-screen compositions.
+- [ ] Add responsive reality-stage, telemetry callout, AR action and environment-state styles.
+- [ ] Keep the existing design-token system and avoid global theme regressions.
+- [ ] Add mobile/tablet/desktop breakpoints for the dense overlay layout.
+- [ ] Respect reduced-motion preferences.
 
-### Task 3: Verification
+### Task 5: Tests and Verification
 
 **Files:**
-- Existing test/build scripts in `package.json`.
+- Create: `tests/arRealityTests.ts`
+- Modify: `tests/runAllTests.ts` only if the existing runner requires registration.
+- Existing `.github/workflows/verify-reality-redesign.yml`.
 
+- [ ] Test vehicle reality metadata for all four body types.
+- [ ] Test unsupported AR returns a safe reason rather than throwing.
+- [ ] Test missing model data never claims an official model.
+- [ ] Test telemetry calculations clamp/format values safely.
 - [ ] Run `npm run lint`.
 - [ ] Run `npm test`.
 - [ ] Run `npm run build`.
-- [ ] Run the existing design-scale verification if applicable.
-- [ ] Inspect the resulting branch diff and verify that only intended presentation files changed.
-- [ ] Do not claim completion until all available checks pass.
+- [ ] Inspect branch diff and workflow status before claiming completion.
