@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "updatedAt": "2026-10-25T00:00:00Z",
+  "version": 4,
+  "updatedAt": "2026-10-25T00:20:00Z",
   "types": {
     "flatbed": {
       "type": "flatbed",
@@ -102,7 +102,18 @@
         "requiredProvenance": "REAL_EXTERNAL_3D_ASSET",
         "assetPage": "https://3dassets.dev/assets/long-haul-trucking-and-truck-stop-curtainsider-trailer-3902c6e2",
         "license": "CC0 1.0 Universal",
-        "note": "Verified real-world-scale GLB curtainsider semitrailer. Current published asset is the curtain trailer body; a tractor composition is intentionally not faked."
+        "note": "Real curtainsider semitrailer GLB. The showcase couples it with the matching real cab-over sleeper tractor GLB; no procedural geometry is used."
+      },
+      "composition": {
+        "type": "TRACTOR_PLUS_TRAILER",
+        "tractorUrl": "https://cdn.3dassets.dev/assets/13946/v1/model.glb",
+        "tractorAssetPage": "https://3dassets.dev/assets/long-haul-trucking-and-truck-stop-cabover-sleeper-b86f0719",
+        "tractorLicense": "CC0 1.0 Universal",
+        "trailerUrl": "https://cdn.3dassets.dev/assets/13957/v1/model.glb",
+        "trailerAssetPage": "https://3dassets.dev/assets/long-haul-trucking-and-truck-stop-curtainsider-trailer-3902c6e2",
+        "trailerLicense": "CC0 1.0 Universal",
+        "assembly": "METRE_SCALE_FIFTH_WHEEL_COUPLING",
+        "status": "PUBLISHED_REAL_GLB_COMPOSITION"
       },
       "originalImage": "https://commons.wikimedia.org/wiki/Special:Redirect/file/I.T.S._Transport_Volvo_FH16_750_Curtain_Sider.jpg",
       "imageFileName": "ITS_Volvo_FH16_750_Curtain_Sider.jpg",
