@@ -804,4 +804,12 @@ Object.assign(UR_OPS, {
   "t": "ٹن",
   "OpenStreetMap · map view only": "OpenStreetMap · صرف نقشے کا منظر",
   "Open OpenStreetMap": "OpenStreetMap کھولیں",
+  "A verified dispatch phone number has not been configured.": "آپریشنز کا تصدیق شدہ فون نمبر ترتیب نہیں دیا گیا۔",
+  "Hotline not configured": "ایمرجنسی نمبر ترتیب نہیں دیا گیا",
+  "Sample values · not live": "نمونہ اقدار · لائیو نہیں",
+  "Local preview": "مقامی پیش‌نمایش",
+  "Sample dispatch message": "آپریشنز کا نمونہ پیغام",
+  "Sample driver reply": "ڈرائیور کا نمونہ جواب",
+  "Local preview message...": "مقامی پیش‌نمایش پیغام...",
+  "Messages are not delivered to dispatch from this preview.": "اس پیش‌نمایش سے پیغامات آپریشنز کو نہیں بھیجے جاتے۔",
 });
