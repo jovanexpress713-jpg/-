@@ -56,6 +56,77 @@ export function RealityCommandDeck({ vehicles, selectedId, onSelect, onNav, onTo
   const maintenanceAlert = selected.engineTemp > 105 || selected.fuel < 20;
 
   return <div className="space-y-4 pb-2">
+    {/* Real photo-led logistics header. Photo by Juan Pablo via Unsplash; free under Unsplash License. */}
+    <section className="relative isolate min-h-[230px] overflow-hidden rounded-[24px] border border-border-subtle bg-[#101722] sm:min-h-[270px]">
+      <img
+        src="https://images.unsplash.com/photo-1766561994067-dbd575e1cff2?auto=format&fit=crop&fm=jpg&q=82&w=1800"
+        alt="شاحنة نقل وحاوية شحن على الطريق"
+        className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
+        loading="eager"
+        referrerPolicy="no-referrer"
+      />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#080d15]/95 via-[#080d15]/75 to-[#080d15]/10" />
+      <div className="relative flex min-h-[230px] flex-col justify-between gap-5 p-5 sm:min-h-[270px] sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-micro font-bold tracking-[0.12em] text-white backdrop-blur">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            EJAZ · OPERATIONS
+          </span>
+          <span className="rounded-full border border-white/15 bg-black/25 px-3 py-1.5 text-micro font-semibold text-white/80 backdrop-blur">
+            {t("Photo library · real transport imagery", "مكتبة الصور · صور نقل حقيقية")}
+          </span>
+        </div>
+        <div className="max-w-[620px]">
+          <p className="text-label font-semibold text-[#ffb45c]">{t("Freight. Visibility. Control.", "الشحن. الرؤية. التحكم.")}</p>
+          <h2 className="mt-2 text-2xl font-bold leading-tight text-white sm:text-4xl">
+            {t("Every shipment, in focus.", "كل شحنة أمامك بوضوح.")}
+          </h2>
+          <p className="mt-2 max-w-[500px] text-sm leading-6 text-white/75 sm:text-base">
+            {t("Manage your fleet from one operational workspace, with real vehicle photos and honest live-data status.", "أدر أسطولك من مساحة تشغيل واحدة، بصور المركبات الفعلية وحالة بيانات واضحة بلا مؤشرات وهمية.")}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button onClick={() => onNav("tracking")} className="min-h-11 rounded-full bg-brand px-5 text-label font-bold text-on-brand shadow-lg transition hover:brightness-110">
+              {t("Open live operations", "فتح العمليات")}
+            </button>
+            <button onClick={() => onNav("cargos")} className="min-h-11 rounded-full border border-white/25 bg-black/25 px-5 text-label font-bold text-white backdrop-blur transition hover:bg-white/10">
+              {t("Browse shipments", "استعراض الشحنات")}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="text-micro font-bold uppercase tracking-[0.14em] text-text-muted">{t("Shipment photo library", "مكتبة صور الشحنات")}</div>
+          <h2 className="mt-1 text-section-title font-bold text-text-primary">{t("Choose a real vehicle category", "اختر فئة المركبة بالصور")}</h2>
+          <p className="mt-1 text-label text-text-secondary">{t("Photographs already stored in the project — no procedural truck drawings.", "صور محفوظة داخل المشروع — دون رسومات هندسية للشاحنات.")}</p>
+        </div>
+        <button onClick={() => onNav("cargos")} className="text-label font-semibold text-brand">{t("All shipments →", "كل الشحنات ←")}</button>
+      </div>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {([
+          { id: "curtain", label: "ستارة", en: "Curtainsider", image: "/images/trucks/official/official-curtain.webp", hint: "نقل البضائع العامة" },
+          { id: "dry", label: "جاف", en: "Dry van", image: "/images/trucks/official/official-dry.webp", hint: "شحنات مغلقة" },
+          { id: "reefer", label: "براد", en: "Refrigerated", image: "/images/trucks/official/official-reefer.webp", hint: "شحنات مبردة" },
+          { id: "flatbed", label: "سطحة", en: "Flatbed", image: "/images/trucks/official/official-flatbed.webp", hint: "معدات وحمولات كبيرة" },
+        ] as const).map((item) => (
+          <button
+            key={item.id}
+            onClick={() => { setFocusType(item.id); onNav("tracking"); }}
+            className="group relative min-h-[190px] overflow-hidden rounded-2xl border border-border-subtle bg-surface-1 text-start transition duration-300 hover:-translate-y-0.5 hover:border-brand/50 hover:shadow-lg"
+          >
+            <img src={item.image} alt={item.label} loading="lazy" className="absolute inset-0 h-full w-full object-contain bg-[#111722] p-2 transition duration-500 group-hover:scale-[1.03]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+              <div className="text-micro font-semibold text-white/65">{item.en}</div>
+              <div className="mt-0.5 text-lg font-bold text-white">{item.label}</div>
+              <div className="mt-1 text-micro text-white/75">{item.hint}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
     {arOpen && <ARTruckExperience vehicle={selected} onClose={() => setArOpen(false)} />}
     <section className="relative overflow-hidden rounded-panel border border-border-subtle bg-surface-1">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_20%,rgba(255,138,0,0.14),transparent_36%),linear-gradient(120deg,transparent,rgba(255,255,255,0.025))]" />
