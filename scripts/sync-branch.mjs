@@ -191,15 +191,22 @@ function buildRadar() {
       return { branch, date, subject, sha };
     })
     .filter((b) => b.branch && b.branch !== TRACK_BRANCH && b.branch !== "HEAD")
+    .filter((b) => b.branch !== SESSION_BRANCH && b.branch !== `origin/${SESSION_BRANCH}`)
+    /* فرع الجلسة نفسه يُستثنى حتى لا يظهر كأنه «فرع آخر»، وفروع arena/* القديمة
+       الجلسات السابقة لا تهمّ المتابعة اليومية. */
+    .filter((b) => !b.branch.startsWith("arena/"))
     .filter((b) => {
       const when = Date.parse(b.date);
       return Number.isFinite(when) && Date.now() - when < threeDaysMs;
     })
-    .slice(0, 8)
+    .slice(0, 12)
     .map((b) => {
       const ahead = git("rev-list", "--count", `HEAD..all/${b.branch}`);
       return { ...b, aheadOfSession: Number(ahead.out.trim() || 0) };
-    });
+    })
+    /* الفرع المدمج بالكامل ليس «نشطًا» — لا فائدة من إظهاره كل دقيقة. */
+    .filter((b) => b.aheadOfSession > 0)
+    .slice(0, 6);
 }
 
 // 4) هل هناك جديد؟
