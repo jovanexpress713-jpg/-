@@ -37,3 +37,6 @@ data/role-permissions.json
 # Keep the published brand logo (it is part of the identity, not runtime data)
 !public/uploads/branding/
 !public/uploads/branding/**
+
+# Branch-sync logs & status (runtime, not part of the app)
+.sync/

@@ -14,7 +14,10 @@
     "verify:upload": "node scripts/verify-upload-propagation.mjs",
     "verify:registration": "node scripts/verify-registration-flow.mjs",
     "verify:design-scale": "node scripts/migrate-design-tokens.mjs --check",
-    "migrate:design-scale": "node scripts/migrate-design-tokens.mjs"
+    "migrate:design-scale": "node scripts/migrate-design-tokens.mjs",
+    "sync:branch": "node scripts/sync-branch.mjs",
+    "sync:watch": "node scripts/watch-branch.mjs",
+    "sync:status": "node scripts/sync-status.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",
