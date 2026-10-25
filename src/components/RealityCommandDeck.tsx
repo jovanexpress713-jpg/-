@@ -57,7 +57,7 @@ export function RealityCommandDeck({ vehicles, selectedId, onSelect, onNav, onTo
 
   return <div className="space-y-4 pb-2">
     {/* Real photo-led logistics header. Photo by Juan Pablo via Unsplash; free under Unsplash License. */}
-    <section className="relative isolate min-h-[230px] overflow-hidden rounded-[24px] border border-border-subtle bg-[#101722] sm:min-h-[270px]">
+    <section className="relative isolate min-h-[230px] overflow-hidden rounded-3xl border border-border-subtle bg-[#101722] sm:min-h-[270px]">
       <img
         src="https://images.unsplash.com/photo-1766561994067-dbd575e1cff2?auto=format&fit=crop&fm=jpg&q=82&w=1800"
         alt="شاحنة نقل وحاوية شحن على الطريق"
