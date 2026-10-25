@@ -47,21 +47,30 @@
 
 ### Task 3: Dependency/security audit
 
-**Status:** VERIFIED
+**Status:** VERIFIED ON PRIOR CI RUN
 
-- CI now runs `npm audit --audit-level=high`.
+- CI runs `npm audit --audit-level=high`.
 - The audit identified four high-severity paths through Firebase → Firestore → `@grpc/grpc-js`.
-- Instead of using `npm audit fix --force` and accepting a breaking Firebase downgrade, the project pins `@grpc/grpc-js` to the patched `^1.14.6` range through npm overrides.
-- The current CI audit passes with that override.
+- The project pins `@grpc/grpc-js` to the patched `^1.14.6` range through npm overrides.
+- Prior CI run `40237060302` passed the dependency audit, typecheck, tests, and production build before the latest photo-first UI commits.
 
-### Task 4: Production verification
+### Task 4: Photo-first interactive command center
 
-**Status:** VERIFIED ON CURRENT HEAD
+**Status:** IMPLEMENTED — FRESH CI VERIFICATION PENDING
 
-- Current CI run: `40237060302`.
-- Dependency audit: passed.
-- TypeScript: passed.
-- Tests: passed.
-- Production build: passed.
-- PR #23 remains open and unmerged.
-- Vercel deployment remains an external quota issue and is not treated as a source/build failure.
+- The main command deck is now photo-first; the 3D viewer is not used as the primary command-center surface.
+- Six indicators are interactive over the vehicle photo: speed, fuel, load, ETA, engine temperature, and remaining distance.
+- The same indicators are available as an accessible button grid beside the photo.
+- Fleet filters, vehicle selection, fleet summary metrics, tracking, and maintenance navigation remain available.
+- The eight planned vehicle model slots remain `AWAITING_ASSET` until the real GLB/glTF files are supplied and verified.
+- Current head: `1bbb53dd114bfe97fd536627178999f3fd3aaf89`.
+- GitHub Actions has not yet produced a run for this exact head; Vercel status is currently affected by external build-rate limits.
+
+### Task 5: 3D asset activation gate
+
+**Status:** READY FOR REAL FILES
+
+- When the eight real models are supplied, each file will be validated before activation.
+- The model catalog already contains exactly eight planned slots.
+- No placeholder 3D binary is treated as an official model.
+- After upload, each model must pass format validation, registry publication, viewer loading, and CI verification before being marked `READY`.
