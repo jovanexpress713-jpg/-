@@ -2,19 +2,18 @@
 /**
  * EJAZ Transport — Official Vehicle Asset Publisher
  *
- * Publishes an official reference image (and optionally an official GLB/glTF
- * model) for one of the four approved fleet categories through the live API,
- * so the asset is recorded in the audit trail and appears instantly in the
- * Android application and the admin control room.
+ * Publishes an official vehicle reference image and/or GLB/glTF model through
+ * the live API, so the asset is recorded in the audit trail and appears in
+ * every client that consumes the Vehicle Asset Registry.
  *
  * Usage:
  *   node scripts/publish-vehicle-asset.mjs --type flatbed --image ./photo.jpg
- *   node scripts/publish-vehicle-asset.mjs --type reefer  --image ./photo.jpg --model ./reefer.glb
- *   node scripts/publish-vehicle-asset.mjs --type dry     --image ./photo.png --scale 1.2 --rotation 90
+ *   node scripts/publish-vehicle-asset.mjs --type reefer --model ./reefer.glb
+ *   node scripts/publish-vehicle-asset.mjs --type dry --image ./photo.png --model ./dry.glb --scale 1.2 --rotation 90
  *
  * Options:
  *   --type      flatbed | reefer | dry | curtain      (required)
- *   --image     path to the official reference image  (required)
+ *   --image     path to the official reference image  (optional)
  *   --model     path to the official GLB/glTF model   (optional)
  *   --scale     viewer scale for the model             (optional, default 1)
  *   --rotation  heading in degrees                     (optional, default 0)
@@ -22,13 +21,15 @@
  *   --base      API base URL                           (default http://localhost:3000)
  *   --email     operator account                       (or EJAZ_OPERATOR_EMAIL)
  *   --password  operator password                     (or EJAZ_OPERATOR_PASSWORD)
+ *
+ * At least one of --image or --model is required. This is intentional: a
+ * real 3D asset can now be published without inventing or supplying a photo.
  */
 
 import fs from "fs";
 import path from "path";
 
 const API_BASE = process.env.EJAZ_API_BASE || "http://localhost:3000";
-
 const TYPE_IDS = { flatbed: "سطحة", reefer: "براد", dry: "جاف", curtain: "ستارة" };
 
 function parseArgs(argv) {
@@ -53,7 +54,7 @@ const MIME = {
 
 function toDataUrl(filePath) {
   const ext = path.extname(filePath).toLowerCase();
-  const mime = MIME[ext] || (ext === ".glb" ? "model/gltf-binary" : "application/octet-stream");
+  const mime = MIME[ext] || (ext === ".glb" ? "model/gltf-binary" : ext === ".gltf" ? "model/gltf+json" : "application/octet-stream");
   return `data:${mime};base64,${fs.readFileSync(filePath).toString("base64")}`;
 }
 
@@ -87,16 +88,19 @@ async function main() {
     console.error(`✗ --type is required and must be one of: ${Object.keys(TYPE_IDS).join(" | ")}`);
     process.exit(1);
   }
-  if (!args.image) {
-    console.error("✗ --image is required (path to the official reference photograph)");
+  if (!args.image && !args.model) {
+    console.error("✗ At least one real asset is required: pass --image and/or --model.");
     process.exit(1);
   }
-  if (!fs.existsSync(args.image)) {
+  if (args.image && !fs.existsSync(args.image)) {
     console.error(`✗ Image not found: ${args.image}`);
     process.exit(1);
   }
+  if (args.model && !fs.existsSync(args.model)) {
+    console.error(`✗ Model not found: ${args.model}`);
+    process.exit(1);
+  }
 
-  const type = args.type;
   const email = args.email || process.env.EJAZ_OPERATOR_EMAIL;
   const password = args.password || process.env.EJAZ_OPERATOR_PASSWORD;
   if (!email || !password) {
@@ -105,29 +109,26 @@ async function main() {
   }
 
   console.log(`EJAZ Vehicle Asset Publisher → ${base}`);
-  console.log(`  category : ${type} (${TYPE_IDS[type]})`);
-  console.log(`  image    : ${args.image} (${(fs.statSync(args.image).size / 1024).toFixed(0)} KB)`);
+  console.log(`  category : ${args.type} (${TYPE_IDS[args.type]})`);
+  if (args.image) console.log(`  image    : ${args.image} (${(fs.statSync(args.image).size / 1024).toFixed(0)} KB)`);
+  if (args.model) console.log(`  model    : ${args.model} (${(fs.statSync(args.model).size / 1024).toFixed(0)} KB)`);
 
   const login = await api("/api/auth/login", { method: "POST", body: { email, password } });
   const token = login.token;
   console.log(`  operator : ${login.user.fullName} (${login.user.role})`);
 
-  const published = await api(`/api/vehicle-assets/${type}/image`, {
-    method: "PUT",
-    token,
-    body: { data: toDataUrl(args.image), fileName: path.basename(args.image) },
-  });
-  console.log(`✓ official image published → ${published.asset.officialImage}`);
-  if (published.asset.originalImage) {
-    console.log(`  untouched original preserved → ${published.asset.originalImage}`);
+  if (args.image) {
+    const published = await api(`/api/vehicle-assets/${args.type}/image`, {
+      method: "PUT",
+      token,
+      body: { data: toDataUrl(args.image), fileName: path.basename(args.image) },
+    });
+    console.log(`✓ official image published → ${published.asset.officialImage}`);
+    if (published.asset.originalImage) console.log(`  untouched original preserved → ${published.asset.originalImage}`);
   }
 
   if (args.model) {
-    if (!fs.existsSync(args.model)) {
-      console.error(`✗ Model not found: ${args.model}`);
-      process.exit(1);
-    }
-    const model = await api(`/api/vehicle-assets/${type}/model`, {
+    const model = await api(`/api/vehicle-assets/${args.type}/model`, {
       method: "PUT",
       token,
       body: {
@@ -140,16 +141,14 @@ async function main() {
     });
     console.log(`✓ official 3D model published → ${model.asset.model.url}`);
     console.log(`  size ${(model.asset.model.sizeBytes / 1024).toFixed(0)} KB · sha256 ${model.asset.model.sha256.slice(0, 24)}…`);
-  } else {
-    console.log("· no 3D model supplied — the official photograph stays bound to the category");
   }
 
   const registry = await api("/api/vehicle-assets", { token });
-  const entry = registry.registry.types.find((t) => t.type === type);
+  const entry = registry.registry.types.find((t) => t.type === args.type);
   console.log("\nCurrent category state:");
-  console.log(`  official image : ${entry.officialImage} (${entry.imageSource})`);
+  console.log(`  official image : ${entry.officialImage || "not published"} (${entry.imageSource || "none"})`);
   console.log(`  3D model       : ${entry.model.url || "not published"}`);
-  console.log("\nThis asset is now live in the Android app and the admin control room.");
+  console.log("\nAsset publication completed through the Vehicle Asset Registry.");
 }
 
 main().catch((err) => {
