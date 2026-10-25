@@ -27,6 +27,7 @@ import { runCanonicalVehicleModelTests } from "./canonicalVehicleModels.test";
 import { runConfigPolicyTests } from "./configPolicy.test";
 import { runInteractiveIndicatorTests } from "./interactiveIndicators.test";
 import { runVehicleModelCatalogTests } from "./vehicleModelCatalog.test";
+import { runPhotoIndicatorLayoutTests } from "./photoIndicatorLayout.test";
 
 async function runAll() {
   console.log("============================================================");
@@ -36,6 +37,7 @@ async function runAll() {
     runConfigPolicyTests();
     runInteractiveIndicatorTests();
     runVehicleModelCatalogTests();
+    runPhotoIndicatorLayoutTests();
     await runAuthTests();
     runTripLifecycleTests();
     await runGPSAdapterTests();
@@ -63,7 +65,7 @@ async function runAll() {
     runARRealityTests();
     runCanonicalVehicleModelTests();
     console.log("============================================================");
-    console.log("  ✅ ALL 29 TEST SUITES PASSED (100% SUCCESS)");
+    console.log("  ✅ ALL 30 TEST SUITES PASSED (100% SUCCESS)");
     console.log("============================================================");
     process.exit(0);
   } catch (err: any) {
