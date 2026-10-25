@@ -38,7 +38,7 @@ export function InteractiveMap({
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [mapLayer, setMapLayer] = useState<"logistics" | "satellite" | "google" | "3d_scene">("logistics");
+  const [mapLayer, setMapLayer] = useState<"logistics" | "satellite" | "openstreetmap" | "3d_scene">("logistics");
   const [hoveredWaypoint] = useState<string | null>(null);
   const [selectedPin] = useState<{ name: string; lat: number; lng: number } | null>(null);
 
@@ -83,7 +83,7 @@ export function InteractiveMap({
 
   // Canvas drawing loop
   useEffect(() => {
-    if (mapLayer === "google") return;
+    if (mapLayer === "openstreetmap") return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -373,20 +373,20 @@ export function InteractiveMap({
       {/* 1) Canvas Map View or 3D Operational Stage or Google Maps */}
       {mapLayer === "3d_scene" ? (
         <Operational3DScene trip={trip} className="h-full w-full" />
-      ) : mapLayer !== "google" ? (
+      ) : mapLayer !== "openstreetmap" ? (
         <canvas ref={canvasRef} className="h-full w-full block" />
       ) : (
         <div className="relative h-full w-full bg-surface-2">
           <div className="pointer-events-none absolute top-14 start-3 z-10 flex items-center gap-1.5 rounded-full bg-navy/90 px-3 py-1 text-label font-semibold text-brand backdrop-blur-md border border-brand/30 shadow-md">
             <span className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
-            <span>{t("Maps Dev Adapter · route preview", "وضع تطوير الخرائط · معاينة المسار")}</span>
+            <span>{t("OpenStreetMap · map view only", "OpenStreetMap · عرض الخريطة فقط")}</span>
           </div>
           <iframe
-            title="Google Maps route preview"
-            src={`https://maps.google.com/maps?q=${trip.currentLat},${trip.currentLng}&z=8&output=embed`}
+            title="OpenStreetMap view near current trip coordinates"
+            src={`https://www.openstreetmap.org/export/embed.html?bbox=${trip.currentLng - 1.2}%2C${trip.currentLat - 0.8}%2C${trip.currentLng + 1.2}%2C${trip.currentLat + 0.8}&layer=mapnik&marker=${trip.currentLat}%2C${trip.currentLng}`}
             className="h-full w-full border-0"
-            style={{ filter: "saturate(0.9) contrast(1.05)" }}
             loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
           />
         </div>
       )}
@@ -466,11 +466,11 @@ export function InteractiveMap({
         <button
           onClick={() =>
             setMapLayer((cur) =>
-              cur === "logistics" ? "google" : cur === "google" ? "satellite" : "logistics"
+              cur === "logistics" ? "openstreetmap" : cur === "openstreetmap" ? "satellite" : "logistics"
             )
           }
           className="btn-icon-sm bg-navy/85 text-brand shadow-lg backdrop-blur-md hover:scale-105 border border-brand/30"
-          title={t("Toggle Layer: Vector / Google / Satellite", "تبديل الطبقة: تفاعلية / جوجل / قمر صناعي")}
+          title={t("Toggle Layer: Vector / OpenStreetMap / Satellite", "تبديل الطبقة: تفاعلية / OpenStreetMap / قمر صناعي")}
         >
           <IconLayers size={15} />
         </button>
@@ -496,12 +496,12 @@ export function InteractiveMap({
             {t("Heading:", "الاتجاه:")} {trip.headingDeg}°
           </span>
           <a
-            href={`https://www.google.com/maps?q=${trip.currentLat},${trip.currentLng}`}
+            href={`https://www.openstreetmap.org/?mlat=${trip.currentLat}&mlon=${trip.currentLng}#map=8/${trip.currentLat}/${trip.currentLng}`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-brand hover:underline"
           >
-            {t("Open Google Maps", "خرائط Google")} ↗
+            {t("Open OpenStreetMap", "فتح OpenStreetMap")} ↗
           </a>
         </div>
       </div>
