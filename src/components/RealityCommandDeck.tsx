@@ -56,11 +56,11 @@ export function RealityCommandDeck({ vehicles, selectedId, onSelect, onNav, onTo
   const maintenanceAlert = selected.engineTemp > 105 || selected.fuel < 20;
 
   return <div className="space-y-4 pb-2">
-    {/* Real photo-led logistics header. Photo by Juan Pablo via Unsplash; free under Unsplash License. */}
+    {/* Use the selected vehicle’s own registered image, then the matching local fleet asset. */}
     <section className="relative isolate min-h-[230px] overflow-hidden rounded-hero border border-border-subtle bg-[#101722] sm:min-h-[270px]">
       <img
-        src="https://images.unsplash.com/photo-1766561994067-dbd575e1cff2?auto=format&fit=crop&fm=jpg&q=82&w=1800"
-        alt="شاحنة نقل وحاوية شحن على الطريق"
+        src={selected.customImage || ({ curtain: "/images/trucks/official/official-curtain.webp", dry: "/images/trucks/official/official-dry.webp", reefer: "/images/trucks/official/official-reefer.webp", flatbed: "/images/trucks/official/official-flatbed.webp" }[normalizeVehicleType(selected.body)] || "/images/trucks/official/official-curtain.webp")}
+        alt={`${selected.brand} ${selected.model} — ${meta.arabicName}`}
         className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
         loading="eager"
         referrerPolicy="no-referrer"
