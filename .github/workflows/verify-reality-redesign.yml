@@ -22,6 +22,8 @@ jobs:
         run: npm install
       - name: Typecheck
         run: npm run lint
+      - name: Diagnose Urdu coverage
+        run: node scripts/i18n-audit.mjs --list
       - name: Tests
         run: npm test
       - name: Production build
