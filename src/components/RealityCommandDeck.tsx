@@ -7,7 +7,6 @@ import { useSettings } from "../settings";
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
 import { ARTruckExperience } from "./ARTruckExperience";
 import { TruckTypeAvatar } from "./TruckTypeIcon";
-import { TruckModel3DPreview } from "./TruckModel3DPreview";
 import { IconPin, IconRepair, IconRotate360, IconTracking } from "./Icons";
 
 interface RealityCommandDeckProps {
@@ -128,7 +127,6 @@ export function RealityCommandDeck({ vehicles, selectedId, onSelect, onNav, onTo
         ))}
       </div>
     </section>
-    <TruckModel3DPreview />
     {arOpen && <ARTruckExperience vehicle={selected} onClose={() => setArOpen(false)} />}
     <section className="relative overflow-hidden rounded-panel border border-border-subtle bg-surface-1">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_20%,rgba(255,138,0,0.14),transparent_36%),linear-gradient(120deg,transparent,rgba(255,255,255,0.025))]" />
