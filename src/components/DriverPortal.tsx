@@ -43,16 +43,16 @@ export function DriverPortal() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-section-title font-bold text-text-primary">
-                  {t("Welcome, Captain Fahad Al-Qahtani", "مرحباً كابتن فهد القحطاني")}
+                  {t("Driver profile · sample", "ملف السائق · بيانات تجريبية")}
                 </h2>
                 <span className="badge bg-status-active/20 text-status-active text-label">
-                  {t("Active Duty", "على رأس العمل")}
+                  {t("Preview status", "حالة المعاينة")}
                 </span>
               </div>
               <p className="text-label-lg text-text-muted mt-0.5">
                 {t(
-                  "Assigned Truck: Mercedes-Benz Actros L 1863 · Plate: RJD 4821",
-                  "الشاحنة المكلفة: مرسيدس بنز أكتروس L 1863 · اللوحة: ر ي د ٤٨٢١"
+                  "Assigned truck · sample vehicle data",
+                  "الشاحنة المخصصة · بيانات مركبة تجريبية"
                 )}
               </p>
             </div>
@@ -98,12 +98,12 @@ export function DriverPortal() {
               </span>
               <div>
                 <span className="text-label font-bold text-brand uppercase tracking-wider">
-                  {t("Navigation Guidance", "التوجيه الملاحي المباشر")}
+                  {t("Navigation guidance · sample", "إرشادات ملاحة · بيانات تجريبية")}
                 </span>
                 <h4 className="text-page-title font-bold text-text-primary mt-0.5">
                   {t(
-                    "Turn left after 400m onto Highway 40 Express towards Taif",
-                    "اتجه يساراً بعد ٤٠٠ م نحو طريق ٤٠ السريع باتجاه الطائف"
+                    "Sample instruction — not live navigation",
+                    "تعليمات تجريبية — ليست ملاحة مباشرة"
                   )}
                 </h4>
               </div>
