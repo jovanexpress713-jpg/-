@@ -22,7 +22,7 @@ export const CANONICAL_VEHICLE_MODELS: Record<CanonicalVehicleTypeId, CanonicalV
     format: "obj",
     scale: 1,
     rotationY: 0,
-    yOffset: 0,
+    yOffset: 1.05,
   },
   dry: {
     type: "dry",
@@ -33,7 +33,7 @@ export const CANONICAL_VEHICLE_MODELS: Record<CanonicalVehicleTypeId, CanonicalV
     format: "obj",
     scale: 1,
     rotationY: 0,
-    yOffset: 0,
+    yOffset: 1.05,
   },
   reefer: {
     type: "reefer",
@@ -44,7 +44,7 @@ export const CANONICAL_VEHICLE_MODELS: Record<CanonicalVehicleTypeId, CanonicalV
     format: "obj",
     scale: 1,
     rotationY: 0,
-    yOffset: 0,
+    yOffset: 1.05,
   },
   flatbed: {
     type: "flatbed",
@@ -55,7 +55,7 @@ export const CANONICAL_VEHICLE_MODELS: Record<CanonicalVehicleTypeId, CanonicalV
     format: "obj",
     scale: 1,
     rotationY: 0,
-    yOffset: 0,
+    yOffset: 1.05,
   },
 };
 
