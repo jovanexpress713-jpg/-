@@ -16,6 +16,7 @@
  *   SYNC_INSTALL      1 لتثبيت الحزم عند تغيّر package.json (افتراضي 1)
  *   RUN_TESTS         1 لتشغيل npm test (افتراضي 0 — يستغرق وقتًا)
  *   SYNC_AUTOFIX      0 لتعطيل الطيّ التلقائي لمقياس التصميم (افتراضي 1)
+ *   SYNC_CONFLICT_STRATEGY  theirs (افتراضي) أو abort عند تعارض الدمج
  *   SYNC_LOG_DIR      مجلد السجلّات (افتراضي .sync)
  */
 import { spawnSync } from "node:child_process";
@@ -31,6 +32,7 @@ const DO_PUSH = process.env.SYNC_PUSH !== "0";
 const DO_INSTALL = process.env.SYNC_INSTALL !== "0";
 const RUN_TESTS = process.env.RUN_TESTS === "1";
 const AUTOFIX = process.env.SYNC_AUTOFIX !== "0";
+const CONFLICT_STRATEGY = process.env.SYNC_CONFLICT_STRATEGY || "theirs";
 const LOG_DIR = path.resolve(REPO, process.env.SYNC_LOG_DIR || ".sync");
 const STATUS_FILE = path.join(LOG_DIR, "status.json");
 const LOG_FILE = path.join(LOG_DIR, "sync.log");
@@ -131,9 +133,28 @@ const mergeResult = git(
   `sync: merge ${TRACK_BRANCH} (${report.newCommits.length} commit)`,
 );
 if (!mergeResult.ok) {
-  git("merge", "--abort");
-  report.merge = "conflict";
-  finish("conflict", `تعارض دمج — أُلغي الدمج وبقي فرعك كما هو: ${mergeResult.out.slice(0, 600)}`);
+  // استراتيجية التعارض: إن كانت الملفات المتعارضة ملفات طيّ مقياس فقط، فالأفضل
+  // أخذ نسخة الفرع (هي الأحدث والأشمل) ثم إعادة تشغيل الكودمود والتحقق. لا ندفع
+  // إلا بعد نجاح فحص الأنواع (والاختبارات إن كانت مفعّلة)؛ وإلا نرجّع الفرع كما كان.
+  const conflicted = git("diff", "--name-only", "--diff-filter=U").out.split("\n").filter(Boolean);
+  if (CONFLICT_STRATEGY === "theirs" && conflicted.length) {
+    log(`تعارض في ${conflicted.length} ملف — أخذ نسخة ${TRACK_BRANCH} ثم التحقق: ${conflicted.join(", ")}`);
+    for (const f of conflicted) git("checkout", "--theirs", "--", f);
+    git("add", "-A");
+    const resolved = git("commit", "-m", `sync: resolve conflicts in favour of ${TRACK_BRANCH}`);
+    if (resolved.ok) {
+      report.conflictResolution = conflicted.join(", ");
+      report.merge = git("rev-parse", "--short", "HEAD").out.trim();
+    } else {
+      git("reset", "--hard", before);
+      report.merge = "conflict";
+      finish("conflict", `تعارض لم يُحل — أُرجع الفرع كما كان: ${conflicted.join(", ")}`);
+    }
+  } else {
+    git("merge", "--abort");
+    report.merge = "conflict";
+    finish("conflict", `تعارض دمج في (${conflicted.join(", ")}) — أُلغي الدمج وبقي فرعك كما هو.`);
+  }
 }
 report.merge = git("rev-parse", "--short", "HEAD").out.trim();
 
@@ -196,6 +217,11 @@ log("فحص الأنواع (tsc --noEmit)…");
 const tsc = run("npx", ["tsc", "--noEmit"], { timeout: 600_000 });
 report.typecheck = tsc.ok ? "ok" : "failed";
 if (!tsc.ok) report.typecheckErrors = tsc.out.split("\n").slice(0, 20).join("\n");
+if (!tsc.ok && report.conflictResolution) {
+  git("reset", "--hard", before);
+  report.merge = "rolled-back";
+  finish("conflict", `الدمج كسر فحص الأنواع — أُرجع الفرع كما كان (${report.conflictResolution}).`);
+}
 
 // 8) الاختبارات (اختياري)
 if (RUN_TESTS) {
@@ -203,6 +229,11 @@ if (RUN_TESTS) {
   const tests = run("npm", ["test"], { timeout: 1_500_000 });
   report.tests = tests.ok ? "ok" : "failed";
   if (!tests.ok) report.testErrors = tests.out.split("\n").slice(-25).join("\n");
+  if (!tests.ok && report.conflictResolution) {
+    git("reset", "--hard", before);
+    report.merge = "rolled-back";
+    finish("conflict", `الدمج أسقط الاختبارات — أُرجع الفرع كما كان (${report.conflictResolution}).`);
+  }
 }
 
 // 9) الدفع
