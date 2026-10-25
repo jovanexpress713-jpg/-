@@ -245,7 +245,7 @@ export function AppHeader({
               title={t("Operations Control Room", "غرفة التحكم التشغيلي")}
             >
               <span>🖥️</span>
-              <span className="hidden sm:inline">{t("Control Room", "غرفة التحكم")}</span>
+              <span className="hidden xl:inline">{t("Control Room", "غرفة التحكم")}</span>
             </button>
             <button
               type="button"
@@ -259,7 +259,7 @@ export function AppHeader({
               title={t("Driver Mobile App", "تطبيق السائق الميداني")}
             >
               <span>🚚</span>
-              <span className="hidden sm:inline">{t("Driver App", "تطبيق السائق")}</span>
+              <span className="hidden xl:inline">{t("Driver App", "تطبيق السائق")}</span>
             </button>
             <button
               type="button"
@@ -273,7 +273,7 @@ export function AppHeader({
               title={t("Client Mobile App", "تطبيق العميل المعتمد")}
             >
               <span>🏢</span>
-              <span className="hidden sm:inline">{t("Client App", "تطبيق العميل")}</span>
+              <span className="hidden xl:inline">{t("Client App", "تطبيق العميل")}</span>
             </button>
           </div>
         </div>
