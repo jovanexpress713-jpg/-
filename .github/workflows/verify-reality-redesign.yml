@@ -21,6 +21,8 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: npm install
+      - name: Dependency audit
+        run: npm audit --audit-level=high
       - name: Typecheck
         run: npm run lint
       - name: Tests
