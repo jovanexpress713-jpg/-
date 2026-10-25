@@ -1,4 +1,5 @@
 import { Vehicle3DViewer } from "./Vehicle3DViewer";
+import { CurtainRig3DViewer } from "./CurtainRig3DViewer";
 import { TruckTypeIcon } from "./TruckTypeIcon";
 
 const truckTypes = [
@@ -9,8 +10,8 @@ const truckTypes = [
 ] as const;
 
 /**
- * EJAZ fleet showcase. Each card reuses the existing vehicle viewer and its
- * actual asset-registry rules; it does not pretend a reference image is a GLB.
+ * EJAZ fleet showcase. Real published GLBs are used for every card.
+ * The curtain card is a real two-GLB coupled rig: tractor + curtainsider trailer.
  */
 export function Truck3DShowcase() {
   return (
@@ -24,7 +25,7 @@ export function Truck3DShowcase() {
             </div>
             <h2 className="text-2xl font-black tracking-tight sm:text-3xl">استكشف أنواع الشاحنات</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
-              اختر نوع الهيكل لعرض المركبة واستعراض تفاصيلها. يتوفر التدوير التفاعلي عند توفر نموذج ثلاثي الأبعاد فعلي ومعتمد.
+              اختر نوع الهيكل لعرض المركبة واستعراض تفاصيلها. العرض التفاعلي مبني على ملفات GLB حقيقية، والستارة تظهر كجرار ومقطورة مقترنين فعليًا.
             </p>
           </div>
           <div className="rounded-xl border border-border-subtle bg-surface-1/70 px-4 py-3">
@@ -52,20 +53,24 @@ export function Truck3DShowcase() {
               </span>
             </div>
             <div className="relative min-h-[260px] bg-[#07111e] sm:min-h-[320px]">
-              <Vehicle3DViewer
-                vehicleType={truck.id}
-                previewMode={false}
-                compact
-                showControls
-                height={320}
-                className="min-h-[260px] sm:min-h-[320px]"
-              />
+              {truck.id === "curtain" ? (
+                <CurtainRig3DViewer height={320} />
+              ) : (
+                <Vehicle3DViewer
+                  vehicleType={truck.id}
+                  previewMode={false}
+                  compact
+                  showControls
+                  height={320}
+                  className="min-h-[260px] sm:min-h-[320px]"
+                />
+              )}
             </div>
             <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle px-4 py-3 text-xs">
               <span className="text-text-secondary">معاينة المركبة</span>
               <span className="inline-flex items-center gap-1.5 font-semibold text-text-muted">
-                <span className="h-2 w-2 rounded-full bg-status-waiting" />
-                النموذج الهندسي يعتمد على توفر ملف GLB معتمد
+                <span className="h-2 w-2 rounded-full bg-status-active" />
+                {truck.id === "curtain" ? "GLB حقيقي · جرار + مقطورة ستارة" : "GLB حقيقي · 3D تفاعلي"}
               </span>
             </footer>
           </article>
