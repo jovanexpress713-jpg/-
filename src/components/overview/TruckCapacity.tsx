@@ -64,16 +64,16 @@ export function TruckCapacity({ trip, truck, driverName, onChangeRoute }: Props)
         {/* Integrated responsive load HUD over the trailer area. */}
         <div className="pointer-events-none absolute left-[31%] right-[5%] top-[10%] z-10 rounded-xl border border-cyan-300/30 bg-[#061323]/90 p-2 text-white shadow-[0_0_24px_rgba(14,165,233,0.16)] backdrop-blur-sm sm:rounded-2xl sm:p-3" aria-label={t("Integrated load indicator", "مؤشر الحمولة المدمج")}>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[9px] font-bold tracking-wide text-cyan-200 sm:text-xs">{t("LOAD CAPACITY", "مؤشر الحمولة")}</span>
+            <span className="text-micro font-bold tracking-wide text-cyan-200 sm:text-xs">{t("LOAD CAPACITY", "مؤشر الحمولة")}</span>
             <span className={`text-base font-black tabular-nums sm:text-2xl ${shown >= 90 ? "text-rose-300" : shown >= 75 ? "text-amber-300" : "text-emerald-300"}`}>{Math.round(shown)}%</span>
           </div>
           <div className="mt-1.5 h-2 overflow-hidden rounded-full border border-cyan-300/25 bg-slate-800 sm:mt-2 sm:h-3" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(shown)} aria-label={t("Load percentage", "نسبة الحمولة")}>
             <div className={`h-full rounded-full transition-[width] duration-500 ${shown >= 90 ? "bg-gradient-to-r from-amber-400 to-rose-500" : "bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-300"}`} style={{ width: `${Math.max(0, Math.min(100, shown))}%` }} />
           </div>
           <div className="mt-2 grid grid-cols-3 divide-x divide-cyan-200/15 text-center [direction:rtl] sm:mt-3">
-            <div className="px-1"><div className="text-[8px] text-slate-300 sm:text-[10px]">{t("Current load", "الحمولة الحالية")}</div><div className="mt-0.5 text-[10px] font-bold tabular-nums sm:text-sm">{(trip.maxCapacityTons * shown / 100).toLocaleString(undefined, { maximumFractionDigits: 1 })} <span className="text-[8px] font-medium text-cyan-200 sm:text-[10px]">{t("t", "طن")}</span></div></div>
-            <div className="px-1"><div className="text-[8px] text-slate-300 sm:text-[10px]">{t("Max capacity", "السعة القصوى")}</div><div className="mt-0.5 text-[10px] font-bold tabular-nums sm:text-sm">{trip.maxCapacityTons.toLocaleString()} <span className="text-[8px] font-medium text-cyan-200 sm:text-[10px]">{t("t", "طن")}</span></div></div>
-            <div className="px-1"><div className="text-[8px] text-slate-300 sm:text-[10px]">{t("Remaining", "المتبقي")}</div><div className="mt-0.5 text-[10px] font-bold tabular-nums sm:text-sm">{(trip.maxCapacityTons * (100 - shown) / 100).toLocaleString(undefined, { maximumFractionDigits: 1 })} <span className="text-[8px] font-medium text-cyan-200 sm:text-[10px]">{t("t", "طن")}</span></div></div>
+            <div className="px-1"><div className="text-micro text-slate-300 sm:text-micro">{t("Current load", "الحمولة الحالية")}</div><div className="mt-0.5 text-micro font-bold tabular-nums sm:text-sm">{(trip.maxCapacityTons * shown / 100).toLocaleString(undefined, { maximumFractionDigits: 1 })} <span className="text-micro font-medium text-cyan-200 sm:text-micro">{t("t", "طن")}</span></div></div>
+            <div className="px-1"><div className="text-micro text-slate-300 sm:text-micro">{t("Max capacity", "السعة القصوى")}</div><div className="mt-0.5 text-micro font-bold tabular-nums sm:text-sm">{trip.maxCapacityTons.toLocaleString()} <span className="text-micro font-medium text-cyan-200 sm:text-micro">{t("t", "طن")}</span></div></div>
+            <div className="px-1"><div className="text-micro text-slate-300 sm:text-micro">{t("Remaining", "المتبقي")}</div><div className="mt-0.5 text-micro font-bold tabular-nums sm:text-sm">{(trip.maxCapacityTons * (100 - shown) / 100).toLocaleString(undefined, { maximumFractionDigits: 1 })} <span className="text-micro font-medium text-cyan-200 sm:text-micro">{t("t", "طن")}</span></div></div>
           </div>
         </div>
       </div>

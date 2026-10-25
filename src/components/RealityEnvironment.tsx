@@ -62,8 +62,8 @@ export function RealityEnvironment({ vehicle, children }: RealityEnvironmentProp
             <div className="truncate text-micro font-bold uppercase tracking-[.14em] text-text-muted">EJAZ Reality Environment</div>
             <div className="truncate text-label font-semibold text-text-primary">{labels[mode]}</div>
           </div>
-          {isSimulation && <span className="rounded-full border border-status-waiting/20 bg-status-waiting/10 px-2 py-1 text-[10px] font-bold text-status-waiting">{t("SIMULATION", "محاكاة")}</span>}
-          {!isSimulation && <span className="rounded-full border border-border-subtle bg-surface-2 px-2 py-1 text-[10px] font-bold text-text-muted">{t("NO WEATHER FEED", "لا توجد بيانات طقس")}</span>}
+          {isSimulation && <span className="rounded-full border border-status-waiting/20 bg-status-waiting/10 px-2 py-1 text-micro font-bold text-status-waiting">{t("SIMULATION", "محاكاة")}</span>}
+          {!isSimulation && <span className="rounded-full border border-border-subtle bg-surface-2 px-2 py-1 text-micro font-bold text-text-muted">{t("NO WEATHER FEED", "لا توجد بيانات طقس")}</span>}
         </div>
         <div className="flex max-w-full gap-1 overflow-x-auto p-0.5">
           {(Object.keys(labels) as RealityEnvironmentMode[]).map((id) => (

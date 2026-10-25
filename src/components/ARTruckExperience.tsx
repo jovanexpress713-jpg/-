@@ -11,7 +11,7 @@ type SceneMode = "live" | "desert" | "rain" | "night";
 
 function Gauge({ label, value, unit, progress }: { label: string; value: string; unit?: string; progress: number }) {
   const pct = clampTelemetry(progress);
-  return <div className="rounded-2xl border border-white/10 bg-black/55 p-3 backdrop-blur-xl"><div className="flex items-center justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/45">{label}</span><span className="text-xs font-bold text-white/85">{value}{unit}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-orange-400 transition-all duration-500" style={{ width: `${pct}%` }} /></div></div>;
+  return <div className="rounded-2xl border border-white/10 bg-black/55 p-3 backdrop-blur-xl"><div className="flex items-center justify-between gap-2"><span className="text-micro font-bold uppercase tracking-[.14em] text-white/45">{label}</span><span className="text-xs font-bold text-white/85">{value}{unit}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-orange-400 transition-all duration-500" style={{ width: `${pct}%` }} /></div></div>;
 }
 
 export function ARTruckExperience({ vehicle, onClose }: ARTruckExperienceProps) {
@@ -62,7 +62,7 @@ export function ARTruckExperience({ vehicle, onClose }: ARTruckExperienceProps) 
 
     <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3 sm:p-4 pointer-events-none">
       <div className="pointer-events-auto max-w-[min(92vw,430px)] rounded-2xl border border-white/10 bg-black/60 p-4 backdrop-blur-xl">
-        <div className="text-[10px] font-bold uppercase tracking-[.18em] text-orange-400">EJAZ · AR REALITY COCKPIT</div>
+        <div className="text-micro font-bold uppercase tracking-[.18em] text-orange-400">EJAZ · AR REALITY COCKPIT</div>
         <div className="mt-1 text-lg font-bold">{vehicle.brand} {vehicle.model}</div>
         <div className="mt-1 text-sm text-white/55">{vehicle.plate} · {reality.bodyLabelAr}</div>
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -78,13 +78,13 @@ export function ARTruckExperience({ vehicle, onClose }: ARTruckExperienceProps) 
     <div className="absolute inset-x-3 bottom-3 sm:inset-x-4 sm:bottom-4 pointer-events-none">
       <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-black/65 p-3 shadow-2xl backdrop-blur-2xl pointer-events-auto">
         <div className="grid gap-2 sm:grid-cols-4">
-          <div className="rounded-2xl bg-white/5 p-3"><div className="text-[10px] uppercase tracking-[.14em] text-white/40">{t("Vehicle state", "حالة المركبة")}</div><div className="mt-1 text-sm font-bold">{moving ? t("Moving", "تتحرك") : t("Stopped", "متوقفة")}</div></div>
-          <div className="rounded-2xl bg-white/5 p-3"><div className="text-[10px] uppercase tracking-[.14em] text-white/40">{t("ETA", "الوصول")}</div><div className="mt-1 text-sm font-bold">{etaLabel(vehicle.etaMinutes)}</div></div>
-          <div className="rounded-2xl bg-white/5 p-3"><div className="text-[10px] uppercase tracking-[.14em] text-white/40">{t("Distance", "المسافة")}</div><div className="mt-1 text-sm font-bold">{Math.round(Number(vehicle.milesLeft) || 0)} mi</div></div>
-          <div className="rounded-2xl bg-white/5 p-3"><div className="text-[10px] uppercase tracking-[.14em] text-white/40">{t("Capacity", "السعة")}</div><div className="mt-1 text-sm font-bold">{Math.max(0, Math.round(100 - load))}% {t("free", "متاح")}</div></div>
+          <div className="rounded-2xl bg-white/5 p-3"><div className="text-micro uppercase tracking-[.14em] text-white/40">{t("Vehicle state", "حالة المركبة")}</div><div className="mt-1 text-sm font-bold">{moving ? t("Moving", "تتحرك") : t("Stopped", "متوقفة")}</div></div>
+          <div className="rounded-2xl bg-white/5 p-3"><div className="text-micro uppercase tracking-[.14em] text-white/40">{t("ETA", "الوصول")}</div><div className="mt-1 text-sm font-bold">{etaLabel(vehicle.etaMinutes)}</div></div>
+          <div className="rounded-2xl bg-white/5 p-3"><div className="text-micro uppercase tracking-[.14em] text-white/40">{t("Distance", "المسافة")}</div><div className="mt-1 text-sm font-bold">{Math.round(Number(vehicle.milesLeft) || 0)} mi</div></div>
+          <div className="rounded-2xl bg-white/5 p-3"><div className="text-micro uppercase tracking-[.14em] text-white/40">{t("Capacity", "السعة")}</div><div className="mt-1 text-sm font-bold">{Math.max(0, Math.round(100 - load))}% {t("free", "متاح")}</div></div>
         </div>
         <div className="mt-3 flex items-center gap-2 overflow-x-auto">
-          {(Object.keys(sceneLabels) as SceneMode[]).map((id) => <button key={id} onClick={() => setSceneMode(id)} className={`min-h-10 shrink-0 rounded-full px-4 text-xs font-bold ${sceneMode === id ? "bg-orange-400 text-black" : "bg-white/5 text-white/65"}`}>{sceneLabels[id]}{id !== "live" && <span className="ms-1 text-[9px] opacity-60">SIM</span>}</button>)}
+          {(Object.keys(sceneLabels) as SceneMode[]).map((id) => <button key={id} onClick={() => setSceneMode(id)} className={`min-h-10 shrink-0 rounded-full px-4 text-xs font-bold ${sceneMode === id ? "bg-orange-400 text-black" : "bg-white/5 text-white/65"}`}>{sceneLabels[id]}{id !== "live" && <span className="ms-1 text-micro opacity-60">SIM</span>}</button>)}
         </div>
       </div>
     </div>
@@ -96,7 +96,7 @@ export function ARTruckExperience({ vehicle, onClose }: ARTruckExperienceProps) 
       {!reality.isOfficialModel && <div className="mt-4 rounded-2xl border border-amber-300/15 bg-amber-300/10 p-3 text-start text-xs leading-5 text-amber-100">{t("A published official GLB/GLTF model is required for true AR. The system will not present a procedural truck as an official manufacturer model.", "يلزم رفع نموذج GLB/GLTF رسمي لتشغيل AR الحقيقي. النظام لن يقدم مجسماً إجرائياً على أنه شاحنة أصلية من الشركة المصنعة.")}</div>}
       {error && <div className="mt-3 rounded-2xl bg-red-500/10 p-3 text-xs text-red-200">{error}</div>}
       <button onClick={enterAR} disabled={!support?.supported || !reality.isOfficialModel || starting} className="mt-5 min-h-12 w-full rounded-2xl bg-orange-400 px-4 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-40">{starting ? t("Starting…", "جارٍ التشغيل…") : t("Start real AR", "تشغيل AR الحقيقي")}</button>
-      <div className="mt-3 text-[11px] text-white/40">{reality.isOfficialModel ? t("Official 3D asset", "نموذج ثلاثي الأبعاد رسمي") : t("Official 3D model not published", "لم يتم نشر النموذج الرسمي بعد")}</div>
+      <div className="mt-3 text-label text-white/40">{reality.isOfficialModel ? t("Official 3D asset", "نموذج ثلاثي الأبعاد رسمي") : t("Official 3D model not published", "لم يتم نشر النموذج الرسمي بعد")}</div>
     </div></div>}
   </div>;
 }
