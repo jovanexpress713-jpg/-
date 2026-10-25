@@ -110,6 +110,49 @@ function finish(state, message) {
 }
 
 const startedAt = Date.now();
+const LOCK_FILE = path.join(LOG_DIR, "sync.lock");
+
+/* قفل واحد: دورة واحدة في كل لحظة. تشغيل يدوي أثناء دورة المراقب كان يمكن أن
+   يدمج مرتين أو يدفع شجرة نصف مكتملة. القفل القديم (أكثر من ١٥ دقيقة) يُعتبر
+   متروكًا ويُزال تلقائيًا. */
+function acquireLock() {
+  try {
+    const info = JSON.parse(fs.readFileSync(LOCK_FILE, "utf8"));
+    let alive = false;
+    try {
+      process.kill(info.pid, 0);
+      alive = true;
+    } catch {
+      alive = false;
+    }
+    const stale = Date.now() - new Date(info.at || 0).getTime() > 15 * 60 * 1000;
+    if (alive && !stale) return false;
+  } catch {
+    /* لا قفل */
+  }
+  fs.writeFileSync(LOCK_FILE, JSON.stringify({ pid: process.pid, at: new Date().toISOString() }));
+  return true;
+}
+
+function releaseLock() {
+  try {
+    const info = JSON.parse(fs.readFileSync(LOCK_FILE, "utf8"));
+    if (info.pid === process.pid) fs.unlinkSync(LOCK_FILE);
+  } catch {
+    /* لا شيء */
+  }
+}
+
+process.on("exit", releaseLock);
+for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(0));
+
+if (!acquireLock()) {
+  report.state = "busy";
+  report.message = "هناك دورة مزامنة أخرى تعمل الآن — تخطّيت هذه الدورة.";
+  fs.writeFileSync(STATUS_FILE, JSON.stringify(report, null, 2) + "\n");
+  console.log(JSON.stringify(report, null, 2));
+  process.exit(0);
+}
 
 // 1) تأكيد أننا على فرع الجلسة
 const head = git("rev-parse", "--abbrev-ref", "HEAD");

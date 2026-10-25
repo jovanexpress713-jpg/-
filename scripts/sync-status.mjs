@@ -49,6 +49,14 @@ if (status.newCommits?.length) {
   for (const c of status.newCommits) console.log(`    - ${c}`);
 }
 
+if (status.radar?.length) {
+  console.log("\n── رادار الفروع النشطة (لا تُدمج تلقائيًا) ──");
+  for (const b of status.radar) {
+    const msg = b.aheadOfSession ? `+${b.aheadOfSession} عن فرعك` : "مدموج";
+    console.log(`  ${b.branch} · ${b.sha} · ${msg} · ${b.subject?.slice(0, 60) ?? ""}`);
+  }
+}
+
 console.log("\n── المراقب ──");
 if (!beat) {
   console.log("  لا نبضة — المراقب غير مشغّل. شغّله بـ: npm run sync:watch");
