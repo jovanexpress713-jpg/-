@@ -62,7 +62,7 @@ export function TruckCapacity({ trip, truck, driverName, onChangeRoute }: Props)
           )}
         />
         {/* Integrated responsive load HUD over the trailer area. */}
-        <div className="pointer-events-none absolute left-[31%] right-[5%] top-[10%] z-10 rounded-xl border border-cyan-300/30 bg-[#061323]/90 p-2 text-white shadow-[0_0_24px_rgba(14,165,233,0.16)] backdrop-blur-sm sm:rounded-2xl sm:p-3" aria-label={t("Integrated load indicator", "مؤشر الحمولة المدمج")}>
+        <div className="pointer-events-none absolute left-[31%] right-[5%] top-[10%] z-10 rounded-inner border border-cyan-300/30 bg-[#061323]/90 p-2 text-white shadow-[0_0_24px_rgba(14,165,233,0.16)] backdrop-blur-sm sm:rounded-panel sm:p-3" aria-label={t("Integrated load indicator", "مؤشر الحمولة المدمج")}>
           <div className="flex items-center justify-between gap-2">
             <span className="text-micro font-bold tracking-wide text-cyan-200 sm:text-micro">{t("LOAD CAPACITY", "مؤشر الحمولة")}</span>
             <span className={`text-body font-black tabular-nums sm:text-section-title ${shown >= 90 ? "text-rose-300" : shown >= 75 ? "text-amber-300" : "text-emerald-300"}`}>{Math.round(shown)}%</span>
