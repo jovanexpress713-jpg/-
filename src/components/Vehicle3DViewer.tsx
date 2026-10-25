@@ -49,7 +49,7 @@ export function Vehicle3DViewer({
   }, [vehicle?.body, vehicleType]);
 
   // Resolve the exact vehicle asset first, including an operator-uploaded photo.
-  const vehiclePhotoSrc = vehicle ? vehicleImage(vehicle as any) : undefined;
+  const vehiclePhotoSrc = vehicle ? vehicleImage(vehicle) : undefined;
 
   const selectType = (type: CanonicalVehicleTypeId) => {
     setActiveType(type);
