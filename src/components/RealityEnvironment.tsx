@@ -3,16 +3,17 @@ import { cn } from "../utils/cn";
 import { useSettings } from "../settings";
 import type { Vehicle } from "../data/types";
 
-export type RealityEnvironmentMode = "auto" | "desert" | "rain" | "night";
+export type RealityEnvironmentMode = "auto" | "clear" | "desert" | "rain" | "night";
 
 interface RealityEnvironmentProps {
   vehicle: Vehicle;
   children: ReactNode;
 }
 
-function modeFromVehicle(vehicle: Vehicle): Exclude<RealityEnvironmentMode, "auto"> {
-  if (vehicle.status === "inactive") return "night";
-  return "desert";
+function modeFromVehicle(_vehicle: Vehicle): Exclude<RealityEnvironmentMode, "auto"> {
+  // Vehicle status alone cannot prove weather or time-of-day. Until a real
+  // environment provider is connected, keep the automatic scene neutral.
+  return "clear";
 }
 
 export function RealityEnvironment({ vehicle, children }: RealityEnvironmentProps) {
@@ -23,6 +24,7 @@ export function RealityEnvironment({ vehicle, children }: RealityEnvironmentProp
 
   const labels = useMemo(() => ({
     auto: t("Live / data-driven", "حي / حسب البيانات"),
+    clear: t("Neutral / no weather feed", "محايد / لا توجد بيانات طقس"),
     desert: t("Desert road", "طريق صحراوي"),
     rain: t("Rain", "أجواء ممطرة"),
     night: t("Night drive", "قيادة ليلية"),
@@ -37,6 +39,7 @@ export function RealityEnvironment({ vehicle, children }: RealityEnvironmentProp
           effectiveMode === "desert" && "bg-[radial-gradient(circle_at_65%_12%,rgba(245,158,11,.16),transparent_34%),linear-gradient(180deg,rgba(245,158,11,.06),transparent_42%)]",
           effectiveMode === "rain" && "bg-[linear-gradient(180deg,rgba(59,130,246,.12),transparent_58%)]",
           effectiveMode === "night" && "bg-[radial-gradient(circle_at_50%_5%,rgba(99,102,241,.15),transparent_36%),linear-gradient(180deg,rgba(15,23,42,.35),transparent 60%)]",
+          effectiveMode === "clear" && "bg-[radial-gradient(circle_at_50%_0%,rgba(148,163,184,.08),transparent_42%)]",
         )}
       />
 
@@ -60,6 +63,7 @@ export function RealityEnvironment({ vehicle, children }: RealityEnvironmentProp
             <div className="truncate text-label font-semibold text-text-primary">{labels[mode]}</div>
           </div>
           {isSimulation && <span className="rounded-full border border-status-waiting/20 bg-status-waiting/10 px-2 py-1 text-[10px] font-bold text-status-waiting">{t("SIMULATION", "محاكاة")}</span>}
+          {!isSimulation && <span className="rounded-full border border-border-subtle bg-surface-2 px-2 py-1 text-[10px] font-bold text-text-muted">{t("NO WEATHER FEED", "لا توجد بيانات طقس")}</span>}
         </div>
         <div className="flex max-w-full gap-1 overflow-x-auto p-0.5">
           {(Object.keys(labels) as RealityEnvironmentMode[]).map((id) => (
