@@ -145,7 +145,7 @@ export function ShipperPortal() {
             </div>
           </div>
 
-          {/* Real Live Map with Truck Movement */}
+          {/* Map uses stored trip coordinates; this screen does not verify live GPS. */}
           <InteractiveMap
             trip={activeTrip}
             className="h-[400px] w-full"
@@ -227,12 +227,12 @@ export function ShipperPortal() {
                   {t("Operations Dispatch Support", "الدعم الميداني وإدارة الحركة")}
                 </h4>
               </div>
-              <span className="badge bg-brand/15 text-brand text-micro">
-                {t("Live Dispatch", "غرفة العمليات")}
+              <span className="badge bg-surface-5 text-text-muted text-micro">
+                {t("Local preview", "معاينة محلية")}
               </span>
             </div>
             <p className="mt-2 text-micro text-text-muted">
-              {t("Direct messaging channel with EJAZ transport dispatchers and fleet coordinators.", "قناة التواصل والتنسيق المباشر مع غرفة عمليات إيجاز ومرحّلي الشحنات.")}
+              {t("Preview conversation only. Messages stay in this local app state and are not delivered to dispatch.", "محادثة للمعاينة فقط. تبقى الرسائل داخل حالة التطبيق المحلية ولا تصل إلى غرفة العمليات.")}
             </p>
 
             <div className="scroll-thin flex-1 overflow-y-auto py-2.5 space-y-2 text-label-lg">
