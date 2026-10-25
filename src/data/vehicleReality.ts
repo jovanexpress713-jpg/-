@@ -21,7 +21,7 @@ export function getRealityAsset(vehicle: Vehicle, registry: VehicleAssetRegistry
   const meta = getVehicleTypeMeta(bodyType);
   const category = registry.types[bodyType];
   const modelUrl = category?.model?.url || null;
-  const imageUrl = vehicle.customImage?.trim() || category?.officialImage || meta.image;
+  const imageUrl = vehicle.customImage?.trim() || category?.officialImage || meta.officialImage;
   return {
     bodyType,
     bodyLabelAr: meta.arabicName,
