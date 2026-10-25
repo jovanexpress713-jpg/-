@@ -395,7 +395,7 @@ export function InteractiveMap({
       {showCardOverlay && (
         <div
           className={cn(
-            "pointer-events-auto absolute top-3 flex max-w-[calc(100%-4.5rem)] flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl bg-navy/90 px-3 py-2 text-white shadow-xl backdrop-blur-md border border-white/10 text-label sm:text-label-lg sm:gap-2.5 sm:rounded-full sm:px-4",
+            "pointer-events-auto absolute top-3 flex max-w-[calc(100%-4.5rem)] flex-wrap items-center gap-x-2 gap-y-1 rounded-panel bg-navy/90 px-3 py-2 text-white shadow-xl backdrop-blur-md border border-white/10 text-label sm:text-label-lg sm:gap-2.5 sm:rounded-full sm:px-4",
             dir === "rtl" ? "right-3" : "left-3"
           )}
         >
