@@ -1,1 +1,0 @@
-The warning-count regression requires independent conditions to be counted separately.
