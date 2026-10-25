@@ -49,9 +49,15 @@ function resolveAccountAccess(user: {
 }
 
 // POST /api/auth/quick-access — Passwordless instant entry for project owner, client, and testing
-router.post("/quick-access", (req: AuthenticatedRequest, res: Response) => {
-  const targetRole = String(req.body?.role || "SUPER_ADMIN").toUpperCase();
-  const targetEmail = req.body?.email;
+router.post("/quick-access", authenticate, (req: AuthenticatedRequest, res: Response) => {
+  // Passwordless access must never mint a session for an arbitrary account.
+  // Keep this legacy endpoint available only to an already-authenticated owner,
+  // and bind it to that owner account instead of trusting request-body identity.
+  if (req.user?.role !== "SUPER_ADMIN") {
+    return res.status(403).json({ error: "Owner authentication required", code: "OWNER_AUTH_REQUIRED" });
+  }
+  const targetRole = req.user.role;
+  const targetEmail = req.user.email;
 
   let user = targetEmail
     ? Array.from(db.users.values()).find((u) => u.email.toLowerCase() === targetEmail.toLowerCase())
