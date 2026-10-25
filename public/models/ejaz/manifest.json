@@ -1,13 +1,14 @@
 {
-  "name": "EJAZ Canonical Fleet Models",
-  "version": "1.0.0",
-  "provenance": "PROJECT_GENERATED_CANONICAL",
-  "note": "These are EJAZ-owned canonical geometry assets. They are not claimed to be official Volvo or Mercedes licensed models.",
-  "formats": ["obj"],
+  "name": "EJAZ Fleet Reference Assets",
+  "version": "2.0.0",
+  "provenance": "USER_SUPPLIED_REFERENCE_PHOTOGRAPHS",
+  "policy": "No procedural or generated geometry is used as a substitute for a real truck asset.",
+  "note": "The canonical viewer displays category reference photographs. 3D rendering must remain unavailable until a licensed GLB/GLTF truck model is uploaded and registered.",
+  "formats": ["png", "webp", "glb", "gltf"],
   "variants": {
-    "curtain": "/models/ejaz/ejaz-curtain-canonical.obj",
-    "dry": "/models/ejaz/ejaz-dry-canonical.obj",
-    "reefer": "/models/ejaz/ejaz-reefer-canonical.obj",
-    "flatbed": "/models/ejaz/ejaz-flatbed-canonical.obj"
+    "curtain": { "image": "/images/trucks/official/official-curtain.png", "model": null },
+    "dry": { "image": "/images/trucks/official/official-dry.png", "model": null },
+    "reefer": { "image": "/images/trucks/official/official-reefer.png", "model": null },
+    "flatbed": { "image": "/images/trucks/official/official-flatbed.png", "model": null }
   }
 }
